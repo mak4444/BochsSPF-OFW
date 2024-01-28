@@ -1,0 +1,1025 @@
+purpose: Data structures and manuipulation routines for UHCI USB Controller
+
+\ XXX Isochronous is not supported in the current version of the UHCI driver
+
+\ ---------------------------------------------------------------------------
+\ Data structures for this implementation of the UHCI USB Driver include:
+\   - frame-list (an array of 1024 entries of TD/QH pointers, physical)
+\   - intr-qh (a queue head for interrupt transactions)
+\   - low-qh (a queue head for control & bulk transactions for low-speed devices)
+\   - full-qh (a queue head for control & bulk transactions for high-speed devices)
+\ ---------------------------------------------------------------------------
+
+hex
+headers
+
+\ Constants common to most UHCI data structures
+1 constant TERMINATE
+1A4EDB8 	 0  0 74 65 72 6D 69 6E 
+1A4EDC0 	61 74 65 89  0  0 A0  1 
+1A4EDC8 	68 40 A0  1  1  0  0  0 
+
+0 constant TYP_TD
+1A4EDD0 	 0 74 79 70 5F 74 64 86 
+1A4EDD8 	C8 ED A4  1 68 40 A0  1 
+1A4EDE0 	 0  0  0  0 
+2 constant TYP_QH
+1A4EDE4 	 0 74 79 70 
+1A4EDE8 	5F 71 68 86 DC ED A4  1 
+1A4EDF0 	68 40 A0  1  2  0  0  0 
+
+\ ---------------------------------------------------------------------------
+\ Frame List as defined by the UHCI Spec; 4-KB aligned
+\
+\ Each entry is composed of:  bit 0     TERMINATE
+\                             bit 1     1=QH, 0=TD
+\                             bits 31:4	Frame List Pointer
+\ ---------------------------------------------------------------------------
+
+h# 1000 constant /align4kb
+1A4EDF8 	 0  0 2F 61 6C 69 67 6E 
+1A4EE00 	34 6B 62 89 F0 ED A4  1 
+1A4EE08 	68 40 A0  1  0 10  0  0 
+
+d# 1024 dup constant #framelist			\ # of entries in framelist
+1A4EE10 	 0 23 66 72 61 6D 65 6C 
+1A4EE18 	69 73 74 8A  8 EE A4  1 
+1A4EE20 	68 40 A0  1  0  4  0  0 
+4 *         constant /framelist			\ Size of framelist
+1A4EE28 	 0 2F 66 72 61 6D 65 6C 
+1A4EE30 	69 73 74 8A 20 EE A4  1 
+1A4EE38 	68 40 A0  1  0 10  0  0 
+
+0 value framelist
+1A4EE40 	 0  0 66 72 61 6D 65 6C 
+1A4EE48 	69 73 74 89 38 EE A4  1 
+1A4EE50 	50 40 A0  1 38  E  0  0 
+0 value framelist-phys
+1A4EE58 	 0 66 72 61 6D 65 6C 69 
+1A4EE60 	73 74 2D 70 68 79 73 8E 
+1A4EE68 	50 EE A4  1 50 40 A0  1 
+1A4EE70 	3C  E  0  0 
+0 value framelist-unaligned
+1A4EE74 	66 72 61 6D 
+1A4EE78 	65 6C 69 73 74 2D 75 6E 
+1A4EE80 	61 6C 69 67 6E 65 64 93 
+1A4EE88 	6C EE A4  1 50 40 A0  1 
+1A4EE90 	40  E  0  0 
+
+: framelist!  ( n idx -- )  4 * framelist + le-l!  ;
+1A4EE94 	 0 66 72 61 
+1A4EE98 	6D 65 6C 69 73 74 21 8A 
+1A4EEA0 	8C EE A4  1 20 40 A0  1 
+1A4EEA8 	B0 6F A0  1 1C 5F A0  1 
+1A4EEB0 	50 EE A4  1  4 45 A0  1 
+1A4EEB8 	5C 35 A4  1 58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Queue Head as defined by the UHCI Spec; 16-byte aligned
+\ ---------------------------------------------------------------------------
+
+struct
+   4 field >hcqh-next				\ QH link pointer
+1A4EEC0 	 0 3E 68 63 71 68 2D 6E 
+1A4EEC8 	65 78 74 8A A4 EE A4  1 
+1A4EED0 	50 EE A0  1  0  0  0  0 
+   4 field >hcqh-elem				\ Queue element link pointer
+1A4EED8 	 0 3E 68 63 71 68 2D 65 
+1A4EEE0 	6C 65 6D 8A D0 EE A4  1 
+1A4EEE8 	50 EE A0  1  4  0  0  0 
+dup constant /hcqh
+1A4EEF0 	 0  0 2F 68 63 71 68 85 
+1A4EEF8 	E8 EE A4  1 68 40 A0  1 
+1A4EF00 	 8  0  0  0 
+   8 +						\ Make it easier to look at
+   4 field >qh-phys				\ QH's physical address
+1A4EF04 	 0  0  0 3E 
+1A4EF08 	71 68 2D 70 68 79 73 88 
+1A4EF10 	FC EE A4  1 50 EE A0  1 
+1A4EF18 	10  0  0  0 
+   4 field >qh-next				\ Virtual address of >hcqh-next
+1A4EF1C 	 0  0  0 3E 
+1A4EF20 	71 68 2D 6E 65 78 74 88 
+1A4EF28 	14 EF A4  1 50 EE A0  1 
+1A4EF30 	14  0  0  0 
+   4 field >qh-prev				\ Virtual address of previous QH
+1A4EF34 	 0  0  0 3E 
+1A4EF38 	71 68 2D 70 72 65 76 88 
+1A4EF40 	2C EF A4  1 50 EE A0  1 
+1A4EF48 	18  0  0  0 
+   4 field >qh-unaligned			\ QH's unaligned address
+1A4EF4C 	 0  0 3E 71 
+1A4EF50 	68 2D 75 6E 61 6C 69 67 
+1A4EF58 	6E 65 64 8D 44 EF A4  1 
+1A4EF60 	50 EE A0  1 1C  0  0  0 
+   4 field >qh-size				\ Size of QH+TDs
+1A4EF68 	 0  0  0 3E 71 68 2D 73 
+1A4EF70 	69 7A 65 88 60 EF A4  1 
+1A4EF78 	50 EE A0  1 20  0  0  0 
+   4 field >qh-#tds				\ Number of TDs in >hcqh-elem
+1A4EF80 	 0  0  0 3E 71 68 2D 23 
+1A4EF88 	74 64 73 88 78 EF A4  1 
+1A4EF90 	50 EE A0  1 24  0  0  0 
+   4 field >qh-elem				\ Virtual address of >hcqh-elem
+1A4EF98 	 0  0  0 3E 71 68 2D 65 
+1A4EFA0 	6C 65 6D 88 90 EF A4  1 
+1A4EFA8 	50 EE A0  1 28  0  0  0 
+d# 16 round-up
+constant /qh
+1A4EFB0 	2F 71 68 83 A8 EF A4  1 
+1A4EFB8 	68 40 A0  1 30  0  0  0 
+
+\ ---------------------------------------------------------------------------
+\ Transfer Descriptor as defined by the UHCI Spec; 16-byte aligned
+\ ---------------------------------------------------------------------------
+struct
+   4 field >hctd-next				\ TD link pointer
+1A4EFC0 	 0 3E 68 63 74 64 2D 6E 
+1A4EFC8 	65 78 74 8A B8 EF A4  1 
+1A4EFD0 	50 EE A0  1  0  0  0  0 
+   4 field >hctd-stat				\ TD control and status
+1A4EFD8 	 0 3E 68 63 74 64 2D 73 
+1A4EFE0 	74 61 74 8A D0 EF A4  1 
+1A4EFE8 	50 EE A0  1  4  0  0  0 
+   4 field >hctd-token				\ TD token
+1A4EFF0 	3E 68 63 74 64 2D 74 6F 
+1A4EFF8 	6B 65 6E 8B E8 EF A4  1 
+1A4F000 	50 EE A0  1  8  0  0  0 
+   4 field >hctd-buf				\ TD buffer pointer
+1A4F008 	 0  0 3E 68 63 74 64 2D 
+1A4F010 	62 75 66 89  0 F0 A4  1 
+1A4F018 	50 EE A0  1  C  0  0  0 
+dup constant /hctd
+1A4F020 	 0  0 2F 68 63 74 64 85 
+1A4F028 	18 F0 A4  1 68 40 A0  1 
+1A4F030 	10  0  0  0 
+   4 field >td-phys				\ TD's physical address
+1A4F034 	 0  0  0 3E 
+1A4F038 	74 64 2D 70 68 79 73 88 
+1A4F040 	2C F0 A4  1 50 EE A0  1 
+1A4F048 	10  0  0  0 
+   4 field >td-next				\ Next TD's virtual address
+1A4F04C 	 0  0  0 3E 
+1A4F050 	74 64 2D 6E 65 78 74 88 
+1A4F058 	44 F0 A4  1 50 EE A0  1 
+1A4F060 	14  0  0  0 
+   4 field >td-buf				\ Virtual address of >hctd-buf
+1A4F064 	3E 74 64 2D 
+1A4F068 	62 75 66 87 5C F0 A4  1 
+1A4F070 	50 EE A0  1 18  0  0  0 
+   4 field >td-pbuf				\ Physical address of >hctd-buf
+1A4F078 	 0  0  0 3E 74 64 2D 70 
+1A4F080 	62 75 66 88 70 F0 A4  1 
+1A4F088 	50 EE A0  1 1C  0  0  0 
+   4 field >td-/buf-all				\ Buffer length (size of the entire buffer)
+1A4F090 	 0  0  0 3E 74 64 2D 2F 
+1A4F098 	62 75 66 2D 61 6C 6C 8C 
+1A4F0A0 	88 F0 A4  1 50 EE A0  1 
+1A4F0A8 	20  0  0  0 
+						\ Only the first TD has the entire size of buffer
+						\ For bulk and intr TDs
+d# 16 round-up
+constant /td
+1A4F0AC 	2F 74 64 83 
+1A4F0B0 	A4 F0 A4  1 68 40 A0  1 
+1A4F0B8 	30  0  0  0 
+
+\ >hctd-next constants
+0 constant TD_BREADTH				\ Next transaction in next QH
+1A4F0BC 	 0 74 64 5F 
+1A4F0C0 	62 72 65 61 64 74 68 8A 
+1A4F0C8 	B4 F0 A4  1 68 40 A0  1 
+1A4F0D0 	 0  0  0  0 
+4 constant TD_DEPTH				\ Next transaction in next TD
+1A4F0D4 	 0  0  0 74 
+1A4F0D8 	64 5F 64 65 70 74 68 88 
+1A4F0E0 	CC F0 A4  1 68 40 A0  1 
+1A4F0E8 	 4  0  0  0 
+
+\ >hctd-stat constants
+h# 20000000 constant TD_CTRL_SPD		\ Short packet detect
+1A4F0EC 	74 64 5F 63 
+1A4F0F0 	74 72 6C 5F 73 70 64 8B 
+1A4F0F8 	E4 F0 A4  1 68 40 A0  1 
+1A4F100 	 0  0  0 20 
+h# 18000000 constant TD_CTRL_C_ERR_MASK	\ Error counter bits
+1A4F104 	 0 74 64 5F 
+1A4F108 	63 74 72 6C 5F 63 5F 65 
+1A4F110 	72 72 5F 6D 61 73 6B 92 
+1A4F118 	FC F0 A4  1 68 40 A0  1 
+1A4F120 	 0  0  0 18 
+h# 08000000 constant TD_CTRL_C_ERR1		\ Interrupt on one error
+1A4F124 	 0 74 64 5F 
+1A4F128 	63 74 72 6C 5F 63 5F 65 
+1A4F130 	72 72 31 8E 1C F1 A4  1 
+1A4F138 	68 40 A0  1  0  0  0  8 
+h# 10000000 constant TD_CTRL_C_ERR2		\ Interrupt on two errors
+1A4F140 	 0 74 64 5F 63 74 72 6C 
+1A4F148 	5F 63 5F 65 72 72 32 8E 
+1A4F150 	38 F1 A4  1 68 40 A0  1 
+1A4F158 	 0  0  0 10 
+h# 18000000 constant TD_CTRL_C_ERR3		\ Interrupt on three errors
+1A4F15C 	 0 74 64 5F 
+1A4F160 	63 74 72 6C 5F 63 5F 65 
+1A4F168 	72 72 33 8E 54 F1 A4  1 
+1A4F170 	68 40 A0  1  0  0  0 18 
+h# 04000000 constant TD_CTRL_LOW		\ Low speed device
+1A4F178 	74 64 5F 63 74 72 6C 5F 
+1A4F180 	6C 6F 77 8B 70 F1 A4  1 
+1A4F188 	68 40 A0  1  0  0  0  4 
+h# 00000000 constant TD_CTRL_FULL		\ Full speed device
+1A4F190 	 0  0  0 74 64 5F 63 74 
+1A4F198 	72 6C 5F 66 75 6C 6C 8C 
+1A4F1A0 	88 F1 A4  1 68 40 A0  1 
+1A4F1A8 	 0  0  0  0 
+h# 02000000 constant TD_CTRL_ISO		\ Isochonous select
+1A4F1AC 	74 64 5F 63 
+1A4F1B0 	74 72 6C 5F 69 73 6F 8B 
+1A4F1B8 	A4 F1 A4  1 68 40 A0  1 
+1A4F1C0 	 0  0  0  2 
+h# 01000000 constant TD_CTRL_IOC		\ Interrupt on complete
+1A4F1C4 	74 64 5F 63 
+1A4F1C8 	74 72 6C 5F 69 6F 63 8B 
+1A4F1D0 	BC F1 A4  1 68 40 A0  1 
+1A4F1D8 	 0  0  0  1 
+h# 00800000 constant TD_STAT_ACTIVE		\ TD active
+1A4F1DC 	 0 74 64 5F 
+1A4F1E0 	73 74 61 74 5F 61 63 74 
+1A4F1E8 	69 76 65 8E D4 F1 A4  1 
+1A4F1F0 	68 40 A0  1  0  0 80  0 
+h# 00400000 constant TD_STAT_STALLED		\ TD stalled
+1A4F1F8 	74 64 5F 73 74 61 74 5F 
+1A4F200 	73 74 61 6C 6C 65 64 8F 
+1A4F208 	F0 F1 A4  1 68 40 A0  1 
+1A4F210 	 0  0 40  0 
+h# 00200000 constant TD_STAT_DBUFERR		\ Data buffer error
+1A4F214 	74 64 5F 73 
+1A4F218 	74 61 74 5F 64 62 75 66 
+1A4F220 	65 72 72 8F  C F2 A4  1 
+1A4F228 	68 40 A0  1  0  0 20  0 
+h# 00100000 constant TD_STAT_BABBLE		\ Babble detected
+1A4F230 	 0 74 64 5F 73 74 61 74 
+1A4F238 	5F 62 61 62 62 6C 65 8E 
+1A4F240 	28 F2 A4  1 68 40 A0  1 
+1A4F248 	 0  0 10  0 
+h# 00080000 constant TD_STAT_NAK		\ NAK received
+1A4F24C 	74 64 5F 73 
+1A4F250 	74 61 74 5F 6E 61 6B 8B 
+1A4F258 	44 F2 A4  1 68 40 A0  1 
+1A4F260 	 0  0  8  0 
+h# 00040000 constant TD_STAT_CRCTIME		\ CRC or timeout error
+1A4F264 	74 64 5F 73 
+1A4F268 	74 61 74 5F 63 72 63 74 
+1A4F270 	69 6D 65 8F 5C F2 A4  1 
+1A4F278 	68 40 A0  1  0  0  4  0 
+h# 00020000 constant TD_STAT_BITSTUFF		\ Bit stuff error
+1A4F280 	 0  0  0 74 64 5F 73 74 
+1A4F288 	61 74 5F 62 69 74 73 74 
+1A4F290 	75 66 66 90 78 F2 A4  1 
+1A4F298 	68 40 A0  1  0  0  2  0 
+h# 00ff0000 constant TD_STAT_MASK		\ Status mask
+1A4F2A0 	 0  0  0 74 64 5F 73 74 
+1A4F2A8 	61 74 5F 6D 61 73 6B 8C 
+1A4F2B0 	98 F2 A4  1 68 40 A0  1 
+1A4F2B8 	 0  0 FF  0 
+
+TD_STAT_STALLED TD_STAT_DBUFERR or TD_STAT_BABBLE or TD_STAT_CRCTIME or
+TD_STAT_BITSTUFF or TD_STAT_NAK or constant TD_STAT_ANY_ERROR
+1A4F2BC 	 0  0 74 64 
+1A4F2C0 	5F 73 74 61 74 5F 61 6E 
+1A4F2C8 	79 5F 65 72 72 6F 72 91 
+1A4F2D0 	B4 F2 A4  1 68 40 A0  1 
+1A4F2D8 	 0  0 7E  0 
+
+h# 07ff constant TD_NULL_DATA_SIZE		\ Null data length
+1A4F2DC 	 0  0 74 64 
+1A4F2E0 	5F 6E 75 6C 6C 5F 64 61 
+1A4F2E8 	74 61 5F 73 69 7A 65 91 
+1A4F2F0 	D4 F2 A4  1 68 40 A0  1 
+1A4F2F8 	FF  7  0  0 
+h# 07ff constant TD_ACTUAL_MASK			\ TD actual length mask
+1A4F2FC 	 0 74 64 5F 
+1A4F300 	61 63 74 75 61 6C 5F 6D 
+1A4F308 	61 73 6B 8E F4 F2 A4  1 
+1A4F310 	68 40 A0  1 FF  7  0  0 
+
+\ >hctd-token constants
+h# 00ff constant TD_PID_MASK			\ PID mask
+1A4F318 	74 64 5F 70 69 64 5F 6D 
+1A4F320 	61 73 6B 8B 10 F3 A4  1 
+1A4F328 	68 40 A0  1 FF  0  0  0 
+h# 002d constant TD_PID_SETUP
+1A4F330 	 0  0  0 74 64 5F 70 69 
+1A4F338 	64 5F 73 65 74 75 70 8C 
+1A4F340 	28 F3 A4  1 68 40 A0  1 
+1A4F348 	2D  0  0  0 
+h# 0069 constant TD_PID_IN
+1A4F34C 	 0  0 74 64 
+1A4F350 	5F 70 69 64 5F 69 6E 89 
+1A4F358 	44 F3 A4  1 68 40 A0  1 
+1A4F360 	69  0  0  0 
+h# 00e1 constant TD_PID_OUT
+1A4F364 	 0 74 64 5F 
+1A4F368 	70 69 64 5F 6F 75 74 8A 
+1A4F370 	5C F3 A4  1 68 40 A0  1 
+1A4F378 	E1  0  0  0 
+
+h# 00080000 constant TD_TOKEN_DATA1		\ Data1
+1A4F37C 	 0 74 64 5F 
+1A4F380 	74 6F 6B 65 6E 5F 64 61 
+1A4F388 	74 61 31 8E 74 F3 A4  1 
+1A4F390 	68 40 A0  1  0  0  8  0 
+h# 00000000 constant TD_TOKEN_DATA0		\ Data0
+1A4F398 	 0 74 64 5F 74 6F 6B 65 
+1A4F3A0 	6E 5F 64 61 74 61 30 8E 
+1A4F3A8 	90 F3 A4  1 68 40 A0  1 
+1A4F3B0 	 0  0  0  0 
+h# 00080000 constant TD_TOKEN_MASK		\ Data toggle mask
+1A4F3B4 	 0  0 74 64 
+1A4F3B8 	5F 74 6F 6B 65 6E 5F 6D 
+1A4F3C0 	61 73 6B 8D AC F3 A4  1 
+1A4F3C8 	68 40 A0  1  0  0  8  0 
+
+: di-data>td-data  ( n -- n' )  if  TD_TOKEN_DATA1  else  TD_TOKEN_DATA0  then  ;
+1A4F3D0 	64 69 2D 64 61 74 61 3E 
+1A4F3D8 	74 64 2D 64 61 74 61 8F 
+1A4F3E0 	C8 F3 A4  1 20 40 A0  1 
+1A4F3E8 	DC 41 A0  1 10  0  0  0 
+1A4F3F0 	90 F3 A4  1 C8 41 A0  1 
+1A4F3F8 	 8  0  0  0 AC F3 A4  1 
+1A4F400 	58 46 A0  1 
+: td-data>di-data  ( n -- n' )  TD_TOKEN_MASK and  if  1  else  0  then  ;
+1A4F404 	74 64 2D 64 
+1A4F408 	61 74 61 3E 64 69 2D 64 
+1A4F410 	61 74 61 8F E4 F3 A4  1 
+1A4F418 	20 40 A0  1 C8 F3 A4  1 
+1A4F420 	5C 44 A0  1 DC 41 A0  1 
+1A4F428 	10  0  0  0 80 6F A0  1 
+1A4F430 	C8 41 A0  1  8  0  0  0 
+1A4F438 	70 6F A0  1 58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Permanent QHs for interrupt, low-speed and high-speed transactions.
+\
+\ These are place holders so we know where to insert new QHs depending on
+\ their characteristics easily.  
+\ Link: intr-qh -> low-qh -> full-qh -> last-qh 
+\
+\ XXX My initial design was to have last-qh pointing to full-qh to allow
+\ XXX reclaimation.  But I get all sort of HC errors.  Now, it's painfully
+\ XXX slow but it gets there eventually.
+\ ---------------------------------------------------------------------------
+
+4 constant #fixed-qhs
+1A4F440 	 0 23 66 69 78 65 64 2D 
+1A4F448 	71 68 73 8A 18 F4 A4  1 
+1A4F450 	68 40 A0  1  4  0  0  0 
+0 value fixed-qh
+1A4F458 	 0  0  0 66 69 78 65 64 
+1A4F460 	2D 71 68 88 50 F4 A4  1 
+1A4F468 	50 40 A0  1 44  E  0  0 
+0 value fixed-qh-phys
+1A4F470 	 0  0 66 69 78 65 64 2D 
+1A4F478 	71 68 2D 70 68 79 73 8D 
+1A4F480 	68 F4 A4  1 50 40 A0  1 
+1A4F488 	48  E  0  0 
+0 value fixed-qh-unaligned
+1A4F48C 	 0 66 69 78 
+1A4F490 	65 64 2D 71 68 2D 75 6E 
+1A4F498 	61 6C 69 67 6E 65 64 92 
+1A4F4A0 	84 F4 A4  1 50 40 A0  1 
+1A4F4A8 	4C  E  0  0 
+
+: intr-qh  ( -- qh )  fixed-qh  ;
+1A4F4AC 	69 6E 74 72 
+1A4F4B0 	2D 71 68 87 A4 F4 A4  1 
+1A4F4B8 	20 40 A0  1 68 F4 A4  1 
+1A4F4C0 	58 46 A0  1 
+: low-qh   ( -- qh )  intr-qh /qh +  ;
+1A4F4C4 	 0 6C 6F 77 
+1A4F4C8 	2D 71 68 86 B8 F4 A4  1 
+1A4F4D0 	20 40 A0  1 B8 F4 A4  1 
+1A4F4D8 	B8 EF A4  1  4 45 A0  1 
+1A4F4E0 	58 46 A0  1 
+: full-qh  ( -- qh )  low-qh  /qh +  ;
+1A4F4E4 	66 75 6C 6C 
+1A4F4E8 	2D 71 68 87 D0 F4 A4  1 
+1A4F4F0 	20 40 A0  1 D0 F4 A4  1 
+1A4F4F8 	B8 EF A4  1  4 45 A0  1 
+1A4F500 	58 46 A0  1 
+: last-qh  ( -- qh )  full-qh /qh +  ;
+1A4F504 	6C 61 73 74 
+1A4F508 	2D 71 68 87 F0 F4 A4  1 
+1A4F510 	20 40 A0  1 F0 F4 A4  1 
+1A4F518 	B8 EF A4  1  4 45 A0  1 
+1A4F520 	58 46 A0  1 
+
+: link-qhs  ( virt phys #qh -- )
+1A4F524 	 0  0  0 6C 
+1A4F528 	69 6E 6B 2D 71 68 73 88 
+1A4F530 	10 F5 A4  1 20 40 A0  1 
+   0  do					( virt phys )
+1A4F538 	70 6F A0  1 88 42 A0  1 
+1A4F540 	C0  0  0  0 
+      2dup swap >qh-phys l!			( virt phys )
+1A4F544 	C0 49 A0  1 
+1A4F548 	68 49 A0  1 14 EF A4  1 
+1A4F550 	7C 4D A0  1 
+      dup /qh + TYP_QH or 2 pick >hcqh-next le-l! ( virt phys )
+1A4F554 	40 49 A0  1 
+1A4F558 	B8 EF A4  1  4 45 A0  1 
+1A4F560 	F0 ED A4  1 70 44 A0  1 
+1A4F568 	90 6F A0  1  C 4A A0  1 
+1A4F570 	D0 EE A4  1 5C 35 A4  1 
+      over /qh + 2 pick >qh-next l!		( virt phys )
+1A4F578 	54 49 A0  1 B8 EF A4  1 
+1A4F580 	 4 45 A0  1 90 6F A0  1 
+1A4F588 	 C 4A A0  1 2C EF A4  1 
+1A4F590 	7C 4D A0  1 
+      i 0=  if  0  else  over /qh -  then	( virt phys prev ) 
+1A4F594 	B4 42 A0  1 
+1A4F598 	24 47 A0  1 DC 41 A0  1 
+1A4F5A0 	10  0  0  0 70 6F A0  1 
+1A4F5A8 	C8 41 A0  1 10  0  0  0 
+1A4F5B0 	54 49 A0  1 B8 EF A4  1 
+1A4F5B8 	18 45 A0  1 
+      2 pick >qh-prev l!			( virt phys )
+1A4F5BC 	90 6F A0  1 
+1A4F5C0 	 C 4A A0  1 44 EF A4  1 
+1A4F5C8 	7C 4D A0  1 
+      TERMINATE 2 pick >hcqh-elem le-l!		( virt phys )
+1A4F5CC 	C8 ED A4  1 
+1A4F5D0 	90 6F A0  1  C 4A A0  1 
+1A4F5D8 	E8 EE A4  1 5C 35 A4  1 
+      /qh + swap /qh + swap			( virt' phys' )
+1A4F5E0 	B8 EF A4  1  4 45 A0  1 
+1A4F5E8 	68 49 A0  1 B8 EF A4  1 
+1A4F5F0 	 4 45 A0  1 68 49 A0  1 
+   loop  2drop 					( virt phys )
+1A4F5F8 	F8 41 A0  1 48 FF FF FF 
+1A4F600 	AC 49 A0  1 
+;
+1A4F604 	58 46 A0  1 
+: fixup-fixed-qhs  ( -- )
+1A4F608 	66 69 78 75 70 2D 66 69 
+1A4F610 	78 65 64 2D 71 68 73 8F 
+1A4F618 	34 F5 A4  1 20 40 A0  1 
+   TERMINATE last-qh >hcqh-next le-l!
+1A4F620 	C8 ED A4  1 10 F5 A4  1 
+1A4F628 	D0 EE A4  1 5C 35 A4  1 
+   0 last-qh >qh-next l!
+1A4F630 	70 6F A0  1 10 F5 A4  1 
+1A4F638 	2C EF A4  1 7C 4D A0  1 
+;
+1A4F640 	58 46 A0  1 
+: alloc-qhs  ( #qh -- )
+1A4F644 	 0  0 61 6C 
+1A4F648 	6C 6F 63 2D 71 68 73 89 
+1A4F650 	1C F6 A4  1 20 40 A0  1 
+   /qh * dup >r aligned16-alloc-map-in		( qh.u,v,p )  ( R: size )
+1A4F658 	B8 EF A4  1 1C 5F A0  1 
+1A4F660 	40 49 A0  1 BC 45 A0  1 
+1A4F668 	C4 37 A4  1 
+   over r> erase				( qh.u,v,p )
+1A4F66C 	54 49 A0  1 
+1A4F670 	D0 45 A0  1 F0 72 A0  1 
+   to fixed-qh-phys to fixed-qh to fixed-qh-unaligned
+1A4F678 	B8 40 A0  1 84 F4 A4  1 
+1A4F680 	B8 40 A0  1 68 F4 A4  1 
+1A4F688 	B8 40 A0  1 A4 F4 A4  1 
+;
+1A4F690 	58 46 A0  1 
+: alloc-fixed-qhs  ( -- )
+1A4F694 	61 6C 6C 6F 
+1A4F698 	63 2D 66 69 78 65 64 2D 
+1A4F6A0 	71 68 73 8F 54 F6 A4  1 
+1A4F6A8 	20 40 A0  1 
+   #fixed-qhs alloc-qhs				( qh.u,v,p )
+1A4F6AC 	50 F4 A4  1 
+1A4F6B0 	54 F6 A4  1 
+   fixed-qh fixed-qh-phys #fixed-qhs link-qhs
+1A4F6B4 	68 F4 A4  1 
+1A4F6B8 	84 F4 A4  1 50 F4 A4  1 
+1A4F6C0 	34 F5 A4  1 
+   fixup-fixed-qhs
+1A4F6C4 	1C F6 A4  1 
+;
+1A4F6C8 	58 46 A0  1 
+
+: init-framelist  ( -- )
+1A4F6CC 	 0 69 6E 69 
+1A4F6D0 	74 2D 66 72 61 6D 65 6C 
+1A4F6D8 	69 73 74 8E A8 F6 A4  1 
+1A4F6E0 	20 40 A0  1 
+   \ Allocate framelist
+   /framelist /align4kb aligned-alloc		( unaligned virt )
+1A4F6E4 	38 EE A4  1 
+1A4F6E8 	 8 EE A4  1 18 37 A4  1 
+   swap to framelist-unaligned			( virt )
+1A4F6F0 	68 49 A0  1 B8 40 A0  1 
+1A4F6F8 	8C EE A4  1 
+   dup to framelist				( virt )
+1A4F6FC 	40 49 A0  1 
+1A4F700 	B8 40 A0  1 50 EE A4  1 
+   /framelist true dma-map-in to framelist-phys	( )
+1A4F708 	38 EE A4  1  4 70 A0  1 
+1A4F710 	B8 36 A4  1 B8 40 A0  1 
+1A4F718 	6C EE A4  1 
+
+   \ Initialize framelist
+   #framelist 0  do  fixed-qh-phys TYP_QH or i framelist!  loop
+1A4F71C 	20 EE A4  1 
+1A4F720 	70 6F A0  1 88 42 A0  1 
+1A4F728 	20  0  0  0 84 F4 A4  1 
+1A4F730 	F0 ED A4  1 70 44 A0  1 
+1A4F738 	B4 42 A0  1 A4 EE A4  1 
+1A4F740 	F8 41 A0  1 E8 FF FF FF 
+;
+1A4F748 	58 46 A0  1 
+cr .( : init-lists ) order
+: init-lists  ( -- )
+1A4F74C 	 0 69 6E 69 
+1A4F750 	74 2D 6C 69 73 74 73 8A 
+1A4F758 	E0 F6 A4  1 20 40 A0  1 
+   framelist 0=  if
+1A4F760 	50 EE A4  1 24 47 A0  1 
+1A4F768 	DC 41 A0  1  C  0  0  0 
+      alloc-fixed-qhs
+1A4F770 	A8 F6 A4  1 
+      init-framelist
+1A4F774 	E0 F6 A4  1 
+   then
+;
+1A4F778 	58 46 A0  1 
+cr .( ; init-lists )
+
+\ ---------------------------------------------------------------------------
+\ Dynamically allocate QH and TDs all transactions.
+\ ---------------------------------------------------------------------------
+
+: link-tds  ( td.v td.p #td -- )
+1A4F77C 	 0  0  0 6C 
+1A4F780 	69 6E 6B 2D 74 64 73 88 
+1A4F788 	5C F7 A4  1 20 40 A0  1 
+   0  do
+1A4F790 	70 6F A0  1 88 42 A0  1 
+1A4F798 	58  0  0  0 
+      over >r					( td.v,p )  ( R: td )
+1A4F79C 	54 49 A0  1 
+1A4F7A0 	BC 45 A0  1 
+      dup r@ >td-phys l!			( td.v,p )  ( R: td )
+1A4F7A4 	40 49 A0  1 
+1A4F7A8 	E4 45 A0  1 44 F0 A4  1 
+1A4F7B0 	7C 4D A0  1 
+      /td +					( td.v,p' )  ( R: td )
+1A4F7B4 	B4 F0 A4  1 
+1A4F7B8 	 4 45 A0  1 
+      dup r@ >hctd-next le-l!			( td.v,p )  ( R: td )
+1A4F7BC 	40 49 A0  1 
+1A4F7C0 	E4 45 A0  1 D0 EF A4  1 
+1A4F7C8 	5C 35 A4  1 
+      swap /td + tuck r> >td-next l!		( td.v',p )
+1A4F7CC 	68 49 A0  1 
+1A4F7D0 	B4 F0 A4  1  4 45 A0  1 
+1A4F7D8 	E8 46 A0  1 D0 45 A0  1 
+1A4F7E0 	5C F0 A4  1 7C 4D A0  1 
+   loop
+1A4F7E8 	F8 41 A0  1 B0 FF FF FF 
+   drop /td -					( td.v' )
+1A4F7F0 	30 49 A0  1 B4 F0 A4  1 
+1A4F7F8 	18 45 A0  1 
+   TERMINATE over >hctd-next le-l!		( td.v' )
+1A4F7FC 	C8 ED A4  1 
+1A4F800 	54 49 A0  1 D0 EF A4  1 
+1A4F808 	5C 35 A4  1 
+   0 swap >td-next l!				( )
+1A4F80C 	70 6F A0  1 
+1A4F810 	68 49 A0  1 5C F0 A4  1 
+1A4F818 	7C 4D A0  1 
+;
+1A4F81C 	58 46 A0  1 
+: link-qhtds  ( td.v td.p qh -- )
+1A4F820 	 0 6C 69 6E 6B 2D 71 68 
+1A4F828 	74 64 73 8A 8C F7 A4  1 
+1A4F830 	20 40 A0  1 
+   >r						( td.v,p )  ( R: qh )
+1A4F834 	BC 45 A0  1 
+   dup TYP_TD or r@ >hcqh-elem le-l!		( td.v,p )  ( R: qh )
+1A4F838 	40 49 A0  1 DC ED A4  1 
+1A4F840 	70 44 A0  1 E4 45 A0  1 
+1A4F848 	E8 EE A4  1 5C 35 A4  1 
+   over r@ >qh-elem l!				( td.v,p )  ( R: qh )
+1A4F850 	54 49 A0  1 E4 45 A0  1 
+1A4F858 	A8 EF A4  1 7C 4D A0  1 
+   r> >qh-#tds l@ link-tds			( )
+1A4F860 	D0 45 A0  1 90 EF A4  1 
+1A4F868 	6C 4C A0  1 8C F7 A4  1 
+;
+1A4F870 	58 46 A0  1 
+: init-qh  ( qh.u,v,p size #tds -- )
+1A4F874 	69 6E 69 74 
+1A4F878 	2D 71 68 87 30 F8 A4  1 
+1A4F880 	20 40 A0  1 
+   3 pick >qh-#tds l!				( qh.u,v,p size )
+1A4F884 	A0 6F A0  1 
+1A4F888 	 C 4A A0  1 90 EF A4  1 
+1A4F890 	7C 4D A0  1 
+   2 pick >qh-size l!				( qh.u,v,p )
+1A4F894 	90 6F A0  1 
+1A4F898 	 C 4A A0  1 78 EF A4  1 
+1A4F8A0 	7C 4D A0  1 
+   over >qh-phys l!				( qh.u,v )
+1A4F8A4 	54 49 A0  1 
+1A4F8A8 	14 EF A4  1 7C 4D A0  1 
+   >qh-unaligned l!				( )
+1A4F8B0 	60 EF A4  1 7C 4D A0  1 
+;
+1A4F8B8 	58 46 A0  1 
+
+: alloc-qhtds  ( #td -- qh td )
+1A4F8BC 	61 6C 6C 6F 
+1A4F8C0 	63 2D 71 68 74 64 73 8B 
+1A4F8C8 	80 F8 A4  1 20 40 A0  1 
+   dup >r /td * /qh + dup >r			( size )  ( R: #td size )
+1A4F8D0 	40 49 A0  1 BC 45 A0  1 
+1A4F8D8 	B4 F0 A4  1 1C 5F A0  1 
+1A4F8E0 	B8 EF A4  1  4 45 A0  1 
+1A4F8E8 	40 49 A0  1 BC 45 A0  1 
+   aligned16-alloc-map-in			( qh.u,v,p )  ( R: #td size )
+1A4F8F0 	C4 37 A4  1 
+   over r@ erase				( qh.u,v,p )  ( R: #td )
+1A4F8F4 	54 49 A0  1 
+1A4F8F8 	E4 45 A0  1 F0 72 A0  1 
+   3dup r> r> init-qh				( qh.u,v,p )
+1A4F900 	78 3E A4  1 D0 45 A0  1 
+1A4F908 	D0 45 A0  1 80 F8 A4  1 
+   rot drop					( qh.v,p )
+1A4F910 	7C 49 A0  1 30 49 A0  1 
+   over /qh + dup -rot				( qh td qh.p td )
+1A4F918 	54 49 A0  1 B8 EF A4  1 
+1A4F920 	 4 45 A0  1 40 49 A0  1 
+1A4F928 	94 49 A0  1 
+   swap /qh +					( qh td td.v,p )
+1A4F92C 	68 49 A0  1 
+1A4F930 	B8 EF A4  1  4 45 A0  1 
+   3 pick link-qhtds				( qh td )
+1A4F938 	A0 6F A0  1  C 4A A0  1 
+1A4F940 	30 F8 A4  1 
+;
+1A4F944 	58 46 A0  1 
+
+: free-qhtds  ( qh -- )
+1A4F948 	 0 66 72 65 65 2D 71 68 
+1A4F950 	74 64 73 8A CC F8 A4  1 
+1A4F958 	20 40 A0  1 
+   dup >qh-unaligned l@ over >qh-phys l@ 2 pick >qh-size l@
+1A4F95C 	40 49 A0  1 
+1A4F960 	60 EF A4  1 6C 4C A0  1 
+1A4F968 	54 49 A0  1 14 EF A4  1 
+1A4F970 	6C 4C A0  1 90 6F A0  1 
+1A4F978 	 C 4A A0  1 78 EF A4  1 
+1A4F980 	6C 4C A0  1 
+   aligned16-free-map-out
+1A4F984 	 4 38 A4  1 
+;
+1A4F988 	58 46 A0  1 
+
+: push-qhtds  ( qh -- )
+1A4F98C 	 0 70 75 73 
+1A4F990 	68 2D 71 68 74 64 73 8A 
+1A4F998 	58 F9 A4  1 20 40 A0  1 
+   dup >qh-phys l@ over >qh-size l@  dma-push
+1A4F9A0 	40 49 A0  1 14 EF A4  1 
+1A4F9A8 	6C 4C A0  1 54 49 A0  1 
+1A4F9B0 	78 EF A4  1 6C 4C A0  1 
+1A4F9B8 	 8 36 A4  1 
+;
+1A4F9BC 	58 46 A0  1 
+
+: pull-qhtds  ( qh -- )
+1A4F9C0 	 0 70 75 6C 6C 2D 71 68 
+1A4F9C8 	74 64 73 8A 9C F9 A4  1 
+1A4F9D0 	20 40 A0  1 
+   dup >qh-phys l@ over >qh-size l@  dma-pull
+1A4F9D4 	40 49 A0  1 
+1A4F9D8 	14 EF A4  1 6C 4C A0  1 
+1A4F9E0 	54 49 A0  1 78 EF A4  1 
+1A4F9E8 	6C 4C A0  1 34 36 A4  1 
+;
+1A4F9F0 	58 46 A0  1 
+
+: map-out-buf  ( td -- )
+1A4F9F4 	6D 61 70 2D 
+1A4F9F8 	6F 75 74 2D 62 75 66 8B 
+1A4FA00 	D0 F9 A4  1 20 40 A0  1 
+   dup >td-buf l@ over >td-pbuf l@ rot >td-/buf-all l@ hcd-map-out
+1A4FA08 	40 49 A0  1 70 F0 A4  1 
+1A4FA10 	6C 4C A0  1 54 49 A0  1 
+1A4FA18 	88 F0 A4  1 6C 4C A0  1 
+1A4FA20 	7C 49 A0  1 A4 F0 A4  1 
+1A4FA28 	6C 4C A0  1 98 3D A4  1 
+;
+1A4FA30 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Transaction scheduling
+\ ---------------------------------------------------------------------------
+
+: insert-qh  ( qh head -- )
+1A4FA34 	 0  0 69 6E 
+1A4FA38 	73 65 72 74 2D 71 68 89 
+1A4FA40 	 4 FA A4  1 20 40 A0  1 
+   >r						( qh )  ( R: head )
+1A4FA48 	BC 45 A0  1 
+   \ Fixup the QH link pointers
+   r@ >hcqh-next le-l@ over >hcqh-next le-l!	( qh )  ( R: head )
+1A4FA4C 	E4 45 A0  1 
+1A4FA50 	D0 EE A4  1 C4 34 A4  1 
+1A4FA58 	54 49 A0  1 D0 EE A4  1 
+1A4FA60 	5C 35 A4  1 
+   dup >qh-phys l@ TYP_QH or r@ >hcqh-next le-l! ( qh )  ( R: head )
+1A4FA64 	40 49 A0  1 
+1A4FA68 	14 EF A4  1 6C 4C A0  1 
+1A4FA70 	F0 ED A4  1 70 44 A0  1 
+1A4FA78 	E4 45 A0  1 D0 EE A4  1 
+1A4FA80 	5C 35 A4  1 
+
+   \ Fixup the next QH's pointers
+   dup r@ >qh-next l@ >qh-prev l!		( qh )  ( R: head )
+1A4FA84 	40 49 A0  1 
+1A4FA88 	E4 45 A0  1 2C EF A4  1 
+1A4FA90 	6C 4C A0  1 44 EF A4  1 
+1A4FA98 	7C 4D A0  1 
+
+   \ Fixup QH's pointers
+   r@ >qh-next l@ over >qh-next l!		( qh )  ( R: head )
+1A4FA9C 	E4 45 A0  1 
+1A4FAA0 	2C EF A4  1 6C 4C A0  1 
+1A4FAA8 	54 49 A0  1 2C EF A4  1 
+1A4FAB0 	7C 4D A0  1 
+   r@ over >qh-prev l!				( qh )  ( R: head )
+1A4FAB4 	E4 45 A0  1 
+1A4FAB8 	54 49 A0  1 44 EF A4  1 
+1A4FAC0 	7C 4D A0  1 
+
+   \ Fixup head's pointers
+   r> >qh-next l!				( )
+1A4FAC4 	D0 45 A0  1 
+1A4FAC8 	2C EF A4  1 7C 4D A0  1 
+;
+1A4FAD0 	58 46 A0  1 
+
+\ Due to the fact that we have fixed QHs, an allocated QH will always be
+\ in between two other QHs.
+: remove-qh  ( qh -- )
+1A4FAD4 	 0  0 72 65 
+1A4FAD8 	6D 6F 76 65 2D 71 68 89 
+1A4FAE0 	44 FA A4  1 20 40 A0  1 
+   dup >qh-next l@ over >qh-prev l@ >qh-next l!
+1A4FAE8 	40 49 A0  1 2C EF A4  1 
+1A4FAF0 	6C 4C A0  1 54 49 A0  1 
+1A4FAF8 	44 EF A4  1 6C 4C A0  1 
+1A4FB00 	2C EF A4  1 7C 4D A0  1 
+   dup >qh-prev l@ over >qh-next l@ >qh-prev l!
+1A4FB08 	40 49 A0  1 44 EF A4  1 
+1A4FB10 	6C 4C A0  1 54 49 A0  1 
+1A4FB18 	2C EF A4  1 6C 4C A0  1 
+1A4FB20 	44 EF A4  1 7C 4D A0  1 
+   dup >hcqh-next le-l@ swap >qh-prev l@ >hcqh-next le-l!
+1A4FB28 	40 49 A0  1 D0 EE A4  1 
+1A4FB30 	C4 34 A4  1 68 49 A0  1 
+1A4FB38 	44 EF A4  1 6C 4C A0  1 
+1A4FB40 	D0 EE A4  1 5C 35 A4  1 
+;
+1A4FB48 	58 46 A0  1 
+
+: insert-ctrl-qh  ( qh speed -- )
+1A4FB4C 	 0 69 6E 73 
+1A4FB50 	65 72 74 2D 63 74 72 6C 
+1A4FB58 	2D 71 68 8E E4 FA A4  1 
+1A4FB60 	20 40 A0  1 
+   TD_CTRL_LOW =  if  low-qh  else  full-qh  then
+1A4FB64 	88 F1 A4  1 
+1A4FB68 	24 48 A0  1 DC 41 A0  1 
+1A4FB70 	10  0  0  0 D0 F4 A4  1 
+1A4FB78 	C8 41 A0  1  8  0  0  0 
+1A4FB80 	F0 F4 A4  1 
+   insert-qh
+1A4FB84 	44 FA A4  1 
+;
+1A4FB88 	58 46 A0  1 
+
+: insert-bulk-qh  ( qh speed -- )  insert-ctrl-qh  ;
+1A4FB8C 	 0 69 6E 73 
+1A4FB90 	65 72 74 2D 62 75 6C 6B 
+1A4FB98 	2D 71 68 8E 60 FB A4  1 
+1A4FBA0 	20 40 A0  1 60 FB A4  1 
+1A4FBA8 	58 46 A0  1 
+
+: insert-intr-qh  ( qh interval -- )  drop intr-qh insert-qh  ;
+1A4FBAC 	 0 69 6E 73 
+1A4FBB0 	65 72 74 2D 69 6E 74 72 
+1A4FBB8 	2D 71 68 8E A0 FB A4  1 
+1A4FBC0 	20 40 A0  1 30 49 A0  1 
+1A4FBC8 	B8 F4 A4  1 44 FA A4  1 
+1A4FBD0 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Wait for a QH to be done and proocess any errors.
+\ ---------------------------------------------------------------------------
+
+defer process-hc-status
+1A4FBD4 	 0  0 70 72 
+1A4FBD8 	6F 63 65 73 73 2D 68 63 
+1A4FBE0 	2D 73 74 61 74 75 73 91 
+1A4FBE8 	C0 FB A4  1 5C 40 A0  1 
+1A4FBF0 	50  E  0  0 
+0 value timeout
+1A4FBF4 	74 69 6D 65 
+1A4FBF8 	6F 75 74 87 EC FB A4  1 
+1A4FC00 	50 40 A0  1 54  E  0  0 
+
+: .td-error  ( stat -- )
+1A4FC08 	 0  0 2E 74 64 2D 65 72 
+1A4FC10 	72 6F 72 89  0 FC A4  1 
+1A4FC18 	20 40 A0  1 
+   dup TD_STAT_STALLED  and  if  " Stalled; "            USB_ERR_STALL set-usb-error        then
+1A4FC1C 	40 49 A0  1 
+1A4FC20 	 C F2 A4  1 5C 44 A0  1 
+1A4FC28 	DC 41 A0  1 1C  0  0  0 
+1A4FC30 	9C 53 A0  1  9 53 74 61 
+1A4FC38 	6C 6C 65 64 3B 20  0  0 
+1A4FC40 	A4 2B A4  1 20 40 A4  1 
+   dup TD_STAT_DBUFERR  and  if  " Data Buffer Error; "  USB_ERR_DBUFERR set-usb-error      then
+1A4FC48 	40 49 A0  1 28 F2 A4  1 
+1A4FC50 	5C 44 A0  1 DC 41 A0  1 
+1A4FC58 	28  0  0  0 9C 53 A0  1 
+1A4FC60 	13 44 61 74 61 20 42 75 
+1A4FC68 	66 66 65 72 20 45 72 72 
+1A4FC70 	6F 72 3B 20  0  0  0  0 
+1A4FC78 	FC 2C A4  1 20 40 A4  1 
+   dup TD_STAT_BABBLE   and  if  " Babble Detected; "    USB_ERR_BABBLE set-usb-error       then
+1A4FC80 	40 49 A0  1 44 F2 A4  1 
+1A4FC88 	5C 44 A0  1 DC 41 A0  1 
+1A4FC90 	24  0  0  0 9C 53 A0  1 
+1A4FC98 	11 42 61 62 62 6C 65 20 
+1A4FCA0 	44 65 74 65 63 74 65 64 
+1A4FCA8 	3B 20  0  0 18 2D A4  1 
+1A4FCB0 	20 40 A4  1 
+   dup TD_STAT_CRCTIME  and  if  " CRC/Timeout Error; "  USB_ERR_CRC set-usb-error          then
+1A4FCB4 	40 49 A0  1 
+1A4FCB8 	78 F2 A4  1 5C 44 A0  1 
+1A4FCC0 	DC 41 A0  1 28  0  0  0 
+1A4FCC8 	9C 53 A0  1 13 43 52 43 
+1A4FCD0 	2F 54 69 6D 65 6F 75 74 
+1A4FCD8 	20 45 72 72 6F 72 3B 20 
+1A4FCE0 	 0  0  0  0 40 2B A4  1 
+1A4FCE8 	20 40 A4  1 
+   dup TD_STAT_BITSTUFF and  if  " Bitstuff Error; "     USB_ERR_BITSTUFFING set-usb-error  then
+1A4FCEC 	40 49 A0  1 
+1A4FCF0 	98 F2 A4  1 5C 44 A0  1 
+1A4FCF8 	DC 41 A0  1 24  0  0  0 
+1A4FD00 	9C 53 A0  1 10 42 69 74 
+1A4FD08 	73 74 75 66 66 20 45 72 
+1A4FD10 	72 6F 72 3B 20  0  0  0 
+1A4FD18 	60 2B A4  1 20 40 A4  1 
+       TD_STAT_NAK      and  if  " NAK"                  USB_ERR_NAK set-usb-error          then
+1A4FD20 	5C F2 A4  1 5C 44 A0  1 
+1A4FD28 	DC 41 A0  1 18  0  0  0 
+1A4FD30 	9C 53 A0  1  3 4E 41 4B 
+1A4FD38 	 0  0  0  0 30 2D A4  1 
+1A4FD40 	20 40 A4  1 
+;
+1A4FD44 	58 46 A0  1 
+
+: qh-done?  ( qh -- done? )  >hcqh-elem le-l@  TERMINATE and  ;
+1A4FD48 	 0  0  0 71 68 2D 64 6F 
+1A4FD50 	6E 65 3F 88 18 FC A4  1 
+1A4FD58 	20 40 A0  1 E8 EE A4  1 
+1A4FD60 	C4 34 A4  1 C8 ED A4  1 
+1A4FD68 	5C 44 A0  1 58 46 A0  1 
+
+: done?  ( qh -- error? )
+1A4FD70 	 0  0 64 6F 6E 65 3F 85 
+1A4FD78 	58 FD A4  1 20 40 A0  1 
+   begin
+      process-hc-status  usb-error  if
+1A4FD80 	EC FB A4  1 DC 3F A4  1 
+1A4FD88 	DC 41 A0  1 10  0  0  0 
+         true
+1A4FD90 	 4 70 A0  1 
+      else
+1A4FD94 	C8 41 A0  1 
+1A4FD98 	44  0  0  0 
+         dup pull-qhtds
+1A4FD9C 	40 49 A0  1 
+1A4FDA0 	D0 F9 A4  1 
+         dup qh-done? ?dup 0=   if
+1A4FDA4 	40 49 A0  1 
+1A4FDA8 	58 FD A4  1 B4 70 A0  1 
+1A4FDB0 	24 47 A0  1 DC 41 A0  1 
+1A4FDB8 	24  0  0  0 
+            1 ms
+1A4FDBC 	80 6F A0  1 
+1A4FDC0 	60 E0 A1  1 
+	    timeout 1- dup to timeout 0=
+1A4FDC4 	 0 FC A4  1 
+1A4FDC8 	54 4B A0  1 40 49 A0  1 
+1A4FDD0 	B8 40 A0  1  0 FC A4  1 
+1A4FDD8 	24 47 A0  1 
+         then
+      then
+   until
+1A4FDDC 	DC 41 A0  1 
+1A4FDE0 	A0 FF FF FF 
+
+   ( qh ) dup qh-done? 0=  if
+1A4FDE4 	40 49 A0  1 
+1A4FDE8 	58 FD A4  1 24 47 A0  1 
+1A4FDF0 	DC 41 A0  1 40  0  0  0 
+      " Timeout" USB_ERR_TIMEOUT set-usb-error
+1A4FDF8 	9C 53 A0  1  7 54 69 6D 
+1A4FE00 	65 6F 75 74  0  0  0  0 
+1A4FE08 	C4 2D A4  1 20 40 A4  1 
+      TERMINATE over >hcqh-elem le-l!		\ Terminate QH
+1A4FE10 	C8 ED A4  1 54 49 A0  1 
+1A4FE18 	E8 EE A4  1 5C 35 A4  1 
+      push-qhtds
+1A4FE20 	9C F9 A4  1 
+      1 ms
+1A4FE24 	80 6F A0  1 
+1A4FE28 	60 E0 A1  1 
+   else
+1A4FE2C 	C8 41 A0  1 
+1A4FE30 	 8  0  0  0 
+      drop
+1A4FE34 	30 49 A0  1 
+   then
+   usb-error
+1A4FE38 	DC 3F A4  1 
+;
+1A4FE3C 	58 46 A0  1 
+
+: error?  ( td -- error? )
+1A4FE40 	 0 65 72 72 6F 72 3F 86 
+1A4FE48 	7C FD A4  1 20 40 A0  1 
+   false swap  begin				( error? td )
+1A4FE50 	18 70 A0  1 68 49 A0  1 
+      dup >hctd-stat le-l@ TD_STAT_ANY_ERROR and ?dup  if
+1A4FE58 	40 49 A0  1 E8 EF A4  1 
+1A4FE60 	C4 34 A4  1 D4 F2 A4  1 
+1A4FE68 	5C 44 A0  1 B4 70 A0  1 
+1A4FE70 	DC 41 A0  1 1C  0  0  0 
+         .td-error
+1A4FE78 	18 FC A4  1 
+         2drop true 0				( error? stop )
+1A4FE7C 	AC 49 A0  1 
+1A4FE80 	 4 70 A0  1 70 6F A0  1 
+      else					( error? td )
+1A4FE88 	C8 41 A0  1  C  0  0  0 
+         >td-next l@				( error? td' )
+1A4FE90 	5C F0 A4  1 6C 4C A0  1 
+      then
+   ?dup 0=  until
+1A4FE98 	B4 70 A0  1 24 47 A0  1 
+1A4FEA0 	DC 41 A0  1 B4 FF FF FF 
+;
+1A4FEA8 	58 46 A0  1 
+
+: get-actual  ( td #td -- actual )
+1A4FEAC 	 0 67 65 74 
+1A4FEB0 	2D 61 63 74 75 61 6C 8A 
+1A4FEB8 	4C FE A4  1 20 40 A0  1 
+   0 -rot 0  ?do				( actual td )
+1A4FEC0 	70 6F A0  1 94 49 A0  1 
+1A4FEC8 	70 6F A0  1 50 42 A0  1 
+1A4FED0 	80  0  0  0 
+      dup >hctd-stat le-l@ dup TD_STAT_ACTIVE and 0=  if
+1A4FED4 	40 49 A0  1 
+1A4FED8 	E8 EF A4  1 C4 34 A4  1 
+1A4FEE0 	40 49 A0  1 F0 F1 A4  1 
+1A4FEE8 	5C 44 A0  1 24 47 A0  1 
+1A4FEF0 	DC 41 A0  1 48  0  0  0 
+         TD_ACTUAL_MASK and                     ( actual td size-code )
+1A4FEF8 	10 F3 A4  1 5C 44 A0  1 
+         dup TD_NULL_DATA_SIZE =  if  drop 0  else  1+  then  ( actual td this-size )
+1A4FF00 	40 49 A0  1 F4 F2 A4  1 
+1A4FF08 	24 48 A0  1 DC 41 A0  1 
+1A4FF10 	14  0  0  0 30 49 A0  1 
+1A4FF18 	70 6F A0  1 C8 41 A0  1 
+1A4FF20 	 8  0  0  0 30 4B A0  1 
+         rot + swap				( actual' td )
+1A4FF28 	7C 49 A0  1  4 45 A0  1 
+1A4FF30 	68 49 A0  1 
+      else  drop  then
+1A4FF34 	C8 41 A0  1 
+1A4FF38 	 8  0  0  0 30 49 A0  1 
+      >td-next l@				( actual td' )
+1A4FF40 	5C F0 A4  1 6C 4C A0  1 
+   loop  drop					( actual )
+1A4FF48 	F8 41 A0  1 88 FF FF FF 
+1A4FF50 	30 49 A0  1 
+;
+1A4FF54 	58 46 A0  1 
+
+headers

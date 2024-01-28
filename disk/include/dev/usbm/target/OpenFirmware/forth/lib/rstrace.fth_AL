@@ -1,0 +1,385 @@
+
+\ Forth stack backtrace
+\ Implements:
+\ (rstrace  ( low-adr high-adr -- )
+\    Shows the calling sequence that is stored in memory between the
+\    two addresses.  This is assumed to be a saved return stack image.
+\ \ rstrace  ( -- )
+\ \    Shows the calling sequence that is stored on the return stack,
+\ \    without destroying the return stack.
+
+decimal
+only forth also hidden also definitions
+headerless
+: @+  ( adr -- adr' n )  dup na1+ swap @  ; 
+1A1C0A8 	 0 40 2B 82 2C 7A A1  1 
+1A1C0B0 	20 40 A0  1 40 49 A0  1 
+1A1C0B8 	CC 50 A0  1 68 49 A0  1 
+1A1C0C0 	5C 4C A0  1 58 46 A0  1 
+: .last-executed  ( ip -- )
+1A1C0C8 	 0 2E 6C 61 73 74 2D 65 
+1A1C0D0 	78 65 63 75 74 65 64 8E 
+1A1C0D8 	B0 C0 A1  1 20 40 A0  1 
+   ip>token token@  ( acf )
+1A1C0E0 	CC 46 A0  1  C 54 A0  1 
+   dup reasonable-ip?  if   .name   else   drop ." ??"   then
+1A1C0E8 	40 49 A0  1 E8 79 A1  1 
+1A1C0F0 	DC 41 A0  1 10  0  0  0 
+1A1C0F8 	C8 9A A0  1 C8 41 A0  1 
+1A1C100 	10  0  0  0 30 49 A0  1 
+1A1C108 	20 7C A0  1  2 3F 3F  0 
+;
+1A1C110 	58 46 A0  1 
+: in-catch?  ( ip -- flag )  find-cfa  ['] catch =  ;
+1A1C114 	 0  0 69 6E 
+1A1C118 	2D 63 61 74 63 68 3F 89 
+1A1C120 	DC C0 A1  1 20 40 A0  1 
+1A1C128 	24 20 A1  1 60 53 A0  1 
+1A1C130 	14 7F A0  1 24 48 A0  1 
+1A1C138 	58 46 A0  1 
+: .catch  ( rs-adr -- rs-adr' )
+1A1C13C 	 0 2E 63 61 
+1A1C140 	74 63 68 86 24 C1 A1  1 
+1A1C148 	20 40 A0  1 
+   ."    Catch frame - SP: " @+ .  ."   my-self: "  @+ .  ."   handler: "  @+ .
+1A1C14C 	20 7C A0  1 
+1A1C150 	15 20 20 20 43 61 74 63 
+1A1C158 	68 20 66 72 61 6D 65 20 
+1A1C160 	2D 20 53 50 3A 20  0  0 
+1A1C168 	B0 C0 A1  1 94 7A A0  1 
+1A1C170 	20 7C A0  1  B 20 20 6D 
+1A1C178 	79 2D 73 65 6C 66 3A 20 
+1A1C180 	 0  0  0  0 B0 C0 A1  1 
+1A1C188 	94 7A A0  1 20 7C A0  1 
+1A1C190 	 B 20 20 68 61 6E 64 6C 
+1A1C198 	65 72 3A 20  0  0  0  0 
+1A1C1A0 	B0 C0 A1  1 94 7A A0  1 
+;
+1A1C1A8 	58 46 A0  1 
+1 bits/cell 1- lshift constant minus0
+1A1C1AC 	 0 6D 69 6E 
+1A1C1B0 	75 73 30 86 48 C1 A1  1 
+1A1C1B8 	68 40 A0  1  0  0  0 80 
+: loop-end?  ( adr -- flag )
+1A1C1C0 	 0  0 6C 6F 6F 70 2D 65 
+1A1C1C8 	6E 64 3F 89 B8 C1 A1  1 
+1A1C1D0 	20 40 A0  1 
+   dup reasonable-ip?  0=  if    ( adr )
+1A1C1D4 	40 49 A0  1 
+1A1C1D8 	E8 79 A1  1 24 47 A0  1 
+1A1C1E0 	DC 41 A0  1 10  0  0  0 
+      drop false exit            ( -- false )
+1A1C1E8 	30 49 A0  1 18 70 A0  1 
+1A1C1F0 	40 46 A0  1 
+   then                          ( adr )
+   dup @ +                       ( adr' )
+1A1C1F4 	40 49 A0  1 
+1A1C1F8 	5C 4C A0  1  4 45 A0  1 
+   dup reasonable-ip?  0=  if    ( adr )
+1A1C200 	40 49 A0  1 E8 79 A1  1 
+1A1C208 	24 47 A0  1 DC 41 A0  1 
+1A1C210 	10  0  0  0 
+      drop false exit            ( -- false )
+1A1C214 	30 49 A0  1 
+1A1C218 	18 70 A0  1 40 46 A0  1 
+   then                          ( adr )
+   ip>token  -1 na+  token@      ( xt )
+1A1C220 	CC 46 A0  1 58 41 A0  1 
+1A1C228 	FF FF FF FF 48 50 A0  1 
+1A1C230 	 C 54 A0  1 
+   dup ['] (loop) =  swap ['] (+loop) =  or  ( flag )
+1A1C234 	40 49 A0  1 
+1A1C238 	60 53 A0  1 F8 41 A0  1 
+1A1C240 	24 48 A0  1 68 49 A0  1 
+1A1C248 	60 53 A0  1 1C 42 A0  1 
+1A1C250 	24 48 A0  1 70 44 A0  1 
+;
+1A1C258 	58 46 A0  1 
+
+: .do-or-n  ( rs-adr n -- rs-adr' )
+1A1C25C 	 0  0  0 2E 
+1A1C260 	64 6F 2D 6F 72 2D 6E 88 
+1A1C268 	D0 C1 A1  1 20 40 A0  1 
+   over @ reasonable-ip?  0=  if              ( rs-adr n )
+1A1C270 	54 49 A0  1 5C 4C A0  1 
+1A1C278 	E8 79 A1  1 24 47 A0  1 
+1A1C280 	DC 41 A0  1 8C  0  0  0 
+      \ The second number is not an IP so it could be a do loop frame
+      over na1+ @                             ( rs-adr n n2 )
+1A1C288 	54 49 A0  1 CC 50 A0  1 
+1A1C290 	5C 4C A0  1 
+      dup loop-end?  if                       ( rs-adr n n2 )
+1A1C294 	40 49 A0  1 
+1A1C298 	D0 C1 A1  1 DC 41 A0  1 
+1A1C2A0 	6C  0  0  0 
+         ."    Do loop frame inside "
+1A1C2A4 	20 7C A0  1 
+1A1C2A8 	18 20 20 20 44 6F 20 6C 
+1A1C2B0 	6F 6F 70 20 66 72 61 6D 
+1A1C2B8 	65 20 69 6E 73 69 64 65 
+1A1C2C0 	20  0  0  0 
+\ mmo         ip>token .current-word               ( rs-adr n )
+         over @                               ( rs-adr n n1 )
+1A1C2C4 	54 49 A0  1 
+1A1C2C8 	5C 4C A0  1 
+         ."   i: "  tuck + .                  ( rs-adr n1 )
+1A1C2CC 	20 7C A0  1 
+1A1C2D0 	 5 20 20 69 3A 20  0  0 
+1A1C2D8 	E8 46 A0  1  4 45 A0  1 
+1A1C2E0 	94 7A A0  1 
+         ."   limit: "  minus0  + .           ( rs-adr )
+1A1C2E4 	20 7C A0  1 
+1A1C2E8 	 9 20 20 6C 69 6D 69 74 
+1A1C2F0 	3A 20  0  0 B8 C1 A1  1 
+1A1C2F8 	 4 45 A0  1 94 7A A0  1 
+         2 na+ exit                           ( -- rs-adr' )
+1A1C300 	90 6F A0  1 48 50 A0  1 
+1A1C308 	40 46 A0  1 
+      then                                    ( rs-adr n n2 )
+      drop                                    ( rs-adr n )
+1A1C30C 	30 49 A0  1 
+   then                                       ( rs-adr n )
+   9 u.r
+1A1C310 	58 41 A0  1  9  0  0  0 
+1A1C318 	E4 77 A0  1 
+;
+1A1C31C 	58 46 A0  1 
+
+: .traceline  ( ipaddr -- )
+1A1C320 	 0 2E 74 72 61 63 65 6C 
+1A1C328 	69 6E 65 8A 6C C2 A1  1 
+1A1C330 	20 40 A0  1 
+   push-hex
+1A1C334 	5C F4 A0  1 
+   dup reasonable-ip?
+1A1C338 	40 49 A0  1 E8 79 A1  1 
+   if    dup .last-executed ip>token .caller   else  9 u.r   then   cr
+1A1C340 	DC 41 A0  1 1C  0  0  0 
+1A1C348 	40 49 A0  1 DC C0 A1  1 
+1A1C350 	CC 46 A0  1 54 C0 A1  1 
+1A1C358 	C8 41 A0  1 10  0  0  0 
+1A1C360 	58 41 A0  1  9  0  0  0 
+1A1C368 	E4 77 A0  1 80 6D A0  1 
+   pop-base
+1A1C370 	9C F4 A0  1 
+;
+1A1C374 	58 46 A0  1 
+\ Heuristic display of return stack items, recognizing Forth word nesting,
+\ catch frames, and do loop frames.
+\ For later: It would also be nice to recognize input stream nesting frames.
+: rtraceline  ( rs-adr -- rs-adr' )
+1A1C378 	 0 72 74 72 61 63 65 6C 
+1A1C380 	69 6E 65 8A 30 C3 A1  1 
+1A1C388 	20 40 A0  1 
+   push-hex                    ( rs-adr )
+1A1C38C 	5C F4 A0  1 
+   @+                          ( rs-adr' ip )
+1A1C390 	B0 C0 A1  1 
+   dup reasonable-ip?  if      ( rs-adr ip )
+1A1C394 	40 49 A0  1 
+1A1C398 	E8 79 A1  1 DC 41 A0  1 
+1A1C3A0 	3C  0  0  0 
+      dup in-catch?  if        ( rs-adr ip )
+1A1C3A4 	40 49 A0  1 
+1A1C3A8 	24 C1 A1  1 DC 41 A0  1 
+1A1C3B0 	14  0  0  0 
+         drop .catch           ( rs-adr' )
+1A1C3B4 	30 49 A0  1 
+1A1C3B8 	48 C1 A1  1 
+      else                     ( rs-adr ip )
+1A1C3BC 	C8 41 A0  1 
+1A1C3C0 	14  0  0  0 
+         dup .last-executed ip>token .caller  ( rs-adr )
+1A1C3C4 	40 49 A0  1 
+1A1C3C8 	DC C0 A1  1 CC 46 A0  1 
+1A1C3D0 	54 C0 A1  1 
+      then                     ( rs-adr )
+   else                        ( rs-adr ip )
+1A1C3D4 	C8 41 A0  1 
+1A1C3D8 	 8  0  0  0 
+      .do-or-n                 ( rs-adr )
+1A1C3DC 	6C C2 A1  1 
+   then   cr                   ( rs-adr )
+1A1C3E0 	80 6D A0  1 
+   pop-base
+1A1C3E4 	9C F4 A0  1 
+;
+1A1C3E8 	58 46 A0  1 
+: (rstrace  ( end-adr start-adr -- )
+1A1C3EC 	 0  0  0 28 
+1A1C3F0 	72 73 74 72 61 63 65 88 
+1A1C3F8 	88 C3 A1  1 20 40 A0  1 
+    begin  2dup u>  while           ( end-adr adr )
+1A1C400 	C0 49 A0  1 64 48 A0  1 
+1A1C408 	DC 41 A0  1 24  0  0  0 
+       rtraceline                   ( end-adr adr' )
+1A1C410 	88 C3 A1  1 
+       exit?  if  2drop exit  then  ( end-adr adr )
+1A1C414 	34  D A1  1 
+1A1C418 	DC 41 A0  1  C  0  0  0 
+1A1C420 	AC 49 A0  1 40 46 A0  1 
+    repeat                          ( end-adr adr )
+1A1C428 	C8 41 A0  1 D4 FF FF FF 
+    2drop
+1A1C430 	AC 49 A0  1 
+;
+1A1C434 	58 46 A0  1 
+: skip-catch  ( rs-adr -- rs-adr' )  3 na+  ;
+1A1C438 	 0 73 6B 69 70 2D 63 61 
+1A1C440 	74 63 68 8A FC C3 A1  1 
+1A1C448 	20 40 A0  1 A0 6F A0  1 
+1A1C450 	48 50 A0  1 58 46 A0  1 
+: skip-do-or-n  ( rs-adr n -- rs-adr' )
+1A1C458 	 0  0  0 73 6B 69 70 2D 
+1A1C460 	64 6F 2D 6F 72 2D 6E 8C 
+1A1C468 	48 C4 A1  1 20 40 A0  1 
+   over @ reasonable-ip?  0=  if              ( rs-adr n )
+1A1C470 	54 49 A0  1 5C 4C A0  1 
+1A1C478 	E8 79 A1  1 24 47 A0  1 
+1A1C480 	DC 41 A0  1 A0  0  0  0 
+      \ The second number is not an IP so it could be a do loop frame
+      over na1+ @  reasonable-ip?  if         ( rs-adr n )
+1A1C488 	54 49 A0  1 CC 50 A0  1 
+1A1C490 	5C 4C A0  1 E8 79 A1  1 
+1A1C498 	DC 41 A0  1 88  0  0  0 
+         \ The third entry is a reasonable IP so it could be a do loop frame
+         \ Make sure it points to an offset that points just past a loop end
+         over na1+ @  dup @ +                 ( rs-adr n n2 )
+1A1C4A0 	54 49 A0  1 CC 50 A0  1 
+1A1C4A8 	5C 4C A0  1 40 49 A0  1 
+1A1C4B0 	5C 4C A0  1  4 45 A0  1 
+         dup reasonable-ip?  if               ( rs-adr n adr )
+1A1C4B8 	40 49 A0  1 E8 79 A1  1 
+1A1C4C0 	DC 41 A0  1 5C  0  0  0 
+            ip>token  -1 na+  token@          ( rs-adr n xt )
+1A1C4C8 	CC 46 A0  1 58 41 A0  1 
+1A1C4D0 	FF FF FF FF 48 50 A0  1 
+1A1C4D8 	 C 54 A0  1 
+            dup ['] (loop) =  swap ['] (+loop) =  or  if  ( rs-adr n )
+1A1C4DC 	40 49 A0  1 
+1A1C4E0 	60 53 A0  1 F8 41 A0  1 
+1A1C4E8 	24 48 A0  1 68 49 A0  1 
+1A1C4F0 	60 53 A0  1 1C 42 A0  1 
+1A1C4F8 	24 48 A0  1 70 44 A0  1 
+1A1C500 	DC 41 A0  1 14  0  0  0 
+               \ The two numbers span the +- boundary, so probably a do loop
+               drop                           ( rs-adr )
+1A1C508 	30 49 A0  1 
+               2 na+ exit                     ( -- rs-adr )
+1A1C50C 	90 6F A0  1 
+1A1C510 	48 50 A0  1 40 46 A0  1 
+            then                              ( rs-adr n )
+         else                                 ( rs-adr n n2 )
+1A1C518 	C8 41 A0  1  8  0  0  0 
+            drop                              ( rs-adr n )
+1A1C520 	30 49 A0  1 
+         then                                 ( rs-adr n )
+      then                                    ( rs-adr n )
+   then                                       ( rs-adr n )
+   drop                                       ( rs-adr )
+1A1C524 	30 49 A0  1 
+;
+1A1C528 	58 46 A0  1 
+
+\ boring? is a hook for Open Firmware.  It recognizes words like
+\ $call-method that are essentially indirect calls.  Such words
+\ just clutter up the stack display and should be elided for clarity.
+defer indirect-call?
+1A1C52C 	 0 69 6E 64 
+1A1C530 	69 72 65 63 74 2D 63 61 
+1A1C538 	6C 6C 3F 8E 6C C4 A1  1 
+1A1C540 	5C 40 A0  1 E4  4  0  0 
+
+: (indirect-call?)  ( xt -- flag )  ['] catch =  ;
+1A1C548 	 0  0  0 28 69 6E 64 69 
+1A1C550 	72 65 63 74 2D 63 61 6C 
+1A1C558 	6C 3F 29 90 40 C5 A1  1 
+1A1C560 	20 40 A0  1 60 53 A0  1 
+1A1C568 	14 7F A0  1 24 48 A0  1 
+1A1C570 	58 46 A0  1 
+' (indirect-call?) is indirect-call?
+
+
+: rtraceword  ( rs-end rs-adr -- rs-end rs-adr' )
+1A1C574 	 0 72 74 72 
+1A1C578 	61 63 65 77 6F 72 64 8A 
+1A1C580 	60 C5 A1  1 20 40 A0  1 
+   @+                          ( rs-end rs-adr' ip )
+1A1C588 	B0 C0 A1  1 
+   dup reasonable-ip?  0=  if  ( rs-end rs-adr ip )
+1A1C58C 	40 49 A0  1 
+1A1C590 	E8 79 A1  1 24 47 A0  1 
+1A1C598 	DC 41 A0  1  C  0  0  0 
+      skip-do-or-n exit        ( -- rs-end rs-adr )
+1A1C5A0 	6C C4 A1  1 40 46 A0  1 
+   then                        ( rs-end rs-adr )
+
+   dup in-catch?  if           ( rs-end rs-adr ip )
+1A1C5A8 	40 49 A0  1 24 C1 A1  1 
+1A1C5B0 	DC 41 A0  1 10  0  0  0 
+      drop skip-catch          ( rs-end rs-adr' )
+1A1C5B8 	30 49 A0  1 48 C4 A1  1 
+      exit                     ( -- rs-end rs-adr' )
+1A1C5C0 	40 46 A0  1 
+   then                        ( rs-end rs-adr ip )
+
+   find-cfa                    ( rs-end rs-adr xt )
+1A1C5C4 	24 20 A1  1 
+
+   dup indirect-call?  if      ( rs-end rs-adr xt )
+1A1C5C8 	40 49 A0  1 40 C5 A1  1 
+1A1C5D0 	DC 41 A0  1  C  0  0  0 
+      drop exit                ( -- rs-end rs-adr )
+1A1C5D8 	30 49 A0  1 40 46 A0  1 
+   then                        ( rs-end rs-adr xt )
+
+   dup ['] interpret-do-defined =  if  ( rs-end rs-adr xt )
+1A1C5E0 	40 49 A0  1 60 53 A0  1 
+1A1C5E8 	3C 9F A0  1 24 48 A0  1 
+1A1C5F0 	DC 41 A0  1 10  0  0  0 
+      \ Set rs-adr = rs-end so the caller will exit
+      2drop dup exit           ( -- rs-end rs-adr' )
+1A1C5F8 	AC 49 A0  1 40 49 A0  1 
+1A1C600 	40 46 A0  1 
+   then                        ( rs-end rs-adr xt )
+
+   >name name>string           ( rs-end rs-adr adr len )
+1A1C604 	24 74 A0  1 
+1A1C608 	58 74 A0  1 
+   dup #out @ +  rmargin @  >=  if  ( rs-end rs-adr adr len )
+1A1C60C 	40 49 A0  1 
+1A1C610 	5C 6D A0  1 5C 4C A0  1 
+1A1C618 	 4 45 A0  1 94 13 A1  1 
+1A1C620 	5C 4C A0  1 EC 48 A0  1 
+1A1C628 	DC 41 A0  1 20  0  0  0 
+      \ Set rs-adr = rs-end so the caller will exit
+      2drop ." ..."            ( rs-end rs-adr )
+1A1C630 	AC 49 A0  1 20 7C A0  1 
+1A1C638 	 3 2E 2E 2E  0  0  0  0 
+      drop dup exit            ( -- rs-end rs-adr' )
+1A1C640 	30 49 A0  1 40 49 A0  1 
+1A1C648 	40 46 A0  1 
+   then                        ( rs-end rs-adr adr len )
+
+   type space                  ( rs-end rs-adr )
+1A1C64C 	 4 6C A0  1 
+1A1C650 	CC 71 A0  1 
+;
+1A1C654 	58 46 A0  1 
+: rslist  ( end-adr start-adr -- )
+1A1C658 	 0 72 73 6C 69 73 74 86 
+1A1C660 	84 C5 A1  1 20 40 A0  1 
+   begin  2dup u>  while           ( end-adr adr )
+1A1C668 	C0 49 A0  1 64 48 A0  1 
+1A1C670 	DC 41 A0  1 10  0  0  0 
+      rtraceword                   ( end-adr adr' )
+1A1C678 	84 C5 A1  1 
+   repeat                          ( end-adr adr )
+1A1C67C 	C8 41 A0  1 
+1A1C680 	E8 FF FF FF 
+   2drop
+1A1C684 	AC 49 A0  1 
+;
+1A1C688 	58 46 A0  1 
+
+only forth also definitions

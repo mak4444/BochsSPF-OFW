@@ -1,0 +1,156 @@
+id: @(#)datatype.fth 1.4 00/04/25
+purpose: Defines terminal-emulator-specific data types
+
+headers
+
+d# 34 value screen-#rows       \ EEPROM parameter
+1A28380 	 0  0  0 73 63 72 65 65 
+1A28388 	6E 2D 23 72 6F 77 73 8C 
+1A28390 	54 83 A2  1 50 40 A0  1 
+1A28398 	40  8  0  0 
+d# 80 value screen-#columns    \ EEPROM parameter
+1A2839C 	73 63 72 65 
+1A283A0 	65 6E 2D 23 63 6F 6C 75 
+1A283A8 	6D 6E 73 8F 94 83 A2  1 
+1A283B0 	50 40 A0  1 44  8  0  0 
+
+\ Used to prevent re-entering the terminal emulator from a keyboard abort
+variable terminal-locked?  terminal-locked? off
+1A283B8 	 0  0  0 74 65 72 6D 69 
+1A283C0 	6E 61 6C 2D 6C 6F 63 6B 
+1A283C8 	65 64 3F 90 B0 83 A2  1 
+1A283D0 	48 40 A0  1 48  8  0  0 
+
+headerless
+\ Will be initialized to (escape-state in fwritestr.fth
+defer escape-state	\ Forward reference
+1A283D8 	 0  0  0 65 73 63 61 70 
+1A283E0 	65 2D 73 74 61 74 65 8C 
+1A283E8 	D0 83 A2  1 5C 40 A0  1 
+1A283F0 	4C  8  0  0 
+
+: >termemu-data  ( pfa -- adr )  @  my-termemu +  ;
+1A283F4 	 0  0 3E 74 
+1A283F8 	65 72 6D 65 6D 75 2D 64 
+1A28400 	61 74 61 8D EC 83 A2  1 
+1A28408 	20 40 A0  1 5C 4C A0  1 
+1A28410 	E4  3 A2  1  4 45 A0  1 
+1A28418 	58 46 A0  1 
+: forth-create  ( -- )
+1A2841C 	 0  0  0 66 
+1A28420 	6F 72 74 68 2D 63 72 65 
+1A28428 	61 74 65 8C  8 84 A2  1 
+1A28430 	20 40 A0  1 
+   also forth definitions  create  previous definitions
+1A28434 	C8 C1 A0  1 
+1A28438 	 8 C5 A0  1 2C C4 A0  1 
+1A28440 	A8 A2 A0  1 E4 C3 A0  1 
+1A28448 	2C C4 A0  1 
+;
+1A2844C 	58 46 A0  1 
+
+headers
+
+3 actions
+1A28450 	84 84 A2  1 74 84 A2  1 
+1A28458 	 3  0  0  0 
+action:  >termemu-data token@ execute  ;
+1A2845C 	90 90 90 E8 
+1A28460 	18 BC FD FF  8 84 A2  1 
+1A28468 	 C 54 A0  1 98 41 A0  1 
+1A28470 	58 46 A0  1 
+action:  >termemu-data token!  ;
+1A28474 	20 40 A0  1 
+1A28478 	 8 84 A2  1 20 54 A0  1 
+1A28480 	58 46 A0  1 
+action:  >termemu-data token@  ;
+1A28484 	20 40 A0  1 
+1A28488 	 8 84 A2  1  C 54 A0  1 
+1A28490 	58 46 A0  1 
+
+: termemu-defer  \ name  ( -- )
+1A28494 	 0  0 74 65 
+1A28498 	72 6D 65 6D 75 2D 64 65 
+1A284A0 	66 65 72 8D 30 84 A2  1 
+1A284A8 	20 40 A0  1 
+   forth-create
+1A284AC 	30 84 A2  1 
+   ['] crash /token  ( value data-size )
+1A284B0 	60 53 A0  1 C8 A7 A0  1 
+1A284B8 	B4 46 A0  1 
+   use-actions value#, ( value adr )
+1A284BC 	60 53 A0  1 
+1A284C0 	5C 84 A2  1 E0 57 A0  1 
+1A284C8 	2C FE A1  1 
+   token!
+1A284CC 	20 54 A0  1 
+;  action-adr-t to  dotermemu-defer  \ mmo
+1A284D0 	58 46 A0  1 
+
+3 actions
+1A284D4 	 4 85 A2  1 
+1A284D8 	F4 84 A2  1  3  0  0  0 
+action:  >termemu-data @  ;
+1A284E0 	90 90 90 E8 94 BB FD FF 
+1A284E8 	 8 84 A2  1 5C 4C A0  1 
+1A284F0 	58 46 A0  1 
+action:  >termemu-data !  ;
+1A284F4 	20 40 A0  1 
+1A284F8 	 8 84 A2  1 54 4D A0  1 
+1A28500 	58 46 A0  1 
+action:  >termemu-data    ;
+1A28504 	20 40 A0  1 
+1A28508 	 8 84 A2  1 58 46 A0  1 
+
+: termemu-value  \ name  ( initial-value -- )
+1A28510 	 0  0 74 65 72 6D 65 6D 
+1A28518 	75 2D 76 61 6C 75 65 8D 
+1A28520 	A8 84 A2  1 20 40 A0  1 
+   forth-create
+1A28528 	30 84 A2  1 
+   /n  ( value data-size )
+1A2852C 	40 51 A0  1 
+   use-actions  value#,  ( value adr )
+1A28530 	60 53 A0  1 E0 84 A2  1 
+1A28538 	E0 57 A0  1 2C FE A1  1 
+   !
+1A28540 	54 4D A0  1 
+;
+1A28544 	58 46 A0  1 
+action-adr-t to dotermemu-value \ mmo
+
+3 actions
+1A28548 	88 85 A2  1 70 85 A2  1 
+1A28550 	 3  0  0  0 
+action:  >termemu-data swap na+ @  ;  ( index -- value )
+1A28554 	90 90 90 E8 
+1A28558 	20 BB FD FF  8 84 A2  1 
+1A28560 	68 49 A0  1 48 50 A0  1 
+1A28568 	5C 4C A0  1 58 46 A0  1 
+action:  >termemu-data swap na+ !  ;  ( value index -- )
+1A28570 	20 40 A0  1  8 84 A2  1 
+1A28578 	68 49 A0  1 48 50 A0  1 
+1A28580 	54 4D A0  1 58 46 A0  1 
+action:  >termemu-data swap na+    ;  ( index -- adr )
+1A28588 	20 40 A0  1  8 84 A2  1 
+1A28590 	68 49 A0  1 48 50 A0  1 
+1A28598 	58 46 A0  1 
+
+: termemu-array  \ name  ( #entries -- )
+1A2859C 	 0  0 74 65 
+1A285A0 	72 6D 65 6D 75 2D 61 72 
+1A285A8 	72 61 79 8D 24 85 A2  1 
+1A285B0 	20 40 A0  1 
+   forth-create              ( #entries )
+1A285B4 	30 84 A2  1 
+   use-actions  /n* value#,  ( adr )
+1A285B8 	60 53 A0  1 54 85 A2  1 
+1A285C0 	E0 57 A0  1 98 51 A0  1 
+1A285C8 	2C FE A1  1 
+   drop
+1A285CC 	30 49 A0  1 
+;
+1A285D0 	58 46 A0  1 
+
+
+headers

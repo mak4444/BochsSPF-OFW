@@ -1,0 +1,131 @@
+
+\ Primitives to concatenate ( "cat ), and print ( ". ) strings.
+decimal
+headerless
+
+d# 260 buffer: string2
+1A0FE18 	73 74 72 69 6E 67 32 87 
+1A0FE20 	14 FE A0  1 B4 A9 A0  1 
+1A0FE28 	24  3  0  0  4  1  0  0 
+1A0FE30 	 0  0 A0  1 
+
+headers
+: $number  ( adr len -- true | n false )
+1A0FE34 	24 6E 75 6D 
+1A0FE38 	62 65 72 87 24 FE A0  1 
+1A0FE40 	20 40 A0  1 
+   $dnumber?  case
+1A0FE44 	9C 9C A0  1 
+      0 of  true        endof
+1A0FE48 	70 6F A0  1 48 43 A0  1 
+1A0FE50 	10  0  0  0  4 70 A0  1 
+1A0FE58 	6C 43 A0  1 3C  0  0  0 
+      1 of  false       endof
+1A0FE60 	80 6F A0  1 48 43 A0  1 
+1A0FE68 	10  0  0  0 18 70 A0  1 
+1A0FE70 	6C 43 A0  1 24  0  0  0 
+      2 of  drop false  endof
+1A0FE78 	90 6F A0  1 48 43 A0  1 
+1A0FE80 	14  0  0  0 30 49 A0  1 
+1A0FE88 	18 70 A0  1 6C 43 A0  1 
+1A0FE90 	 8  0  0  0 
+   endcase
+1A0FE94 	84 43 A0  1 
+;
+1A0FE98 	58 46 A0  1 
+
+headerless
+
+\ A single to double helper.
+\ Sign extends the single if signed? is true
+: ?n>d  ( n signed? -- d )   if  s>d  else  0  then  ;
+1A0FE9C 	 0  0  0 3F 
+1A0FEA0 	6E 3E 64 84 40 FE A0  1 
+1A0FEA8 	20 40 A0  1 DC 41 A0  1 
+1A0FEB0 	10  0  0  0 9C 68 A0  1 
+1A0FEB8 	C8 41 A0  1  8  0  0  0 
+1A0FEC0 	70 6F A0  1 58 46 A0  1 
+
+headers
+: $dnumber  ( signed adr len -- true | d false )
+1A0FEC8 	 0  0  0 24 64 6E 75 6D 
+1A0FED0 	62 65 72 88 A8 FE A0  1 
+1A0FED8 	20 40 A0  1 
+   $dnumber?       ( signed 0 | signed n 1 | signed d 2 )
+1A0FEDC 	9C 9C A0  1 
+   case
+      0 of  drop        true     endof
+1A0FEE0 	70 6F A0  1 48 43 A0  1 
+1A0FEE8 	14  0  0  0 30 49 A0  1 
+1A0FEF0 	 4 70 A0  1 6C 43 A0  1 
+1A0FEF8 	48  0  0  0 
+      1 of  swap ?n>d   false    endof
+1A0FEFC 	80 6F A0  1 
+1A0FF00 	48 43 A0  1 18  0  0  0 
+1A0FF08 	68 49 A0  1 A8 FE A0  1 
+1A0FF10 	18 70 A0  1 6C 43 A0  1 
+1A0FF18 	28  0  0  0 
+      2 of  rot drop    false    endof
+1A0FF1C 	90 6F A0  1 
+1A0FF20 	48 43 A0  1 18  0  0  0 
+1A0FF28 	7C 49 A0  1 30 49 A0  1 
+1A0FF30 	18 70 A0  1 6C 43 A0  1 
+1A0FF38 	 8  0  0  0 
+   endcase
+1A0FF3C 	84 43 A0  1 
+;
+1A0FF40 	58 46 A0  1 
+
+headerless
+: $hnumber  ( adr len -- true | n false )  push-hex  $number  pop-base  ;
+1A0FF44 	 0  0  0 24 
+1A0FF48 	68 6E 75 6D 62 65 72 88 
+1A0FF50 	D8 FE A0  1 20 40 A0  1 
+1A0FF58 	5C F4 A0  1 40 FE A0  1 
+1A0FF60 	9C F4 A0  1 58 46 A0  1 
+headers
+
+\ Here is a direct implementation of $number, except that it doesn't handle
+\ DPL, and it allows , in addition to . for number punctuation
+\ : $number  ( adr len -- n false | true )
+\    1 0 2swap                    ( sign n adr len )
+\    bounds  ?do                  ( sign n )
+\       i c@  base @ digit  if    ( sign n digit )
+\        swap base @ ul* +        ( sign n' )
+\       else                      ( sign n char )
+\          case                   ( sign n )
+\             ascii -  of  swap negate swap  endof    ( -sign n )
+\             ascii .  of                    endof    ( sign n )
+\             ascii ,  of                    endof    ( sign n )
+\           ( sign n char ) drop nip 0 swap leave     ( 0 n )
+\          endcase
+\       then
+\    loop                         ( sign|0 n )
+\    over  if                     ( sign n )
+\       * false                   ( n' false )
+\    else                         ( 0 n )
+\       2drop true                ( true )
+\    then
+\ ;
+
+: $cat2  ( $1 $2 -- $3 )
+1A0FF68 	 0  0 24 63 61 74 32 85 
+1A0FF70 	54 FF A0  1 20 40 A0  1 
+   2 pick over +  dup >r alloc-mem >r
+1A0FF78 	90 6F A0  1  C 4A A0  1 
+1A0FF80 	54 49 A0  1  4 45 A0  1 
+1A0FF88 	40 49 A0  1 BC 45 A0  1 
+1A0FF90 	F0 6C A0  1 BC 45 A0  1 
+   2swap tuck  r@ swap move           ( $2 $1-len )
+1A0FF98 	F4 49 A0  1 E8 46 A0  1 
+1A0FFA0 	E4 45 A0  1 68 49 A0  1 
+1A0FFA8 	F4 4A A0  1 
+   r@ + swap move                     ( )
+1A0FFAC 	E4 45 A0  1 
+1A0FFB0 	 4 45 A0  1 68 49 A0  1 
+1A0FFB8 	F4 4A A0  1 
+   r> r>
+1A0FFBC 	D0 45 A0  1 
+1A0FFC0 	D0 45 A0  1 
+;
+1A0FFC4 	58 46 A0  1 

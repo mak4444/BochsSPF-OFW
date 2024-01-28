@@ -1,0 +1,32 @@
+
+USE libreadline.so.6
+REQUIRE STR ~ac/lib/str5.f
+
+ 0
+ 2 FIELD c_iflag    \      input mode flags
+ 2 FIELD c_oflag    \      output mode flags
+ 2 FIELD c_cflag    \      control mode flags
+ 2 FIELD c_lflag    \      local mode flags
+ 1 FIELD c_line     \      line discipline
+ 8 FIELD c_cc       \      control characters
+CONSTANT /termios
+
+CREATE &t1  /termios ALLOT
+
+: XXXX (()) tcgetattr (()) using_history  ;
+: zzzz (( 0 &t1 )) tcgetattr ;
+
+zzzz
+&t1 66 DUMP
+
+\EOF
+\ libpthread.so
+\ libreadline.so.6.3
+\ libc.so.6
+\ libtinfo.so.5.9
+\ libc-2.19.so
+\ libtinfo.so.5
+\ libreadline.so.6
+
+REQUIRE STR ~ac/lib/str5.f
+

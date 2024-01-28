@@ -1,0 +1,795 @@
+purpose: Driver for 8042 PC keyboard/mouse controller
+
+headerless
+
+" INTC,80c42" model
+" 8042"       device-name
+1A3B9D8 	38 30 34 32  0  0  0 6E 
+1A3B9E0 	61 6D 65 84 CC B9 A3  1 
+1A3B9E8 	BC 13 A2  1 14  0  0  0 
+1A3B9F0 	 5  0  0  0 
+" 8042"       device-type
+1A3B9F4 	38 30 34 32 
+1A3B9F8 	 0  0  0  0 64 65 76 69 
+1A3BA00 	63 65 5F 74 79 70 65 8B 
+1A3BA08 	E8 B9 A3  1 BC 13 A2  1 
+1A3BA10 	1C  0  0  0  5  0  0  0 
+
+0 0 encode-bytes
+   " ps2-keyboard-controller" encode-string encode+
+1A3BA18 	70 73 32 2D 6B 65 79 62 
+1A3BA20 	6F 61 72 64 2D 63 6F 6E 
+1A3BA28 	74 72 6F 6C 6C 65 72  0 
+   " INTC,80c42"              encode-string encode+
+1A3BA30 	49 4E 54 43 2C 38 30 63 
+1A3BA38 	34 32  0 
+" compatible" property
+1A3BA3B 	 0  0 63 6F 6D 
+1A3BA40 	70 61 74 69 62 6C 65 8A 
+1A3BA48 	 C BA A3  1 BC 13 A2  1 
+1A3BA50 	38  0  0  0 23  0  0  0 
+
+my-address      my-space  1  encode-reg
+1A3BA58 	 0  0  0  1  0  0  0 60 
+1A3BA60 	 0  0  0  1 
+my-address 4 +  my-space  1  encode-reg  encode+
+1A3BA64 	 0  0  0  1 
+1A3BA68 	 0  0  0 64  0  0  0  1 
+" reg" property
+1A3BA70 	72 65 67 83 4C BA A3  1 
+1A3BA78 	BC 13 A2  1 24  0  0  0 
+1A3BA80 	18  0  0  0 
+
+1 " #address-cells"  integer-property
+1A3BA84 	 0  0  0  1 
+1A3BA88 	 0 23 61 64 64 72 65 73 
+1A3BA90 	73 2D 63 65 6C 6C 73 8E 
+1A3BA98 	78 BA A3  1 BC 13 A2  1 
+1A3BAA0 	1C  0  0  0  4  0  0  0 
+0 " #size-cells"     integer-property
+1A3BAA8 	 0  0  0  0 23 73 69 7A 
+1A3BAB0 	65 2D 63 65 6C 6C 73 8B 
+1A3BAB8 	9C BA A3  1 BC 13 A2  1 
+1A3BAC0 	18  0  0  0  4  0  0  0 
+
+0 value debug?
+1A3BAC8 	 0 64 65 62 75 67 3F 86 
+1A3BAD0 	 0  0 A0  1 50 40 A0  1 
+1A3BAD8 	44  C  0  0 
+also forth definitions
+: debug-ps2    ( -- )  true  to debug?  ;
+1A3BADC 	 0  0 64 65 
+1A3BAE0 	62 75 67 2D 70 73 32 89 
+1A3BAE8 	84 B9 A3  1 20 40 A0  1 
+1A3BAF0 	 4 70 A0  1 B8 40 A0  1 
+1A3BAF8 	D4 BA A3  1 58 46 A0  1 
+: undebug-ps2  ( -- )  false to debug?  ;
+1A3BB00 	75 6E 64 65 62 75 67 2D 
+1A3BB08 	70 73 32 8B EC BA A3  1 
+1A3BB10 	20 40 A0  1 18 70 A0  1 
+1A3BB18 	B8 40 A0  1 D4 BA A3  1 
+1A3BB20 	58 46 A0  1 
+previous definitions
+
+hex
+
+[ifndef] $=
+: $=   rot tuck <> if  3drop false exit  then  comp 0=  ; 
+[then]
+
+\ 0 means the keyboard port, 1 means the aux port
+: encode-unit  ( n -- adr len )  if  " aux"  else  " kbd"  then  ;
+1A3BB24 	65 6E 63 6F 
+1A3BB28 	64 65 2D 75 6E 69 74 8B 
+1A3BB30 	D4 BA A3  1 20 40 A0  1 
+1A3BB38 	DC 41 A0  1 18  0  0  0 
+1A3BB40 	9C 53 A0  1  3 61 75 78 
+1A3BB48 	 0  0  0  0 C8 41 A0  1 
+1A3BB50 	10  0  0  0 9C 53 A0  1 
+1A3BB58 	 3 6B 62 64  0  0  0  0 
+1A3BB60 	58 46 A0  1 
+: decode-unit  ( adr len -- n )
+1A3BB64 	64 65 63 6F 
+1A3BB68 	64 65 2D 75 6E 69 74 8B 
+1A3BB70 	34 BB A3  1 20 40 A0  1 
+   2dup  $number  if                        ( adr len )
+1A3BB78 	C0 49 A0  1 40 FE A0  1 
+1A3BB80 	DC 41 A0  1 38  0  0  0 
+      " aux"  $=  0=  if  0  else  1  then  ( n )
+1A3BB88 	9C 53 A0  1  3 61 75 78 
+1A3BB90 	 0  0  0  0 88 8D A0  1 
+1A3BB98 	24 47 A0  1 DC 41 A0  1 
+1A3BBA0 	10  0  0  0 70 6F A0  1 
+1A3BBA8 	C8 41 A0  1  8  0  0  0 
+1A3BBB0 	80 6F A0  1 
+   else                                     ( adr len n )
+1A3BBB4 	C8 41 A0  1 
+1A3BBB8 	 C  0  0  0 
+      nip nip                               ( n )
+1A3BBBC 	FC 46 A0  1 
+1A3BBC0 	FC 46 A0  1 
+   then
+;
+1A3BBC4 	58 46 A0  1 
+
+\ Queues for distributing bytes sent from the two devices
+d# 100 constant /q
+1A3BBC8 	 0 2F 71 82 74 BB A3  1 
+1A3BBD0 	68 40 A0  1 64  0  0  0 
+
+struct
+/n field >head
+1A3BBD8 	 0  0 3E 68 65 61 64 85 
+1A3BBE0 	D0 BB A3  1 50 EE A0  1 
+1A3BBE8 	 0  0  0  0 
+/n field >tail
+1A3BBEC 	 0  0 3E 74 
+1A3BBF0 	61 69 6C 85 E4 BB A3  1 
+1A3BBF8 	50 EE A0  1  4  0  0  0 
+/q field >qdata
+1A3BC00 	 0 3E 71 64 61 74 61 86 
+1A3BC08 	F8 BB A3  1 50 EE A0  1 
+1A3BC10 	 8  0  0  0 
+constant /qstruct
+1A3BC14 	 0  0  0 2F 
+1A3BC18 	71 73 74 72 75 63 74 88 
+1A3BC20 	 C BC A3  1 68 40 A0  1 
+1A3BC28 	6C  0  0  0 
+
+/qstruct buffer: q0
+1A3BC2C 	 0 71 30 82 
+1A3BC30 	24 BC A3  1 B4 A9 A0  1 
+1A3BC38 	48  C  0  0 6C  0  0  0 
+1A3BC40 	F0 74 A3  1 
+/qstruct buffer: q1
+1A3BC44 	 0 71 31 82 
+1A3BC48 	34 BC A3  1 B4 A9 A0  1 
+1A3BC50 	4C  C  0  0 6C  0  0  0 
+1A3BC58 	34 BC A3  1 
+
+: init-q  ( q -- )  0 over >head !  0 swap >tail !   ;
+1A3BC5C 	 0 69 6E 69 
+1A3BC60 	74 2D 71 86 4C BC A3  1 
+1A3BC68 	20 40 A0  1 70 6F A0  1 
+1A3BC70 	54 49 A0  1 E4 BB A3  1 
+1A3BC78 	54 4D A0  1 70 6F A0  1 
+1A3BC80 	68 49 A0  1 F8 BB A3  1 
+1A3BC88 	54 4D A0  1 58 46 A0  1 
+: inc-q-ptr  ( pointer-addr -- )
+1A3BC90 	 0  0 69 6E 63 2D 71 2D 
+1A3BC98 	70 74 72 89 68 BC A3  1 
+1A3BCA0 	20 40 A0  1 
+   dup @  ca1+  dup /q  =  if  drop 0  then  swap !
+1A3BCA4 	40 49 A0  1 
+1A3BCA8 	5C 4C A0  1 78 50 A0  1 
+1A3BCB0 	40 49 A0  1 D0 BB A3  1 
+1A3BCB8 	24 48 A0  1 DC 41 A0  1 
+1A3BCC0 	 C  0  0  0 30 49 A0  1 
+1A3BCC8 	70 6F A0  1 68 49 A0  1 
+1A3BCD0 	54 4D A0  1 
+;
+1A3BCD4 	58 46 A0  1 
+
+\ This is only called for the queue opposite from "port"
+: enque  ( new-entry q -- )
+1A3BCD8 	 0  0 65 6E 71 75 65 85 
+1A3BCE0 	A0 BC A3  1 20 40 A0  1 
+   >r
+1A3BCE8 	BC 45 A0  1 
+   r@ >tail @  r@ >head @  2dup >  if  - /q  then  1-     ( entry tail head )
+1A3BCEC 	E4 45 A0  1 
+1A3BCF0 	F8 BB A3  1 5C 4C A0  1 
+1A3BCF8 	E4 45 A0  1 E4 BB A3  1 
+1A3BD00 	5C 4C A0  1 C0 49 A0  1 
+1A3BD08 	 4 48 A0  1 DC 41 A0  1 
+1A3BD10 	 C  0  0  0 18 45 A0  1 
+1A3BD18 	D0 BB A3  1 54 4B A0  1 
+   <>  if  r@ >qdata  r@ >tail @ ca+ c!  r@ >tail inc-q-ptr  else  drop  then
+1A3BD20 	44 48 A0  1 DC 41 A0  1 
+1A3BD28 	34  0  0  0 E4 45 A0  1 
+1A3BD30 	 C BC A3  1 E4 45 A0  1 
+1A3BD38 	F8 BB A3  1 5C 4C A0  1 
+1A3BD40 	 4 50 A0  1 B8 4D A0  1 
+1A3BD48 	E4 45 A0  1 F8 BB A3  1 
+1A3BD50 	A0 BC A3  1 C8 41 A0  1 
+1A3BD58 	 8  0  0  0 30 49 A0  1 
+   r> drop
+1A3BD60 	D0 45 A0  1 30 49 A0  1 
+;
+1A3BD68 	58 46 A0  1 
+
+\ This is only called for the queue for "port"
+: deque?  ( q -- false | entry true )
+1A3BD6C 	 0 64 65 71 
+1A3BD70 	75 65 3F 86 E4 BC A3  1 
+1A3BD78 	20 40 A0  1 
+   >r
+1A3BD7C 	BC 45 A0  1 
+   r@ >head @  r@ >tail @  <>  if
+1A3BD80 	E4 45 A0  1 E4 BB A3  1 
+1A3BD88 	5C 4C A0  1 E4 45 A0  1 
+1A3BD90 	F8 BB A3  1 5C 4C A0  1 
+1A3BD98 	44 48 A0  1 DC 41 A0  1 
+1A3BDA0 	38  0  0  0 
+      r@ >qdata  r@ >head @  ca+ c@  r@ >head inc-q-ptr  true
+1A3BDA4 	E4 45 A0  1 
+1A3BDA8 	 C BC A3  1 E4 45 A0  1 
+1A3BDB0 	E4 BB A3  1 5C 4C A0  1 
+1A3BDB8 	 4 50 A0  1 C4 4C A0  1 
+1A3BDC0 	E4 45 A0  1 E4 BB A3  1 
+1A3BDC8 	A0 BC A3  1  4 70 A0  1 
+   else
+1A3BDD0 	C8 41 A0  1  8  0  0  0 
+      false
+1A3BDD8 	18 70 A0  1 
+   then
+   r> drop
+1A3BDDC 	D0 45 A0  1 
+1A3BDE0 	30 49 A0  1 
+;
+1A3BDE4 	58 46 A0  1 
+
+0 instance value port
+1A3BDE8 	 0  0  0 70 6F 72 74 84 
+1A3BDF0 	78 BD A3  1 C0 FE A1  1 
+1A3BDF8 	18  0  0  0 
+
+0 value data-port
+1A3BDFC 	 0  0 64 61 
+1A3BE00 	74 61 2D 70 6F 72 74 89 
+1A3BE08 	F4 BD A3  1 50 40 A0  1 
+1A3BE10 	50  C  0  0 
+0 value cmd-status-reg
+1A3BE14 	 0 63 6D 64 
+1A3BE18 	2D 73 74 61 74 75 73 2D 
+1A3BE20 	72 65 67 8E  C BE A3  1 
+1A3BE28 	50 40 A0  1 54  C  0  0 
+
+
+\ Keyboard controller command constants
+\  a7 constant disable-aux
+\  aa constant selftest
+\  ab constant intf-test
+\  ad constant disable-intf
+\  ae constant enable-intf
+\  d0 constant read-out-port
+\  d1 constant write-out-port
+
+\ Keyboard controller status constants
+   01 constant out-buf-full
+1A3BE30 	 0  0  0 6F 75 74 2D 62 
+1A3BE38 	75 66 2D 66 75 6C 6C 8C 
+1A3BE40 	28 BE A3  1 68 40 A0  1 
+1A3BE48 	 1  0  0  0 
+   02 constant in-buf-full
+1A3BE4C 	69 6E 2D 62 
+1A3BE50 	75 66 2D 66 75 6C 6C 8B 
+1A3BE58 	44 BE A3  1 68 40 A0  1 
+1A3BE60 	 2  0  0  0 
+  out-buf-full in-buf-full +
+      constant io-bufs-full
+1A3BE64 	 0  0  0 69 
+1A3BE68 	6F 2D 62 75 66 73 2D 66 
+1A3BE70 	75 6C 6C 8C 5C BE A3  1 
+1A3BE78 	68 40 A0  1  3  0  0  0 
+\  40 constant general-timeout
+\  80 constant parity-error
+\  55 constant passed
+
+\ Output port constants
+\  c0 constant clk-data-high
+ 
+headers
+: set-port  ( port# -- )  to port  ;
+1A3BE80 	 0  0  0 73 65 74 2D 70 
+1A3BE88 	6F 72 74 88 78 BE A3  1 
+1A3BE90 	20 40 A0  1 48 B8 A1  1 
+1A3BE98 	F4 BD A3  1 58 46 A0  1 
+headerless
+
+: stat@  ( -- byte )  cmd-status-reg rb@  ;
+1A3BEA0 	 0  0 73 74 61 74 40 85 
+1A3BEA8 	90 BE A3  1 20 40 A0  1 
+1A3BEB0 	28 BE A3  1 A8 B1 A2  1 
+1A3BEB8 	58 46 A0  1 
+: data@  ( -- byte )  data-port rb@  debug?  if  ." <" dup .  then  ;
+1A3BEBC 	 0  0 64 61 
+1A3BEC0 	74 61 40 85 AC BE A3  1 
+1A3BEC8 	20 40 A0  1  C BE A3  1 
+1A3BED0 	A8 B1 A2  1 D4 BA A3  1 
+1A3BED8 	DC 41 A0  1 14  0  0  0 
+1A3BEE0 	20 7C A0  1  1 3C  0  0 
+1A3BEE8 	40 49 A0  1 94 7A A0  1 
+1A3BEF0 	58 46 A0  1 
+: data!  ( byte -- )  debug?  if  ." >" dup .  then   data-port rb!  ;
+1A3BEF4 	 0  0 64 61 
+1A3BEF8 	74 61 21 85 C8 BE A3  1 
+1A3BF00 	20 40 A0  1 D4 BA A3  1 
+1A3BF08 	DC 41 A0  1 14  0  0  0 
+1A3BF10 	20 7C A0  1  1 3E  0  0 
+1A3BF18 	40 49 A0  1 94 7A A0  1 
+1A3BF20 	 C BE A3  1 1C B2 A2  1 
+1A3BF28 	58 46 A0  1 
+
+\ *** Following delay can be reduced after testing ***
+
+: in-wait  ( -- ) \ Wait for input buffer to empty
+1A3BF2C 	69 6E 2D 77 
+1A3BF30 	61 69 74 87  0 BF A3  1 
+1A3BF38 	20 40 A0  1 
+   d# 1000 0  do
+1A3BF3C 	58 41 A0  1 
+1A3BF40 	E8  3  0  0 70 6F A0  1 
+1A3BF48 	88 42 A0  1 34  0  0  0 
+      stat@  in-buf-full and 0=  if  unloop exit  then
+1A3BF50 	AC BE A3  1 5C BE A3  1 
+1A3BF58 	5C 44 A0  1 24 47 A0  1 
+1A3BF60 	DC 41 A0  1  C  0  0  0 
+1A3BF68 	3C 42 A0  1 40 46 A0  1 
+      1 ms
+1A3BF70 	80 6F A0  1 60 E0 A1  1 
+   loop
+1A3BF78 	F8 41 A0  1 D4 FF FF FF 
+   true abort" Keyboard input buffer full timeout"
+1A3BF80 	 4 70 A0  1  8 81 A0  1 
+1A3BF88 	22 4B 65 79 62 6F 61 72 
+1A3BF90 	64 20 69 6E 70 75 74 20 
+1A3BF98 	62 75 66 66 65 72 20 66 
+1A3BFA0 	75 6C 6C 20 74 69 6D 65 
+1A3BFA8 	6F 75 74  0 
+;
+1A3BFAC 	58 46 A0  1 
+
+: (get-data?)  ( -- false | data true )
+1A3BFB0 	28 67 65 74 2D 64 61 74 
+1A3BFB8 	61 3F 29 8B 38 BF A3  1 
+1A3BFC0 	20 40 A0  1 
+   \ Exit immediately if a byte is waiting
+   port  if  q1  else  q0  then  deque?  if  true exit  then
+1A3BFC4 	F4 BD A3  1 
+1A3BFC8 	DC 41 A0  1 10  0  0  0 
+1A3BFD0 	4C BC A3  1 C8 41 A0  1 
+1A3BFD8 	 8  0  0  0 34 BC A3  1 
+1A3BFE0 	78 BD A3  1 DC 41 A0  1 
+1A3BFE8 	 C  0  0  0  4 70 A0  1 
+1A3BFF0 	40 46 A0  1 
+
+   begin
+      stat@  dup out-buf-full and                        ( stat flag )
+1A3BFF4 	AC BE A3  1 
+1A3BFF8 	40 49 A0  1 44 BE A3  1 
+1A3C000 	5C 44 A0  1 
+   while                                                 ( stat )
+1A3C004 	DC 41 A0  1 
+1A3C008 	54  0  0  0 
+      data@  swap                                        ( data stat )
+1A3C00C 	C8 BE A3  1 
+1A3C010 	68 49 A0  1 
+      5 >>  port  =  if  true  exit  then
+1A3C014 	C0 6F A0  1 
+1A3C018 	DC 44 A0  1 F4 BD A3  1 
+1A3C020 	24 48 A0  1 DC 41 A0  1 
+1A3C028 	 C  0  0  0  4 70 A0  1 
+1A3C030 	40 46 A0  1 
+      port  if  q0  else  q1  then  enque
+1A3C034 	F4 BD A3  1 
+1A3C038 	DC 41 A0  1 10  0  0  0 
+1A3C040 	34 BC A3  1 C8 41 A0  1 
+1A3C048 	 8  0  0  0 4C BC A3  1 
+1A3C050 	E4 BC A3  1 
+   repeat                                                ( stat )
+1A3C054 	C8 41 A0  1 
+1A3C058 	9C FF FF FF 
+   drop  false
+1A3C05C 	30 49 A0  1 
+1A3C060 	18 70 A0  1 
+;
+1A3C064 	58 46 A0  1 
+
+true value data-port-available?
+1A3C068 	 0  0  0 64 61 74 61 2D 
+1A3C070 	70 6F 72 74 2D 61 76 61 
+1A3C078 	69 6C 61 62 6C 65 3F 94 
+1A3C080 	C0 BF A3  1 50 40 A0  1 
+1A3C088 	58  C  0  0 
+headers
+: get-data?  ( -- false | data true )
+1A3C08C 	 0  0 67 65 
+1A3C090 	74 2D 64 61 74 61 3F 89 
+1A3C098 	84 C0 A3  1 20 40 A0  1 
+   data-port-available?  if			( )
+1A3C0A0 	84 C0 A3  1 DC 41 A0  1 
+1A3C0A8 	28  0  0  0 
+      false to data-port-available?		( )
+1A3C0AC 	18 70 A0  1 
+1A3C0B0 	B8 40 A0  1 84 C0 A3  1 
+      (get-data?)			        ( false | data true )
+1A3C0B8 	C0 BF A3  1 
+      true to data-port-available?		( )
+1A3C0BC 	 4 70 A0  1 
+1A3C0C0 	B8 40 A0  1 84 C0 A3  1 
+   else						( )
+1A3C0C8 	C8 41 A0  1  8  0  0  0 
+      false					( false )
+1A3C0D0 	18 70 A0  1 
+   then						( false | data true )
+;
+1A3C0D4 	58 46 A0  1 
+
+: get-data  ( -- data | -1 )  \ Wait for data from our device
+1A3C0D8 	 0  0  0 67 65 74 2D 64 
+1A3C0E0 	61 74 61 88 9C C0 A3  1 
+1A3C0E8 	20 40 A0  1 
+   d# 1000 0  do
+1A3C0EC 	58 41 A0  1 
+1A3C0F0 	E8  3  0  0 70 6F A0  1 
+1A3C0F8 	88 42 A0  1 28  0  0  0 
+      get-data?  if  unloop exit  then		( data )
+1A3C100 	9C C0 A3  1 DC 41 A0  1 
+1A3C108 	 C  0  0  0 3C 42 A0  1 
+1A3C110 	40 46 A0  1 
+      1 ms
+1A3C114 	80 6F A0  1 
+1A3C118 	60 E0 A1  1 
+   loop
+1A3C11C 	F8 41 A0  1 
+1A3C120 	E0 FF FF FF 
+   true \ abort" Timeout waiting for data from device" 
+1A3C124 	 4 70 A0  1 
+;
+1A3C128 	58 46 A0  1 
+headerless
+
+: put-ctlr-cmd   ( cmd -- )
+1A3C12C 	 0  0  0 70 
+1A3C130 	75 74 2D 63 74 6C 72 2D 
+1A3C138 	63 6D 64 8C E8 C0 A3  1 
+1A3C140 	20 40 A0  1 
+   in-wait  debug?  if  ." ^" dup .  then  cmd-status-reg rb!
+1A3C144 	38 BF A3  1 
+1A3C148 	D4 BA A3  1 DC 41 A0  1 
+1A3C150 	14  0  0  0 20 7C A0  1 
+1A3C158 	 1 5E  0  0 40 49 A0  1 
+1A3C160 	94 7A A0  1 28 BE A3  1 
+1A3C168 	1C B2 A2  1 
+;
+1A3C16C 	58 46 A0  1 
+
+headers
+: put-data  ( data -- )
+1A3C170 	 0  0  0 70 75 74 2D 64 
+1A3C178 	61 74 61 88 40 C1 A3  1 
+1A3C180 	20 40 A0  1 
+   port  if
+1A3C184 	F4 BD A3  1 
+1A3C188 	DC 41 A0  1 28  0  0  0 
+      lock[ h# d4 put-ctlr-cmd  in-wait  data! ]unlock
+1A3C190 	84 E0 A1  1 58 41 A0  1 
+1A3C198 	D4  0  0  0 40 C1 A3  1 
+1A3C1A0 	38 BF A3  1  0 BF A3  1 
+1A3C1A8 	98 E0 A1  1 
+   else
+1A3C1AC 	C8 41 A0  1 
+1A3C1B0 	 C  0  0  0 
+      in-wait  data!
+1A3C1B4 	38 BF A3  1 
+1A3C1B8 	 0 BF A3  1 
+   then
+;
+1A3C1BC 	58 46 A0  1 
+
+headerless
+: put-ctlr-cmd2  ( data cmd -- )  put-ctlr-cmd  put-data   ;
+1A3C1C0 	 0  0 70 75 74 2D 63 74 
+1A3C1C8 	6C 72 2D 63 6D 64 32 8D 
+1A3C1D0 	80 C1 A3  1 20 40 A0  1 
+1A3C1D8 	40 C1 A3  1 80 C1 A3  1 
+1A3C1E0 	58 46 A0  1 
+
+headers
+: put-get-data  ( cmd -- data | -1 )  put-data get-data  ;
+1A3C1E4 	 0  0  0 70 
+1A3C1E8 	75 74 2D 67 65 74 2D 64 
+1A3C1F0 	61 74 61 8C D4 C1 A3  1 
+1A3C1F8 	20 40 A0  1 80 C1 A3  1 
+1A3C200 	E8 C0 A3  1 58 46 A0  1 
+
+\ Wait until the device stops sending data
+: clear-out-buf  ( -- )  begin  d# 120 ms  get-data?  while  drop  repeat  ;
+1A3C208 	 0  0 63 6C 65 61 72 2D 
+1A3C210 	6F 75 74 2D 62 75 66 8D 
+1A3C218 	F8 C1 A3  1 20 40 A0  1 
+1A3C220 	58 41 A0  1 78  0  0  0 
+1A3C228 	60 E0 A1  1 9C C0 A3  1 
+1A3C230 	DC 41 A0  1 10  0  0  0 
+1A3C238 	30 49 A0  1 C8 41 A0  1 
+1A3C240 	E0 FF FF FF 58 46 A0  1 
+headerless
+
+: disable-intf  ( -- )  h# ad put-ctlr-cmd  ;
+1A3C248 	 0  0  0 64 69 73 61 62 
+1A3C250 	6C 65 2D 69 6E 74 66 8C 
+1A3C258 	1C C2 A3  1 20 40 A0  1 
+1A3C260 	58 41 A0  1 AD  0  0  0 
+1A3C268 	40 C1 A3  1 58 46 A0  1 
+: enable-intf   ( -- )  h# ae put-ctlr-cmd  ;
+1A3C270 	65 6E 61 62 6C 65 2D 69 
+1A3C278 	6E 74 66 8B 5C C2 A3  1 
+1A3C280 	20 40 A0  1 58 41 A0  1 
+1A3C288 	AE  0  0  0 40 C1 A3  1 
+1A3C290 	58 46 A0  1 
+
+: (ctlr-cmd)  ( cmd -- data | -1 )
+1A3C294 	 0 28 63 74 
+1A3C298 	6C 72 2D 63 6D 64 29 8A 
+1A3C2A0 	80 C2 A3  1 20 40 A0  1 
+   \ Controller commands return data as though it were from the keyboard port
+   port >r  0 to port
+1A3C2A8 	F4 BD A3  1 BC 45 A0  1 
+1A3C2B0 	70 6F A0  1 48 B8 A1  1 
+1A3C2B8 	F4 BD A3  1 
+   put-ctlr-cmd get-data
+1A3C2BC 	40 C1 A3  1 
+1A3C2C0 	E8 C0 A3  1 
+   r> to port
+1A3C2C4 	D0 45 A0  1 
+1A3C2C8 	48 B8 A1  1 F4 BD A3  1 
+;
+1A3C2D0 	58 46 A0  1 
+
+: cmd-reg!  ( b -- )  h# 60 put-ctlr-cmd2  ;
+1A3C2D4 	 0  0  0 63 
+1A3C2D8 	6D 64 2D 72 65 67 21 88 
+1A3C2E0 	A4 C2 A3  1 20 40 A0  1 
+1A3C2E8 	58 41 A0  1 60  0  0  0 
+1A3C2F0 	D4 C1 A3  1 58 46 A0  1 
+: cmd-reg@  ( -- b )  h# 20 (ctlr-cmd)  ;
+1A3C2F8 	 0  0  0 63 6D 64 2D 72 
+1A3C300 	65 67 40 88 E4 C2 A3  1 
+1A3C308 	20 40 A0  1 58 41 A0  1 
+1A3C310 	20  0  0  0 A4 C2 A3  1 
+1A3C318 	58 46 A0  1 
+
+\ Enable and disable scan set translation
+: translation-on   ( -- )  cmd-reg@  h# 40 or          cmd-reg!  ;
+1A3C31C 	 0 74 72 61 
+1A3C320 	6E 73 6C 61 74 69 6F 6E 
+1A3C328 	2D 6F 6E 8E  8 C3 A3  1 
+1A3C330 	20 40 A0  1  8 C3 A3  1 
+1A3C338 	58 41 A0  1 40  0  0  0 
+1A3C340 	70 44 A0  1 E4 C2 A3  1 
+1A3C348 	58 46 A0  1 
+: translation-off  ( -- )  cmd-reg@  h# 40 invert and  cmd-reg!  ;
+1A3C34C 	74 72 61 6E 
+1A3C350 	73 6C 61 74 69 6F 6E 2D 
+1A3C358 	6F 66 66 8F 30 C3 A3  1 
+1A3C360 	20 40 A0  1  8 C3 A3  1 
+1A3C368 	58 41 A0  1 40  0  0  0 
+1A3C370 	30 45 A0  1 5C 44 A0  1 
+1A3C378 	E4 C2 A3  1 58 46 A0  1 
+
+: ctlr-cmd1  ( cmd -- data )
+1A3C380 	 0  0 63 74 6C 72 2D 63 
+1A3C388 	6D 64 31 89 60 C3 A3  1 
+1A3C390 	20 40 A0  1 
+   \ Enable keyboard translate mode, enable aux device, enable
+   \ keyboard, set system flag, disable aux and keyboard interrupts
+   disable-intf  (ctlr-cmd)  h# 44 cmd-reg!  enable-intf
+1A3C394 	5C C2 A3  1 
+1A3C398 	A4 C2 A3  1 58 41 A0  1 
+1A3C3A0 	44  0  0  0 E4 C2 A3  1 
+1A3C3A8 	80 C2 A3  1 
+;
+1A3C3AC 	58 46 A0  1 
+   
+\ This takes 160 msecs on an IBM keyboard circa 1994
+: ctlr-selftest  ( -- fail? )
+1A3C3B0 	 0  0 63 74 6C 72 2D 73 
+1A3C3B8 	65 6C 66 74 65 73 74 8D 
+1A3C3C0 	90 C3 A3  1 20 40 A0  1 
+   h# aa ctlr-cmd1  ( data )
+1A3C3C8 	58 41 A0  1 AA  0  0  0 
+1A3C3D0 	90 C3 A3  1 
+   begin  h# 55 =  if  false exit  then  get-data? 0=  until
+1A3C3D4 	58 41 A0  1 
+1A3C3D8 	55  0  0  0 24 48 A0  1 
+1A3C3E0 	DC 41 A0  1  C  0  0  0 
+1A3C3E8 	18 70 A0  1 40 46 A0  1 
+1A3C3F0 	9C C0 A3  1 24 47 A0  1 
+1A3C3F8 	DC 41 A0  1 D8 FF FF FF 
+   true exit
+1A3C400 	 4 70 A0  1 40 46 A0  1 
+;
+1A3C408 	58 46 A0  1 
+
+: ack-reset  ( -- )
+1A3C40C 	 0  0 61 63 
+1A3C410 	6B 2D 72 65 73 65 74 89 
+1A3C418 	C4 C3 A3  1 20 40 A0  1 
+   \ Release the clock and data lines to acknowledge the ACK.
+   \ This appears to be keyboard-specific; I find no mention
+   \ of such a requirement for the mouse reset sequence.
+   h# c0  h# d1  put-ctlr-cmd2
+1A3C420 	58 41 A0  1 C0  0  0  0 
+1A3C428 	58 41 A0  1 D1  0  0  0 
+1A3C430 	D4 C1 A3  1 
+   clear-out-buf
+1A3C434 	1C C2 A3  1 
+;
+1A3C438 	58 46 A0  1 
+
+: (test-lines)  ( -- error? )
+1A3C43C 	 0  0  0 28 
+1A3C440 	74 65 73 74 2D 6C 69 6E 
+1A3C448 	65 73 29 8C 1C C4 A3  1 
+1A3C450 	20 40 A0  1 
+   port  if  h# a9  else  h# ab  then      ( kbd-or-aux-interface-test-code )
+1A3C454 	F4 BD A3  1 
+1A3C458 	DC 41 A0  1 14  0  0  0 
+1A3C460 	58 41 A0  1 A9  0  0  0 
+1A3C468 	C8 41 A0  1  C  0  0  0 
+1A3C470 	58 41 A0  1 AB  0  0  0 
+   ctlr-cmd1
+1A3C478 	90 C3 A3  1 
+   d# 20 ms		\ Recovery time
+1A3C47C 	58 41 A0  1 
+1A3C480 	14  0  0  0 60 E0 A1  1 
+;
+1A3C488 	58 46 A0  1 
+headers
+: test-lines  ( -- error? )
+1A3C48C 	 0 74 65 73 
+1A3C490 	74 2D 6C 69 6E 65 73 8A 
+1A3C498 	50 C4 A3  1 20 40 A0  1 
+  (test-lines)  0=  if  false exit  then
+1A3C4A0 	50 C4 A3  1 24 47 A0  1 
+1A3C4A8 	DC 41 A0  1  C  0  0  0 
+1A3C4B0 	18 70 A0  1 40 46 A0  1 
+  \ Retry in case we are not in sync with the keyboard
+  (test-lines) enable-intf  dup 0=  if  exit  then    ( error-code )
+1A3C4B8 	50 C4 A3  1 80 C2 A3  1 
+1A3C4C0 	40 49 A0  1 24 47 A0  1 
+1A3C4C8 	DC 41 A0  1  8  0  0  0 
+1A3C4D0 	40 46 A0  1 
+   ." Failed keyboard interface test" cr
+1A3C4D4 	20 7C A0  1 
+1A3C4D8 	1E 46 61 69 6C 65 64 20 
+1A3C4E0 	6B 65 79 62 6F 61 72 64 
+1A3C4E8 	20 69 6E 74 65 72 66 61 
+1A3C4F0 	63 65 20 74 65 73 74  0 
+1A3C4F8 	80 6D A0  1 
+   case
+      1  of  " low"  " Clock"  endof
+1A3C4FC 	80 6F A0  1 
+1A3C500 	48 43 A0  1 24  0  0  0 
+1A3C508 	9C 53 A0  1  3 6C 6F 77 
+1A3C510 	 0  0  0  0 9C 53 A0  1 
+1A3C518 	 5 43 6C 6F 63 6B  0  0 
+1A3C520 	6C 43 A0  1 A0  0  0  0 
+      2  of  " high" " Clock"  endof
+1A3C528 	90 6F A0  1 48 43 A0  1 
+1A3C530 	24  0  0  0 9C 53 A0  1 
+1A3C538 	 4 68 69 67 68  0  0  0 
+1A3C540 	9C 53 A0  1  5 43 6C 6F 
+1A3C548 	63 6B  0  0 6C 43 A0  1 
+1A3C550 	74  0  0  0 
+      3  of  " low"  " Data"   endof
+1A3C554 	A0 6F A0  1 
+1A3C558 	48 43 A0  1 24  0  0  0 
+1A3C560 	9C 53 A0  1  3 6C 6F 77 
+1A3C568 	 0  0  0  0 9C 53 A0  1 
+1A3C570 	 4 44 61 74 61  0  0  0 
+1A3C578 	6C 43 A0  1 48  0  0  0 
+      4  of  " high" " Data"   endof
+1A3C580 	B0 6F A0  1 48 43 A0  1 
+1A3C588 	24  0  0  0 9C 53 A0  1 
+1A3C590 	 4 68 69 67 68  0  0  0 
+1A3C598 	9C 53 A0  1  4 44 61 74 
+1A3C5A0 	61  0  0  0 6C 43 A0  1 
+1A3C5A8 	1C  0  0  0 
+      \ This probably means that we are out-of-sync with the keyboard
+      >r " ?" 2dup  r>
+1A3C5AC 	BC 45 A0  1 
+1A3C5B0 	9C 53 A0  1  1 3F  0  0 
+1A3C5B8 	C0 49 A0  1 D0 45 A0  1 
+   endcase
+1A3C5C0 	84 43 A0  1 
+   ." The keyboard '" type  ." ' line is stuck " type  ." ."  cr
+1A3C5C4 	20 7C A0  1 
+1A3C5C8 	 E 54 68 65 20 6B 65 79 
+1A3C5D0 	62 6F 61 72 64 20 27  0 
+1A3C5D8 	 4 6C A0  1 20 7C A0  1 
+1A3C5E0 	10 27 20 6C 69 6E 65 20 
+1A3C5E8 	69 73 20 73 74 75 63 6B 
+1A3C5F0 	20  0  0  0  4 6C A0  1 
+1A3C5F8 	20 7C A0  1  1 2E  0  0 
+1A3C600 	80 6D A0  1 
+   false
+1A3C604 	18 70 A0  1 
+;
+1A3C608 	58 46 A0  1 
+headerless
+0 value open-count
+1A3C60C 	 0 6F 70 65 
+1A3C610 	6E 2D 63 6F 75 6E 74 8A 
+1A3C618 	9C C4 A3  1 50 40 A0  1 
+1A3C620 	5C  C  0  0 
+headers
+: open  ( -- flag? )
+1A3C624 	 0  0  0 6F 
+1A3C628 	70 65 6E 84 1C C6 A3  1 
+1A3C630 	20 40 A0  1 
+   open-count 1+ to open-count
+1A3C634 	1C C6 A3  1 
+1A3C638 	30 4B A0  1 B8 40 A0  1 
+1A3C640 	1C C6 A3  1 
+   data-port 0=  if
+1A3C644 	 C BE A3  1 
+1A3C648 	24 47 A0  1 DC 41 A0  1 
+1A3C650 	9C  0  0  0 
+      my-address my-space  5  " map-in" $call-parent  is data-port
+1A3C654 	20 10 A2  1 
+1A3C658 	AC  3 A2  1 C0 6F A0  1 
+1A3C660 	9C 53 A0  1  6 6D 61 70 
+1A3C668 	2D 69 6E  0 DC 31 A2  1 
+1A3C670 	B8 40 A0  1  C BE A3  1 
+      data-port 4 + is cmd-status-reg
+1A3C678 	 C BE A3  1 B0 6F A0  1 
+1A3C680 	 4 45 A0  1 B8 40 A0  1 
+1A3C688 	28 BE A3  1 
+
+      ctlr-selftest  if
+1A3C68C 	C4 C3 A3  1 
+1A3C690 	DC 41 A0  1 48  0  0  0 
+         ctlr-selftest  if	\ Retry in case we're out of sync
+1A3C698 	C4 C3 A3  1 DC 41 A0  1 
+1A3C6A0 	3C  0  0  0 
+            ." Failed keyboard controller self test" cr
+1A3C6A4 	20 7C A0  1 
+1A3C6A8 	24 46 61 69 6C 65 64 20 
+1A3C6B0 	6B 65 79 62 6F 61 72 64 
+1A3C6B8 	20 63 6F 6E 74 72 6F 6C 
+1A3C6C0 	6C 65 72 20 73 65 6C 66 
+1A3C6C8 	20 74 65 73 74  0  0  0 
+1A3C6D0 	80 6D A0  1 
+            false exit
+1A3C6D4 	18 70 A0  1 
+1A3C6D8 	40 46 A0  1 
+         then
+      then
+      q0 init-q  q1 init-q
+1A3C6DC 	34 BC A3  1 
+1A3C6E0 	68 BC A3  1 4C BC A3  1 
+1A3C6E8 	68 BC A3  1 
+   then
+   true
+1A3C6EC 	 4 70 A0  1 
+;
+1A3C6F0 	58 46 A0  1 
+: close  ( -- )
+1A3C6F4 	 0  0 63 6C 
+1A3C6F8 	6F 73 65 85 30 C6 A3  1 
+1A3C700 	20 40 A0  1 
+   open-count 1- 0 max to open-count
+1A3C704 	1C C6 A3  1 
+1A3C708 	54 4B A0  1 70 6F A0  1 
+1A3C710 	9C 4A A0  1 B8 40 A0  1 
+1A3C718 	1C C6 A3  1 
+   open-count 0=  if
+1A3C71C 	1C C6 A3  1 
+1A3C720 	24 47 A0  1 DC 41 A0  1 
+1A3C728 	38  0  0  0 
+      data-port 5 " map-out" $call-parent
+1A3C72C 	 C BE A3  1 
+1A3C730 	C0 6F A0  1 9C 53 A0  1 
+1A3C738 	 7 6D 61 70 2D 6F 75 74 
+1A3C740 	 0  0  0  0 DC 31 A2  1 
+      0 to data-port
+1A3C748 	70 6F A0  1 B8 40 A0  1 
+1A3C750 	 C BE A3  1 
+      0 to cmd-status-reg
+1A3C754 	70 6F A0  1 
+1A3C758 	B8 40 A0  1 28 BE A3  1 
+   then
+;
+1A3C760 	58 46 A0  1 

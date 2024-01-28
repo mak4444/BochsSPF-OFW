@@ -1,0 +1,238 @@
+purpose: Load USB device fcode driver
+
+hex
+headers
+
+false value probemsg?	\ Optional probing messages
+1A45964 	 0  0 70 72 
+1A45968 	6F 62 65 6D 73 67 3F 89 
+1A45970 	64 57 A4  1 50 40 A0  1 
+1A45978 	 0  E  0  0 
+
+\ $load-driver executes an FCode driver that is stored somewhere
+\ other than on the device itself.
+
+: $load  ( name$ -- done? )  " $load-driver" evaluate  ;
+1A4597C 	 0  0 24 6C 
+1A45980 	6F 61 64 85 74 59 A4  1 
+1A45988 	20 40 A0  1 9C 53 A0  1 
+1A45990 	 C 24 6C 6F 61 64 2D 64 
+1A45998 	72 69 76 65 72  0  0  0 
+1A459A0 	D8 E5 A0  1 58 46 A0  1 
+
+\ Words to get my (as a child) properties
+
+: get-int-property  ( name$ -- n )
+1A459A8 	 0  0  0 67 65 74 2D 69 
+1A459B0 	6E 74 2D 70 72 6F 70 65 
+1A459B8 	72 74 79 90 88 59 A4  1 
+1A459C0 	20 40 A0  1 
+   get-my-property 0=  if  decode-int nip nip  else  0  then
+1A459C4 	1C 34 A2  1 
+1A459C8 	24 47 A0  1 DC 41 A0  1 
+1A459D0 	18  0  0  0 68 F7 A1  1 
+1A459D8 	FC 46 A0  1 FC 46 A0  1 
+1A459E0 	C8 41 A0  1  8  0  0  0 
+1A459E8 	70 6F A0  1 
+;
+1A459EC 	58 46 A0  1 
+: get-class-properties  ( -- class subclass protocol )
+1A459F0 	 0  0  0 67 65 74 2D 63 
+1A459F8 	6C 61 73 73 2D 70 72 6F 
+1A45A00 	70 65 72 74 69 65 73 94 
+1A45A08 	C0 59 A4  1 20 40 A0  1 
+   " class"    get-int-property
+1A45A10 	9C 53 A0  1  5 63 6C 61 
+1A45A18 	73 73  0  0 C0 59 A4  1 
+   " subclass" get-int-property
+1A45A20 	9C 53 A0  1  8 73 75 62 
+1A45A28 	63 6C 61 73 73  0  0  0 
+1A45A30 	C0 59 A4  1 
+   " protocol" get-int-property
+1A45A34 	9C 53 A0  1 
+1A45A38 	 8 70 72 6F 74 6F 63 6F 
+1A45A40 	6C  0  0  0 C0 59 A4  1 
+;
+1A45A48 	58 46 A0  1 
+: get-vendor-properties  ( -- vendor product release )
+1A45A4C 	 0  0 67 65 
+1A45A50 	74 2D 76 65 6E 64 6F 72 
+1A45A58 	2D 70 72 6F 70 65 72 74 
+1A45A60 	69 65 73 95  C 5A A4  1 
+1A45A68 	20 40 A0  1 
+   " vendor-id" get-int-property
+1A45A6C 	9C 53 A0  1 
+1A45A70 	 9 76 65 6E 64 6F 72 2D 
+1A45A78 	69 64  0  0 C0 59 A4  1 
+   " device-id" get-int-property
+1A45A80 	9C 53 A0  1  9 64 65 76 
+1A45A88 	69 63 65 2D 69 64  0  0 
+1A45A90 	C0 59 A4  1 
+   " release"   get-int-property
+1A45A94 	9C 53 A0  1 
+1A45A98 	 7 72 65 6C 65 61 73 65 
+1A45AA0 	 0  0  0  0 C0 59 A4  1 
+;
+1A45AA8 	58 46 A0  1 
+
+\ Some little pieces for easy formatting of USB name strings
+
+: $hold  ( adr len -- )
+1A45AAC 	 0  0 24 68 
+1A45AB0 	6F 6C 64 85 68 5A A4  1 
+1A45AB8 	20 40 A0  1 
+   dup  if  bounds swap 1-  ?do  i c@ hold  -1 +loop  else  2drop  then
+1A45ABC 	40 49 A0  1 
+1A45AC0 	DC 41 A0  1 3C  0  0  0 
+1A45AC8 	F0 6D A0  1 68 49 A0  1 
+1A45AD0 	54 4B A0  1 50 42 A0  1 
+1A45AD8 	20  0  0  0 B4 42 A0  1 
+1A45AE0 	C4 4C A0  1 DC 75 A0  1 
+1A45AE8 	58 41 A0  1 FF FF FF FF 
+1A45AF0 	1C 42 A0  1 E8 FF FF FF 
+1A45AF8 	C8 41 A0  1  8  0  0  0 
+1A45B00 	AC 49 A0  1 
+;
+1A45B04 	58 46 A0  1 
+
+: usb#>   ( n -- )  " usb" $hold  0 u#> ;     \ Prepends: usb
+1A45B08 	 0  0 75 73 62 23 3E 85 
+1A45B10 	B8 5A A4  1 20 40 A0  1 
+1A45B18 	9C 53 A0  1  3 75 73 62 
+1A45B20 	 0  0  0  0 B8 5A A4  1 
+1A45B28 	70 6F A0  1 E0 76 A0  1 
+1A45B30 	58 46 A0  1 
+: #usb#>  ( n -- )  u#s drop  usb#>  ;        \ Prepends: usbN
+1A45B34 	 0 23 75 73 
+1A45B38 	62 23 3E 86 14 5B A4  1 
+1A45B40 	20 40 A0  1 BC 76 A0  1 
+1A45B48 	30 49 A0  1 14 5B A4  1 
+1A45B50 	58 46 A0  1 
+: #,      ( n -- )  u#s drop ascii , hold  ;  \ Prepends: ,N
+1A45B54 	 0 23 2C 82 
+1A45B58 	40 5B A4  1 20 40 A0  1 
+1A45B60 	BC 76 A0  1 30 49 A0  1 
+1A45B68 	58 41 A0  1 2C  0  0  0 
+1A45B70 	DC 75 A0  1 58 46 A0  1 
+: #.      ( n -- )  u#s drop ascii . hold  ;  \ Prepends: .N
+1A45B78 	 0 23 2E 82 5C 5B A4  1 
+1A45B80 	20 40 A0  1 BC 76 A0  1 
+1A45B88 	30 49 A0  1 58 41 A0  1 
+1A45B90 	2E  0  0  0 DC 75 A0  1 
+1A45B98 	58 46 A0  1 
+
+: ?#,  ( n level test-level -- )   \ Prepends: ,N  if levels match
+1A45B9C 	3F 23 2C 83 
+1A45BA0 	80 5B A4  1 20 40 A0  1 
+   >=  if  #,  else  drop  then
+1A45BA8 	EC 48 A0  1 DC 41 A0  1 
+1A45BB0 	10  0  0  0 5C 5B A4  1 
+1A45BB8 	C8 41 A0  1  8  0  0  0 
+1A45BC0 	30 49 A0  1 
+;
+1A45BC4 	58 46 A0  1 
+
+: device$  ( -- adr len )
+1A45BC8 	64 65 76 69 63 65 24 87 
+1A45BD0 	A4 5B A4  1 20 40 A0  1 
+   get-vendor-properties drop  		( vendor-id device-id )
+1A45BD8 	68 5A A4  1 30 49 A0  1 
+   push-hex
+1A45BE0 	5C F4 A0  1 
+   <# #, #usb#>
+1A45BE4 	 8 76 A0  1 
+1A45BE8 	5C 5B A4  1 40 5B A4  1 
+   pop-base
+1A45BF0 	9C F4 A0  1 
+;
+1A45BF4 	58 46 A0  1 
+
+\ Return a string of the form usb,classC[,S[,P]] depending on level
+\ Level: 0 -> C   1 -> C,S   2 -> C,S,P
+: class$  ( level -- name$ )  
+1A45BF8 	 0 63 6C 61 73 73 24 86 
+1A45C00 	D4 5B A4  1 20 40 A0  1 
+   >r  get-class-properties  r>	      ( class subclass protocol level )
+1A45C08 	BC 45 A0  1  C 5A A4  1 
+1A45C10 	D0 45 A0  1 
+   push-hex                           ( class subclass protocol level )
+1A45C14 	5C F4 A0  1 
+   <#                                 ( class subclass protocol level )
+1A45C18 	 8 76 A0  1 
+      tuck                            ( class subclass level protocol level )
+1A45C1C 	E8 46 A0  1 
+      2 ?#,                           ( class subclass level )
+1A45C20 	90 6F A0  1 A4 5B A4  1 
+      1 ?#,                           ( class )
+1A45C28 	80 6F A0  1 A4 5B A4  1 
+      u#s " usb,class" $hold          ( )
+1A45C30 	BC 76 A0  1 9C 53 A0  1 
+1A45C38 	 9 75 73 62 2C 63 6C 61 
+1A45C40 	73 73  0  0 B8 5A A4  1 
+   u#>
+1A45C48 	E0 76 A0  1 
+   pop-base
+1A45C4C 	9C F4 A0  1 
+;
+1A45C50 	58 46 A0  1 
+
+: usb-storage?  ( -- flag )
+1A45C54 	 0  0  0 75 
+1A45C58 	73 62 2D 73 74 6F 72 61 
+1A45C60 	67 65 3F 8C  4 5C A4  1 
+1A45C68 	20 40 A0  1 
+   get-class-properties			( class subclass protocol )
+1A45C6C 	 C 5A A4  1 
+   h# 50 =  rot  8 =  and  if		( subclass )
+1A45C70 	58 41 A0  1 50  0  0  0 
+1A45C78 	24 48 A0  1 7C 49 A0  1 
+1A45C80 	F0 6F A0  1 24 48 A0  1 
+1A45C88 	5C 44 A0  1 DC 41 A0  1 
+1A45C90 	68  0  0  0 
+      dup 2 =  if			\ atapi
+1A45C94 	40 49 A0  1 
+1A45C98 	90 6F A0  1 24 48 A0  1 
+1A45CA0 	DC 41 A0  1 30  0  0  0 
+         drop  " " " is-atapi" str-property   true
+1A45CA8 	30 49 A0  1 9C 53 A0  1 
+1A45CB0 	 0  0  0  0 9C 53 A0  1 
+1A45CB8 	 8 69 73 2D 61 74 61 70 
+1A45CC0 	69  0  0  0 5C 3B A4  1 
+1A45CC8 	 4 70 A0  1 
+      else
+1A45CCC 	C8 41 A0  1 
+1A45CD0 	20  0  0  0 
+         dup 5 = swap 6 = or		\ removable, scsi
+1A45CD4 	40 49 A0  1 
+1A45CD8 	C0 6F A0  1 24 48 A0  1 
+1A45CE0 	68 49 A0  1 D0 6F A0  1 
+1A45CE8 	24 48 A0  1 70 44 A0  1 
+      then
+   else
+1A45CF0 	C8 41 A0  1  C  0  0  0 
+      drop false
+1A45CF8 	30 49 A0  1 18 70 A0  1 
+   then
+;
+1A45D00 	58 46 A0  1 
+
+
+: load-fcode-driver  ( -- )
+1A45D04 	 0  0 6C 6F 
+1A45D08 	61 64 2D 66 63 6F 64 65 
+1A45D10 	2D 64 72 69 76 65 72 91 
+1A45D18 	68 5C A4  1 20 40 A0  1 
+
+   usb-storage?    if s" d:include\dev\usbm\device\storage\storage.fth" included then
+1A45D20 	68 5C A4  1 DC 41 A0  1 
+1A45D28 	3C  0  0  0 9C 53 A0  1 
+1A45D30 	2D 64 3A 69 6E 63 6C 75 
+1A45D38 	64 65 5C 64 65 76 5C 75 
+1A45D40 	73 62 6D 5C 64 65 76 69 
+1A45D48 	63 65 5C 73 74 6F 72 61 
+1A45D50 	67 65 5C 73 74 6F 72 61 
+1A45D58 	67 65 2E 66 74 68  0  0 
+1A45D60 	C8 E8 A0  1 
+;
+1A45D64 	58 46 A0  1 
+

@@ -1,0 +1,88 @@
+
+headers
+
+\ Splits a string into two halves before the first occurrence of
+\ a delimiter character.
+\ adra,lena is the string including and after the delimiter
+\ adrb,lenb is the string before the delimiter
+\ lena = 0 if there was no delimiter
+
+: split-before  ( adr len delim -- adra lena  adrb lenb )
+1A1190C 	 0  0  0 73 
+1A11910 	70 6C 69 74 2D 62 65 66 
+1A11918 	6F 72 65 8C E0 18 A1  1 
+1A11920 	20 40 A0  1 
+   split-string 2swap
+1A11924 	3C 64 A0  1 
+1A11928 	F4 49 A0  1 
+;
+1A1192C 	58 46 A0  1 
+alias $split left-parse-string
+1A11930 	 0 24 73 70 6C 69 74 A6 
+1A11938 	20 19 A1  1 44 D7 A0  1 
+
+: cindex  ( adr len char -- [ index true ]  | false )
+1A11940 	 0 63 69 6E 64 65 78 86 
+1A11948 	3C 19 A1  1 20 40 A0  1 
+   false swap 2swap  bounds  ?do  ( false char )
+1A11950 	18 70 A0  1 68 49 A0  1 
+1A11958 	F4 49 A0  1 F0 6D A0  1 
+1A11960 	50 42 A0  1 38  0  0  0 
+      dup  i c@  =  if  nip i true rot  leave  then
+1A11968 	40 49 A0  1 B4 42 A0  1 
+1A11970 	C4 4C A0  1 24 48 A0  1 
+1A11978 	DC 41 A0  1 18  0  0  0 
+1A11980 	FC 46 A0  1 B4 42 A0  1 
+1A11988 	 4 70 A0  1 7C 49 A0  1 
+1A11990 	18 43 A0  1 
+   loop                           ( false char  |  index true char )
+1A11994 	F8 41 A0  1 
+1A11998 	D0 FF FF FF 
+   drop
+1A1199C 	30 49 A0  1 
+;
+1A119A0 	58 46 A0  1 
+
+\ Splits a string into two halves after the last occurrence of
+\ a delimiter character.
+\ adra,lena is the string after the delimiter
+\ adrb,lenb is the string before and including the delimiter
+\ lenb = 0 if there was no delimiter
+
+: right-split-string  ( $1 char -- tail$ head$|null$ )
+1A119A4 	 0 72 69 67 
+1A119A8 	68 74 2D 73 70 6C 69 74 
+1A119B0 	2D 73 74 72 69 6E 67 92 
+1A119B8 	4C 19 A1  1 20 40 A0  1 
+   >r  2dup + 0           ( $1 null$ )
+1A119C0 	BC 45 A0  1 C0 49 A0  1 
+1A119C8 	 4 45 A0  1 70 6F A0  1 
+   begin  2 pick  while                   ( head$ tail$ )
+1A119D0 	90 6F A0  1  C 4A A0  1 
+1A119D8 	DC 41 A0  1 48  0  0  0 
+      2over + 1- c@  r@  <>
+1A119E0 	D8 49 A0  1  4 45 A0  1 
+1A119E8 	54 4B A0  1 C4 4C A0  1 
+1A119F0 	E4 45 A0  1 44 48 A0  1 
+   while                                  ( head$ tail$ )
+1A119F8 	DC 41 A0  1 28  0  0  0 
+      2swap 1-  2swap swap 1- swap 1+  
+1A11A00 	F4 49 A0  1 54 4B A0  1 
+1A11A08 	F4 49 A0  1 68 49 A0  1 
+1A11A10 	54 4B A0  1 68 49 A0  1 
+1A11A18 	30 4B A0  1 
+   repeat  then
+1A11A1C 	C8 41 A0  1 
+1A11A20 	B0 FF FF FF 
+   r> drop                                ( head$|null$ tail$ )
+1A11A24 	D0 45 A0  1 
+1A11A28 	30 49 A0  1 
+   2swap                                  ( tail$ head$|null$ )
+1A11A2C 	F4 49 A0  1 
+;
+1A11A30 	58 46 A0  1 
+alias split-after right-split-string
+1A11A34 	73 70 6C 69 
+1A11A38 	74 2D 61 66 74 65 72 AB 
+1A11A40 	BC 19 A1  1 BC 19 A1  1 
+headers

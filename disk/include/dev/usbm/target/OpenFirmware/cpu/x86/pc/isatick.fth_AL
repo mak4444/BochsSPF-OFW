@@ -1,0 +1,55 @@
+purpose: Use ISA 8254 timer 0 or the RTC as the tick timer
+
+: tick-interrupt  ( level -- )
+1A39DD0 	 0 74 69 63 6B 2D 69 6E 
+1A39DD8 	74 65 72 72 75 70 74 8E 
+1A39DE0 	C0 9C A3  1 20 40 A0  1 
+   drop
+1A39DE8 	30 49 A0  1 
+[ifdef] level-interrupts
+   " which-interrupt"  clock-node @  $call-method  drop  \ Clear the interrupt
+[then]
+   tick-msecs ms/tick +  to tick-msecs
+1A39DEC 	B0 85 A3  1 
+1A39DF0 	38 E0 A1  1  4 45 A0  1 
+1A39DF8 	B8 40 A0  1 B0 85 A3  1 
+\ mmo   ?call-os
+   check-alarm
+1A39E00 	 8 73 A2  1 
+;
+1A39E04 	58 46 A0  1 
+
+\eof mmo
+
+\ If we are using the 8259 interrupt controller in level-triggered mode,
+\ we must use the RTC instead of the ISA counter/timer to generate the tick
+\ interrupt, because the interrupt output from the ISA timer is a square
+\ wave with no provision for making it go away immediately after servicing it.
+
+\ Unfortunately, the granularity of the RTC interrupt leaves something to
+\ be desired.  You can set its interrupt period to power-of-two multiples
+\ of 1/8192 seconds (approximately 122 usecs), resulting in periods like
+\ 1.95 ms, 3.9 ms, 7.8 ms, 15.6 ms ...
+
+[ifdef] level-interrupts
+: (set-tick-limit)  ( #msecs -- )
+   d# 1000 *                                      ( target-usecs/tick )
+   " set-tick-usecs"  clock-node @  $call-method  ( actual-usecs/tick )
+   d# 500 +  d# 1000 /  to ms/tick                ( )
+   ['] tick-interrupt 8 interrupt-handler!
+   8 enable-interrupt
+;
+\ This is a workaround for a bug in JavaOS; it apparently expects
+\ the firmware to set the mode and period of ISA timer 0.
+stand-init: ISA Timer
+   d# 10 " /isa/timer" " set-tick-limit" execute-device-method drop
+;
+[else]
+: (set-tick-limit)  ( #msecs -- )
+   to ms/tick
+   ms/tick " /isa/timer" " set-tick-limit" execute-device-method drop
+   ['] tick-interrupt 0 interrupt-handler!
+   0 enable-interrupt
+;
+[then]
+\ mmo  ' (set-tick-limit) to set-tick-limit

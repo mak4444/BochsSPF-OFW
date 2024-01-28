@@ -1,0 +1,510 @@
+purpose: Functional interface to HCD driver provided for all usb children
+
+\ All hub drivers must forward all the following methods for their children.
+\ A device driver may include only a subset of the methods it needs.
+
+: hcdcallfth 
+1A44560 	 0 68 63 64 63 61 6C 6C 
+1A44568 	66 74 68 8A 48 45 A4  1 
+1A44570 	20 40 A0  1 
+hex
+1A44574 	C0 8D A0  1 
+ " : dma-alloc    ( size -- virt ) "" dma-alloc"" $call-parent ;" eval
+1A44578 	9C 53 A0  1 3B 3A 20 64 
+1A44580 	6D 61 2D 61 6C 6C 6F 63 
+1A44588 	20 20 20 20 28 20 73 69 
+1A44590 	7A 65 20 2D 2D 20 76 69 
+1A44598 	72 74 20 29 20 22 20 64 
+1A445A0 	6D 61 2D 61 6C 6C 6F 63 
+1A445A8 	22 20 24 63 61 6C 6C 2D 
+1A445B0 	70 61 72 65 6E 74 20 3B 
+1A445B8 	 0  0  0  0 D8 E5 A0  1 
+ " : dma-free     ( virt size -- ) "" dma-free"" $call-parent  ;" eval
+1A445C0 	9C 53 A0  1 3B 3A 20 64 
+1A445C8 	6D 61 2D 66 72 65 65 20 
+1A445D0 	20 20 20 20 28 20 76 69 
+1A445D8 	72 74 20 73 69 7A 65 20 
+1A445E0 	2D 2D 20 29 20 22 20 64 
+1A445E8 	6D 61 2D 66 72 65 65 22 
+1A445F0 	20 24 63 61 6C 6C 2D 70 
+1A445F8 	61 72 65 6E 74 20 20 3B 
+1A44600 	 0  0  0  0 D8 E5 A0  1 
+ " : locked?  ( -- flag )   "" locked?"" $call-parent ;" eval
+1A44608 	9C 53 A0  1 32 3A 20 6C 
+1A44610 	6F 63 6B 65 64 3F 20 20 
+1A44618 	28 20 2D 2D 20 66 6C 61 
+1A44620 	67 20 29 20 20 20 22 20 
+1A44628 	6C 6F 63 6B 65 64 3F 22 
+1A44630 	20 24 63 61 6C 6C 2D 70 
+1A44638 	61 72 65 6E 74 20 3B  0 
+1A44640 	D8 E5 A0  1 
+
+\ Probing support
+ " : set-target  ( device -- )   "" set-target"" $call-parent ;" eval
+1A44644 	9C 53 A0  1 
+1A44648 	3A 3A 20 73 65 74 2D 74 
+1A44650 	61 72 67 65 74 20 20 28 
+1A44658 	20 64 65 76 69 63 65 20 
+1A44660 	2D 2D 20 29 20 20 20 22 
+1A44668 	20 73 65 74 2D 74 61 72 
+1A44670 	67 65 74 22 20 24 63 61 
+1A44678 	6C 6C 2D 70 61 72 65 6E 
+1A44680 	74 20 3B  0 D8 E5 A0  1 
+ " : probe-hub-xt  ( -- adr )   "" probe-hub-xt"" $call-parent ;" eval
+1A44688 	9C 53 A0  1 3B 3A 20 70 
+1A44690 	72 6F 62 65 2D 68 75 62 
+1A44698 	2D 78 74 20 20 28 20 2D 
+1A446A0 	2D 20 61 64 72 20 29 20 
+1A446A8 	20 20 22 20 70 72 6F 62 
+1A446B0 	65 2D 68 75 62 2D 78 74 
+1A446B8 	22 20 24 63 61 6C 6C 2D 
+1A446C0 	70 61 72 65 6E 74 20 3B 
+1A446C8 	 0  0  0  0 D8 E5 A0  1 
+ " : reprobe-hub-xt  ( -- adr )   "" reprobe-hub-xt"" $call-parent ;" eval
+1A446D0 	9C 53 A0  1 3F 3A 20 72 
+1A446D8 	65 70 72 6F 62 65 2D 68 
+1A446E0 	75 62 2D 78 74 20 20 28 
+1A446E8 	20 2D 2D 20 61 64 72 20 
+1A446F0 	29 20 20 20 22 20 72 65 
+1A446F8 	70 72 6F 62 65 2D 68 75 
+1A44700 	62 2D 78 74 22 20 24 63 
+1A44708 	61 6C 6C 2D 70 61 72 65 
+1A44710 	6E 74 20 3B  0  0  0  0 
+1A44718 	D8 E5 A0  1 
+ " : hub-selftest-xt  ( -- adr )   "" hub-selftest-xt"" $call-parent ;" eval
+1A4471C 	9C 53 A0  1 
+1A44720 	41 3A 20 68 75 62 2D 73 
+1A44728 	65 6C 66 74 65 73 74 2D 
+1A44730 	78 74 20 20 28 20 2D 2D 
+1A44738 	20 61 64 72 20 29 20 20 
+1A44740 	20 22 20 68 75 62 2D 73 
+1A44748 	65 6C 66 74 65 73 74 2D 
+1A44750 	78 74 22 20 24 63 61 6C 
+1A44758 	6C 2D 70 61 72 65 6E 74 
+1A44760 	20 3B  0  0 D8 E5 A0  1 
+ " : set-pipe-maxpayload  ( size len -- )  "" set-pipe-maxpayload"" $call-parent ;" eval
+1A44768 	9C 53 A0  1 4D 3A 20 73 
+1A44770 	65 74 2D 70 69 70 65 2D 
+1A44778 	6D 61 78 70 61 79 6C 6F 
+1A44780 	61 64 20 20 28 20 73 69 
+1A44788 	7A 65 20 6C 65 6E 20 2D 
+1A44790 	2D 20 29 20 20 22 20 73 
+1A44798 	65 74 2D 70 69 70 65 2D 
+1A447A0 	6D 61 78 70 61 79 6C 6F 
+1A447A8 	61 64 22 20 24 63 61 6C 
+1A447B0 	6C 2D 70 61 72 65 6E 74 
+1A447B8 	20 3B  0  0 D8 E5 A0  1 
+s" : setup-new-node  ( port speed hub-port hub-dev -- false | port dev xt true )
+1A447C0 	9C 53 A0  1 4D 3A 20 73 
+1A447C8 	65 74 75 70 2D 6E 65 77 
+1A447D0 	2D 6E 6F 64 65 20 20 28 
+1A447D8 	20 70 6F 72 74 20 73 70 
+1A447E0 	65 65 64 20 68 75 62 2D 
+1A447E8 	70 6F 72 74 20 68 75 62 
+1A447F0 	2D 64 65 76 20 2D 2D 20 
+1A447F8 	66 61 6C 73 65 20 7C 20 
+1A44800 	70 6F 72 74 20 64 65 76 
+1A44808 	20 78 74 20 74 72 75 65 
+1A44810 	20 29  0  0 
+ "    "" setup-new-node"" $call-parent ;
+1A44814 	9C 53 A0  1 
+1A44818 	23 20 20 20 22 20 73 65 
+1A44820 	74 75 70 2D 6E 65 77 2D 
+1A44828 	6E 6F 64 65 22 20 24 63 
+1A44830 	61 6C 6C 2D 70 61 72 65 
+1A44838 	6E 74 20 3B  0  0  0  0 
+ " : get-initial-descriptors  ( dev -- )  "" get-initial-descriptors"" $call-parent ;" eval
+1A44840 	9C 53 A0  1 50 3A 20 67 
+1A44848 	65 74 2D 69 6E 69 74 69 
+1A44850 	61 6C 2D 64 65 73 63 72 
+1A44858 	69 70 74 6F 72 73 20 20 
+1A44860 	28 20 64 65 76 20 2D 2D 
+1A44868 	20 29 20 20 22 20 67 65 
+1A44870 	74 2D 69 6E 69 74 69 61 
+1A44878 	6C 2D 64 65 73 63 72 69 
+1A44880 	70 74 6F 72 73 22 20 24 
+1A44888 	63 61 6C 6C 2D 70 61 72 
+1A44890 	65 6E 74 20 3B  0  0  0 
+1A44898 	D8 E5 A0  1 
+ " : refresh-desc-bufs  ( dev -- )   "" refresh-desc-bufs"" $call-parent ;" eval
+1A4489C 	9C 53 A0  1 
+1A448A0 	45 3A 20 72 65 66 72 65 
+1A448A8 	73 68 2D 64 65 73 63 2D 
+1A448B0 	62 75 66 73 20 20 28 20 
+1A448B8 	64 65 76 20 2D 2D 20 29 
+1A448C0 	20 20 20 22 20 72 65 66 
+1A448C8 	72 65 73 68 2D 64 65 73 
+1A448D0 	63 2D 62 75 66 73 22 20 
+1A448D8 	24 63 61 6C 6C 2D 70 61 
+1A448E0 	72 65 6E 74 20 3B  0  0 
+1A448E8 	D8 E5 A0  1 
+ " : get-cfg-desc  ( adr idx -- actual )   "" get-cfg-desc"" $call-parent ;" eval
+1A448EC 	9C 53 A0  1 
+1A448F0 	46 3A 20 67 65 74 2D 63 
+1A448F8 	66 67 2D 64 65 73 63 20 
+1A44900 	20 28 20 61 64 72 20 69 
+1A44908 	64 78 20 2D 2D 20 61 63 
+1A44910 	74 75 61 6C 20 29 20 20 
+1A44918 	20 22 20 67 65 74 2D 63 
+1A44920 	66 67 2D 64 65 73 63 22 
+1A44928 	20 24 63 61 6C 6C 2D 70 
+1A44930 	61 72 65 6E 74 20 3B  0 
+1A44938 	D8 E5 A0  1 
+
+
+\ Control pipe operations
+s" : control-get" eval  ( adr len idx value rtype req -- actual usberr )
+1A4493C 	9C 53 A0  1 
+1A44940 	 D 3A 20 63 6F 6E 74 72 
+1A44948 	6F 6C 2D 67 65 74  0  0 
+1A44950 	D8 E5 A0  1 
+ "    "" control-get"" $call-parent ;" eval
+1A44954 	9C 53 A0  1 
+1A44958 	20 20 20 20 22 20 63 6F 
+1A44960 	6E 74 72 6F 6C 2D 67 65 
+1A44968 	74 22 20 24 63 61 6C 6C 
+1A44970 	2D 70 61 72 65 6E 74 20 
+1A44978 	3B  0  0  0 D8 E5 A0  1 
+s" : control-set" eval  ( adr len idx value rtype req -- usberr )
+1A44980 	9C 53 A0  1  D 3A 20 63 
+1A44988 	6F 6E 74 72 6F 6C 2D 73 
+1A44990 	65 74  0  0 D8 E5 A0  1 
+ "    "" control-set"" $call-parent ;" eval
+1A44998 	9C 53 A0  1 20 20 20 20 
+1A449A0 	22 20 63 6F 6E 74 72 6F 
+1A449A8 	6C 2D 73 65 74 22 20 24 
+1A449B0 	63 61 6C 6C 2D 70 61 72 
+1A449B8 	65 6E 74 20 3B  0  0  0 
+1A449C0 	D8 E5 A0  1 
+s" : control-set-nostat" eval  ( adr len idx value rtype req -- usberr )
+1A449C4 	9C 53 A0  1 
+1A449C8 	14 3A 20 63 6F 6E 74 72 
+1A449D0 	6F 6C 2D 73 65 74 2D 6E 
+1A449D8 	6F 73 74 61 74  0  0  0 
+1A449E0 	D8 E5 A0  1 
+ "  "" control-set-nostat"" $call-parent ;" eval
+1A449E4 	9C 53 A0  1 
+1A449E8 	25 20 22 20 63 6F 6E 74 
+1A449F0 	72 6F 6C 2D 73 65 74 2D 
+1A449F8 	6E 6F 73 74 61 74 22 20 
+1A44A00 	24 63 61 6C 6C 2D 70 61 
+1A44A08 	72 65 6E 74 20 3B  0  0 
+1A44A10 	D8 E5 A0  1 
+s" : get-desc" eval  ( adr len lang didx dtype rtype -- actual usberr )
+1A44A14 	9C 53 A0  1 
+1A44A18 	 A 3A 20 67 65 74 2D 64 
+1A44A20 	65 73 63  0 D8 E5 A0  1 
+ "    "" get-desc"" $call-parent ;" eval
+1A44A28 	9C 53 A0  1 1D 20 20 20 
+1A44A30 	22 20 67 65 74 2D 64 65 
+1A44A38 	73 63 22 20 24 63 61 6C 
+1A44A40 	6C 2D 70 61 72 65 6E 74 
+1A44A48 	20 3B  0  0 D8 E5 A0  1 
+s" : get-status" eval  ( adr len intf/endp rtype -- actual usberr )
+1A44A50 	9C 53 A0  1  C 3A 20 67 
+1A44A58 	65 74 2D 73 74 61 74 75 
+1A44A60 	73  0  0  0 D8 E5 A0  1 
+ "    "" get-status"" $call-parent ;" eval
+1A44A68 	9C 53 A0  1 1F 20 20 20 
+1A44A70 	22 20 67 65 74 2D 73 74 
+1A44A78 	61 74 75 73 22 20 24 63 
+1A44A80 	61 6C 6C 2D 70 61 72 65 
+1A44A88 	6E 74 20 3B  0  0  0  0 
+1A44A90 	D8 E5 A0  1 
+s" : set-config" eval  ( cfg -- usberr )
+1A44A94 	9C 53 A0  1 
+1A44A98 	 C 3A 20 73 65 74 2D 63 
+1A44AA0 	6F 6E 66 69 67  0  0  0 
+1A44AA8 	D8 E5 A0  1 
+ "    "" set-config"" $call-parent ;" eval
+1A44AAC 	9C 53 A0  1 
+1A44AB0 	1F 20 20 20 22 20 73 65 
+1A44AB8 	74 2D 63 6F 6E 66 69 67 
+1A44AC0 	22 20 24 63 61 6C 6C 2D 
+1A44AC8 	70 61 72 65 6E 74 20 3B 
+1A44AD0 	 0  0  0  0 D8 E5 A0  1 
+
+
+ " : set-interface  ( intf alt -- usberr )  "" set-interface"" $call-parent ;" eval
+1A44AD8 	9C 53 A0  1 48 3A 20 73 
+1A44AE0 	65 74 2D 69 6E 74 65 72 
+1A44AE8 	66 61 63 65 20 20 28 20 
+1A44AF0 	69 6E 74 66 20 61 6C 74 
+1A44AF8 	20 2D 2D 20 75 73 62 65 
+1A44B00 	72 72 20 29 20 20 22 20 
+1A44B08 	73 65 74 2D 69 6E 74 65 
+1A44B10 	72 66 61 63 65 22 20 24 
+1A44B18 	63 61 6C 6C 2D 70 61 72 
+1A44B20 	65 6E 74 20 3B  0  0  0 
+1A44B28 	D8 E5 A0  1 
+s" : clear-feature" eval  ( intf/endp feature rtype -- usberr )
+1A44B2C 	9C 53 A0  1 
+1A44B30 	 F 3A 20 63 6C 65 61 72 
+1A44B38 	2D 66 65 61 74 75 72 65 
+1A44B40 	 0  0  0  0 D8 E5 A0  1 
+ "    "" clear-feature"" $call-parent ;" eval
+1A44B48 	9C 53 A0  1 22 20 20 20 
+1A44B50 	22 20 63 6C 65 61 72 2D 
+1A44B58 	66 65 61 74 75 72 65 22 
+1A44B60 	20 24 63 61 6C 6C 2D 70 
+1A44B68 	61 72 65 6E 74 20 3B  0 
+1A44B70 	D8 E5 A0  1 
+
+s" : set-feature" eval  ( intf/endp feature rtype -- usberr )
+1A44B74 	9C 53 A0  1 
+1A44B78 	 D 3A 20 73 65 74 2D 66 
+1A44B80 	65 61 74 75 72 65  0  0 
+1A44B88 	D8 E5 A0  1 
+ "    "" set-feature"" $call-parent ;" eval
+1A44B8C 	9C 53 A0  1 
+1A44B90 	20 20 20 20 22 20 73 65 
+1A44B98 	74 2D 66 65 61 74 75 72 
+1A44BA0 	65 22 20 24 63 61 6C 6C 
+1A44BA8 	2D 70 61 72 65 6E 74 20 
+1A44BB0 	3B  0  0  0 D8 E5 A0  1 
+
+ " : unstall-pipe  ( pipe -- )  "" unstall-pipe"" $call-parent  ;" eval
+1A44BB8 	9C 53 A0  1 3C 3A 20 75 
+1A44BC0 	6E 73 74 61 6C 6C 2D 70 
+1A44BC8 	69 70 65 20 20 28 20 70 
+1A44BD0 	69 70 65 20 2D 2D 20 29 
+1A44BD8 	20 20 22 20 75 6E 73 74 
+1A44BE0 	61 6C 6C 2D 70 69 70 65 
+1A44BE8 	22 20 24 63 61 6C 6C 2D 
+1A44BF0 	70 61 72 65 6E 74 20 20 
+1A44BF8 	3B  0  0  0 D8 E5 A0  1 
+
+\ alias unstall-pipe unstall-pipe 
+
+s"  alias bulk-in bulk-in-m" eval
+1A44C00 	9C 53 A0  1 18 20 61 6C 
+1A44C08 	69 61 73 20 62 75 6C 6B 
+1A44C10 	2D 69 6E 20 62 75 6C 6B 
+1A44C18 	2D 69 6E 2D 6D  0  0  0 
+1A44C20 	D8 E5 A0  1 
+s"  alias bulk-out bulk-out-m" eval
+1A44C24 	9C 53 A0  1 
+1A44C28 	1A 20 61 6C 69 61 73 20 
+1A44C30 	62 75 6C 6B 2D 6F 75 74 
+1A44C38 	20 62 75 6C 6B 2D 6F 75 
+1A44C40 	74 2D 6D  0 D8 E5 A0  1 
+;
+1A44C48 	58 46 A0  1 
+
+
+\ Bulk pipe operations
+: bulk-in-m  ( buf len pipe -- actual usberr )
+1A44C4C 	 0  0 62 75 
+1A44C50 	6C 6B 2D 69 6E 2D 6D 89 
+1A44C58 	70 45 A4  1 20 40 A0  1 
+   " bulk-in" $call-parent
+1A44C60 	9C 53 A0  1  7 62 75 6C 
+1A44C68 	6B 2D 69 6E  0  0  0  0 
+1A44C70 	DC 31 A2  1 
+;
+1A44C74 	58 46 A0  1 
+
+: bulk-out-m  ( buf len pipe -- usberr )
+1A44C78 	 0 62 75 6C 6B 2D 6F 75 
+1A44C80 	74 2D 6D 8A 5C 4C A4  1 
+1A44C88 	20 40 A0  1 
+   " bulk-out" $call-parent
+1A44C8C 	9C 53 A0  1 
+1A44C90 	 8 62 75 6C 6B 2D 6F 75 
+1A44C98 	74  0  0  0 DC 31 A2  1 
+;
+1A44CA0 	58 46 A0  1 
+
+
+
+: begin-bulk-in  ( buf len pipe -- )
+1A44CA4 	 0  0 62 65 
+1A44CA8 	67 69 6E 2D 62 75 6C 6B 
+1A44CB0 	2D 69 6E 8D 88 4C A4  1 
+1A44CB8 	20 40 A0  1 
+   " begin-bulk-in" $call-parent
+1A44CBC 	9C 53 A0  1 
+1A44CC0 	 D 62 65 67 69 6E 2D 62 
+1A44CC8 	75 6C 6B 2D 69 6E  0  0 
+1A44CD0 	DC 31 A2  1 
+;
+1A44CD4 	58 46 A0  1 
+: bulk-in?  ( -- actual usberr )
+1A44CD8 	 0  0  0 62 75 6C 6B 2D 
+1A44CE0 	69 6E 3F 88 B8 4C A4  1 
+1A44CE8 	20 40 A0  1 
+   " bulk-in?" $call-parent
+1A44CEC 	9C 53 A0  1 
+1A44CF0 	 8 62 75 6C 6B 2D 69 6E 
+1A44CF8 	3F  0  0  0 DC 31 A2  1 
+;
+1A44D00 	58 46 A0  1 
+: restart-bulk-in  ( -- )
+1A44D04 	72 65 73 74 
+1A44D08 	61 72 74 2D 62 75 6C 6B 
+1A44D10 	2D 69 6E 8F E8 4C A4  1 
+1A44D18 	20 40 A0  1 
+   " restart-bulk-in" $call-parent
+1A44D1C 	9C 53 A0  1 
+1A44D20 	 F 72 65 73 74 61 72 74 
+1A44D28 	2D 62 75 6C 6B 2D 69 6E 
+1A44D30 	 0  0  0  0 DC 31 A2  1 
+;
+1A44D38 	58 46 A0  1 
+: end-bulk-in  ( -- )
+1A44D3C 	65 6E 64 2D 
+1A44D40 	62 75 6C 6B 2D 69 6E 8B 
+1A44D48 	18 4D A4  1 20 40 A0  1 
+   " end-bulk-in" $call-parent
+1A44D50 	9C 53 A0  1  B 65 6E 64 
+1A44D58 	2D 62 75 6C 6B 2D 69 6E 
+1A44D60 	 0  0  0  0 DC 31 A2  1 
+;
+1A44D68 	58 46 A0  1 
+: set-bulk-in-timeout  ( t -- )
+1A44D6C 	73 65 74 2D 
+1A44D70 	62 75 6C 6B 2D 69 6E 2D 
+1A44D78 	74 69 6D 65 6F 75 74 93 
+1A44D80 	4C 4D A4  1 20 40 A0  1 
+   " set-bulk-in-timeout" $call-parent
+1A44D88 	9C 53 A0  1 13 73 65 74 
+1A44D90 	2D 62 75 6C 6B 2D 69 6E 
+1A44D98 	2D 74 69 6D 65 6F 75 74 
+1A44DA0 	 0  0  0  0 DC 31 A2  1 
+;
+1A44DA8 	58 46 A0  1 
+: bulk-in-ready?  ( -- false | error true | buf len 0 true )
+1A44DAC 	 0 62 75 6C 
+1A44DB0 	6B 2D 69 6E 2D 72 65 61 
+1A44DB8 	64 79 3F 8E 84 4D A4  1 
+1A44DC0 	20 40 A0  1 
+   " bulk-in-ready?" $call-parent
+1A44DC4 	9C 53 A0  1 
+1A44DC8 	 E 62 75 6C 6B 2D 69 6E 
+1A44DD0 	2D 72 65 61 64 79 3F  0 
+1A44DD8 	DC 31 A2  1 
+;
+1A44DDC 	58 46 A0  1 
+
+: begin-in-ring  ( /buf #bufs pipe -- )
+1A44DE0 	 0  0 62 65 67 69 6E 2D 
+1A44DE8 	69 6E 2D 72 69 6E 67 8D 
+1A44DF0 	C0 4D A4  1 20 40 A0  1 
+   " begin-in-ring" $call-parent
+1A44DF8 	9C 53 A0  1  D 62 65 67 
+1A44E00 	69 6E 2D 69 6E 2D 72 69 
+1A44E08 	6E 67  0  0 DC 31 A2  1 
+;
+1A44E10 	58 46 A0  1 
+\ : end-in-ring     " end-in-ring" $call-parent  ;
+: begin-out-ring  ( /buf #bufs pipe -- )
+1A44E14 	 0 62 65 67 
+1A44E18 	69 6E 2D 6F 75 74 2D 72 
+1A44E20 	69 6E 67 8E F4 4D A4  1 
+1A44E28 	20 40 A0  1 
+   " begin-out-ring" $call-parent
+1A44E2C 	9C 53 A0  1 
+1A44E30 	 E 62 65 67 69 6E 2D 6F 
+1A44E38 	75 74 2D 72 69 6E 67  0 
+1A44E40 	DC 31 A2  1 
+;
+1A44E44 	58 46 A0  1 
+: end-out-ring   ( -- )
+1A44E48 	 0  0  0 65 6E 64 2D 6F 
+1A44E50 	75 74 2D 72 69 6E 67 8C 
+1A44E58 	28 4E A4  1 20 40 A0  1 
+   " end-out-ring" $call-parent
+1A44E60 	9C 53 A0  1  C 65 6E 64 
+1A44E68 	2D 6F 75 74 2D 72 69 6E 
+1A44E70 	67  0  0  0 DC 31 A2  1 
+;
+1A44E78 	58 46 A0  1 
+: send-out  ( adr len -- qtd )
+1A44E7C 	 0  0  0 73 
+1A44E80 	65 6E 64 2D 6F 75 74 88 
+1A44E88 	5C 4E A4  1 20 40 A0  1 
+   " send-out" $call-parent
+1A44E90 	9C 53 A0  1  8 73 65 6E 
+1A44E98 	64 2D 6F 75 74  0  0  0 
+1A44EA0 	DC 31 A2  1 
+;
+1A44EA4 	58 46 A0  1 
+: wait-out  ( qtd -- error? )
+1A44EA8 	 0  0  0 77 61 69 74 2D 
+1A44EB0 	6F 75 74 88 8C 4E A4  1 
+1A44EB8 	20 40 A0  1 
+   " wait-out" $call-parent
+1A44EBC 	9C 53 A0  1 
+1A44EC0 	 8 77 61 69 74 2D 6F 75 
+1A44EC8 	74  0  0  0 DC 31 A2  1 
+;
+1A44ED0 	58 46 A0  1 
+
+\ Interrupt pipe operations
+: begin-intr-in  ( buf len pipe interval -- )
+1A44ED4 	 0  0 62 65 
+1A44ED8 	67 69 6E 2D 69 6E 74 72 
+1A44EE0 	2D 69 6E 8D B8 4E A4  1 
+1A44EE8 	20 40 A0  1 
+   " begin-intr-in" $call-parent
+1A44EEC 	9C 53 A0  1 
+1A44EF0 	 D 62 65 67 69 6E 2D 69 
+1A44EF8 	6E 74 72 2D 69 6E  0  0 
+1A44F00 	DC 31 A2  1 
+;
+1A44F04 	58 46 A0  1 
+: intr-in?  ( -- actual usberr )
+1A44F08 	 0  0  0 69 6E 74 72 2D 
+1A44F10 	69 6E 3F 88 E8 4E A4  1 
+1A44F18 	20 40 A0  1 
+   " intr-in?" $call-parent
+1A44F1C 	9C 53 A0  1 
+1A44F20 	 8 69 6E 74 72 2D 69 6E 
+1A44F28 	3F  0  0  0 DC 31 A2  1 
+;
+1A44F30 	58 46 A0  1 
+: restart-intr-in  ( -- )
+1A44F34 	72 65 73 74 
+1A44F38 	61 72 74 2D 69 6E 74 72 
+1A44F40 	2D 69 6E 8F 18 4F A4  1 
+1A44F48 	20 40 A0  1 
+   " restart-intr-in" $call-parent
+1A44F4C 	9C 53 A0  1 
+1A44F50 	 F 72 65 73 74 61 72 74 
+1A44F58 	2D 69 6E 74 72 2D 69 6E 
+1A44F60 	 0  0  0  0 DC 31 A2  1 
+;
+1A44F68 	58 46 A0  1 
+: end-intr-in  ( -- )
+1A44F6C 	65 6E 64 2D 
+1A44F70 	69 6E 74 72 2D 69 6E 8B 
+1A44F78 	48 4F A4  1 20 40 A0  1 
+   " end-intr-in" $call-parent
+1A44F80 	9C 53 A0  1  B 65 6E 64 
+1A44F88 	2D 69 6E 74 72 2D 69 6E 
+1A44F90 	 0  0  0  0 DC 31 A2  1 
+;
+1A44F98 	58 46 A0  1 
+: reset-bulk-toggles  ( bulk-in-pipe bulk-out-pipe -- )
+1A44F9C 	 0 72 65 73 
+1A44FA0 	65 74 2D 62 75 6C 6B 2D 
+1A44FA8 	74 6F 67 67 6C 65 73 92 
+1A44FB0 	7C 4F A4  1 20 40 A0  1 
+   " reset-bulk-toggles" $call-parent
+1A44FB8 	9C 53 A0  1 12 72 65 73 
+1A44FC0 	65 74 2D 62 75 6C 6B 2D 
+1A44FC8 	74 6F 67 67 6C 65 73  0 
+1A44FD0 	DC 31 A2  1 
+;
+1A44FD4 	58 46 A0  1 
+
+: reset?  ( -- flag )
+1A44FD8 	 0 72 65 73 65 74 3F 86 
+1A44FE0 	B4 4F A4  1 20 40 A0  1 
+   " reset?" $call-parent
+1A44FE8 	9C 53 A0  1  6 72 65 73 
+1A44FF0 	65 74 3F  0 DC 31 A2  1 
+;
+1A44FF8 	58 46 A0  1 
+
+headers

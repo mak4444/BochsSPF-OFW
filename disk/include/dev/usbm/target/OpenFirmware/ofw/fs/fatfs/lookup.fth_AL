@@ -1,0 +1,930 @@
+\ XXX perhaps we should cache a sector of the directory, rather than a cluster.
+\ That would simplify the handling of end conditions in the root directory,
+\ especially for writing.
+
+\ Directory search utilities
+
+\ FAT32 root directory is just like any subdirectory.  Only the subdirectory
+\ paths are taken for FAT32 directory search.
+
+decimal
+\ mmo private
+
+\ Working drive
+instance variable drive
+1A2D6E8 	 0  0 64 72 69 76 65 85 
+1A2D6F0 	98 D6 A2  1 40  1 A2  1 
+1A2D6F8 	20  0  0  0 
+
+\ The state of the current search is maintained in the following variables
+\ We need two copies of this state, because we have to search subdirectories
+\ while parsing the path name.
+
+instance variable search-state
+1A2D6FC 	 0  0  0 73 
+1A2D700 	65 61 72 63 68 2D 73 74 
+1A2D708 	61 74 65 8C F4 D6 A2  1 
+1A2D710 	40  1 A2  1 24  0  0  0 
+
+: lfield ( offset size -- offset')
+1A2D718 	 0 6C 66 69 65 6C 64 86 
+1A2D720 	10 D7 A2  1 20 40 A0  1 
+   create over , + does> @ search-state @ +
+1A2D728 	A8 A2 A0  1 54 49 A0  1 
+1A2D730 	98 55 A0  1  4 45 A0  1 
+1A2D738 	50 A3 A0  1 90 90 90 E8 
+1A2D740 	38 69 FD FF 5C 4C A0  1 
+1A2D748 	10 D7 A2  1 5C 4C A0  1 
+1A2D750 	 4 45 A0  1 
+;
+1A2D754 	58 46 A0  1 
+
+struct   \ search-state
+ /n lfield  search-cl     \ Cluster containing the next entry
+1A2D758 	 0  0 73 65 61 72 63 68 
+1A2D760 	2D 63 6C 89 24 D7 A2  1 
+1A2D768 	3C D7 A2  1  0  0  0  0 
+ /n lfield  search-offset \ Offset of the next entry in its cluster
+1A2D770 	 0  0 73 65 61 72 63 68 
+1A2D778 	2D 6F 66 66 73 65 74 8D 
+1A2D780 	68 D7 A2  1 3C D7 A2  1 
+1A2D788 	 4  0  0  0 
+ /n lfield  search-dev    \ Device containing directory being searched
+1A2D78C 	 0 73 65 61 
+1A2D790 	72 63 68 2D 64 65 76 8A 
+1A2D798 	84 D7 A2  1 3C D7 A2  1 
+1A2D7A0 	 8  0  0  0 
+  8 lfield  search-name   \ pattern to compare with file names
+1A2D7A4 	73 65 61 72 
+1A2D7A8 	63 68 2D 6E 61 6D 65 8B 
+1A2D7B0 	9C D7 A2  1 3C D7 A2  1 
+1A2D7B8 	 C  0  0  0 
+  3 lfield  search-ext    \ pattern to compare with file extensions
+1A2D7BC 	 0 73 65 61 
+1A2D7C0 	72 63 68 2D 65 78 74 8A 
+1A2D7C8 	B4 D7 A2  1 3C D7 A2  1 
+1A2D7D0 	14  0  0  0 
+  8 lfield  base-name     \ Actual filename, without path portion
+1A2D7D4 	 0  0 62 61 
+1A2D7D8 	73 65 2D 6E 61 6D 65 89 
+1A2D7E0 	CC D7 A2  1 3C D7 A2  1 
+1A2D7E8 	17  0  0  0 
+  3 lfield  base-ext      \ Actual extension, without path portion
+1A2D7EC 	 0  0  0 62 
+1A2D7F0 	61 73 65 2D 65 78 74 88 
+1A2D7F8 	E4 D7 A2  1 3C D7 A2  1 
+1A2D800 	1F  0  0  0 
+  1 lfield  bn-len        \ base name length
+1A2D804 	 0 62 6E 2D 
+1A2D808 	6C 65 6E 86 FC D7 A2  1 
+1A2D810 	3C D7 A2  1 22  0  0  0 
+  1 lfield  be-len        \ base extension length
+1A2D818 	 0 62 65 2D 6C 65 6E 86 
+1A2D820 	10 D8 A2  1 3C D7 A2  1 
+1A2D828 	23  0  0  0 
+  1 lfield  search-attrib \ mask for file types to consider
+1A2D82C 	 0  0 73 65 
+1A2D830 	61 72 63 68 2D 61 74 74 
+1A2D838 	72 69 62 8D 24 D8 A2  1 
+1A2D840 	3C D7 A2  1 24  0  0  0 
+constant /search-state
+1A2D848 	 0  0 2F 73 65 61 72 63 
+1A2D850 	68 2D 73 74 61 74 65 8D 
+1A2D858 	40 D8 A2  1 68 40 A0  1 
+1A2D860 	25  0  0  0 
+
+d# -200 constant cl#eof  \ Invalid cluster number to mark end of file
+1A2D864 	 0 63 6C 23 
+1A2D868 	65 6F 66 86 5C D8 A2  1 
+1A2D870 	68 40 A0  1 38 FF FF FF 
+
+\ Starting cluster# of the directory containing the last found file
+VARIABLE search-dir-cl
+1A2D878 	 0  0 73 65 61 72 63 68 
+1A2D880 	2D 64 69 72 2D 63 6C 8D 
+1A2D888 	70 D8 A2  1 48 40 A0  1 
+1A2D890 	20  9  0  0 
+
+/search-state instance buffer: file-search-state
+1A2D894 	 0  0 66 69 
+1A2D898 	6C 65 2D 73 65 61 72 63 
+1A2D8A0 	68 2D 73 74 61 74 65 91 
+1A2D8A8 	8C D8 A2  1 4C  0 A2  1 
+1A2D8B0 	24 FF FF FF 
+
+: characters-match?  ( filename-char pattern-char -- flag )
+1A2D8B4 	 0  0 63 68 
+1A2D8B8 	61 72 61 63 74 65 72 73 
+1A2D8C0 	2D 6D 61 74 63 68 3F 91 
+1A2D8C8 	AC D8 A2  1 20 40 A0  1 
+   dup ascii ? =  if  2drop true  else  =  then
+1A2D8D0 	40 49 A0  1 58 41 A0  1 
+1A2D8D8 	3F  0  0  0 24 48 A0  1 
+1A2D8E0 	DC 41 A0  1 14  0  0  0 
+1A2D8E8 	AC 49 A0  1  4 70 A0  1 
+1A2D8F0 	C8 41 A0  1  8  0  0  0 
+1A2D8F8 	24 48 A0  1 
+;
+1A2D8FC 	58 46 A0  1 
+: names-match?  ( -- flag ) \ Assumes dirent address already set
+1A2D900 	 0  0  0 6E 61 6D 65 73 
+1A2D908 	2D 6D 61 74 63 68 3F 8C 
+1A2D910 	CC D8 A2  1 20 40 A0  1 
+   true
+1A2D918 	 4 70 A0  1 
+   de_name  ( adr )
+1A2D91C 	30 BF A2  1 
+   search-name d# 11 bounds  do    ( flag adr' )
+1A2D920 	B4 D7 A2  1 58 41 A0  1 
+1A2D928 	 B  0  0  0 F0 6D A0  1 
+1A2D930 	88 42 A0  1 40  0  0  0 
+      dup c@  i c@  characters-match? 0=  if  nip false swap leave  then
+1A2D938 	40 49 A0  1 C4 4C A0  1 
+1A2D940 	B4 42 A0  1 C4 4C A0  1 
+1A2D948 	CC D8 A2  1 24 47 A0  1 
+1A2D950 	DC 41 A0  1 14  0  0  0 
+1A2D958 	FC 46 A0  1 18 70 A0  1 
+1A2D960 	68 49 A0  1 18 43 A0  1 
+      1+
+1A2D968 	30 4B A0  1 
+   loop   ( flag adr )
+1A2D96C 	F8 41 A0  1 
+1A2D970 	C8 FF FF FF 
+   drop
+1A2D974 	30 49 A0  1 
+;
+1A2D978 	58 46 A0  1 
+
+\ Local variables used by the pattern parser "set-pattern"
+variable buf-adr
+1A2D97C 	62 75 66 2D 
+1A2D980 	61 64 72 87 14 D9 A2  1 
+1A2D988 	48 40 A0  1 24  9  0  0 
+variable buf-rem
+1A2D990 	62 75 66 2D 72 65 6D 87 
+1A2D998 	88 D9 A2  1 48 40 A0  1 
+1A2D9A0 	28  9  0  0 
+variable pat-adr
+1A2D9A4 	70 61 74 2D 
+1A2D9A8 	61 64 72 87 9C D9 A2  1 
+1A2D9B0 	48 40 A0  1 2C  9  0  0 
+variable pat-rem
+1A2D9B8 	70 61 74 2D 72 65 6D 87 
+1A2D9C0 	B0 D9 A2  1 48 40 A0  1 
+1A2D9C8 	30  9  0  0 
+: set-char  ( char -- )  buf-adr @ c!  1 buf-adr +!  -1 buf-rem +!  ;
+1A2D9CC 	 0  0  0 73 
+1A2D9D0 	65 74 2D 63 68 61 72 88 
+1A2D9D8 	C4 D9 A2  1 20 40 A0  1 
+1A2D9E0 	88 D9 A2  1 5C 4C A0  1 
+1A2D9E8 	B8 4D A0  1 80 6F A0  1 
+1A2D9F0 	88 D9 A2  1  C 4C A0  1 
+1A2D9F8 	58 41 A0  1 FF FF FF FF 
+1A2DA00 	9C D9 A2  1  C 4C A0  1 
+1A2DA08 	58 46 A0  1 
+: set-pattern  ( pattern-adr pattern-len  buf-adr buf-len -- )
+1A2DA0C 	73 65 74 2D 
+1A2DA10 	70 61 74 74 65 72 6E 8B 
+1A2DA18 	DC D9 A2  1 20 40 A0  1 
+   2dup blank  ( pattern-adr pattern-len  buf-adr buf-len )
+1A2DA20 	C0 49 A0  1  C 73 A0  1 
+   rot over min -rot  ( pattern-adr pattern-len'  buf-adr buf-len )
+1A2DA28 	7C 49 A0  1 54 49 A0  1 
+1A2DA30 	74 4A A0  1 94 49 A0  1 
+   buf-rem !  buf-adr !  pat-rem !  pat-adr !
+1A2DA38 	9C D9 A2  1 54 4D A0  1 
+1A2DA40 	88 D9 A2  1 54 4D A0  1 
+1A2DA48 	C4 D9 A2  1 54 4D A0  1 
+1A2DA50 	B0 D9 A2  1 54 4D A0  1 
+   begin
+      pat-rem @
+1A2DA58 	C4 D9 A2  1 5C 4C A0  1 
+   while
+1A2DA60 	DC 41 A0  1 DC  0  0  0 
+      pat-adr @ c@  1 pat-adr +!  -1 pat-rem +!
+1A2DA68 	B0 D9 A2  1 5C 4C A0  1 
+1A2DA70 	C4 4C A0  1 80 6F A0  1 
+1A2DA78 	B0 D9 A2  1  C 4C A0  1 
+1A2DA80 	58 41 A0  1 FF FF FF FF 
+1A2DA88 	C4 D9 A2  1  C 4C A0  1 
+      dup ascii *  =  if
+1A2DA90 	40 49 A0  1 58 41 A0  1 
+1A2DA98 	2A  0  0  0 24 48 A0  1 
+1A2DAA0 	DC 41 A0  1 8C  0  0  0 
+         drop  buf-adr @  buf-rem @  bounds  ?do  ascii ? i c!  loop
+1A2DAA8 	30 49 A0  1 88 D9 A2  1 
+1A2DAB0 	5C 4C A0  1 9C D9 A2  1 
+1A2DAB8 	5C 4C A0  1 F0 6D A0  1 
+1A2DAC0 	50 42 A0  1 1C  0  0  0 
+1A2DAC8 	58 41 A0  1 3F  0  0  0 
+1A2DAD0 	B4 42 A0  1 B8 4D A0  1 
+1A2DAD8 	F8 41 A0  1 EC FF FF FF 
+  buf-rem @  pat-rem @  >  if
+1A2DAE0 	9C D9 A2  1 5C 4C A0  1 
+1A2DAE8 	C4 D9 A2  1 5C 4C A0  1 
+1A2DAF0 	 4 48 A0  1 DC 41 A0  1 
+1A2DAF8 	30  0  0  0 
+     buf-rem @  pat-rem @  -  buf-adr +!  pat-rem @ buf-rem !
+1A2DAFC 	9C D9 A2  1 
+1A2DB00 	5C 4C A0  1 C4 D9 A2  1 
+1A2DB08 	5C 4C A0  1 18 45 A0  1 
+1A2DB10 	88 D9 A2  1  C 4C A0  1 
+1A2DB18 	C4 D9 A2  1 5C 4C A0  1 
+1A2DB20 	9C D9 A2  1 54 4D A0  1 
+         then
+      else
+1A2DB28 	C8 41 A0  1  C  0  0  0 
+  upc set-char
+1A2DB30 	D0 51 A0  1 DC D9 A2  1 
+      then
+   repeat
+1A2DB38 	C8 41 A0  1 1C FF FF FF 
+;
+1A2DB40 	58 46 A0  1 
+: drive#  ( adr len -- adr' len' drive# )
+1A2DB44 	 0 64 72 69 
+1A2DB48 	76 65 23 86 1C DA A2  1 
+1A2DB50 	20 40 A0  1 
+[ifdef] notdef
+   ascii : left-parse-string   rot  if
+      rot c@  upc  dup  ascii A  ascii Z  between  if
+         ascii A -
+      else
+         drop  drive @
+      then
+   else
+      rot drop  drive @
+   then                ( adr' len' )
+[else]
+   drive @
+1A2DB54 	F4 D6 A2  1 
+1A2DB58 	5C 4C A0  1 
+[then]
+;
+1A2DB5C 	58 46 A0  1 
+: dot-name?  ( adr len -- flag )  2dup  " ." $=  -rot  " .." $=  or  ;
+1A2DB60 	 0  0 64 6F 74 2D 6E 61 
+1A2DB68 	6D 65 3F 89 50 DB A2  1 
+1A2DB70 	20 40 A0  1 C0 49 A0  1 
+1A2DB78 	9C 53 A0  1  1 2E  0  0 
+1A2DB80 	88 8D A0  1 94 49 A0  1 
+1A2DB88 	9C 53 A0  1  2 2E 2E  0 
+1A2DB90 	88 8D A0  1 70 44 A0  1 
+1A2DB98 	58 46 A0  1 
+: set-filename  ( adr len -- )
+1A2DB9C 	 0  0  0 73 
+1A2DBA0 	65 74 2D 66 69 6C 65 6E 
+1A2DBA8 	61 6D 65 8C 70 DB A2  1 
+1A2DBB0 	20 40 A0  1 
+
+   2dup  dot-name?  if  \ . and .. are special cases
+1A2DBB4 	C0 49 A0  1 
+1A2DBB8 	70 DB A2  1 DC 41 A0  1 
+1A2DBC0 	14  0  0  0 
+      " "
+1A2DBC4 	9C 53 A0  1 
+1A2DBC8 	 0  0  0  0 
+   else
+1A2DBCC 	C8 41 A0  1 
+1A2DBD0 	14  0  0  0 
+      ascii . left-parse-string  2swap
+1A2DBD4 	58 41 A0  1 
+1A2DBD8 	2E  0  0  0 44 D7 A0  1 
+1A2DBE0 	F4 49 A0  1 
+   then                                ( name-adr name-len ext-adr ext-len )
+
+   base-ext 3 BLANK  base-name 8 BLANK  \ Prime with blanks
+1A2DBE4 	FC D7 A2  1 
+1A2DBE8 	A0 6F A0  1  C 73 A0  1 
+1A2DBF0 	E4 D7 A2  1 F0 6F A0  1 
+1A2DBF8 	 C 73 A0  1 
+
+   2dup dup be-len c! base-ext swap cmove
+1A2DBFC 	C0 49 A0  1 
+1A2DC00 	40 49 A0  1 24 D8 A2  1 
+1A2DC08 	B8 4D A0  1 FC D7 A2  1 
+1A2DC10 	68 49 A0  1 10 44 A0  1 
+   search-ext 3 set-pattern    ( name-adr name-len )
+1A2DC18 	CC D7 A2  1 A0 6F A0  1 
+1A2DC20 	1C DA A2  1 
+   2dup dup bn-len c! base-name swap cmove
+1A2DC24 	C0 49 A0  1 
+1A2DC28 	40 49 A0  1 10 D8 A2  1 
+1A2DC30 	B8 4D A0  1 E4 D7 A2  1 
+1A2DC38 	68 49 A0  1 10 44 A0  1 
+   search-name 8 set-pattern
+1A2DC40 	B4 D7 A2  1 F0 6F A0  1 
+1A2DC48 	1C DA A2  1 
+
+   \ Convert all copies of the strings to upper case
+   base-ext  be-len c@ upper   base-name bn-len c@ upper
+1A2DC4C 	FC D7 A2  1 
+1A2DC50 	24 D8 A2  1 C4 4C A0  1 
+1A2DC58 	64 85 A0  1 E4 D7 A2  1 
+1A2DC60 	10 D8 A2  1 C4 4C A0  1 
+1A2DC68 	64 85 A0  1 
+   search-ext 3 upper  search-name 8 upper
+1A2DC6C 	CC D7 A2  1 
+1A2DC70 	A0 6F A0  1 64 85 A0  1 
+1A2DC78 	B4 D7 A2  1 F0 6F A0  1 
+1A2DC80 	64 85 A0  1 
+;
+1A2DC84 	58 46 A0  1 
+
+\ Write-through directory cache.
+
+\ h# 4000 constant /cluster-max
+\ /cluster-max instance buffer: dir-buf
+variable dir-dev   -1 dir-dev !
+1A2DC88 	64 69 72 2D 64 65 76 87 
+1A2DC90 	B0 DB A2  1 48 40 A0  1 
+1A2DC98 	34  9  0  0 
+variable dir-cl  cl#eof dir-cl !
+1A2DC9C 	 0 64 69 72 
+1A2DCA0 	2D 63 6C 86 94 DC A2  1 
+1A2DCA8 	48 40 A0  1 38  9  0  0 
+
+: cl>root-sectors  ( -cl# -- #sectors )  negate  spc c@ *  ;
+1A2DCB0 	63 6C 3E 72 6F 6F 74 2D 
+1A2DCB8 	73 65 63 74 6F 72 73 8F 
+1A2DCC0 	A8 DC A2  1 20 40 A0  1 
+1A2DCC8 	48 45 A0  1 58 BC A2  1 
+1A2DCD0 	C4 4C A0  1 1C 5F A0  1 
+1A2DCD8 	58 46 A0  1 
+
+: init-dir  ( -- )
+1A2DCDC 	 0  0  0 69 
+1A2DCE0 	6E 69 74 2D 64 69 72 88 
+1A2DCE8 	C4 DC A2  1 20 40 A0  1 
+   -1 dir-dev !		\ Marks the cache as empty
+1A2DCF0 	58 41 A0  1 FF FF FF FF 
+1A2DCF8 	94 DC A2  1 54 4D A0  1 
+   rdirclus @ ?dup  0=  if  cl#eof  then  dir-cl !
+1A2DD00 	40 BB A2  1 5C 4C A0  1 
+1A2DD08 	B4 70 A0  1 24 47 A0  1 
+1A2DD10 	DC 41 A0  1  8  0  0  0 
+1A2DD18 	70 D8 A2  1 A8 DC A2  1 
+1A2DD20 	54 4D A0  1 
+;
+1A2DD24 	58 46 A0  1 
+
+\ Handle possible swap of removable media.
+: ?media-changed  ( -- )
+1A2DD28 	 0 3F 6D 65 64 69 61 2D 
+1A2DD30 	63 68 61 6E 67 65 64 8E 
+1A2DD38 	EC DC A2  1 20 40 A0  1 
+   DOS-LOCK  media-changed?  if  init-dir  then
+1A2DD40 	64 4F A0  1 4C C5 A2  1 
+1A2DD48 	DC 41 A0  1  8  0  0  0 
+1A2DD50 	EC DC A2  1 
+;
+1A2DD54 	58 46 A0  1 
+
+\ Directory clusters numbers are funny, because the root directory is
+\ outside the normal range of clusters and its size is not necessarily a
+\ multiple of the cluster size.  We use positive numbers for clusters
+\ in subdirectories, 0 for the first "cluster" in the root directory,
+\ and negative numbers for subsequent "clusters" in the root directory.
+
+\ Writes the directory cache contents to disks.
+: write-dir-cl  ( -- error? )
+1A2DD58 	 0  0  0 77 72 69 74 65 
+1A2DD60 	2D 64 69 72 2D 63 6C 8C 
+1A2DD68 	3C DD A2  1 20 40 A0  1 
+   dir-dev @ set-device
+1A2DD70 	94 DC A2  1 5C 4C A0  1 
+1A2DD78 	 4 CC A2  1 
+   dir-cl @ 0>  if    \ Subdirectory cluster
+1A2DD7C 	A8 DC A2  1 
+1A2DD80 	5C 4C A0  1 A4 47 A0  1 
+1A2DD88 	DC 41 A0  1 20  0  0  0 
+      dir-cl @ 1  dir-buf  write-clusters   ( error? )
+1A2DD90 	A8 DC A2  1 5C 4C A0  1 
+1A2DD98 	80 6F A0  1 1C C4 A2  1 
+1A2DDA0 	BC CC A2  1 
+   else      \ Root directory sectors
+1A2DDA4 	C8 41 A0  1 
+1A2DDA8 	48  0  0  0 
+      dir-cl @ cl>root-sectors              ( rel-sector# )
+1A2DDAC 	A8 DC A2  1 
+1A2DDB0 	5C 4C A0  1 C4 DC A2  1 
+      #dir-sectors w@ over -                ( rel-sector# rem-#sectors )
+1A2DDB8 	24 BC A2  1 94 4C A0  1 
+1A2DDC0 	54 49 A0  1 18 45 A0  1 
+      spc c@ min                            ( rel-sector# #sectors )
+1A2DDC8 	58 BC A2  1 C4 4C A0  1 
+1A2DDD0 	74 4A A0  1 
+      swap dir-sector0 w@ + swap            ( sector# #sectors )
+1A2DDD4 	68 49 A0  1 
+1A2DDD8 	 8 BC A2  1 94 4C A0  1 
+1A2DDE0 	 4 45 A0  1 68 49 A0  1 
+      dir-buf  write-sectors      ( error? )
+1A2DDE8 	1C C4 A2  1 8C BE A2  1 
+   then
+;
+1A2DDF0 	58 46 A0  1 
+
+\ Ensures that the cluster containing the desired directory entry is in
+\ memory, reading it from disk if necessary.
+: set-dirent  ( offset cl dev -- error? )
+1A2DDF4 	 0 73 65 74 
+1A2DDF8 	2D 64 69 72 65 6E 74 8A 
+1A2DE00 	6C DD A2  1 20 40 A0  1 
+   rot  dir-buf + dirent !                     ( cl dev )
+1A2DE08 	7C 49 A0  1 1C C4 A2  1 
+1A2DE10 	 4 45 A0  1 DC BE A2  1 
+1A2DE18 	54 4D A0  1 
+
+   over dir-cl @ =  over dir-dev @ = and  if   ( cl dev )
+1A2DE1C 	54 49 A0  1 
+1A2DE20 	A8 DC A2  1 5C 4C A0  1 
+1A2DE28 	24 48 A0  1 54 49 A0  1 
+1A2DE30 	94 DC A2  1 5C 4C A0  1 
+1A2DE38 	24 48 A0  1 5C 44 A0  1 
+1A2DE40 	DC 41 A0  1 10  0  0  0 
+      2drop  \ Directory cluster already in memory
+1A2DE48 	AC 49 A0  1 
+   else                                        ( cl dev )
+1A2DE4C 	C8 41 A0  1 
+1A2DE50 	28  1  0  0 
+      \ The desired cluster is not in the cache, so we have to read it in.
+
+      \ Invalidate the cache in case of read failure
+      init-dir                                 ( cl dev )
+1A2DE54 	EC DC A2  1 
+
+      dup set-device                           ( cl dev )
+1A2DE58 	40 49 A0  1  4 CC A2  1 
+
+      \ Subdirectory or root directory?
+
+      over  0>  if                             ( cl dev )
+1A2DE60 	54 49 A0  1 A4 47 A0  1 
+1A2DE68 	DC 41 A0  1 1C  0  0  0 
+         \ Subdirectory; read clusters from cluster space
+         over 1 dir-buf read-clusters          ( cl dev error? )
+1A2DE70 	54 49 A0  1 80 6F A0  1 
+1A2DE78 	1C C4 A2  1 90 CC A2  1 
+      else                                     ( cl dev )
+1A2DE80 	C8 41 A0  1 44  0  0  0 
+         \ Root directory; read sectors from before cluster space
+         over cl>root-sectors                  ( cl dev rel-sector# )
+1A2DE88 	54 49 A0  1 C4 DC A2  1 
+         #dir-sectors w@ over -                ( cl dev rel-sector# rem-#sects)
+1A2DE90 	24 BC A2  1 94 4C A0  1 
+1A2DE98 	54 49 A0  1 18 45 A0  1 
+         spc c@ min                            ( cl dev rel-sector# #sectors )
+1A2DEA0 	58 BC A2  1 C4 4C A0  1 
+1A2DEA8 	74 4A A0  1 
+         swap dir-sector0 w@ + swap            ( cl dev sector# #sectors )
+1A2DEAC 	68 49 A0  1 
+1A2DEB0 	 8 BC A2  1 94 4C A0  1 
+1A2DEB8 	 4 45 A0  1 68 49 A0  1 
+         dir-buf read-sectors                  ( cl dev error? )
+1A2DEC0 	1C C4 A2  1 4C BE A2  1 
+      then                                     ( cl dev error? )
+
+      if  "CaR ". "dir ". cr  2drop  true exit  then
+1A2DEC8 	DC 41 A0  1 24  0  0  0 
+1A2DED0 	B4 B3 A2  1 A8 7C A0  1 
+1A2DED8 	38 B4 A2  1 A8 7C A0  1 
+1A2DEE0 	80 6D A0  1 AC 49 A0  1 
+1A2DEE8 	 4 70 A0  1 40 46 A0  1 
+      ( cl dev )
+      \ The read succeeded, so we can set the directory cache tags
+      dir-dev ! dup dir-cl !   ( cl )
+1A2DEF0 	94 DC A2  1 54 4D A0  1 
+1A2DEF8 	40 49 A0  1 A8 DC A2  1 
+1A2DF00 	54 4D A0  1 
+
+      \ Since the directory cache is sized in clusters, not sectors,
+      \ and since a cluster may be larger than the root directory,
+      \ part of the directory cache may be invalid.  This can only
+      \ happen for the root directory which is allocated in sectors;
+      \ subdirectories are allocated in clusters.
+
+      0<=  if          ( )
+1A2DF04 	84 47 A0  1 
+1A2DF08 	DC 41 A0  1 6C  0  0  0 
+         \ This is the root directory.
+         \ Is part of the directory buffer invalid?
+
+         dir-cl @ 1- cl>root-sectors #dir-sectors w@ >  if
+1A2DF10 	A8 DC A2  1 5C 4C A0  1 
+1A2DF18 	54 4B A0  1 C4 DC A2  1 
+1A2DF20 	24 BC A2  1 94 4C A0  1 
+1A2DF28 	 4 48 A0  1 DC 41 A0  1 
+1A2DF30 	48  0  0  0 
+
+            \ Set the invalid portion to look like unallocated files.
+            dir-cl @ 1- cl>root-sectors #dir-sectors w@ - ( #inv-sectors )
+1A2DF34 	A8 DC A2  1 
+1A2DF38 	5C 4C A0  1 54 4B A0  1 
+1A2DF40 	C4 DC A2  1 24 BC A2  1 
+1A2DF48 	94 4C A0  1 18 45 A0  1 
+            dir-buf /cluster +  swap /sector * -  0 swap c!
+1A2DF50 	1C C4 A2  1 18 C3 A2  1 
+1A2DF58 	 4 45 A0  1 68 49 A0  1 
+1A2DF60 	F8 C2 A2  1 1C 5F A0  1 
+1A2DF68 	18 45 A0  1 70 6F A0  1 
+1A2DF70 	68 49 A0  1 B8 4D A0  1 
+         then
+      then
+   then
+   false
+1A2DF78 	18 70 A0  1 
+;
+1A2DF7C 	58 46 A0  1 
+
+: +dirent  ( -- end? )
+1A2DF80 	2B 64 69 72 65 6E 74 87 
+1A2DF88 	 4 DE A2  1 20 40 A0  1 
+   search-cl @ cl#eof =  if  true exit  then
+1A2DF90 	68 D7 A2  1 5C 4C A0  1 
+1A2DF98 	70 D8 A2  1 24 48 A0  1 
+1A2DFA0 	DC 41 A0  1  C  0  0  0 
+1A2DFA8 	 4 70 A0  1 40 46 A0  1 
+
+   /dirent search-offset +!
+1A2DFB0 	F0 C0 A2  1 84 D7 A2  1 
+1A2DFB8 	 C 4C A0  1 
+   /cluster  ( dir-chunk-size )  search-offset @ >  if  false exit  then
+1A2DFBC 	18 C3 A2  1 
+1A2DFC0 	84 D7 A2  1 5C 4C A0  1 
+1A2DFC8 	 4 48 A0  1 DC 41 A0  1 
+1A2DFD0 	 C  0  0  0 18 70 A0  1 
+1A2DFD8 	40 46 A0  1 
+   0 search-offset !
+1A2DFDC 	70 6F A0  1 
+1A2DFE0 	84 D7 A2  1 54 4D A0  1 
+
+   \ Advance to the next cluster in the directory if there is one
+
+   search-cl @
+1A2DFE8 	68 D7 A2  1 5C 4C A0  1 
+   dup 0>  if                                      ( current-cluster )
+1A2DFF0 	40 49 A0  1 A4 47 A0  1 
+1A2DFF8 	DC 41 A0  1 18  0  0  0 
+      \ It's a normal subdirectory cluster
+      cluster@  dup fat-end?                       ( new-cluster# end? )
+1A2E000 	1C D0 A2  1 40 49 A0  1 
+1A2E008 	24 CD A2  1 
+   else                                            ( current-cluster )
+1A2E00C 	C8 41 A0  1 
+1A2E010 	1C  0  0  0 
+      \ It's the root directory so the sectors are in a fixed place
+      1- dup cl>root-sectors #dir-sectors w@ >=    ( pseudo-cl# end? )
+1A2E014 	54 4B A0  1 
+1A2E018 	40 49 A0  1 C4 DC A2  1 
+1A2E020 	24 BC A2  1 94 4C A0  1 
+1A2E028 	EC 48 A0  1 
+   then                                            ( new-cl# end? )
+
+   tuck  if  drop  else  search-cl !  then         ( end? )
+1A2E02C 	E8 46 A0  1 
+1A2E030 	DC 41 A0  1 10  0  0  0 
+1A2E038 	30 49 A0  1 C8 41 A0  1 
+1A2E040 	 C  0  0  0 68 D7 A2  1 
+1A2E048 	54 4D A0  1 
+;
+1A2E04C 	58 46 A0  1 
+
+: advance-entry  ( -- 0=deleted | -1=okay | 1=soft-end  | 2=hard-end )
+1A2E050 	 0  0 61 64 76 61 6E 63 
+1A2E058 	65 2D 65 6E 74 72 79 8D 
+1A2E060 	8C DF A2  1 20 40 A0  1 
+   +dirent  if  2 exit  then \ Go to next dirent; exit if there are no more
+1A2E068 	8C DF A2  1 DC 41 A0  1 
+1A2E070 	 C  0  0  0 90 6F A0  1 
+1A2E078 	40 46 A0  1 
+
+   \ Set the directory entry address; exit if set-dirent fails
+   search-offset @ search-cl @ search-dev @ set-dirent if  2 exit  then
+1A2E07C 	84 D7 A2  1 
+1A2E080 	5C 4C A0  1 68 D7 A2  1 
+1A2E088 	5C 4C A0  1 9C D7 A2  1 
+1A2E090 	5C 4C A0  1  4 DE A2  1 
+1A2E098 	DC 41 A0  1  C  0  0  0 
+1A2E0A0 	90 6F A0  1 40 46 A0  1 
+
+   de_attributes c@  h# f =  if  0 exit  then  \ ignore a VFAT long file name
+1A2E0A8 	68 BF A2  1 C4 4C A0  1 
+1A2E0B0 	58 41 A0  1  F  0  0  0 
+1A2E0B8 	24 48 A0  1 DC 41 A0  1 
+1A2E0C0 	 C  0  0  0 70 6F A0  1 
+1A2E0C8 	40 46 A0  1 
+
+   de_attributes c@  at_vollab and  if  0 exit  then  \ ignore a volume label
+1A2E0CC 	68 BF A2  1 
+1A2E0D0 	C4 4C A0  1 C8 BF A2  1 
+1A2E0D8 	5C 44 A0  1 DC 41 A0  1 
+1A2E0E0 	 C  0  0  0 70 6F A0  1 
+1A2E0E8 	40 46 A0  1 
+
+   de_name c@  case
+1A2E0EC 	30 BF A2  1 
+1A2E0F0 	C4 4C A0  1 
+      0      of     1   endof \ No more valid entries
+1A2E0F4 	70 6F A0  1 
+1A2E0F8 	48 43 A0  1 10  0  0  0 
+1A2E100 	80 6F A0  1 6C 43 A0  1 
+1A2E108 	30  0  0  0 
+      h# e5  of     0   endof \ Deleted file
+1A2E10C 	58 41 A0  1 
+1A2E110 	E5  0  0  0 48 43 A0  1 
+1A2E118 	10  0  0  0 70 6F A0  1 
+1A2E120 	6C 43 A0  1 14  0  0  0 
+      ( default )  -1 swap \ Valid entry
+1A2E128 	58 41 A0  1 FF FF FF FF 
+1A2E130 	68 49 A0  1 
+   endcase
+1A2E134 	84 43 A0  1 
+;
+1A2E138 	58 46 A0  1 
+
+: next-file  ( -- another? )
+1A2E13C 	 0  0 6E 65 
+1A2E140 	78 74 2D 66 69 6C 65 89 
+1A2E148 	64 E0 A2  1 20 40 A0  1 
+   begin  advance-entry  dup 0<=  while  0< if  true  exit  then   repeat
+1A2E150 	64 E0 A2  1 40 49 A0  1 
+1A2E158 	84 47 A0  1 DC 41 A0  1 
+1A2E160 	20  0  0  0 64 47 A0  1 
+1A2E168 	DC 41 A0  1  C  0  0  0 
+1A2E170 	 4 70 A0  1 40 46 A0  1 
+1A2E178 	C8 41 A0  1 D4 FF FF FF 
+   drop  false
+1A2E180 	30 49 A0  1 18 70 A0  1 
+;
+1A2E188 	58 46 A0  1 
+: find-dir  ( -- another? )
+1A2E18C 	 0  0  0 66 
+1A2E190 	69 6E 64 2D 64 69 72 88 
+1A2E198 	4C E1 A2  1 20 40 A0  1 
+   begin
+      advance-entry  dup 0<=
+1A2E1A0 	64 E0 A2  1 40 49 A0  1 
+1A2E1A8 	84 47 A0  1 
+   while
+1A2E1AC 	DC 41 A0  1 
+1A2E1B0 	44  0  0  0 
+      0<  if
+1A2E1B4 	64 47 A0  1 
+1A2E1B8 	DC 41 A0  1 30  0  0  0 
+         de_attributes c@ at_subdir and  if
+1A2E1C0 	68 BF A2  1 C4 4C A0  1 
+1A2E1C8 	E0 BF A2  1 5C 44 A0  1 
+1A2E1D0 	DC 41 A0  1 18  0  0  0 
+            names-match?  if  true  exit  then
+1A2E1D8 	14 D9 A2  1 DC 41 A0  1 
+1A2E1E0 	 C  0  0  0  4 70 A0  1 
+1A2E1E8 	40 46 A0  1 
+         then
+      then
+   repeat
+1A2E1EC 	C8 41 A0  1 
+1A2E1F0 	B0 FF FF FF 
+   drop  false
+1A2E1F4 	30 49 A0  1 
+1A2E1F8 	18 70 A0  1 
+;
+1A2E1FC 	58 46 A0  1 
+
+: attributes-match?  ( -- flag? )
+1A2E200 	 0  0 61 74 74 72 69 62 
+1A2E208 	75 74 65 73 2D 6D 61 74 
+1A2E210 	63 68 3F 91 9C E1 A2  1 
+1A2E218 	20 40 A0  1 
+   de_attributes c@ at_archiv invert and  ( masked-attributes )
+1A2E21C 	68 BF A2  1 
+1A2E220 	C4 4C A0  1 F8 BF A2  1 
+1A2E228 	30 45 A0  1 5C 44 A0  1 
+   search-attrib c@ invert and  0=
+1A2E230 	40 D8 A2  1 C4 4C A0  1 
+1A2E238 	30 45 A0  1 5C 44 A0  1 
+1A2E240 	24 47 A0  1 
+;
+1A2E244 	58 46 A0  1 
+\ : attributes-match?  ( -- flag? )
+\    de_attributes c@  at_archiv invert and  at_rdonly invert and
+\    ?dup  0=  if  at_normal  then
+\    search-attrib c@ and  0<>
+\ ;
+: reset-search  ( cl# -- )
+1A2E248 	 0  0  0 72 65 73 65 74 
+1A2E250 	2D 73 65 61 72 63 68 8C 
+1A2E258 	18 E2 A2  1 20 40 A0  1 
+   dup search-dir-cl ! search-cl !  /dirent negate search-offset !
+1A2E260 	40 49 A0  1 8C D8 A2  1 
+1A2E268 	54 4D A0  1 68 D7 A2  1 
+1A2E270 	54 4D A0  1 F0 C0 A2  1 
+1A2E278 	48 45 A0  1 84 D7 A2  1 
+1A2E280 	54 4D A0  1 
+;
+1A2E284 	58 46 A0  1 
+
+[ifndef] /string
+\ Remove n characters (if there are that many) from the string adr,len
+: /string  ( adr len n -- adr' len' )  over min  tuck -  -rot + swap  ;
+[then]
+
+: set-search  ( adr len file-types -- )
+1A2E288 	 0 73 65 74 2D 73 65 61 
+1A2E290 	72 63 68 8A 5C E2 A2  1 
+1A2E298 	20 40 A0  1 
+
+   search-attrib c!
+1A2E29C 	40 D8 A2  1 
+1A2E2A0 	B8 4D A0  1 
+
+   \ Set the search drive, either from the path if it contains e.g. A: , or
+   \ from the current device
+
+   drive#  dup search-dev !  set-device    ( adr' len' )
+1A2E2A4 	50 DB A2  1 
+1A2E2A8 	40 49 A0  1 9C D7 A2  1 
+1A2E2B0 	54 4D A0  1  4 CC A2  1 
+
+   \ The path starts at the root directory if the first character is "\";
+   \ otherwise it starts at the current directory
+   dup 1 >=  if
+1A2E2B8 	40 49 A0  1 80 6F A0  1 
+1A2E2C0 	EC 48 A0  1 DC 41 A0  1 
+1A2E2C8 	48  0  0  0 
+      over c@  ascii \  =  if
+1A2E2CC 	54 49 A0  1 
+1A2E2D0 	C4 4C A0  1 58 41 A0  1 
+1A2E2D8 	5C  0  0  0 24 48 A0  1 
+1A2E2E0 	DC 41 A0  1 1C  0  0  0 
+         1 /string
+1A2E2E8 	80 6F A0  1 3C 85 A0  1 
+         rdirclus l@
+1A2E2F0 	40 BB A2  1 6C 4C A0  1 
+      else
+1A2E2F8 	C8 41 A0  1  C  0  0  0 
+         dv_cwd-cl l@
+1A2E300 	84 BB A2  1 6C 4C A0  1 
+      then
+   else
+1A2E308 	C8 41 A0  1  C  0  0  0 
+      dv_cwd-cl l@
+1A2E310 	84 BB A2  1 6C 4C A0  1 
+   then                                    ( adr' len' cl# )
+
+   reset-search                            ( adr' len' )
+1A2E318 	5C E2 A2  1 
+
+   \ If a search path is present, find the indicated subdirectory
+
+   begin                                   ( adr' len' )
+
+      \ Split the remaining string at the first backslash, if there is one
+      ascii \ split-before                 ( adr' len' dir-adr dir-len )
+1A2E31C 	58 41 A0  1 
+1A2E320 	5C  0  0  0 20 19 A1  1 
+
+   2 pick  while                           ( adr' len' dir-adr dir-len )
+1A2E328 	90 6F A0  1  C 4A A0  1 
+1A2E330 	DC 41 A0  1 54  0  0  0 
+      set-filename                         ( adr' len' )
+1A2E338 	B0 DB A2  1 
+      find-dir if  file-cluster@
+1A2E33C 	9C E1 A2  1 
+1A2E340 	DC 41 A0  1 10  0  0  0 
+1A2E348 	A0 C2 A2  1 
+      else  cl#eof then                    ( adr' len' cl# )
+1A2E34C 	C8 41 A0  1 
+1A2E350 	 8  0  0  0 70 D8 A2  1 
+      dup reset-search                     ( adr' len' cl# )
+1A2E358 	40 49 A0  1 5C E2 A2  1 
+
+      \ Bail out if the requested directory wasn't found
+      cl#eof =  if  2drop exit  then       ( adr' len' )
+1A2E360 	70 D8 A2  1 24 48 A0  1 
+1A2E368 	DC 41 A0  1  C  0  0  0 
+1A2E370 	AC 49 A0  1 40 46 A0  1 
+      1 /string				   ( adr' len' )  \ Remove the '\'
+1A2E378 	80 6F A0  1 3C 85 A0  1 
+   repeat                                  ( adr 0 filename-adr filename-len )
+1A2E380 	C8 41 A0  1 98 FF FF FF 
+
+   set-filename
+1A2E388 	B0 DB A2  1 
+   2drop
+1A2E38C 	AC 49 A0  1 
+;
+1A2E390 	58 46 A0  1 
+
+: init-search  ( adr len file-types -- )
+1A2E394 	69 6E 69 74 
+1A2E398 	2D 73 65 61 72 63 68 8B 
+1A2E3A0 	98 E2 A2  1 20 40 A0  1 
+   file-search-state search-state ! ( adr len file-types )  set-search
+1A2E3A8 	AC D8 A2  1 10 D7 A2  1 
+1A2E3B0 	54 4D A0  1 98 E2 A2  1 
+;
+1A2E3B8 	58 46 A0  1 
+
+\ mmo internal
+
+: find-next  ( -- flag )
+1A2E3BC 	 0  0 66 69 
+1A2E3C0 	6E 64 2D 6E 65 78 74 89 
+1A2E3C8 	A4 E3 A2  1 20 40 A0  1 
+   begin  next-file  while
+1A2E3D0 	4C E1 A2  1 DC 41 A0  1 
+1A2E3D8 	28  0  0  0 
+      attributes-match? names-match?  and  if  true exit  then
+1A2E3DC 	18 E2 A2  1 
+1A2E3E0 	14 D9 A2  1 5C 44 A0  1 
+1A2E3E8 	DC 41 A0  1  C  0  0  0 
+1A2E3F0 	 4 70 A0  1 40 46 A0  1 
+   repeat
+1A2E3F8 	C8 41 A0  1 D4 FF FF FF 
+   false
+1A2E400 	18 70 A0  1 
+;
+1A2E404 	58 46 A0  1 
+: find-first  ( adr len file-types -- flag )  init-search find-next  ;
+1A2E408 	 0 66 69 6E 64 2D 66 69 
+1A2E410 	72 73 74 8A CC E3 A2  1 
+1A2E418 	20 40 A0  1 A4 E3 A2  1 
+1A2E420 	CC E3 A2  1 58 46 A0  1 
+
+\ mmo private
+
+: extend-dir  ( -- error? )
+1A2E428 	 0 65 78 74 65 6E 64 2D 
+1A2E430 	64 69 72 8A 18 E4 A2  1 
+1A2E438 	20 40 A0  1 
+   search-cl @ 0<=  if  true exit  then
+1A2E43C 	68 D7 A2  1 
+1A2E440 	5C 4C A0  1 84 47 A0  1 
+1A2E448 	DC 41 A0  1  C  0  0  0 
+1A2E450 	 4 70 A0  1 40 46 A0  1 
+   search-cl @ allocate-cluster           ( cluster# true  |  false )
+1A2E458 	68 D7 A2  1 5C 4C A0  1 
+1A2E460 	10 D5 A2  1 
+   if                                     ( cluster# )
+1A2E464 	DC 41 A0  1 
+1A2E468 	70  0  0  0 
+      dup search-cl @ cluster!            ( cluster# )
+1A2E46C 	40 49 A0  1 
+1A2E470 	68 D7 A2  1 5C 4C A0  1 
+1A2E478 	14 D1 A2  1 
+      dup search-cl !  0 search-offset !  ( cluster# )
+1A2E47C 	40 49 A0  1 
+1A2E480 	68 D7 A2  1 54 4D A0  1 
+1A2E488 	70 6F A0  1 84 D7 A2  1 
+1A2E490 	54 4D A0  1 
+      0 swap search-dev @ set-dirent ?dup  if  exit  then
+1A2E494 	70 6F A0  1 
+1A2E498 	68 49 A0  1 9C D7 A2  1 
+1A2E4A0 	5C 4C A0  1  4 DE A2  1 
+1A2E4A8 	B4 70 A0  1 DC 41 A0  1 
+1A2E4B0 	 8  0  0  0 40 46 A0  1 
+      dirent @  /cluster  0  fill    \ Clear it.
+1A2E4B8 	DC BE A2  1 5C 4C A0  1 
+1A2E4C0 	18 C3 A2  1 70 6F A0  1 
+1A2E4C8 	8C 4E A0  1 
+      write-dir-cl   ( error? )
+1A2E4CC 	6C DD A2  1 
+   else                                 ( )
+1A2E4D0 	C8 41 A0  1  8  0  0  0 
+      true
+1A2E4D8 	 4 70 A0  1 
+   then
+;
+1A2E4DC 	58 46 A0  1 
+
+\ This is only called after "find-first" has just been executed, so the
+\ directory and drive context is already set properly.
+: find-free-dirent  ( -- error? )
+1A2E4E0 	 0  0  0 66 69 6E 64 2D 
+1A2E4E8 	66 72 65 65 2D 64 69 72 
+1A2E4F0 	65 6E 74 90 38 E4 A2  1 
+1A2E4F8 	20 40 A0  1 
+   \ Go back to the starting cluster of the directory that was most recently
+   \ searched.
+   search-dir-cl @ reset-search
+1A2E4FC 	8C D8 A2  1 
+1A2E500 	5C 4C A0  1 5C E2 A2  1 
+
+   ( advance-entry returns:  -1=file | 0=deleted  | 1=soft-end  | 2=hard-end )
+   begin  advance-entry  dup 0 1 between 0=  while
+1A2E508 	64 E0 A2  1 40 49 A0  1 
+1A2E510 	70 6F A0  1 80 6F A0  1 
+1A2E518 	D8 70 A0  1 24 47 A0  1 
+1A2E520 	DC 41 A0  1 24  0  0  0 
+      2 =  if  extend-dir exit  then
+1A2E528 	90 6F A0  1 24 48 A0  1 
+1A2E530 	DC 41 A0  1  C  0  0  0 
+1A2E538 	38 E4 A2  1 40 46 A0  1 
+   repeat
+1A2E540 	C8 41 A0  1 C4 FF FF FF 
+
+   \ Found a slot for the new file
+   drop  false
+1A2E548 	30 49 A0  1 18 70 A0  1 
+;
+1A2E550 	58 46 A0  1 

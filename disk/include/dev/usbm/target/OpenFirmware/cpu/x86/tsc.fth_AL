@@ -1,0 +1,119 @@
+purpose: Timing functions using model-specific time-stamp-counter register
+
+\ One way to read the time-stamp counter is to use the
+\ "read model-specific register" instruction with the value 0x10 in CX, e.g.:
+\  h# 10 # cx mov		\ Timestamp counter code
+\  h# f c,  h# 32 c,		\ Read Model-Specific Register
+\ RDMSR works only in supervisor state
+
+code tsc@  ( -- low high )
+1A38540 	 0  0  0 74 73 63 40 84 
+1A38548 	7C 84 A3  1 50 85 A3  1 
+   \ This version of the instruction can also be used from User state
+   \ if bit 2 in the CR4 register is 0.
+   h# f c,  h# 31 c,		\ Read Time-Stamp Counter
+1A38550 	 F 31 
+   ax push   dx push
+1A38552 	50 52 
+c;
+1A38554 	FF E7 
+code spins  ( count -- )
+1A38556 	73 70 
+1A38558 	69 6E 73 85 4C 85 A3  1 
+1A38560 	64 85 A3  1 
+   bx pop
+1A38564 	5B 
+   h# f c,  h# 31 c,		\ Read Time-Stamp Counter   
+1A38565 	 F 31 
+   ax bx add			\ bx: target time
+1A38567 	 1 
+1A38568 	C3 
+   begin
+      h# f c,  h# 31 c,		\ Read Time-Stamp Counter into dx,ax
+1A38569 	 F 31 
+      bx ax sub
+1A3856B 	29 D8 
+   0>= until
+1A3856D 	78 FA 
+c;
+1A3856F 	FF 
+1A38570 	E7 
+
+d# 10 to ms/tick
+d# 262000 value ms-factor
+1A38571 	 0 6D 73 2D 66 61 63 
+1A38578 	74 6F 72 89 60 85 A3  1 
+1A38580 	50 40 A0  1 F8  A  0  0 
+d# 262 value us-factor
+1A38588 	 0  0 75 73 2D 66 61 63 
+1A38590 	74 6F 72 89 80 85 A3  1 
+1A38598 	50 40 A0  1 FC  A  0  0 
+
+0 value tick-msecs	\ To make isatick.fth happy
+1A385A0 	 0 74 69 63 6B 2D 6D 73 
+1A385A8 	65 63 73 8A 98 85 A3  1 
+1A385B0 	50 40 A0  1  0  B  0  0 
+
+: (get-msecs)  ( -- )  tsc@ ms-factor um/mod  nip  ;
+1A385B8 	28 67 65 74 2D 6D 73 65 
+1A385C0 	63 73 29 8B B0 85 A3  1 
+1A385C8 	20 40 A0  1 4C 85 A3  1 
+1A385D0 	80 85 A3  1 7C 5D A0  1 
+1A385D8 	FC 46 A0  1 58 46 A0  1 
+' (get-msecs) to get-msecs
+
+: 1ms  ( -- )  ms-factor spins  ;
+1A385E0 	31 6D 73 83 C8 85 A3  1 
+1A385E8 	20 40 A0  1 80 85 A3  1 
+1A385F0 	60 85 A3  1 58 46 A0  1 
+: (us)  ( #microseconds -- )  us-factor * spins  ;
+1A385F8 	 0  0  0 28 75 73 29 84 
+1A38600 	E8 85 A3  1 20 40 A0  1 
+1A38608 	98 85 A3  1 1C 5F A0  1 
+1A38610 	60 85 A3  1 58 46 A0  1 
+' (us) to us
+
+[ifdef] use-timestamp-counter
+: (ms)  ( #ms -- )  0  ?do  1ms  loop  ;
+1A38618 	 0  0  0 28 6D 73 29 84 
+1A38620 	 4 86 A3  1 20 40 A0  1 
+1A38628 	70 6F A0  1 50 42 A0  1 
+1A38630 	10  0  0  0 E8 85 A3  1 
+1A38638 	F8 41 A0  1 F8 FF FF FF 
+1A38640 	58 46 A0  1 
+' (ms) to ms
+[then]
+
+[ifdef] use-tsc-timing   \ These are precise but inaccurate, as the TSC varies with clock throttling
+\ Timing tools
+2variable timestamp
+: t-update ;
+: t(  ( -- )  tsc@ timestamp 2! ;
+: ))t  ( -- d.ticks )  tsc@  timestamp 2@  d-  ;
+: ))t-usecs  ( -- usecs )  ))t us-factor um/mod nip  ;
+: )t  ( -- )
+   ))t-usecs  ( microseconds )
+   push-decimal
+   <#  u# u# u#  [char] , hold  u# u#s u#>  type  ."  uS "
+   pop-base
+;
+: t-sec(  ( -- )  t(  ;
+: )t-sec  ( -- )
+   ))t  us-factor d# 1,000,000 *  um/mod nip  ( seconds )
+   push-decimal
+   <# u# u#s u#>  type  ." S "
+   pop-base
+;
+: .hms  ( seconds -- )
+   d# 60 /mod   d# 60 /mod    ( sec min hrs )
+   push-decimal
+   <# u# u#s u#> type ." :" <# u# u# u#> type ." :" <# u# u# u#>  type
+   pop-base
+;
+: t-hms(  ( -- )  t(  ;
+: )t-hms
+   ))t  us-factor d# 1,000,000 *  um/mod nip  ( seconds )
+   .hms
+;
+[then]
+

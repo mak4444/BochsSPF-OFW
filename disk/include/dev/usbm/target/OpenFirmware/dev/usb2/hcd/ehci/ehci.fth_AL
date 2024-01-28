@@ -1,0 +1,668 @@
+purpose: Driver for EHCI USB Controller
+
+" ehci" encode-string " device_type" property
+1A55A20 	65 68 63 69  0  0  0  0 
+1A55A28 	64 65 76 69 63 65 5F 74 
+1A55A30 	79 70 65 8B F0 50 A2  1 
+1A55A38 	BC 13 A2  1 1C  0  0  0 
+1A55A40 	 5  0  0  0 
+
+" usb-ehci" " compatible" string-property
+1A55A44 	75 73 62 2D 
+1A55A48 	65 68 63 69  0 63 6F 6D 
+1A55A50 	70 61 74 69 62 6C 65 8A 
+1A55A58 	38 5A A5  1 BC 13 A2  1 
+1A55A60 	1C  0  0  0  9  0  0  0 
+
+hex
+headers
+
+defer init-extra	' noop to init-extra
+1A55A68 	 0 69 6E 69 74 2D 65 78 
+1A55A70 	74 72 61 8A 44 59 A5  1 
+1A55A78 	5C 40 A0  1 EC  E  0  0 
+defer end-extra		' noop to end-extra
+1A55A80 	 0  0 65 6E 64 2D 65 78 
+1A55A88 	74 72 61 89 78 5A A5  1 
+1A55A90 	5C 40 A0  1 F0  E  0  0 
+
+true value first-open?
+1A55A98 	66 69 72 73 74 2D 6F 70 
+1A55AA0 	65 6E 3F 8B 90 5A A5  1 
+1A55AA8 	50 40 A0  1 F4  E  0  0 
+0 value open-count
+1A55AB0 	 0 6F 70 65 6E 2D 63 6F 
+1A55AB8 	75 6E 74 8A A8 5A A5  1 
+1A55AC0 	50 40 A0  1 F8  E  0  0 
+0 value ehci-reg
+1A55AC8 	 0  0  0 65 68 63 69 2D 
+1A55AD0 	72 65 67 88 C0 5A A5  1 
+1A55AD8 	50 40 A0  1 FC  E  0  0 
+0 value op-reg-offset
+1A55AE0 	 0  0 6F 70 2D 72 65 67 
+1A55AE8 	2D 6F 66 66 73 65 74 8D 
+1A55AF0 	D8 5A A5  1 50 40 A0  1 
+1A55AF8 	 0  F  0  0 
+
+: map-regs  ( -- )
+1A55AFC 	 0  0  0 6D 
+1A55B00 	61 70 2D 72 65 67 73 88 
+1A55B08 	F4 5A A5  1 20 40 A0  1 
+   /regs my-map-in to ehci-reg
+1A55B10 	A4 55 A5  1 DC 56 A5  1 
+1A55B18 	B8 40 A0  1 D8 5A A5  1 
+;
+1A55B20 	58 46 A0  1 
+: unmap-regs  ( -- )
+1A55B24 	 0 75 6E 6D 
+1A55B28 	61 70 2D 72 65 67 73 8A 
+1A55B30 	 C 5B A5  1 20 40 A0  1 
+   ehci-reg  /regs  my-map-out  0 to ehci-reg
+1A55B38 	D8 5A A5  1 A4 55 A5  1 
+1A55B40 	40 57 A5  1 70 6F A0  1 
+1A55B48 	B8 40 A0  1 D8 5A A5  1 
+;
+1A55B50 	58 46 A0  1 
+
+: ehci-reg@  ( idx -- data )  ehci-reg + rl@  ;
+1A55B54 	 0  0 65 68 
+1A55B58 	63 69 2D 72 65 67 40 89 
+1A55B60 	34 5B A5  1 20 40 A0  1 
+1A55B68 	D8 5A A5  1  4 45 A0  1 
+1A55B70 	F8 B1 A2  1 58 46 A0  1 
+: ehci-reg!  ( data idx -- )  ehci-reg + rl!  ;
+1A55B78 	 0  0 65 68 63 69 2D 72 
+1A55B80 	65 67 21 89 64 5B A5  1 
+1A55B88 	20 40 A0  1 D8 5A A5  1 
+1A55B90 	 4 45 A0  1 68 B2 A2  1 
+1A55B98 	58 46 A0  1 
+
+: ll ( idx -- )  dup h# f and 0=  if  cr 2 u.r ."   "  else  drop  then  ;
+1A55B9C 	 0 6C 6C 82 
+1A55BA0 	88 5B A5  1 20 40 A0  1 
+1A55BA8 	40 49 A0  1 58 41 A0  1 
+1A55BB0 	 F  0  0  0 5C 44 A0  1 
+1A55BB8 	24 47 A0  1 DC 41 A0  1 
+1A55BC0 	20  0  0  0 80 6D A0  1 
+1A55BC8 	90 6F A0  1 E4 77 A0  1 
+1A55BD0 	20 7C A0  1  2 20 20  0 
+1A55BD8 	C8 41 A0  1  8  0  0  0 
+1A55BE0 	30 49 A0  1 58 46 A0  1 
+: dump-ehci  ( -- )  100 0 do  i ll i ehci-reg@ 8 u.r space 4  +loop  ;
+1A55BE8 	 0  0 64 75 6D 70 2D 65 
+1A55BF0 	68 63 69 89 A4 5B A5  1 
+1A55BF8 	20 40 A0  1 58 41 A0  1 
+1A55C00 	 0  1  0  0 70 6F A0  1 
+1A55C08 	88 42 A0  1 2C  0  0  0 
+1A55C10 	B4 42 A0  1 A4 5B A5  1 
+1A55C18 	B4 42 A0  1 64 5B A5  1 
+1A55C20 	F0 6F A0  1 E4 77 A0  1 
+1A55C28 	CC 71 A0  1 B0 6F A0  1 
+1A55C30 	1C 42 A0  1 DC FF FF FF 
+1A55C38 	58 46 A0  1 
+
+\ Host controller capability registers
+: hcsparams@  ( -- data )  4 ehci-reg@  ;
+1A55C3C 	 0 68 63 73 
+1A55C40 	70 61 72 61 6D 73 40 8A 
+1A55C48 	F8 5B A5  1 20 40 A0  1 
+1A55C50 	B0 6F A0  1 64 5B A5  1 
+1A55C58 	58 46 A0  1 
+: hccparams@  ( -- data )  8 ehci-reg@  ;
+1A55C5C 	 0 68 63 63 
+1A55C60 	70 61 72 61 6D 73 40 8A 
+1A55C68 	4C 5C A5  1 20 40 A0  1 
+1A55C70 	F0 6F A0  1 64 5B A5  1 
+1A55C78 	58 46 A0  1 
+: (hcsp-portroute@)  ( -- d.lo,hi )  h# c ehci-reg@  h# 10 ehci-reg@  ;
+1A55C7C 	 0  0 28 68 
+1A55C80 	63 73 70 2D 70 6F 72 74 
+1A55C88 	72 6F 75 74 65 40 29 91 
+1A55C90 	6C 5C A5  1 20 40 A0  1 
+1A55C98 	58 41 A0  1  C  0  0  0 
+1A55CA0 	64 5B A5  1 58 41 A0  1 
+1A55CA8 	10  0  0  0 64 5B A5  1 
+1A55CB0 	58 46 A0  1 
+: hcsp-portroute@  ( port -- data )
+1A55CB4 	68 63 73 70 
+1A55CB8 	2D 70 6F 72 74 72 6F 75 
+1A55CC0 	74 65 40 8F 94 5C A5  1 
+1A55CC8 	20 40 A0  1 
+   (hcsp-portroute@) rot
+1A55CCC 	94 5C A5  1 
+1A55CD0 	7C 49 A0  1 
+   dup >r 7 >  if  8 - nip  else  drop  then r>
+1A55CD4 	40 49 A0  1 
+1A55CD8 	BC 45 A0  1 E0 6F A0  1 
+1A55CE0 	 4 48 A0  1 DC 41 A0  1 
+1A55CE8 	18  0  0  0 F0 6F A0  1 
+1A55CF0 	18 45 A0  1 FC 46 A0  1 
+1A55CF8 	C8 41 A0  1  8  0  0  0 
+1A55D00 	30 49 A0  1 D0 45 A0  1 
+   4 * >> h# f and
+1A55D08 	B0 6F A0  1 1C 5F A0  1 
+1A55D10 	DC 44 A0  1 58 41 A0  1 
+1A55D18 	 F  0  0  0 5C 44 A0  1 
+;
+1A55D20 	58 46 A0  1 
+
+\ Host Controller operational registers
+: op-reg@    ( idx -- data )  op-reg-offset + ehci-reg@  ;
+1A55D24 	6F 70 2D 72 
+1A55D28 	65 67 40 87 C8 5C A5  1 
+1A55D30 	20 40 A0  1 F4 5A A5  1 
+1A55D38 	 4 45 A0  1 64 5B A5  1 
+1A55D40 	58 46 A0  1 
+: op-reg!    ( data idx -- )  op-reg-offset + ehci-reg!  ;
+1A55D44 	6F 70 2D 72 
+1A55D48 	65 67 21 87 30 5D A5  1 
+1A55D50 	20 40 A0  1 F4 5A A5  1 
+1A55D58 	 4 45 A0  1 88 5B A5  1 
+1A55D60 	58 46 A0  1 
+
+: usbcmd@    ( -- data )  0 op-reg@  ;
+1A55D64 	75 73 62 63 
+1A55D68 	6D 64 40 87 50 5D A5  1 
+1A55D70 	20 40 A0  1 70 6F A0  1 
+1A55D78 	30 5D A5  1 58 46 A0  1 
+: usbcmd!    ( data -- )  0 op-reg!  ;
+1A55D80 	75 73 62 63 6D 64 21 87 
+1A55D88 	70 5D A5  1 20 40 A0  1 
+1A55D90 	70 6F A0  1 50 5D A5  1 
+1A55D98 	58 46 A0  1 
+: flush-reg  ( -- )       usbcmd@ drop  ;
+1A55D9C 	 0  0 66 6C 
+1A55DA0 	75 73 68 2D 72 65 67 89 
+1A55DA8 	8C 5D A5  1 20 40 A0  1 
+1A55DB0 	70 5D A5  1 30 49 A0  1 
+1A55DB8 	58 46 A0  1 
+: usbsts@    ( -- data )  4 op-reg@  ;
+1A55DBC 	75 73 62 73 
+1A55DC0 	74 73 40 87 AC 5D A5  1 
+1A55DC8 	20 40 A0  1 B0 6F A0  1 
+1A55DD0 	30 5D A5  1 58 46 A0  1 
+: usbsts!    ( data -- )  4 op-reg! flush-reg  ;
+1A55DD8 	75 73 62 73 74 73 21 87 
+1A55DE0 	C8 5D A5  1 20 40 A0  1 
+1A55DE8 	B0 6F A0  1 50 5D A5  1 
+1A55DF0 	AC 5D A5  1 58 46 A0  1 
+: usbintr@   ( -- data )  8 op-reg@  ;
+1A55DF8 	 0  0  0 75 73 62 69 6E 
+1A55E00 	74 72 40 88 E4 5D A5  1 
+1A55E08 	20 40 A0  1 F0 6F A0  1 
+1A55E10 	30 5D A5  1 58 46 A0  1 
+: usbintr!   ( data -- )  8 op-reg!  ;
+1A55E18 	 0  0  0 75 73 62 69 6E 
+1A55E20 	74 72 21 88  8 5E A5  1 
+1A55E28 	20 40 A0  1 F0 6F A0  1 
+1A55E30 	50 5D A5  1 58 46 A0  1 
+: frindex@   ( -- data )  h# c op-reg@  ;
+1A55E38 	 0  0  0 66 72 69 6E 64 
+1A55E40 	65 78 40 88 28 5E A5  1 
+1A55E48 	20 40 A0  1 58 41 A0  1 
+1A55E50 	 C  0  0  0 30 5D A5  1 
+1A55E58 	58 46 A0  1 
+: frindex!   ( data -- )  h# c op-reg!  ;
+1A55E5C 	 0  0  0 66 
+1A55E60 	72 69 6E 64 65 78 21 88 
+1A55E68 	48 5E A5  1 20 40 A0  1 
+1A55E70 	58 41 A0  1  C  0  0  0 
+1A55E78 	50 5D A5  1 58 46 A0  1 
+: ctrldsseg@ ( -- data )  h# 10 op-reg@  ;
+1A55E80 	 0 63 74 72 6C 64 73 73 
+1A55E88 	65 67 40 8A 6C 5E A5  1 
+1A55E90 	20 40 A0  1 58 41 A0  1 
+1A55E98 	10  0  0  0 30 5D A5  1 
+1A55EA0 	58 46 A0  1 
+: ctrldsseg! ( data -- )  h# 10 op-reg!  ;
+1A55EA4 	 0 63 74 72 
+1A55EA8 	6C 64 73 73 65 67 21 8A 
+1A55EB0 	90 5E A5  1 20 40 A0  1 
+1A55EB8 	58 41 A0  1 10  0  0  0 
+1A55EC0 	50 5D A5  1 58 46 A0  1 
+: periodic@  ( -- data )  h# 14 op-reg@  ;
+1A55EC8 	 0  0 70 65 72 69 6F 64 
+1A55ED0 	69 63 40 89 B4 5E A5  1 
+1A55ED8 	20 40 A0  1 58 41 A0  1 
+1A55EE0 	14  0  0  0 30 5D A5  1 
+1A55EE8 	58 46 A0  1 
+: periodic!  ( data -- )  h# 14 op-reg!  ;
+1A55EEC 	 0  0 70 65 
+1A55EF0 	72 69 6F 64 69 63 21 89 
+1A55EF8 	D8 5E A5  1 20 40 A0  1 
+1A55F00 	58 41 A0  1 14  0  0  0 
+1A55F08 	50 5D A5  1 58 46 A0  1 
+: asynclist@ ( -- data )  h# 18 op-reg@  ;
+1A55F10 	 0 61 73 79 6E 63 6C 69 
+1A55F18 	73 74 40 8A FC 5E A5  1 
+1A55F20 	20 40 A0  1 58 41 A0  1 
+1A55F28 	18  0  0  0 30 5D A5  1 
+1A55F30 	58 46 A0  1 
+: asynclist! ( data -- )  h# 18 op-reg!  ;
+1A55F34 	 0 61 73 79 
+1A55F38 	6E 63 6C 69 73 74 21 8A 
+1A55F40 	20 5F A5  1 20 40 A0  1 
+1A55F48 	58 41 A0  1 18  0  0  0 
+1A55F50 	50 5D A5  1 58 46 A0  1 
+
+: cfgflag@   ( -- data )  h# 40 op-reg@  ;
+1A55F58 	 0  0  0 63 66 67 66 6C 
+1A55F60 	61 67 40 88 44 5F A5  1 
+1A55F68 	20 40 A0  1 58 41 A0  1 
+1A55F70 	40  0  0  0 30 5D A5  1 
+1A55F78 	58 46 A0  1 
+: cfgflag!   ( data -- )  h# 40 op-reg! flush-reg  ;
+1A55F7C 	 0  0  0 63 
+1A55F80 	66 67 66 6C 61 67 21 88 
+1A55F88 	68 5F A5  1 20 40 A0  1 
+1A55F90 	58 41 A0  1 40  0  0  0 
+1A55F98 	50 5D A5  1 AC 5D A5  1 
+1A55FA0 	58 46 A0  1 
+: portsc@    ( port -- data )  4 * h# 44 + op-reg@  ;
+1A55FA4 	70 6F 72 74 
+1A55FA8 	73 63 40 87 8C 5F A5  1 
+1A55FB0 	20 40 A0  1 B0 6F A0  1 
+1A55FB8 	1C 5F A0  1 58 41 A0  1 
+1A55FC0 	44  0  0  0  4 45 A0  1 
+1A55FC8 	30 5D A5  1 58 46 A0  1 
+: portsc!    ( data port -- )  4 * h# 44 + op-reg!  flush-reg  ;
+1A55FD0 	70 6F 72 74 73 63 21 87 
+1A55FD8 	B0 5F A5  1 20 40 A0  1 
+1A55FE0 	B0 6F A0  1 1C 5F A0  1 
+1A55FE8 	58 41 A0  1 44  0  0  0 
+1A55FF0 	 4 45 A0  1 50 5D A5  1 
+1A55FF8 	AC 5D A5  1 58 46 A0  1 
+
+: halted?    ( -- flag )  usbsts@ h# 1000 and  ;
+1A56000 	68 61 6C 74 65 64 3F 87 
+1A56008 	DC 5F A5  1 20 40 A0  1 
+1A56010 	C8 5D A5  1 58 41 A0  1 
+1A56018 	 0 10  0  0 5C 44 A0  1 
+1A56020 	58 46 A0  1 
+: halt-wait  ( -- )       begin  halted?  until  ;
+1A56024 	 0  0 68 61 
+1A56028 	6C 74 2D 77 61 69 74 89 
+1A56030 	 C 60 A5  1 20 40 A0  1 
+1A56038 	 C 60 A5  1 DC 41 A0  1 
+1A56040 	F8 FF FF FF 58 46 A0  1 
+
+: process-hc-status  ( -- )
+1A56048 	 0  0 70 72 6F 63 65 73 
+1A56050 	73 2D 68 63 2D 73 74 61 
+1A56058 	74 75 73 91 34 60 A5  1 
+1A56060 	20 40 A0  1 
+   usbsts@ dup usbsts!		\ Clear interrupts and errors
+1A56064 	C8 5D A5  1 
+1A56068 	40 49 A0  1 E4 5D A5  1 
+   h# 10  and  if  " Host system error" USB_ERR_HCHALTED set-usb-error  then
+1A56070 	58 41 A0  1 10  0  0  0 
+1A56078 	5C 44 A0  1 DC 41 A0  1 
+1A56080 	24  0  0  0 9C 53 A0  1 
+1A56088 	11 48 6F 73 74 20 73 79 
+1A56090 	73 74 65 6D 20 65 72 72 
+1A56098 	6F 72  0  0 E0 2C A4  1 
+1A560A0 	20 40 A4  1 
+;
+1A560A4 	58 46 A0  1 
+: hc-interrupt?  ( -- interrupt? )
+1A560A8 	 0  0 68 63 2D 69 6E 74 
+1A560B0 	65 72 72 75 70 74 3F 8D 
+1A560B8 	60 60 A5  1 20 40 A0  1 
+   usbsts@ h# 13 and  dup  if   ( status )
+1A560C0 	C8 5D A5  1 58 41 A0  1 
+1A560C8 	13  0  0  0 5C 44 A0  1 
+1A560D0 	40 49 A0  1 DC 41 A0  1 
+1A560D8 	4C  0  0  0 
+      dup usbsts!               ( status )  \ Clear interrupts, frame rollover, errors
+1A560DC 	40 49 A0  1 
+1A560E0 	E4 5D A5  1 
+      dup h# 10  and  if        ( status )
+1A560E4 	40 49 A0  1 
+1A560E8 	58 41 A0  1 10  0  0  0 
+1A560F0 	5C 44 A0  1 DC 41 A0  1 
+1A560F8 	2C  0  0  0 
+         " USB host controller halted" USB_ERR_HCHALTED set-usb-error
+1A560FC 	9C 53 A0  1 
+1A56100 	1A 55 53 42 20 68 6F 73 
+1A56108 	74 20 63 6F 6E 74 72 6F 
+1A56110 	6C 6C 65 72 20 68 61 6C 
+1A56118 	74 65 64  0 E0 2C A4  1 
+1A56120 	20 40 A4  1 
+      then                      ( status )
+   then                         ( status )
+   0<>                          ( interrupt? )
+1A56124 	44 47 A0  1 
+;
+1A56128 	58 46 A0  1 
+
+: get-hc-status  ( -- status )
+1A5612C 	 0  0 67 65 
+1A56130 	74 2D 68 63 2D 73 74 61 
+1A56138 	74 75 73 8D BC 60 A5  1 
+1A56140 	20 40 A0  1 
+   usbsts@ dup usbsts!		\ Clear interrupts and errors
+1A56144 	C8 5D A5  1 
+1A56148 	40 49 A0  1 E4 5D A5  1 
+   dup h# 10  and  if  " Host system error" USB_ERR_HCHALTED set-usb-error  then
+1A56150 	40 49 A0  1 58 41 A0  1 
+1A56158 	10  0  0  0 5C 44 A0  1 
+1A56160 	DC 41 A0  1 24  0  0  0 
+1A56168 	9C 53 A0  1 11 48 6F 73 
+1A56170 	74 20 73 79 73 74 65 6D 
+1A56178 	20 65 72 72 6F 72  0  0 
+1A56180 	E0 2C A4  1 20 40 A4  1 
+;
+1A56188 	58 46 A0  1 
+
+: doorbell-wait  ( -- )
+1A5618C 	 0  0 64 6F 
+1A56190 	6F 72 62 65 6C 6C 2D 77 
+1A56198 	61 69 74 8D 40 61 A5  1 
+1A561A0 	20 40 A0  1 
+   \ Wait until interrupt on async advance bit is set.
+   \ But, some HCs fail to set the async advance bit sometimes.  Therefore,
+   \ we add a timeout and clear the status all the same.
+   h# 100 0  do  usbsts@ h# 20 and  if  leave  then  loop
+1A561A4 	58 41 A0  1 
+1A561A8 	 0  1  0  0 70 6F A0  1 
+1A561B0 	88 42 A0  1 28  0  0  0 
+1A561B8 	C8 5D A5  1 58 41 A0  1 
+1A561C0 	20  0  0  0 5C 44 A0  1 
+1A561C8 	DC 41 A0  1  8  0  0  0 
+1A561D0 	18 43 A0  1 F8 41 A0  1 
+1A561D8 	E0 FF FF FF 
+   h# 20 usbsts!			\ Clear status
+1A561DC 	58 41 A0  1 
+1A561E0 	20  0  0  0 E4 5D A5  1 
+;
+1A561E8 	58 46 A0  1 
+: ring-doorbell  ( -- )
+1A561EC 	 0  0 72 69 
+1A561F0 	6E 67 2D 64 6F 6F 72 62 
+1A561F8 	65 6C 6C 8D A0 61 A5  1 
+1A56200 	20 40 A0  1 
+   usbcmd@ h# 40 or usbcmd!		\ Interrupt on async advance doorbell
+1A56204 	70 5D A5  1 
+1A56208 	58 41 A0  1 40  0  0  0 
+1A56210 	70 44 A0  1 8C 5D A5  1 
+   usbcmd@ drop
+1A56218 	70 5D A5  1 30 49 A0  1 
+   doorbell-wait
+1A56220 	A0 61 A5  1 
+;
+1A56224 	58 46 A0  1 
+
+0 value dbgp-offset
+1A56228 	64 62 67 70 2D 6F 66 66 
+1A56230 	73 65 74 8B  0 62 A5  1 
+1A56238 	50 40 A0  1  4  F  0  0 
+0 value dbgp-bar
+1A56240 	 0  0  0 64 62 67 70 2D 
+1A56248 	62 61 72 88 38 62 A5  1 
+1A56250 	50 40 A0  1  8  F  0  0 
+
+: debug-port-active?  ( -- flag )
+1A56258 	 0 64 65 62 75 67 2D 70 
+1A56260 	6F 72 74 2D 61 63 74 69 
+1A56268 	76 65 3F 92 50 62 A5  1 
+1A56270 	20 40 A0  1 
+   hcsparams@  h# f00000 and  0=  if  false exit  then
+1A56274 	4C 5C A5  1 
+1A56278 	58 41 A0  1  0  0 F0  0 
+1A56280 	5C 44 A0  1 24 47 A0  1 
+1A56288 	DC 41 A0  1  C  0  0  0 
+1A56290 	18 70 A0  1 40 46 A0  1 
+   has-dbgp-regs?  if   ( offset bar )
+1A56298 	70 57 A5  1 DC 41 A0  1 
+1A562A0 	1C  0  0  0 
+      to dbgp-bar  to dbgp-offset
+1A562A4 	B8 40 A0  1 
+1A562A8 	50 62 A5  1 B8 40 A0  1 
+1A562B0 	38 62 A5  1 
+   else                 ( )
+1A562B4 	C8 41 A0  1 
+1A562B8 	 C  0  0  0 
+      false exit
+1A562BC 	18 70 A0  1 
+1A562C0 	40 46 A0  1 
+   then
+
+   \ We should take dbgp-bar into account, but for now we
+   \ just assume it's the same BAR as for the main registers.
+   dbgp-offset ehci-reg@
+1A562C4 	38 62 A5  1 
+1A562C8 	64 5B A5  1 
+   h# 10000000 and 0<>
+1A562CC 	58 41 A0  1 
+1A562D0 	 0  0  0 10 5C 44 A0  1 
+1A562D8 	44 47 A0  1 
+;
+1A562DC 	58 46 A0  1 
+
+external
+
+: start-usb  ( -- )
+1A562E0 	 0  0 73 74 61 72 74 2D 
+1A562E8 	75 73 62 89 70 62 A5  1 
+1A562F0 	20 40 A0  1 
+   ehci-reg dup 0=  if  map-regs  then
+1A562F4 	D8 5A A5  1 
+1A562F8 	40 49 A0  1 24 47 A0  1 
+1A56300 	DC 41 A0  1  8  0  0  0 
+1A56308 	 C 5B A5  1 
+   halted?  if  usbcmd@ 1 or usbcmd!  then
+1A5630C 	 C 60 A5  1 
+1A56310 	DC 41 A0  1 14  0  0  0 
+1A56318 	70 5D A5  1 80 6F A0  1 
+1A56320 	70 44 A0  1 8C 5D A5  1 
+   0=  if  unmap-regs  then
+1A56328 	24 47 A0  1 DC 41 A0  1 
+1A56330 	 8  0  0  0 34 5B A5  1 
+;
+1A56338 	58 46 A0  1 
+
+: stop-usb   ( -- )
+1A5633C 	 0  0  0 73 
+1A56340 	74 6F 70 2D 75 73 62 88 
+1A56348 	F0 62 A5  1 20 40 A0  1 
+   ehci-reg dup 0=  if  map-regs  then
+1A56350 	D8 5A A5  1 40 49 A0  1 
+1A56358 	24 47 A0  1 DC 41 A0  1 
+1A56360 	 8  0  0  0  C 5B A5  1 
+   usbcmd@ 31 invert and usbcmd!
+1A56368 	70 5D A5  1 58 41 A0  1 
+1A56370 	31  0  0  0 30 45 A0  1 
+1A56378 	5C 44 A0  1 8C 5D A5  1 
+   halt-wait
+1A56380 	34 60 A5  1 
+   0=  if  unmap-regs  then
+1A56384 	24 47 A0  1 
+1A56388 	DC 41 A0  1  8  0  0  0 
+1A56390 	34 5B A5  1 
+;
+1A56394 	58 46 A0  1 
+
+: reset-usb  ( -- )
+1A56398 	 0  0 72 65 73 65 74 2D 
+1A563A0 	75 73 62 89 4C 63 A5  1 
+1A563A8 	20 40 A0  1 
+   ehci-reg dup 0=  if  map-regs  then  ( reg )
+1A563AC 	D8 5A A5  1 
+1A563B0 	40 49 A0  1 24 47 A0  1 
+1A563B8 	DC 41 A0  1  8  0  0  0 
+1A563C0 	 C 5B A5  1 
+   debug-port-active?  if  drop exit  then   \ Don't kill the debug port!
+1A563C4 	70 62 A5  1 
+1A563C8 	DC 41 A0  1  C  0  0  0 
+1A563D0 	30 49 A0  1 40 46 A0  1 
+   usbcmd@ 2 or 1 invert and usbcmd!	\ HCReset
+1A563D8 	70 5D A5  1 90 6F A0  1 
+1A563E0 	70 44 A0  1 80 6F A0  1 
+1A563E8 	30 45 A0  1 5C 44 A0  1 
+1A563F0 	8C 5D A5  1 
+   d# 10 0  do
+1A563F4 	58 41 A0  1 
+1A563F8 	 A  0  0  0 70 6F A0  1 
+1A56400 	88 42 A0  1 28  0  0  0 
+      usbcmd@ 2 and  0=  ?leave
+1A56408 	70 5D A5  1 90 6F A0  1 
+1A56410 	5C 44 A0  1 24 47 A0  1 
+1A56418 	34 43 A0  1 
+      1 ms
+1A5641C 	80 6F A0  1 
+1A56420 	60 E0 A1  1 
+   loop
+1A56424 	F8 41 A0  1 
+1A56428 	E0 FF FF FF 
+   0=  if  unmap-regs  then
+1A5642C 	24 47 A0  1 
+1A56430 	DC 41 A0  1  8  0  0  0 
+1A56438 	34 5B A5  1 
+;
+1A5643C 	58 46 A0  1 
+
+: test-port-begin  ( port -- )
+1A56440 	74 65 73 74 2D 70 6F 72 
+1A56448 	74 2D 62 65 67 69 6E 8F 
+1A56450 	A8 63 A5  1 20 40 A0  1 
+   ehci-reg dup 0=  if  map-regs  then
+1A56458 	D8 5A A5  1 40 49 A0  1 
+1A56460 	24 47 A0  1 DC 41 A0  1 
+1A56468 	 8  0  0  0  C 5B A5  1 
+   swap dup portsc@ h# 40000 or swap portsc!
+1A56470 	68 49 A0  1 40 49 A0  1 
+1A56478 	B0 5F A5  1 58 41 A0  1 
+1A56480 	 0  0  4  0 70 44 A0  1 
+1A56488 	68 49 A0  1 DC 5F A5  1 
+   0=  if  unmap-regs  then
+1A56490 	24 47 A0  1 DC 41 A0  1 
+1A56498 	 8  0  0  0 34 5B A5  1 
+;
+1A564A0 	58 46 A0  1 
+
+: test-port-end  ( port -- )
+1A564A4 	 0  0 74 65 
+1A564A8 	73 74 2D 70 6F 72 74 2D 
+1A564B0 	65 6E 64 8D 54 64 A5  1 
+1A564B8 	20 40 A0  1 
+   ehci-reg dup 0=  if  map-regs  then
+1A564BC 	D8 5A A5  1 
+1A564C0 	40 49 A0  1 24 47 A0  1 
+1A564C8 	DC 41 A0  1  8  0  0  0 
+1A564D0 	 C 5B A5  1 
+   swap dup portsc@ h# 70000 invert and swap portsc!
+1A564D4 	68 49 A0  1 
+1A564D8 	40 49 A0  1 B0 5F A5  1 
+1A564E0 	58 41 A0  1  0  0  7  0 
+1A564E8 	30 45 A0  1 5C 44 A0  1 
+1A564F0 	68 49 A0  1 DC 5F A5  1 
+   0=  if  unmap-regs  then
+1A564F8 	24 47 A0  1 DC 41 A0  1 
+1A56500 	 8  0  0  0 34 5B A5  1 
+;
+1A56508 	58 46 A0  1 
+
+headers
+
+: init-ehci-regs  ( -- )
+1A5650C 	 0 69 6E 69 
+1A56510 	74 2D 65 68 63 69 2D 72 
+1A56518 	65 67 73 8E B8 64 A5  1 
+1A56520 	20 40 A0  1 
+   0 ctrldsseg!
+1A56524 	70 6F A0  1 
+1A56528 	B4 5E A5  1 
+   0 periodic!
+1A5652C 	70 6F A0  1 
+1A56530 	FC 5E A5  1 
+   0 asynclist!
+1A56534 	70 6F A0  1 
+1A56538 	44 5F A5  1 
+   0 usbintr!
+1A5653C 	70 6F A0  1 
+1A56540 	28 5E A5  1 
+;
+1A56544 	58 46 A0  1 
+
+: reset-port  ( port -- )
+1A56548 	 0 72 65 73 65 74 2D 70 
+1A56550 	6F 72 74 8A 20 65 A5  1 
+1A56558 	20 40 A0  1 
+   dup portsc@ h# 100 or 4 invert and over portsc!	\ Reset port
+1A5655C 	40 49 A0  1 
+1A56560 	B0 5F A5  1 58 41 A0  1 
+1A56568 	 0  1  0  0 70 44 A0  1 
+1A56570 	B0 6F A0  1 30 45 A0  1 
+1A56578 	5C 44 A0  1 54 49 A0  1 
+1A56580 	DC 5F A5  1 
+   d# 50 ms
+1A56584 	58 41 A0  1 
+1A56588 	32  0  0  0 60 E0 A1  1 
+   dup portsc@ h# 100 invert and swap portsc!
+1A56590 	40 49 A0  1 B0 5F A5  1 
+1A56598 	58 41 A0  1  0  1  0  0 
+1A565A0 	30 45 A0  1 5C 44 A0  1 
+1A565A8 	68 49 A0  1 DC 5F A5  1 
+   d# 10 ms
+1A565B0 	58 41 A0  1  A  0  0  0 
+1A565B8 	60 E0 A1  1 
+;
+1A565BC 	58 46 A0  1 
+
+: power-port   ( port -- )  dup portsc@ h# 1000 or swap portsc!  2 ms  ;
+1A565C0 	 0 70 6F 77 65 72 2D 70 
+1A565C8 	6F 72 74 8A 58 65 A5  1 
+1A565D0 	20 40 A0  1 40 49 A0  1 
+1A565D8 	B0 5F A5  1 58 41 A0  1 
+1A565E0 	 0 10  0  0 70 44 A0  1 
+1A565E8 	68 49 A0  1 DC 5F A5  1 
+1A565F0 	90 6F A0  1 60 E0 A1  1 
+1A565F8 	58 46 A0  1 
+
+: disown-port  ( port -- )  dup portsc@ h# 2000 or swap portsc!  ;
+1A565FC 	64 69 73 6F 
+1A56600 	77 6E 2D 70 6F 72 74 8B 
+1A56608 	D0 65 A5  1 20 40 A0  1 
+1A56610 	40 49 A0  1 B0 5F A5  1 
+1A56618 	58 41 A0  1  0 20  0  0 
+1A56620 	70 44 A0  1 68 49 A0  1 
+1A56628 	DC 5F A5  1 58 46 A0  1 
+
+: #ports  ( -- n )  hcsparams@ h# f and  ;
+1A56630 	 0 23 70 6F 72 74 73 86 
+1A56638 	 C 66 A5  1 20 40 A0  1 
+1A56640 	4C 5C A5  1 58 41 A0  1 
+1A56648 	 F  0  0  0 5C 44 A0  1 
+1A56650 	58 46 A0  1 
+
+: claim-ownership  ( -- )
+1A56654 	63 6C 61 69 
+1A56658 	6D 2D 6F 77 6E 65 72 73 
+1A56660 	68 69 70 8F 3C 66 A5  1 
+1A56668 	20 40 A0  1 
+   1 cfgflag!				\ Claim ownership to all ports
+1A5666C 	80 6F A0  1 
+1A56670 	8C 5F A5  1 
+   3 ms					\ Give devices time to settle
+1A56674 	A0 6F A0  1 
+1A56678 	60 E0 A1  1 
+
+   \ Power on ports if necessary
+   hcsparams@ h# 10 and  if
+1A5667C 	4C 5C A5  1 
+1A56680 	58 41 A0  1 10  0  0  0 
+1A56688 	5C 44 A0  1 DC 41 A0  1 
+1A56690 	24  0  0  0 
+      #ports 0  ?do
+1A56694 	3C 66 A5  1 
+1A56698 	70 6F A0  1 50 42 A0  1 
+1A566A0 	14  0  0  0 
+         i power-port
+1A566A4 	B4 42 A0  1 
+1A566A8 	D0 65 A5  1 
+      loop
+1A566AC 	F8 41 A0  1 
+1A566B0 	F4 FF FF FF 
+   then
+;
+1A566B4 	58 46 A0  1 

@@ -1,0 +1,1964 @@
+purpose: Data structures and manuipulation routines for EHCI USB Controller
+
+hex
+headers
+
+\ XXX Isochronous is not supported in the current version of the EHCI driver
+
+\ ---------------------------------------------------------------------------
+\ Data structures for this implementation of the EHCI USB Driver include:
+\   - qh-ptr	pointer to the asynchronous list of QHs
+\   - framelist	pointer to the Periodic Frame List
+\   - intr      internal array of interrupts
+\ ---------------------------------------------------------------------------
+
+\ Constants common to most EHCI data structures
+1 constant TERMINATE
+1A566B8 	 0  0 74 65 72 6D 69 6E 
+1A566C0 	61 74 65 89 68 66 A5  1 
+1A566C8 	68 40 A0  1  1  0  0  0 
+
+0 constant TYP_ITD
+1A566D0 	74 79 70 5F 69 74 64 87 
+1A566D8 	C8 66 A5  1 68 40 A0  1 
+1A566E0 	 0  0  0  0 
+2 constant TYP_QH
+1A566E4 	 0 74 79 70 
+1A566E8 	5F 71 68 86 DC 66 A5  1 
+1A566F0 	68 40 A0  1  2  0  0  0 
+4 constant TYP_SITD
+1A566F8 	 0  0  0 74 79 70 5F 73 
+1A56700 	69 74 64 88 F0 66 A5  1 
+1A56708 	68 40 A0  1  4  0  0  0 
+6 constant TYP_FSTN
+1A56710 	 0  0  0 74 79 70 5F 66 
+1A56718 	73 74 6E 88  8 67 A5  1 
+1A56720 	68 40 A0  1  6  0  0  0 
+
+\ Pipe type
+0 constant pt-ctrl
+1A56728 	70 74 2D 63 74 72 6C 87 
+1A56730 	20 67 A5  1 68 40 A0  1 
+1A56738 	 0  0  0  0 
+1 constant pt-bulk
+1A5673C 	70 74 2D 62 
+1A56740 	75 6C 6B 87 34 67 A5  1 
+1A56748 	68 40 A0  1  1  0  0  0 
+2 constant pt-intr
+1A56750 	70 74 2D 69 6E 74 72 87 
+1A56758 	48 67 A5  1 68 40 A0  1 
+1A56760 	 2  0  0  0 
+3 constant pt-iso
+1A56764 	 0 70 74 2D 
+1A56768 	69 73 6F 86 5C 67 A5  1 
+1A56770 	68 40 A0  1  3  0  0  0 
+
+\ ---------------------------------------------------------------------------
+\ Periodic Frame List as defined by the EHCI Spec; 4-KB aligned
+\
+\ Each entry is composed of:  bit  0    TERMINATE
+\                             bits 2:1  Pipe type
+\                             bits 31:5 Frame List Link Pointer
+\ ---------------------------------------------------------------------------
+
+h# 1000 constant /align4kb
+1A56778 	 0  0 2F 61 6C 69 67 6E 
+1A56780 	34 6B 62 89 70 67 A5  1 
+1A56788 	68 40 A0  1  0 10  0  0 
+
+d# 1024 dup constant #framelist		\ # of entries in framelist
+1A56790 	 0 23 66 72 61 6D 65 6C 
+1A56798 	69 73 74 8A 88 67 A5  1 
+1A567A0 	68 40 A0  1  0  4  0  0 
+4 *         constant /framelist		\ Size of framelist
+1A567A8 	 0 2F 66 72 61 6D 65 6C 
+1A567B0 	69 73 74 8A A0 67 A5  1 
+1A567B8 	68 40 A0  1  0 10  0  0 
+
+0 value framelist
+1A567C0 	 0  0 66 72 61 6D 65 6C 
+1A567C8 	69 73 74 89 B8 67 A5  1 
+1A567D0 	50 40 A0  1  C  F  0  0 
+0 value framelist-unaligned
+1A567D8 	66 72 61 6D 65 6C 69 73 
+1A567E0 	74 2D 75 6E 61 6C 69 67 
+1A567E8 	6E 65 64 93 D0 67 A5  1 
+1A567F0 	50 40 A0  1 10  F  0  0 
+0 value framelist-phys
+1A567F8 	 0 66 72 61 6D 65 6C 69 
+1A56800 	73 74 2D 70 68 79 73 8E 
+1A56808 	F0 67 A5  1 50 40 A0  1 
+1A56810 	14  F  0  0 
+
+: framelist!  ( n idx -- )  4 * framelist + le-l!  ;
+1A56814 	 0 66 72 61 
+1A56818 	6D 65 6C 69 73 74 21 8A 
+1A56820 	 C 68 A5  1 20 40 A0  1 
+1A56828 	B0 6F A0  1 1C 5F A0  1 
+1A56830 	D0 67 A5  1  4 45 A0  1 
+1A56838 	5C 35 A4  1 58 46 A0  1 
+
+: init-framelist  ( -- )
+1A56840 	 0 69 6E 69 74 2D 66 72 
+1A56848 	61 6D 65 6C 69 73 74 8E 
+1A56850 	24 68 A5  1 20 40 A0  1 
+   framelist 0=  if
+1A56858 	D0 67 A5  1 24 47 A0  1 
+1A56860 	DC 41 A0  1 60  0  0  0 
+      \ Allocate framelist
+      /framelist /align4kb aligned-alloc	    ( unaligned virt )
+1A56868 	B8 67 A5  1 88 67 A5  1 
+1A56870 	18 37 A4  1 
+      swap to framelist-unaligned		    ( virt )
+1A56874 	68 49 A0  1 
+1A56878 	B8 40 A0  1 F0 67 A5  1 
+      dup to framelist			            ( virt )
+1A56880 	40 49 A0  1 B8 40 A0  1 
+1A56888 	D0 67 A5  1 
+      /framelist true dma-map-in to framelist-phys  ( )
+1A5688C 	B8 67 A5  1 
+1A56890 	 4 70 A0  1 B8 36 A4  1 
+1A56898 	B8 40 A0  1  C 68 A5  1 
+
+      \ Initialize framelist
+      #framelist 0  do  TERMINATE i framelist!  loop
+1A568A0 	A0 67 A5  1 70 6F A0  1 
+1A568A8 	88 42 A0  1 18  0  0  0 
+1A568B0 	C8 66 A5  1 B4 42 A0  1 
+1A568B8 	24 68 A5  1 F8 41 A0  1 
+1A568C0 	F0 FF FF FF 
+   then
+   framelist-phys periodic!
+1A568C4 	 C 68 A5  1 
+1A568C8 	FC 5E A5  1 
+;
+1A568CC 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Internal interrupt list corresponding with the Frame List
+\ ---------------------------------------------------------------------------
+
+struct
+   4 field >intr-head
+1A568D0 	 0 3E 69 6E 74 72 2D 68 
+1A568D8 	65 61 64 8A 54 68 A5  1 
+1A568E0 	50 EE A0  1  0  0  0  0 
+   4 field >intr-tail
+1A568E8 	 0 3E 69 6E 74 72 2D 74 
+1A568F0 	61 69 6C 8A E0 68 A5  1 
+1A568F8 	50 EE A0  1  4  0  0  0 
+dup constant /intr-entry
+1A56900 	2F 69 6E 74 72 2D 65 6E 
+1A56908 	74 72 79 8B F8 68 A5  1 
+1A56910 	68 40 A0  1  8  0  0  0 
+#framelist * constant /intr		\ Size of intr
+1A56918 	 0  0 2F 69 6E 74 72 85 
+1A56920 	10 69 A5  1 68 40 A0  1 
+1A56928 	 0 20  0  0 
+
+0 value intr				\ Internal array of interrupts
+1A5692C 	 0  0  0 69 
+1A56930 	6E 74 72 84 24 69 A5  1 
+1A56938 	50 40 A0  1 18  F  0  0 
+
+: 'intr  ( idx -- adr )  /intr-entry * intr +  ;
+1A56940 	 0  0 27 69 6E 74 72 85 
+1A56948 	38 69 A5  1 20 40 A0  1 
+1A56950 	10 69 A5  1 1C 5F A0  1 
+1A56958 	38 69 A5  1  4 45 A0  1 
+1A56960 	58 46 A0  1 
+: intr-head@  ( idx -- adr )  'intr >intr-head l@  ;
+1A56964 	 0 69 6E 74 
+1A56968 	72 2D 68 65 61 64 40 8A 
+1A56970 	4C 69 A5  1 20 40 A0  1 
+1A56978 	4C 69 A5  1 E0 68 A5  1 
+1A56980 	6C 4C A0  1 58 46 A0  1 
+: intr-head!  ( adr idx -- )  'intr >intr-head l!  ;
+1A56988 	 0 69 6E 74 72 2D 68 65 
+1A56990 	61 64 21 8A 74 69 A5  1 
+1A56998 	20 40 A0  1 4C 69 A5  1 
+1A569A0 	E0 68 A5  1 7C 4D A0  1 
+1A569A8 	58 46 A0  1 
+: intr-tail@  ( idx -- adr )  'intr >intr-tail l@  ;
+1A569AC 	 0 69 6E 74 
+1A569B0 	72 2D 74 61 69 6C 40 8A 
+1A569B8 	98 69 A5  1 20 40 A0  1 
+1A569C0 	4C 69 A5  1 F8 68 A5  1 
+1A569C8 	6C 4C A0  1 58 46 A0  1 
+: intr-tail!  ( adr idx -- )  'intr >intr-tail l!  ;
+1A569D0 	 0 69 6E 74 72 2D 74 61 
+1A569D8 	69 6C 21 8A BC 69 A5  1 
+1A569E0 	20 40 A0  1 4C 69 A5  1 
+1A569E8 	F8 68 A5  1 7C 4D A0  1 
+1A569F0 	58 46 A0  1 
+
+: init-intr  ( -- )
+1A569F4 	 0  0 69 6E 
+1A569F8 	69 74 2D 69 6E 74 72 89 
+1A56A00 	E0 69 A5  1 20 40 A0  1 
+   intr 0=  if
+1A56A08 	38 69 A5  1 24 47 A0  1 
+1A56A10 	DC 41 A0  1 20  0  0  0 
+      /intr alloc-mem dup to intr		\ Allocate intr
+1A56A18 	24 69 A5  1 F0 6C A0  1 
+1A56A20 	40 49 A0  1 B8 40 A0  1 
+1A56A28 	38 69 A5  1 
+      /intr erase				\ Initialize intr
+1A56A2C 	24 69 A5  1 
+1A56A30 	F0 72 A0  1 
+   then
+;
+1A56A34 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Queue Element Transfer Descriptor (qTD) as defined by the EHCI Spec; 32-byte aligned
+\ ---------------------------------------------------------------------------
+
+struct					\ Beginning of qTD
+   4 field >hcqtd-next			\ Next qTD pointer
+1A56A38 	3E 68 63 71 74 64 2D 6E 
+1A56A40 	65 78 74 8B  4 6A A5  1 
+1A56A48 	50 EE A0  1  0  0  0  0 
+   4 field >hcqtd-next-alt		\ Alternate next qTD pointer
+1A56A50 	3E 68 63 71 74 64 2D 6E 
+1A56A58 	65 78 74 2D 61 6C 74 8F 
+1A56A60 	48 6A A5  1 50 EE A0  1 
+1A56A68 	 4  0  0  0 
+   4 field >hcqtd-token			\ qTD token
+1A56A6C 	 0  0  0 3E 
+1A56A70 	68 63 71 74 64 2D 74 6F 
+1A56A78 	6B 65 6E 8C 64 6A A5  1 
+1A56A80 	50 EE A0  1  8  0  0  0 
+   4 field >hcqtd-bptr0			\ Buffer pointer 0 (4KB aligned)
+1A56A88 	 0  0  0 3E 68 63 71 74 
+1A56A90 	64 2D 62 70 74 72 30 8C 
+1A56A98 	80 6A A5  1 50 EE A0  1 
+1A56AA0 	 C  0  0  0 
+   4 field >hcqtd-bptr1			\ Buffer pointer 1
+1A56AA4 	 0  0  0 3E 
+1A56AA8 	68 63 71 74 64 2D 62 70 
+1A56AB0 	74 72 31 8C 9C 6A A5  1 
+1A56AB8 	50 EE A0  1 10  0  0  0 
+   4 field >hcqtd-bptr2			\ Buffer pointer 2
+1A56AC0 	 0  0  0 3E 68 63 71 74 
+1A56AC8 	64 2D 62 70 74 72 32 8C 
+1A56AD0 	B8 6A A5  1 50 EE A0  1 
+1A56AD8 	14  0  0  0 
+   4 field >hcqtd-bptr3			\ Buffer pointer 3
+1A56ADC 	 0  0  0 3E 
+1A56AE0 	68 63 71 74 64 2D 62 70 
+1A56AE8 	74 72 33 8C D4 6A A5  1 
+1A56AF0 	50 EE A0  1 18  0  0  0 
+   4 field >hcqtd-bptr4			\ Buffer pointer 4
+1A56AF8 	 0  0  0 3E 68 63 71 74 
+1A56B00 	64 2D 62 70 74 72 34 8C 
+1A56B08 	F0 6A A5  1 50 EE A0  1 
+1A56B10 	1C  0  0  0 
+   4 5 * field >hcqtd-xbptrs		\ 64-bit buffer pointer extensions
+1A56B14 	 0  0 3E 68 
+1A56B18 	63 71 74 64 2D 78 62 70 
+1A56B20 	74 72 73 8D  C 6B A5  1 
+1A56B28 	50 EE A0  1 20  0  0  0 
+dup constant /hcqtd
+1A56B30 	 0 2F 68 63 71 74 64 86 
+1A56B38 	28 6B A5  1 68 40 A0  1 
+1A56B40 	34  0  0  0 
+					\ Driver specific fields
+   4 field >qtd-phys			\ Physical address of qTD
+1A56B44 	 0  0 3E 71 
+1A56B48 	74 64 2D 70 68 79 73 89 
+1A56B50 	3C 6B A5  1 50 EE A0  1 
+1A56B58 	34  0  0  0 
+   4 field >qtd-next			\ Next qTD virtual address
+1A56B5C 	 0  0 3E 71 
+1A56B60 	74 64 2D 6E 65 78 74 89 
+1A56B68 	54 6B A5  1 50 EE A0  1 
+1A56B70 	38  0  0  0 
+   4 field >qtd-buf			\ Buffer virtual address
+1A56B74 	 0  0  0 3E 
+1A56B78 	71 74 64 2D 62 75 66 88 
+1A56B80 	6C 6B A5  1 50 EE A0  1 
+1A56B88 	3C  0  0  0 
+   4 field >qtd-pbuf			\ Buffer physical address
+1A56B8C 	 0  0 3E 71 
+1A56B90 	74 64 2D 70 62 75 66 89 
+1A56B98 	84 6B A5  1 50 EE A0  1 
+1A56BA0 	40  0  0  0 
+   4 field >qtd-/buf			\ Buffer length (per qTD)
+1A56BA4 	 0  0 3E 71 
+1A56BA8 	74 64 2D 2F 62 75 66 89 
+1A56BB0 	9C 6B A5  1 50 EE A0  1 
+1A56BB8 	44  0  0  0 
+   4 field >qtd-/buf-all		\ Buffer length (size of the entire buffer)
+1A56BBC 	 0  0 3E 71 
+1A56BC0 	74 64 2D 2F 62 75 66 2D 
+1A56BC8 	61 6C 6C 8D B4 6B A5  1 
+1A56BD0 	50 EE A0  1 48  0  0  0 
+					\ Only the first qTD has the entire size of buffer
+					\ For bulk and intr qTDs
+   4 field >qtd-unaligned		\ Unaligned buffer address
+1A56BD8 	 0 3E 71 74 64 2D 75 6E 
+1A56BE0 	61 6C 69 67 6E 65 64 8E 
+1A56BE8 	D0 6B A5  1 50 EE A0  1 
+1A56BF0 	4C  0  0  0 
+   4 field >qtd-size		        \ Unaligned buffer size
+1A56BF4 	 0  0 3E 71 
+1A56BF8 	74 64 2D 73 69 7A 65 89 
+1A56C00 	EC 6B A5  1 50 EE A0  1 
+1A56C08 	50  0  0  0 
+d# 32 round-up
+constant /qtd
+1A56C0C 	 0  0  0 2F 
+1A56C10 	71 74 64 84  4 6C A5  1 
+1A56C18 	68 40 A0  1 60  0  0  0 
+
+\ >hcqtd-token constants
+h# 00000000 constant TD_TOGGLE_DATA0
+1A56C20 	74 64 5F 74 6F 67 67 6C 
+1A56C28 	65 5F 64 61 74 61 30 8F 
+1A56C30 	18 6C A5  1 68 40 A0  1 
+1A56C38 	 0  0  0  0 
+h# 80000000 constant TD_TOGGLE_DATA1
+1A56C3C 	74 64 5F 74 
+1A56C40 	6F 67 67 6C 65 5F 64 61 
+1A56C48 	74 61 31 8F 34 6C A5  1 
+1A56C50 	68 40 A0  1  0  0  0 80 
+h# 80000000 constant TD_TOGGLE_MASK
+1A56C58 	 0 74 64 5F 74 6F 67 67 
+1A56C60 	6C 65 5F 6D 61 73 6B 8E 
+1A56C68 	50 6C A5  1 68 40 A0  1 
+1A56C70 	 0  0  0 80 
+h# 00008000 constant TD_IOC
+1A56C74 	 0 74 64 5F 
+1A56C78 	69 6F 63 86 6C 6C A5  1 
+1A56C80 	68 40 A0  1  0 80  0  0 
+h# 00000c00 constant TD_C_ERR_MASK
+1A56C88 	 0  0 74 64 5F 63 5F 65 
+1A56C90 	72 72 5F 6D 61 73 6B 8D 
+1A56C98 	80 6C A5  1 68 40 A0  1 
+1A56CA0 	 0  C  0  0 
+h# 00000400 constant TD_C_ERR1
+1A56CA4 	 0  0 74 64 
+1A56CA8 	5F 63 5F 65 72 72 31 89 
+1A56CB0 	9C 6C A5  1 68 40 A0  1 
+1A56CB8 	 0  4  0  0 
+h# 00000800 constant TD_C_ERR2
+1A56CBC 	 0  0 74 64 
+1A56CC0 	5F 63 5F 65 72 72 32 89 
+1A56CC8 	B4 6C A5  1 68 40 A0  1 
+1A56CD0 	 0  8  0  0 
+h# 00000c00 constant TD_C_ERR3
+1A56CD4 	 0  0 74 64 
+1A56CD8 	5F 63 5F 65 72 72 33 89 
+1A56CE0 	CC 6C A5  1 68 40 A0  1 
+1A56CE8 	 0  C  0  0 
+h# 00000000 constant TD_PID_OUT
+1A56CEC 	 0 74 64 5F 
+1A56CF0 	70 69 64 5F 6F 75 74 8A 
+1A56CF8 	E4 6C A5  1 68 40 A0  1 
+1A56D00 	 0  0  0  0 
+h# 00000100 constant TD_PID_IN
+1A56D04 	 0  0 74 64 
+1A56D08 	5F 70 69 64 5F 69 6E 89 
+1A56D10 	FC 6C A5  1 68 40 A0  1 
+1A56D18 	 0  1  0  0 
+h# 00000200 constant TD_PID_SETUP
+1A56D1C 	 0  0  0 74 
+1A56D20 	64 5F 70 69 64 5F 73 65 
+1A56D28 	74 75 70 8C 14 6D A5  1 
+1A56D30 	68 40 A0  1  0  2  0  0 
+h# 000000ff constant TD_STAT_MASK
+1A56D38 	 0  0  0 74 64 5F 73 74 
+1A56D40 	61 74 5F 6D 61 73 6B 8C 
+1A56D48 	30 6D A5  1 68 40 A0  1 
+1A56D50 	FF  0  0  0 
+h# 00000080 constant TD_STAT_ACTIVE
+1A56D54 	 0 74 64 5F 
+1A56D58 	73 74 61 74 5F 61 63 74 
+1A56D60 	69 76 65 8E 4C 6D A5  1 
+1A56D68 	68 40 A0  1 80  0  0  0 
+h# 00000040 constant TD_STAT_HALTED	\ Babble, error count=0, STALL
+1A56D70 	 0 74 64 5F 73 74 61 74 
+1A56D78 	5F 68 61 6C 74 65 64 8E 
+1A56D80 	68 6D A5  1 68 40 A0  1 
+1A56D88 	40  0  0  0 
+h# 00000020 constant TD_STAT_DBUFF	\ Data buffer error
+1A56D8C 	 0  0 74 64 
+1A56D90 	5F 73 74 61 74 5F 64 62 
+1A56D98 	75 66 66 8D 84 6D A5  1 
+1A56DA0 	68 40 A0  1 20  0  0  0 
+h# 00000010 constant TD_STAT_BABBLE	\ Babble
+1A56DA8 	 0 74 64 5F 73 74 61 74 
+1A56DB0 	5F 62 61 62 62 6C 65 8E 
+1A56DB8 	A0 6D A5  1 68 40 A0  1 
+1A56DC0 	10  0  0  0 
+h# 00000008 constant TD_STAT_XERR	\ Timeout, CRC, bad pid, etc
+1A56DC4 	 0  0  0 74 
+1A56DC8 	64 5F 73 74 61 74 5F 78 
+1A56DD0 	65 72 72 8C BC 6D A5  1 
+1A56DD8 	68 40 A0  1  8  0  0  0 
+h# 00000004 constant TD_STAT_MISS_MF	\ Missed micro-frame
+1A56DE0 	74 64 5F 73 74 61 74 5F 
+1A56DE8 	6D 69 73 73 5F 6D 66 8F 
+1A56DF0 	D8 6D A5  1 68 40 A0  1 
+1A56DF8 	 4  0  0  0 
+h# 00000000 constant TD_STAT_S_SPLIT	\ Start split transaction
+1A56DFC 	74 64 5F 73 
+1A56E00 	74 61 74 5F 73 5F 73 70 
+1A56E08 	6C 69 74 8F F4 6D A5  1 
+1A56E10 	68 40 A0  1  0  0  0  0 
+h# 00000002 constant TD_STAT_C_SPLIT	\ Complete split transaction
+1A56E18 	74 64 5F 73 74 61 74 5F 
+1A56E20 	63 5F 73 70 6C 69 74 8F 
+1A56E28 	10 6E A5  1 68 40 A0  1 
+1A56E30 	 2  0  0  0 
+h# 00000000 constant TD_STAT_OUT	\ Do OUT
+1A56E34 	74 64 5F 73 
+1A56E38 	74 61 74 5F 6F 75 74 8B 
+1A56E40 	2C 6E A5  1 68 40 A0  1 
+1A56E48 	 0  0  0  0 
+h# 00000001 constant TD_STAT_PING	\ Do ping
+1A56E4C 	 0  0  0 74 
+1A56E50 	64 5F 73 74 61 74 5F 70 
+1A56E58 	69 6E 67 8C 44 6E A5  1 
+1A56E60 	68 40 A0  1  1  0  0  0 
+h# 00000001 constant TD_STAT_SPLIT_ERR	\ Periodic split transaction ERR
+1A56E68 	 0  0 74 64 5F 73 74 61 
+1A56E70 	74 5F 73 70 6C 69 74 5F 
+1A56E78 	65 72 72 91 60 6E A5  1 
+1A56E80 	68 40 A0  1  1  0  0  0 
+
+: td-data>di-data  ( n -- n' )  TD_TOGGLE_MASK and  if  1  else  0  then  ;
+1A56E88 	74 64 2D 64 61 74 61 3E 
+1A56E90 	64 69 2D 64 61 74 61 8F 
+1A56E98 	80 6E A5  1 20 40 A0  1 
+1A56EA0 	6C 6C A5  1 5C 44 A0  1 
+1A56EA8 	DC 41 A0  1 10  0  0  0 
+1A56EB0 	80 6F A0  1 C8 41 A0  1 
+1A56EB8 	 8  0  0  0 70 6F A0  1 
+1A56EC0 	58 46 A0  1 
+: di-data>td-data  ( n -- n' )  if  TD_TOGGLE_DATA1  else  TD_TOGGLE_DATA0  then  ;
+1A56EC4 	64 69 2D 64 
+1A56EC8 	61 74 61 3E 74 64 2D 64 
+1A56ED0 	61 74 61 8F 9C 6E A5  1 
+1A56ED8 	20 40 A0  1 DC 41 A0  1 
+1A56EE0 	10  0  0  0 50 6C A5  1 
+1A56EE8 	C8 41 A0  1  8  0  0  0 
+1A56EF0 	34 6C A5  1 58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Queue Head (QH) as defined by the EHCI Spec; 32-byte aligned
+\ ---------------------------------------------------------------------------
+
+struct					\ Beginning of QH fields
+   4 field >hcqh-next			\ QH horizontal link pointer
+1A56EF8 	 0 3E 68 63 71 68 2D 6E 
+1A56F00 	65 78 74 8A D8 6E A5  1 
+1A56F08 	50 EE A0  1  0  0  0  0 
+   4 field >hcqh-endp-char		\ Endpoint characteristics
+1A56F10 	3E 68 63 71 68 2D 65 6E 
+1A56F18 	64 70 2D 63 68 61 72 8F 
+1A56F20 	 8 6F A5  1 50 EE A0  1 
+1A56F28 	 4  0  0  0 
+   4 field >hcqh-endp-cap		\ Endpoint capabilities
+1A56F2C 	 0 3E 68 63 
+1A56F30 	71 68 2D 65 6E 64 70 2D 
+1A56F38 	63 61 70 8E 24 6F A5  1 
+1A56F40 	50 EE A0  1  8  0  0  0 
+   4 field >hcqh-cur-pqtd		\ Current transaction descriptor pointer
+1A56F48 	 0 3E 68 63 71 68 2D 63 
+1A56F50 	75 72 2D 70 71 74 64 8E 
+1A56F58 	40 6F A5  1 50 EE A0  1 
+1A56F60 	 C  0  0  0 
+/hcqtd field >hcqh-overlay		\ Transfer overlay area
+1A56F64 	 0  0 3E 68 
+1A56F68 	63 71 68 2D 6F 76 65 72 
+1A56F70 	6C 61 79 8D 5C 6F A5  1 
+1A56F78 	50 EE A0  1 10  0  0  0 
+dup constant /hcqh
+1A56F80 	 0  0 2F 68 63 71 68 85 
+1A56F88 	78 6F A5  1 68 40 A0  1 
+1A56F90 	44  0  0  0 
+					\ Driver specific fields
+   4 field >qh-phys			\ QH's physical address
+1A56F94 	 0  0  0 3E 
+1A56F98 	71 68 2D 70 68 79 73 88 
+1A56FA0 	8C 6F A5  1 50 EE A0  1 
+1A56FA8 	44  0  0  0 
+   4 field >qh-next			\ Next QH's virtual address
+1A56FAC 	 0  0  0 3E 
+1A56FB0 	71 68 2D 6E 65 78 74 88 
+1A56FB8 	A4 6F A5  1 50 EE A0  1 
+1A56FC0 	48  0  0  0 
+   4 field >qh-prev			\ Previous QH's virtual address
+1A56FC4 	 0  0  0 3E 
+1A56FC8 	71 68 2D 70 72 65 76 88 
+1A56FD0 	BC 6F A5  1 50 EE A0  1 
+1A56FD8 	4C  0  0  0 
+   4 field >qh-unaligned		\ QH's unaligned address
+1A56FDC 	 0  0 3E 71 
+1A56FE0 	68 2D 75 6E 61 6C 69 67 
+1A56FE8 	6E 65 64 8D D4 6F A5  1 
+1A56FF0 	50 EE A0  1 50  0  0  0 
+   4 field >qh-size			\ Size of QH+qTDs 
+1A56FF8 	 0  0  0 3E 71 68 2D 73 
+1A57000 	69 7A 65 88 F0 6F A5  1 
+1A57008 	50 EE A0  1 54  0  0  0 
+   4 field >qh-#qtds			\ # of qTDs in the list
+1A57010 	 0  0 3E 71 68 2D 23 71 
+1A57018 	74 64 73 89  8 70 A5  1 
+1A57020 	50 EE A0  1 58  0  0  0 
+   4 field >qh-#bufs			\ # of bufs
+1A57028 	 0  0 3E 71 68 2D 23 62 
+1A57030 	75 66 73 89 20 70 A5  1 
+1A57038 	50 EE A0  1 5C  0  0  0 
+   4 field >qh-/buf			\ size of each buf
+1A57040 	 0  0  0 3E 71 68 2D 2F 
+1A57048 	62 75 66 88 38 70 A5  1 
+1A57050 	50 EE A0  1 60  0  0  0 
+   4 field >qh-buf			\ buf start va
+1A57058 	3E 71 68 2D 62 75 66 87 
+1A57060 	50 70 A5  1 50 EE A0  1 
+1A57068 	64  0  0  0 
+   4 field >qh-buf-pa			\ buf start pa
+1A5706C 	 0 3E 71 68 
+1A57070 	2D 62 75 66 2D 70 61 8A 
+1A57078 	64 70 A5  1 50 EE A0  1 
+1A57080 	68  0  0  0 
+   4 field >qh-timeout			\ Timeout
+1A57084 	3E 71 68 2D 
+1A57088 	74 69 6D 65 6F 75 74 8B 
+1A57090 	7C 70 A5  1 50 EE A0  1 
+1A57098 	6C  0  0  0 
+d# 32 round-up
+constant /qh
+1A5709C 	2F 71 68 83 
+1A570A0 	94 70 A5  1 68 40 A0  1 
+1A570A8 	80  0  0  0 
+
+\ >hcqh-endp-char constants
+h# 08000000 constant QH_CTRL_ENDP
+1A570AC 	 0  0  0 71 
+1A570B0 	68 5F 63 74 72 6C 5F 65 
+1A570B8 	6E 64 70 8C A4 70 A5  1 
+1A570C0 	68 40 A0  1  0  0  0  8 
+h# 00008000 constant QH_HEAD
+1A570C8 	71 68 5F 68 65 61 64 87 
+1A570D0 	C0 70 A5  1 68 40 A0  1 
+1A570D8 	 0 80  0  0 
+h# 00004000 constant QH_TD_TOGGLE
+1A570DC 	 0  0  0 71 
+1A570E0 	68 5F 74 64 5F 74 6F 67 
+1A570E8 	67 6C 65 8C D4 70 A5  1 
+1A570F0 	68 40 A0  1  0 40  0  0 
+h# 00000080 constant QH_INACTIVE_NEXT
+1A570F8 	 0  0  0 71 68 5F 69 6E 
+1A57100 	61 63 74 69 76 65 5F 6E 
+1A57108 	65 78 74 90 F0 70 A5  1 
+1A57110 	68 40 A0  1 80  0  0  0 
+h# 00000000 constant QH_TUNE_RL_HS
+1A57118 	 0  0 71 68 5F 74 75 6E 
+1A57120 	65 5F 72 6C 5F 68 73 8D 
+1A57128 	10 71 A5  1 68 40 A0  1 
+1A57130 	 0  0  0  0 
+h# 00000000 constant QH_TUNE_RL_TT
+1A57134 	 0  0 71 68 
+1A57138 	5F 74 75 6E 65 5F 72 6C 
+1A57140 	5F 74 74 8D 2C 71 A5  1 
+1A57148 	68 40 A0  1  0  0  0  0 
+
+\ >hcqh-endp-cap constants
+h# 40000000 constant QH_MULT1
+1A57150 	 0  0  0 71 68 5F 6D 75 
+1A57158 	6C 74 31 88 48 71 A5  1 
+1A57160 	68 40 A0  1  0  0  0 40 
+h# 80000000 constant QH_MULT2
+1A57168 	 0  0  0 71 68 5F 6D 75 
+1A57170 	6C 74 32 88 60 71 A5  1 
+1A57178 	68 40 A0  1  0  0  0 80 
+h# c0000000 constant QH_MULT3
+1A57180 	 0  0  0 71 68 5F 6D 75 
+1A57188 	6C 74 33 88 78 71 A5  1 
+1A57190 	68 40 A0  1  0  0  0 C0 
+
+
+0 value qh-ptr				\ Head of all QHs
+1A57198 	 0 71 68 2D 70 74 72 86 
+1A571A0 	90 71 A5  1 50 40 A0  1 
+1A571A8 	1C  F  0  0 
+
+\ ---------------------------------------------------------------------------
+\ QH and TDs for bulk, control and interrupt operations.
+\ QH and its list of TDs are allocated as needed.
+\ ---------------------------------------------------------------------------
+
+: push-qh      ( qh  -- )  dup >qh-phys  l@ /hcqh  dma-push  ;
+1A571AC 	70 75 73 68 
+1A571B0 	2D 71 68 87 A4 71 A5  1 
+1A571B8 	20 40 A0  1 40 49 A0  1 
+1A571C0 	A4 6F A5  1 6C 4C A0  1 
+1A571C8 	8C 6F A5  1  8 36 A4  1 
+1A571D0 	58 46 A0  1 
+: pull-qh      ( qh  -- )  dup >qh-phys  l@ /hcqh  dma-pull  ;
+1A571D4 	70 75 6C 6C 
+1A571D8 	2D 71 68 87 B8 71 A5  1 
+1A571E0 	20 40 A0  1 40 49 A0  1 
+1A571E8 	A4 6F A5  1 6C 4C A0  1 
+1A571F0 	8C 6F A5  1 34 36 A4  1 
+1A571F8 	58 46 A0  1 
+: push-qtd     ( qtd -- )  dup >qtd-phys l@ /hcqtd dma-push  ;
+1A571FC 	 0  0  0 70 
+1A57200 	75 73 68 2D 71 74 64 88 
+1A57208 	E0 71 A5  1 20 40 A0  1 
+1A57210 	40 49 A0  1 54 6B A5  1 
+1A57218 	6C 4C A0  1 3C 6B A5  1 
+1A57220 	 8 36 A4  1 58 46 A0  1 
+: pull-qtd     ( qtd -- )  dup >qtd-phys l@ /hcqtd dma-pull  ;
+1A57228 	 0  0  0 70 75 6C 6C 2D 
+1A57230 	71 74 64 88  C 72 A5  1 
+1A57238 	20 40 A0  1 40 49 A0  1 
+1A57240 	54 6B A5  1 6C 4C A0  1 
+1A57248 	3C 6B A5  1 34 36 A4  1 
+1A57250 	58 46 A0  1 
+: push-qtds    ( qtd -- )  dup >qtd-phys l@ over >qtd-size l@  dma-push  ;
+1A57254 	 0  0 70 75 
+1A57258 	73 68 2D 71 74 64 73 89 
+1A57260 	38 72 A5  1 20 40 A0  1 
+1A57268 	40 49 A0  1 54 6B A5  1 
+1A57270 	6C 4C A0  1 54 49 A0  1 
+1A57278 	 4 6C A5  1 6C 4C A0  1 
+1A57280 	 8 36 A4  1 58 46 A0  1 
+: pull-qtds    ( qtd -- )  dup >qtd-phys l@ over >qtd-size l@  dma-pull  ;
+1A57288 	 0  0 70 75 6C 6C 2D 71 
+1A57290 	74 64 73 89 64 72 A5  1 
+1A57298 	20 40 A0  1 40 49 A0  1 
+1A572A0 	54 6B A5  1 6C 4C A0  1 
+1A572A8 	54 49 A0  1  4 6C A5  1 
+1A572B0 	6C 4C A0  1 34 36 A4  1 
+1A572B8 	58 46 A0  1 
+: push-qhqtds  ( qh  -- )  dup >qh-phys  l@ over >qh-size  l@  dma-push  ;
+1A572BC 	70 75 73 68 
+1A572C0 	2D 71 68 71 74 64 73 8B 
+1A572C8 	98 72 A5  1 20 40 A0  1 
+1A572D0 	40 49 A0  1 A4 6F A5  1 
+1A572D8 	6C 4C A0  1 54 49 A0  1 
+1A572E0 	 8 70 A5  1 6C 4C A0  1 
+1A572E8 	 8 36 A4  1 58 46 A0  1 
+: pull-qhqtds  ( qh  -- )  dup >qh-phys  l@ over >qh-size  l@  dma-pull  ;
+1A572F0 	70 75 6C 6C 2D 71 68 71 
+1A572F8 	74 64 73 8B CC 72 A5  1 
+1A57300 	20 40 A0  1 40 49 A0  1 
+1A57308 	A4 6F A5  1 6C 4C A0  1 
+1A57310 	54 49 A0  1  8 70 A5  1 
+1A57318 	6C 4C A0  1 34 36 A4  1 
+1A57320 	58 46 A0  1 
+
+: map-out-bptrs  ( qtd -- )
+1A57324 	 0  0 6D 61 
+1A57328 	70 2D 6F 75 74 2D 62 70 
+1A57330 	74 72 73 8D  0 73 A5  1 
+1A57338 	20 40 A0  1 
+   dup >qtd-buf l@ over >qtd-pbuf l@ rot >qtd-/buf-all l@ hcd-map-out
+1A5733C 	40 49 A0  1 
+1A57340 	84 6B A5  1 6C 4C A0  1 
+1A57348 	54 49 A0  1 9C 6B A5  1 
+1A57350 	6C 4C A0  1 7C 49 A0  1 
+1A57358 	D0 6B A5  1 6C 4C A0  1 
+1A57360 	98 3D A4  1 
+;
+1A57364 	58 46 A0  1 
+
+: link-qtds  ( qtd.v qtd.p #qtds -- )
+1A57368 	 0  0 6C 69 6E 6B 2D 71 
+1A57370 	74 64 73 89 38 73 A5  1 
+1A57378 	20 40 A0  1 
+   1- 0  ?do					( v p )
+1A5737C 	54 4B A0  1 
+1A57380 	70 6F A0  1 50 42 A0  1 
+1A57388 	6C  0  0  0 
+      TERMINATE 2 pick >hcqtd-next-alt le-l!	( v p )
+1A5738C 	C8 66 A5  1 
+1A57390 	90 6F A0  1  C 4A A0  1 
+1A57398 	64 6A A5  1 5C 35 A4  1 
+      2dup swap >qtd-phys l!			( v p )
+1A573A0 	C0 49 A0  1 68 49 A0  1 
+1A573A8 	54 6B A5  1 7C 4D A0  1 
+      /qtd +					( v p' )
+1A573B0 	18 6C A5  1  4 45 A0  1 
+      2dup swap >hcqtd-next le-l!		( v p )
+1A573B8 	C0 49 A0  1 68 49 A0  1 
+1A573C0 	48 6A A5  1 5C 35 A4  1 
+      swap dup /qtd + tuck swap >qtd-next l!	( p v' )
+1A573C8 	68 49 A0  1 40 49 A0  1 
+1A573D0 	18 6C A5  1  4 45 A0  1 
+1A573D8 	E8 46 A0  1 68 49 A0  1 
+1A573E0 	6C 6B A5  1 7C 4D A0  1 
+      swap					( v p )
+1A573E8 	68 49 A0  1 
+   loop
+1A573EC 	F8 41 A0  1 
+1A573F0 	9C FF FF FF 
+
+   \ Fix up the last qTD
+   over >qtd-phys l!				( v )
+1A573F4 	54 49 A0  1 
+1A573F8 	54 6B A5  1 7C 4D A0  1 
+   TERMINATE over >hcqtd-next le-l!		( v )
+1A57400 	C8 66 A5  1 54 49 A0  1 
+1A57408 	48 6A A5  1 5C 35 A4  1 
+   TERMINATE swap >hcqtd-next-alt le-l!		( )
+1A57410 	C8 66 A5  1 68 49 A0  1 
+1A57418 	64 6A A5  1 5C 35 A4  1 
+;
+1A57420 	58 46 A0  1 
+
+: link-qhqtd  ( qtd.p qh -- )
+1A57424 	 0 6C 69 6E 
+1A57428 	6B 2D 71 68 71 74 64 8A 
+1A57430 	78 73 A5  1 20 40 A0  1 
+   >hcqh-overlay tuck			( qh.overlay qtd.p qh.overlay )
+1A57438 	78 6F A5  1 E8 46 A0  1 
+   >hcqtd-next le-l!			( qh.overlay )
+1A57440 	48 6A A5  1 5C 35 A4  1 
+   TERMINATE over >hcqtd-next-alt le-l!	( qh.overlay)
+1A57448 	C8 66 A5  1 54 49 A0  1 
+1A57450 	64 6A A5  1 5C 35 A4  1 
+   \ We start with OUT instead of PING here because some broken USB keys don't
+   \ support PING.  In bulk.fth, we add back the PING flag for bulk-out
+   \ operations, where ping transactions can help significantly.
+   \ (I'm not sure this matters, as the overlay will overwrite it).
+
+   \ The data toggle will be set later
+   TD_STAT_OUT swap >hcqtd-token le-l!	( )
+1A57458 	44 6E A5  1 68 49 A0  1 
+1A57460 	80 6A A5  1 5C 35 A4  1 
+;
+1A57468 	58 46 A0  1 
+
+: link-qhqtds  ( qtd.v qtd.p #qtds qh -- )
+1A5746C 	6C 69 6E 6B 
+1A57470 	2D 71 68 71 74 64 73 8B 
+1A57478 	34 74 A5  1 20 40 A0  1 
+   2 pick swap link-qhqtd		( qtd.v qtd.p #qtds )	\ Link QH to qTD
+1A57480 	90 6F A0  1  C 4A A0  1 
+1A57488 	68 49 A0  1 34 74 A5  1 
+   link-qtds				( )			\ Link qTDs
+1A57490 	78 73 A5  1 
+;
+1A57494 	58 46 A0  1 
+
+: init-qh  ( qh.u,v,p len #qtds -- )
+1A57498 	69 6E 69 74 2D 71 68 87 
+1A574A0 	7C 74 A5  1 20 40 A0  1 
+   3 pick >qh-#qtds l!			( qh.u,v,p len )
+1A574A8 	A0 6F A0  1  C 4A A0  1 
+1A574B0 	20 70 A5  1 7C 4D A0  1 
+   2 pick >qh-size l!			( qh.u,v,p )
+1A574B8 	90 6F A0  1  C 4A A0  1 
+1A574C0 	 8 70 A5  1 7C 4D A0  1 
+   over >qh-phys l!			( qh.u,v )
+1A574C8 	54 49 A0  1 A4 6F A5  1 
+1A574D0 	7C 4D A0  1 
+   TERMINATE 2 pick >hcqh-next le-l!	( qh.u,v )
+1A574D4 	C8 66 A5  1 
+1A574D8 	90 6F A0  1  C 4A A0  1 
+1A574E0 	 8 6F A5  1 5C 35 A4  1 
+   >qh-unaligned l!			( )
+1A574E8 	F0 6F A5  1 7C 4D A0  1 
+;
+1A574F0 	58 46 A0  1 
+
+: free-qh  ( qh -- )
+1A574F4 	66 72 65 65 
+1A574F8 	2D 71 68 87 A4 74 A5  1 
+1A57500 	20 40 A0  1 
+   >r					( R: qh )
+1A57504 	BC 45 A0  1 
+   r@ >qh-unaligned l@			( qh.u )  ( R: qh )
+1A57508 	E4 45 A0  1 F0 6F A5  1 
+1A57510 	6C 4C A0  1 
+   r@ dup >qh-phys l@			( qh.u,v,p )  ( R: qh )
+1A57514 	E4 45 A0  1 
+1A57518 	40 49 A0  1 A4 6F A5  1 
+1A57520 	6C 4C A0  1 
+   r> >qh-size l@			( qh.u,v,p size )
+1A57524 	D0 45 A0  1 
+1A57528 	 8 70 A5  1 6C 4C A0  1 
+   aligned32-free-map-out		( )
+1A57530 	C4 38 A4  1 
+;
+1A57534 	58 46 A0  1 
+
+: alloc-qhqtds  ( #qtds -- qh qtd )
+1A57538 	 0  0  0 61 6C 6C 6F 63 
+1A57540 	2D 71 68 71 74 64 73 8C 
+1A57548 	 0 75 A5  1 20 40 A0  1 
+   dup >r  /qtd * /qh + dup >r		( len )  ( R: #qtds len )
+1A57550 	40 49 A0  1 BC 45 A0  1 
+1A57558 	18 6C A5  1 1C 5F A0  1 
+1A57560 	A4 70 A5  1  4 45 A0  1 
+1A57568 	40 49 A0  1 BC 45 A0  1 
+   aligned32-alloc-map-in		( qh.u,v,p )  ( R: #qtds len )
+1A57570 	84 38 A4  1 
+   over r@ erase			( qh.u,v,p )  ( R: #qtds )
+1A57574 	54 49 A0  1 
+1A57578 	E4 45 A0  1 F0 72 A0  1 
+   3dup r> r@ init-qh			( qh.u,v,p )  ( R: #qtds )
+1A57580 	78 3E A4  1 D0 45 A0  1 
+1A57588 	E4 45 A0  1 A4 74 A5  1 
+   rot drop				( qh.v,p )  ( R: #qtds )
+1A57590 	7C 49 A0  1 30 49 A0  1 
+   over /qh + dup -rot			( qh qtd qh.p qtd )  ( R: #qtds )
+1A57598 	54 49 A0  1 A4 70 A5  1 
+1A575A0 	 4 45 A0  1 40 49 A0  1 
+1A575A8 	94 49 A0  1 
+   swap /qh +				( qh qtd qtd.v,p )  ( R: #qtds )
+1A575AC 	68 49 A0  1 
+1A575B0 	A4 70 A5  1  4 45 A0  1 
+   r> 4 pick link-qhqtds		( qh qtd )
+1A575B8 	D0 45 A0  1 B0 6F A0  1 
+1A575C0 	 C 4A A0  1 7C 74 A5  1 
+;
+1A575C8 	58 46 A0  1 
+
+\ Qtds will be freed automatically when the qh is freed
+
+: reuse-qhqtds  ( #qtds qh -- qh qtd )
+1A575CC 	 0  0  0 72 
+1A575D0 	65 75 73 65 2D 71 68 71 
+1A575D8 	74 64 73 8C 4C 75 A5  1 
+1A575E0 	20 40 A0  1 
+   swap dup >r  /qtd * /qh + >r		( qh )  ( R: #qtds len )
+1A575E4 	68 49 A0  1 
+1A575E8 	40 49 A0  1 BC 45 A0  1 
+1A575F0 	18 6C A5  1 1C 5F A0  1 
+1A575F8 	A4 70 A5  1  4 45 A0  1 
+1A57600 	BC 45 A0  1 
+   dup >qh-unaligned l@ swap		( qh.u,v )  ( R: #qtds len )
+1A57604 	40 49 A0  1 
+1A57608 	F0 6F A5  1 6C 4C A0  1 
+1A57610 	68 49 A0  1 
+   dup >qh-phys l@			( qh,u,v,p )  ( R: #qtds len )
+1A57614 	40 49 A0  1 
+1A57618 	A4 6F A5  1 6C 4C A0  1 
+   over r@ erase			( qh.u,v,p )  ( R: #qtds )
+1A57620 	54 49 A0  1 E4 45 A0  1 
+1A57628 	F0 72 A0  1 
+   3dup r> r@ init-qh			( qh.u,v,p )  ( R: #qtds )
+1A5762C 	78 3E A4  1 
+1A57630 	D0 45 A0  1 E4 45 A0  1 
+1A57638 	A4 74 A5  1 
+   rot drop				( qh.v,p )  ( R: #qtds )
+1A5763C 	7C 49 A0  1 
+1A57640 	30 49 A0  1 
+   over /qh + dup -rot			( qh qtd qh.p qtd )  ( R: #qtds )
+1A57644 	54 49 A0  1 
+1A57648 	A4 70 A5  1  4 45 A0  1 
+1A57650 	40 49 A0  1 94 49 A0  1 
+   swap /qh +				( qh qtd qtd.v,p )  ( R: #qtds )
+1A57658 	68 49 A0  1 A4 70 A5  1 
+1A57660 	 4 45 A0  1 
+   r> 4 pick link-qhqtds		( qh qtd )
+1A57664 	D0 45 A0  1 
+1A57668 	B0 6F A0  1  C 4A A0  1 
+1A57670 	7C 74 A5  1 
+;
+1A57674 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ qTD Buffer Pointers management
+\ ---------------------------------------------------------------------------
+
+5                    constant #bptr		\ There are 5 Buffer Pointers in qTD
+1A57678 	 0  0 23 62 70 74 72 85 
+1A57680 	E0 75 A5  1 68 40 A0  1 
+1A57688 	 5  0  0  0 
+h# 1000              constant /bptr		\ Size of buffer at each Buffer Pointer[i]
+1A5768C 	 0  0 2F 62 
+1A57690 	70 74 72 85 84 76 A5  1 
+1A57698 	68 40 A0  1  0 10  0  0 
+/bptr 1-	     constant bptr-ofs-mask	\ Current Offset mask
+1A576A0 	 0  0 62 70 74 72 2D 6F 
+1A576A8 	66 73 2D 6D 61 73 6B 8D 
+1A576B0 	98 76 A5  1 68 40 A0  1 
+1A576B8 	FF  F  0  0 
+bptr-ofs-mask invert constant bptr-mask		\ Buffer Pointer mask
+1A576BC 	 0  0 62 70 
+1A576C0 	74 72 2D 6D 61 73 6B 89 
+1A576C8 	B4 76 A5  1 68 40 A0  1 
+1A576D0 	 0 F0 FF FF 
+/bptr #bptr    *     constant /maxbptrs		\ Maximum size of transfer for a qTD
+1A576D4 	 0  0 2F 6D 
+1A576D8 	61 78 62 70 74 72 73 89 
+1A576E0 	CC 76 A5  1 68 40 A0  1 
+1A576E8 	 0 50  0  0 
+/bptr #bptr 1- *     constant /maxbptrs-1	\ Maximum size of 4 Buffer Pointers
+1A576EC 	2F 6D 61 78 
+1A576F0 	62 70 74 72 73 2D 31 8B 
+1A576F8 	E4 76 A5  1 68 40 A0  1 
+1A57700 	 0 40  0  0 
+
+\ Determine the size of transfer for a qTD
+: cal-/bptr  ( phys len -- /xfer )
+1A57704 	 0  0 63 61 
+1A57708 	6C 2D 2F 62 70 74 72 89 
+1A57710 	FC 76 A5  1 20 40 A0  1 
+   over dup /bptr round-up =  if	( phys len )
+1A57718 	54 49 A0  1 40 49 A0  1 
+1A57720 	98 76 A5  1 D8 35 A4  1 
+1A57728 	24 48 A0  1 DC 41 A0  1 
+1A57730 	18  0  0  0 
+      nip /maxbptrs min			( /xfer )
+1A57734 	FC 46 A0  1 
+1A57738 	E4 76 A5  1 74 4A A0  1 
+   else
+1A57740 	C8 41 A0  1 24  0  0  0 
+      swap bptr-ofs-mask and		( len len0 )
+1A57748 	68 49 A0  1 B4 76 A5  1 
+1A57750 	5C 44 A0  1 
+      tuck - /maxbptrs-1 min +		( /xfer )
+1A57754 	E8 46 A0  1 
+1A57758 	18 45 A0  1 FC 76 A5  1 
+1A57760 	74 4A A0  1  4 45 A0  1 
+   then
+;
+1A57768 	58 46 A0  1 
+
+\ Determine the number of Buffer Pointers necessary
+: cal-#bptr  ( phys len -- #bptr )
+1A5776C 	 0  0 63 61 
+1A57770 	6C 2D 23 62 70 74 72 89 
+1A57778 	14 77 A5  1 20 40 A0  1 
+   dup  0=  if  nip exit  then
+1A57780 	40 49 A0  1 24 47 A0  1 
+1A57788 	DC 41 A0  1  C  0  0  0 
+1A57790 	FC 46 A0  1 40 46 A0  1 
+   swap dup /bptr round-up swap -  ?dup  if
+1A57798 	68 49 A0  1 40 49 A0  1 
+1A577A0 	98 76 A5  1 D8 35 A4  1 
+1A577A8 	68 49 A0  1 18 45 A0  1 
+1A577B0 	B4 70 A0  1 DC 41 A0  1 
+1A577B8 	24  0  0  0 
+					( len len0 )
+      -					( len-len0 )
+1A577BC 	18 45 A0  1 
+      /bptr round-up /bptr / 1+		( #bptr )
+1A577C0 	98 76 A5  1 D8 35 A4  1 
+1A577C8 	98 76 A5  1 98 5F A0  1 
+1A577D0 	30 4B A0  1 
+   else					( len )
+1A577D4 	C8 41 A0  1 
+1A577D8 	14  0  0  0 
+      /bptr round-up /bptr /		( #bptr )
+1A577DC 	98 76 A5  1 
+1A577E0 	D8 35 A4  1 98 76 A5  1 
+1A577E8 	98 5F A0  1 
+   then
+;
+1A577EC 	58 46 A0  1 
+
+\ Determine the number of qTDs necessary for the entire transfer
+: cal-#qtd  ( phys len -- #qtds )
+1A577F0 	 0  0  0 63 61 6C 2D 23 
+1A577F8 	71 74 64 88 7C 77 A5  1 
+1A57800 	20 40 A0  1 
+   dup  0=  if  nip exit  then
+1A57804 	40 49 A0  1 
+1A57808 	24 47 A0  1 DC 41 A0  1 
+1A57810 	 C  0  0  0 FC 46 A0  1 
+1A57818 	40 46 A0  1 
+   cal-#bptr #bptr /mod swap  if  1+  then
+1A5781C 	7C 77 A5  1 
+1A57820 	84 76 A5  1 50 5F A0  1 
+1A57828 	68 49 A0  1 DC 41 A0  1 
+1A57830 	 8  0  0  0 30 4B A0  1 
+;
+1A57838 	58 46 A0  1 
+
+: fill-qtd-bptrs  ( buf phys len qtd -- actual )
+1A5783C 	 0 66 69 6C 
+1A57840 	6C 2D 71 74 64 2D 62 70 
+1A57848 	74 72 73 8E  0 78 A5  1 
+1A57850 	20 40 A0  1 
+   >r rot r@ >qtd-buf l!		( phys len )  ( R: qtd )
+1A57854 	BC 45 A0  1 
+1A57858 	7C 49 A0  1 E4 45 A0  1 
+1A57860 	84 6B A5  1 7C 4D A0  1 
+   dup r@ >qtd-/buf-all l!		( phys len )  ( R: qtd )
+1A57868 	40 49 A0  1 E4 45 A0  1 
+1A57870 	D0 6B A5  1 7C 4D A0  1 
+   over r@ >qtd-pbuf l!			( phys len )  ( R: qtd )
+1A57878 	54 49 A0  1 E4 45 A0  1 
+1A57880 	9C 6B A5  1 7C 4D A0  1 
+   over swap cal-/bptr tuck  		( actual phys actual )  ( R: qtd )
+1A57888 	54 49 A0  1 68 49 A0  1 
+1A57890 	14 77 A5  1 E8 46 A0  1 
+   dup r@ >qtd-/buf l!			( actual phys actual )  ( R: qtd )
+1A57898 	40 49 A0  1 E4 45 A0  1 
+1A578A0 	B4 6B A5  1 7C 4D A0  1 
+   over swap cal-#bptr			( actual phys #bptr )  ( R: qtd )
+1A578A8 	54 49 A0  1 68 49 A0  1 
+1A578B0 	7C 77 A5  1 
+   r> swap 0  ?do			( actual phys qtd )
+1A578B4 	D0 45 A0  1 
+1A578B8 	68 49 A0  1 70 6F A0  1 
+1A578C0 	50 42 A0  1 40  0  0  0 
+      2dup >hcqtd-bptr0 i 4 * + le-l!	( actual phys qtd )
+1A578C8 	C0 49 A0  1 9C 6A A5  1 
+1A578D0 	B4 42 A0  1 B0 6F A0  1 
+1A578D8 	1C 5F A0  1  4 45 A0  1 
+1A578E0 	5C 35 A4  1 
+      swap /bptr + bptr-mask and swap	( actual phys' qtd )
+1A578E4 	68 49 A0  1 
+1A578E8 	98 76 A5  1  4 45 A0  1 
+1A578F0 	CC 76 A5  1 5C 44 A0  1 
+1A578F8 	68 49 A0  1 
+   loop  2drop				( actual )
+1A578FC 	F8 41 A0  1 
+1A57900 	C8 FF FF FF AC 49 A0  1 
+;
+1A57908 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Async scheduling
+\ ---------------------------------------------------------------------------
+
+: async-wait  ( -- )
+1A5790C 	 0 61 73 79 
+1A57910 	6E 63 2D 77 61 69 74 8A 
+1A57918 	50 78 A5  1 20 40 A0  1 
+   begin
+      usbcmd@ h# 20 and  5 >>  usbsts@ h# 8000 and d# 15 >> 
+1A57920 	70 5D A5  1 58 41 A0  1 
+1A57928 	20  0  0  0 5C 44 A0  1 
+1A57930 	C0 6F A0  1 DC 44 A0  1 
+1A57938 	C8 5D A5  1 58 41 A0  1 
+1A57940 	 0 80  0  0 5C 44 A0  1 
+1A57948 	58 41 A0  1  F  0  0  0 
+1A57950 	DC 44 A0  1 
+   = until
+1A57954 	24 48 A0  1 
+1A57958 	DC 41 A0  1 C4 FF FF FF 
+;
+1A57960 	58 46 A0  1 
+: enable-async  ( qh -- )
+1A57964 	 0  0  0 65 
+1A57968 	6E 61 62 6C 65 2D 61 73 
+1A57970 	79 6E 63 8C 1C 79 A5  1 
+1A57978 	20 40 A0  1 
+   >qh-phys l@  asynclist!   async-wait
+1A5797C 	A4 6F A5  1 
+1A57980 	6C 4C A0  1 44 5F A5  1 
+1A57988 	1C 79 A5  1 
+   usbcmd@ h# 20 or usbcmd!  async-wait
+1A5798C 	70 5D A5  1 
+1A57990 	58 41 A0  1 20  0  0  0 
+1A57998 	70 44 A0  1 8C 5D A5  1 
+1A579A0 	1C 79 A5  1 
+;
+1A579A4 	58 46 A0  1 
+: disable-async  ( -- )
+1A579A8 	 0  0 64 69 73 61 62 6C 
+1A579B0 	65 2D 61 73 79 6E 63 8D 
+1A579B8 	78 79 A5  1 20 40 A0  1 
+   async-wait  usbcmd@ h# 20 invert and usbcmd!  async-wait
+1A579C0 	1C 79 A5  1 70 5D A5  1 
+1A579C8 	58 41 A0  1 20  0  0  0 
+1A579D0 	30 45 A0  1 5C 44 A0  1 
+1A579D8 	8C 5D A5  1 1C 79 A5  1 
+   0 to qh-ptr
+1A579E0 	70 6F A0  1 B8 40 A0  1 
+1A579E8 	A4 71 A5  1 
+;
+1A579EC 	58 46 A0  1 
+
+: link-to-qh-ptr  ( qh -- )
+1A579F0 	 0 6C 69 6E 6B 2D 74 6F 
+1A579F8 	2D 71 68 2D 70 74 72 8E 
+1A57A00 	BC 79 A5  1 20 40 A0  1 
+   dup  qh-ptr >qh-next  l!                               ( qh )
+1A57A08 	40 49 A0  1 A4 71 A5  1 
+1A57A10 	BC 6F A5  1 7C 4D A0  1 
+   dup  >qh-phys l@  TYP_QH or  qh-ptr >hcqh-next  le-l!  ( qh )
+1A57A18 	40 49 A0  1 A4 6F A5  1 
+1A57A20 	6C 4C A0  1 F0 66 A5  1 
+1A57A28 	70 44 A0  1 A4 71 A5  1 
+1A57A30 	 8 6F A5  1 5C 35 A4  1 
+   push-qhqtds                                            ( )
+1A57A38 	CC 72 A5  1 
+;
+1A57A3C 	58 46 A0  1 
+: interrupt-on-last-td  ( qh -- )
+1A57A40 	 0  0  0 69 6E 74 65 72 
+1A57A48 	72 75 70 74 2D 6F 6E 2D 
+1A57A50 	6C 61 73 74 2D 74 64 94 
+1A57A58 	 4 7A A5  1 20 40 A0  1 
+   /qh +                                   ( qtd )
+1A57A60 	A4 70 A5  1  4 45 A0  1 
+   begin                                   ( qtd )
+      dup >hcqtd-next le-l@ TERMINATE <>   ( qtd flag )
+1A57A68 	40 49 A0  1 48 6A A5  1 
+1A57A70 	C4 34 A4  1 C8 66 A5  1 
+1A57A78 	44 48 A0  1 
+   while                                   ( qtd )
+1A57A7C 	DC 41 A0  1 
+1A57A80 	14  0  0  0 
+      >qtd-next l@                         ( qtd' )
+1A57A84 	6C 6B A5  1 
+1A57A88 	6C 4C A0  1 
+   repeat                                  ( qtd )
+1A57A8C 	C8 41 A0  1 
+1A57A90 	D8 FF FF FF 
+   >hcqtd-token                            ( 'token )
+1A57A94 	80 6A A5  1 
+   dup le-l@  TD_IOC or  swap le-l!        ( )
+1A57A98 	40 49 A0  1 C4 34 A4  1 
+1A57AA0 	80 6C A5  1 70 44 A0  1 
+1A57AA8 	68 49 A0  1 5C 35 A4  1 
+;
+1A57AB0 	58 46 A0  1 
+
+: insert-qh  ( qh -- )
+1A57AB4 	 0  0 69 6E 
+1A57AB8 	73 65 72 74 2D 71 68 89 
+1A57AC0 	5C 7A A5  1 20 40 A0  1 
+   hc-interrupt? drop      \ Clear any pending transfer-complete interrupts
+1A57AC8 	BC 60 A5  1 30 49 A0  1 
+   0 >hcqh-cur-pqtd off
+1A57AD0 	70 6F A0  1 5C 6F A5  1 
+1A57AD8 	F8 4B A0  1 
+   qh-ptr  if                                                 ( qh )
+1A57ADC 	A4 71 A5  1 
+1A57AE0 	DC 41 A0  1 58  0  0  0 
+      \ If there is another qh, link the new qh to the existing qh head.
+      qh-ptr                    over >qh-prev      l!         ( qh )
+1A57AE8 	A4 71 A5  1 54 49 A0  1 
+1A57AF0 	D4 6F A5  1 7C 4D A0  1 
+      qh-ptr >qh-next      l@   over >qh-next      l!         ( qh )
+1A57AF8 	A4 71 A5  1 BC 6F A5  1 
+1A57B00 	6C 4C A0  1 54 49 A0  1 
+1A57B08 	BC 6F A5  1 7C 4D A0  1 
+      qh-ptr >hcqh-next le-l@   over >hcqh-next le-l!         ( qh )
+1A57B10 	A4 71 A5  1  8 6F A5  1 
+1A57B18 	C4 34 A4  1 54 49 A0  1 
+1A57B20 	 8 6F A5  1 5C 35 A4  1 
+
+      link-to-qh-ptr                                          ( )
+1A57B28 	 4 7A A5  1 
+
+      qh-ptr push-qh                                          ( )
+1A57B2C 	A4 71 A5  1 
+1A57B30 	B8 71 A5  1 
+   else                                                       ( )
+1A57B34 	C8 41 A0  1 
+1A57B38 	3C  0  0  0 
+      \ If there is no other qh, make it the head, link it to itself, 
+      \ and start the asynch schedule.
+
+      to qh-ptr                                                  ( )
+1A57B3C 	B8 40 A0  1 
+1A57B40 	A4 71 A5  1 
+
+      qh-ptr >hcqh-endp-char  dup le-l@  QH_HEAD or  swap le-l!  ( )
+1A57B44 	A4 71 A5  1 
+1A57B48 	24 6F A5  1 40 49 A0  1 
+1A57B50 	C4 34 A4  1 D4 70 A5  1 
+1A57B58 	70 44 A0  1 68 49 A0  1 
+1A57B60 	5C 35 A4  1 
+
+      qh-ptr link-to-qh-ptr                                      ( )
+1A57B64 	A4 71 A5  1 
+1A57B68 	 4 7A A5  1 
+
+      qh-ptr enable-async                                        ( )
+1A57B6C 	A4 71 A5  1 
+1A57B70 	78 79 A5  1 
+   then
+;
+1A57B74 	58 46 A0  1 
+: fix-wraparound-qh  ( qh -- )
+1A57B78 	 0  0 66 69 78 2D 77 72 
+1A57B80 	61 70 61 72 6F 75 6E 64 
+1A57B88 	2D 71 68 91 C4 7A A5  1 
+1A57B90 	20 40 A0  1 
+   \ Find the end of the list, the node that points back to the beginning
+   dup >r                ( thisqh r: qh0 )
+1A57B94 	40 49 A0  1 
+1A57B98 	BC 45 A0  1 
+   begin                 ( thisqh r: qh0 )
+      dup >qh-next l@    ( thisqh nextqh r: qh0 )
+1A57B9C 	40 49 A0  1 
+1A57BA0 	BC 6F A5  1 6C 4C A0  1 
+   dup r@ <>  while      ( thisqh nextqh r: qh0 )
+1A57BA8 	40 49 A0  1 E4 45 A0  1 
+1A57BB0 	44 48 A0  1 DC 41 A0  1 
+1A57BB8 	10  0  0  0 
+      nip                ( thisqh' r: qh0 )
+1A57BBC 	FC 46 A0  1 
+   repeat                ( thisqh nextqh r: qh0 )
+1A57BC0 	C8 41 A0  1 D8 FF FF FF 
+
+   drop
+1A57BC8 	30 49 A0  1 
+   \ Change that node's next pointers to skip the removed qh
+   r> >qh-next l@        ( lastqh nextqh )
+1A57BCC 	D0 45 A0  1 
+1A57BD0 	BC 6F A5  1 6C 4C A0  1 
+   swap                  ( nextqh lastqh )
+1A57BD8 	68 49 A0  1 
+   over >qh-phys l@      ( nextqh lastqh next-phys )
+1A57BDC 	54 49 A0  1 
+1A57BE0 	A4 6F A5  1 6C 4C A0  1 
+   over >hcqh-next le-l@ ( nextqh lastqh next-phys last-phys )
+1A57BE8 	54 49 A0  1  8 6F A5  1 
+1A57BF0 	C4 34 A4  1 
+   TYP_QH and or         ( nextqh lastqh next-phys' )
+1A57BF4 	F0 66 A5  1 
+1A57BF8 	5C 44 A0  1 70 44 A0  1 
+   over >hcqh-next le-l! ( nextqh lastqh next-phys' )
+1A57C00 	54 49 A0  1  8 6F A5  1 
+1A57C08 	5C 35 A4  1 
+   >qh-next l!           ( )
+1A57C0C 	BC 6F A5  1 
+1A57C10 	7C 4D A0  1 
+;
+1A57C14 	58 46 A0  1 
+
+: remove-qh  ( qh -- )
+1A57C18 	 0  0 72 65 6D 6F 76 65 
+1A57C20 	2D 71 68 89 90 7B A5  1 
+1A57C28 	20 40 A0  1 
+   dup >qh-next l@ over =  if
+1A57C2C 	40 49 A0  1 
+1A57C30 	BC 6F A5  1 6C 4C A0  1 
+1A57C38 	54 49 A0  1 24 48 A0  1 
+1A57C40 	DC 41 A0  1 14  0  0  0 
+      \ If qh is the only qh in the system, disable-async and exit
+      drop disable-async
+1A57C48 	30 49 A0  1 BC 79 A5  1 
+   else
+1A57C50 	C8 41 A0  1 F8  0  0  0 
+      \ Otherwise, qh.prev points to qh.next, fix up reclamation bits.
+      \ Ring doorbell, wait for answer.
+      \ Free qh, make sure the qh-ptr is up-to-date.
+      dup >qh-prev l@ ?dup if		( qh prev.qh )
+1A57C58 	40 49 A0  1 D4 6F A5  1 
+1A57C60 	6C 4C A0  1 B4 70 A0  1 
+1A57C68 	DC 41 A0  1 8C  0  0  0 
+         over >hcqh-next le-l@ over >hcqh-next le-l!
+1A57C70 	54 49 A0  1  8 6F A5  1 
+1A57C78 	C4 34 A4  1 54 49 A0  1 
+1A57C80 	 8 6F A5  1 5C 35 A4  1 
+         over >qh-next l@ swap >qh-next l!
+1A57C88 	54 49 A0  1 BC 6F A5  1 
+1A57C90 	6C 4C A0  1 68 49 A0  1 
+1A57C98 	BC 6F A5  1 7C 4D A0  1 
+         dup push-qh
+1A57CA0 	40 49 A0  1 B8 71 A5  1 
+         dup >qh-next l@ qh-ptr <>  if
+1A57CA8 	40 49 A0  1 BC 6F A5  1 
+1A57CB0 	6C 4C A0  1 A4 71 A5  1 
+1A57CB8 	44 48 A0  1 DC 41 A0  1 
+1A57CC0 	2C  0  0  0 
+            dup >qh-prev l@ swap >qh-next l@ >qh-prev l!
+1A57CC4 	40 49 A0  1 
+1A57CC8 	D4 6F A5  1 6C 4C A0  1 
+1A57CD0 	68 49 A0  1 BC 6F A5  1 
+1A57CD8 	6C 4C A0  1 D4 6F A5  1 
+1A57CE0 	7C 4D A0  1 
+         else
+1A57CE4 	C8 41 A0  1 
+1A57CE8 	 8  0  0  0 
+            drop
+1A57CEC 	30 49 A0  1 
+         then
+      else                          ( qh )
+1A57CF0 	C8 41 A0  1 54  0  0  0 
+         dup >qh-next l@ to qh-ptr  ( qh )
+1A57CF8 	40 49 A0  1 BC 6F A5  1 
+1A57D00 	6C 4C A0  1 B8 40 A0  1 
+1A57D08 	A4 71 A5  1 
+         qh-ptr >hcqh-endp-char dup le-l@ QH_HEAD or swap le-l!  ( qh )
+1A57D0C 	A4 71 A5  1 
+1A57D10 	24 6F A5  1 40 49 A0  1 
+1A57D18 	C4 34 A4  1 D4 70 A5  1 
+1A57D20 	70 44 A0  1 68 49 A0  1 
+1A57D28 	5C 35 A4  1 
+         fix-wraparound-qh          ( )
+1A57D2C 	90 7B A5  1 
+         0 qh-ptr >qh-prev l!       ( )
+1A57D30 	70 6F A0  1 A4 71 A5  1 
+1A57D38 	D4 6F A5  1 7C 4D A0  1 
+	 qh-ptr push-qh
+1A57D40 	A4 71 A5  1 B8 71 A5  1 
+      then
+      ring-doorbell
+1A57D48 	 0 62 A5  1 
+   then
+;
+1A57D4C 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Interrupt scheduling
+\ XXX Make it simple for now and igore interval and make it a fixed poll
+\ XXX interval.
+\
+\ Empirically, the 4 ms poll interval works optimally with the usb keyboard.
+\ ---------------------------------------------------------------------------
+
+\ Isochronous count
+0 value #iso
+1A57D50 	 0  0  0 23 69 73 6F 84 
+1A57D58 	28 7C A5  1 50 40 A0  1 
+1A57D60 	20  F  0  0 
+: #iso++  ( -- )  #iso 1+ to #iso  ;
+1A57D64 	 0 23 69 73 
+1A57D68 	6F 2B 2B 86 5C 7D A5  1 
+1A57D70 	20 40 A0  1 5C 7D A5  1 
+1A57D78 	30 4B A0  1 B8 40 A0  1 
+1A57D80 	5C 7D A5  1 58 46 A0  1 
+: #iso--  ( -- )  #iso 1- to #iso  ;
+1A57D88 	 0 23 69 73 6F 2D 2D 86 
+1A57D90 	70 7D A5  1 20 40 A0  1 
+1A57D98 	5C 7D A5  1 54 4B A0  1 
+1A57DA0 	B8 40 A0  1 5C 7D A5  1 
+1A57DA8 	58 46 A0  1 
+
+\ Interrupt count
+0 value #intr
+1A57DAC 	 0  0 23 69 
+1A57DB0 	6E 74 72 85 94 7D A5  1 
+1A57DB8 	50 40 A0  1 24  F  0  0 
+d# 32 constant intr-interval		\ 4 ms poll interval
+1A57DC0 	 0  0 69 6E 74 72 2D 69 
+1A57DC8 	6E 74 65 72 76 61 6C 8D 
+1A57DD0 	B8 7D A5  1 68 40 A0  1 
+1A57DD8 	20  0  0  0 
+
+: #intr++  ( -- )  #intr 1+ to #intr  ;
+1A57DDC 	23 69 6E 74 
+1A57DE0 	72 2B 2B 87 D4 7D A5  1 
+1A57DE8 	20 40 A0  1 B8 7D A5  1 
+1A57DF0 	30 4B A0  1 B8 40 A0  1 
+1A57DF8 	B8 7D A5  1 58 46 A0  1 
+: #intr--  ( -- )  #intr 1- to #intr  ;
+1A57E00 	23 69 6E 74 72 2D 2D 87 
+1A57E08 	E8 7D A5  1 20 40 A0  1 
+1A57E10 	B8 7D A5  1 54 4B A0  1 
+1A57E18 	B8 40 A0  1 B8 7D A5  1 
+1A57E20 	58 46 A0  1 
+
+: periodic-wait  ( -- )
+1A57E24 	 0  0 70 65 
+1A57E28 	72 69 6F 64 69 63 2D 77 
+1A57E30 	61 69 74 8D  C 7E A5  1 
+1A57E38 	20 40 A0  1 
+   begin
+      usbcmd@ h# 10 and  4 >>  usbsts@ h# 4000 and d# 14 >> 
+1A57E3C 	70 5D A5  1 
+1A57E40 	58 41 A0  1 10  0  0  0 
+1A57E48 	5C 44 A0  1 B0 6F A0  1 
+1A57E50 	DC 44 A0  1 C8 5D A5  1 
+1A57E58 	58 41 A0  1  0 40  0  0 
+1A57E60 	5C 44 A0  1 58 41 A0  1 
+1A57E68 	 E  0  0  0 DC 44 A0  1 
+   = until
+1A57E70 	24 48 A0  1 DC 41 A0  1 
+1A57E78 	C4 FF FF FF 
+;
+1A57E7C 	58 46 A0  1 
+: enable-periodic  ( -- )
+1A57E80 	65 6E 61 62 6C 65 2D 70 
+1A57E88 	65 72 69 6F 64 69 63 8F 
+1A57E90 	38 7E A5  1 20 40 A0  1 
+   periodic-wait  usbcmd@ h# 10 or usbcmd!  periodic-wait
+1A57E98 	38 7E A5  1 70 5D A5  1 
+1A57EA0 	58 41 A0  1 10  0  0  0 
+1A57EA8 	70 44 A0  1 8C 5D A5  1 
+1A57EB0 	38 7E A5  1 
+;
+1A57EB4 	58 46 A0  1 
+: disable-periodic  ( -- )
+1A57EB8 	 0  0  0 64 69 73 61 62 
+1A57EC0 	6C 65 2D 70 65 72 69 6F 
+1A57EC8 	64 69 63 90 94 7E A5  1 
+1A57ED0 	20 40 A0  1 
+   periodic-wait  usbcmd@ h# 10 invert and usbcmd!  periodic-wait
+1A57ED4 	38 7E A5  1 
+1A57ED8 	70 5D A5  1 58 41 A0  1 
+1A57EE0 	10  0  0  0 30 45 A0  1 
+1A57EE8 	5C 44 A0  1 8C 5D A5  1 
+1A57EF0 	38 7E A5  1 
+;
+1A57EF4 	58 46 A0  1 
+
+: (insert-intr-qh)  ( qh idx -- )
+1A57EF8 	 0  0  0 28 69 6E 73 65 
+1A57F00 	72 74 2D 69 6E 74 72 2D 
+1A57F08 	71 68 29 90 D0 7E A5  1 
+1A57F10 	20 40 A0  1 
+   dup >r				( qh idx )  ( R: idx )
+1A57F14 	40 49 A0  1 
+1A57F18 	BC 45 A0  1 
+   intr-tail@ ?dup 0=  if		( qh )  ( R: idx )
+1A57F1C 	BC 69 A5  1 
+1A57F20 	B4 70 A0  1 24 47 A0  1 
+1A57F28 	DC 41 A0  1 34  0  0  0 
+      dup r@ intr-head!			( qh )  ( R: idx )
+1A57F30 	40 49 A0  1 E4 45 A0  1 
+1A57F38 	98 69 A5  1 
+      dup >qh-phys l@ TYP_QH or r@ framelist!
+1A57F3C 	40 49 A0  1 
+1A57F40 	A4 6F A5  1 6C 4C A0  1 
+1A57F48 	F0 66 A5  1 70 44 A0  1 
+1A57F50 	E4 45 A0  1 24 68 A5  1 
+					( qh )  ( R: idx )
+   else					( qh tail )  ( R: idx )
+1A57F58 	C8 41 A0  1 3C  0  0  0 
+      2dup >qh-next l!			( qh tail )  ( R: idx )
+1A57F60 	C0 49 A0  1 BC 6F A5  1 
+1A57F68 	7C 4D A0  1 
+      over >qh-phys l@ TYP_QH or over >hcqh-next le-l!
+1A57F6C 	54 49 A0  1 
+1A57F70 	A4 6F A5  1 6C 4C A0  1 
+1A57F78 	F0 66 A5  1 70 44 A0  1 
+1A57F80 	54 49 A0  1  8 6F A5  1 
+1A57F88 	5C 35 A4  1 
+					(  qh tail )  ( R: idx )
+      over >qh-prev l!			( qh )  ( R: idx )
+1A57F8C 	54 49 A0  1 
+1A57F90 	D4 6F A5  1 7C 4D A0  1 
+   then
+   r> intr-tail!			( )
+1A57F98 	D0 45 A0  1 E0 69 A5  1 
+;
+1A57FA0 	58 46 A0  1 
+: insert-intr-qh  ( qh speed interval -- )
+1A57FA4 	 0 69 6E 73 
+1A57FA8 	65 72 74 2D 69 6E 74 72 
+1A57FB0 	2D 71 68 8E 10 7F A5  1 
+1A57FB8 	20 40 A0  1 
+   drop					( qh speed )
+1A57FBC 	30 49 A0  1 
+   speed-high =  if  h# 0020  else  h# 1c01  then
+1A57FC0 	98 2E A4  1 24 48 A0  1 
+1A57FC8 	DC 41 A0  1 14  0  0  0 
+1A57FD0 	58 41 A0  1 20  0  0  0 
+1A57FD8 	C8 41 A0  1  C  0  0  0 
+1A57FE0 	58 41 A0  1  1 1C  0  0 
+   over >hcqh-endp-cap dup le-l@ rot or swap le-l!
+1A57FE8 	54 49 A0  1 40 6F A5  1 
+1A57FF0 	40 49 A0  1 C4 34 A4  1 
+1A57FF8 	7C 49 A0  1 70 44 A0  1 
+1A58000 	68 49 A0  1 5C 35 A4  1 
+   ( qh ) #framelist 0 do  dup i (insert-intr-qh)  intr-interval +loop  drop
+1A58008 	A0 67 A5  1 70 6F A0  1 
+1A58010 	88 42 A0  1 1C  0  0  0 
+1A58018 	40 49 A0  1 B4 42 A0  1 
+1A58020 	10 7F A5  1 D4 7D A5  1 
+1A58028 	1C 42 A0  1 EC FF FF FF 
+1A58030 	30 49 A0  1 
+   #intr #iso or  0=  if  enable-periodic  then
+1A58034 	B8 7D A5  1 
+1A58038 	5C 7D A5  1 70 44 A0  1 
+1A58040 	24 47 A0  1 DC 41 A0  1 
+1A58048 	 8  0  0  0 94 7E A5  1 
+   #intr++
+1A58050 	E8 7D A5  1 
+;
+1A58054 	58 46 A0  1 
+
+: (remove-intr-qh)  ( qh idx -- )
+1A58058 	 0  0  0 28 72 65 6D 6F 
+1A58060 	76 65 2D 69 6E 74 72 2D 
+1A58068 	71 68 29 90 B8 7F A5  1 
+1A58070 	20 40 A0  1 
+   >r					( qh )  ( R: idx )
+1A58074 	BC 45 A0  1 
+   dup >qh-prev l@ ?dup  if  over >qh-next l@ swap >qh-next l!  then
+1A58078 	40 49 A0  1 D4 6F A5  1 
+1A58080 	6C 4C A0  1 B4 70 A0  1 
+1A58088 	DC 41 A0  1 1C  0  0  0 
+1A58090 	54 49 A0  1 BC 6F A5  1 
+1A58098 	6C 4C A0  1 68 49 A0  1 
+1A580A0 	BC 6F A5  1 7C 4D A0  1 
+   dup >qh-next l@ ?dup  if  over >qh-prev l@ swap >qh-prev l!  then
+1A580A8 	40 49 A0  1 BC 6F A5  1 
+1A580B0 	6C 4C A0  1 B4 70 A0  1 
+1A580B8 	DC 41 A0  1 1C  0  0  0 
+1A580C0 	54 49 A0  1 D4 6F A5  1 
+1A580C8 	6C 4C A0  1 68 49 A0  1 
+1A580D0 	D4 6F A5  1 7C 4D A0  1 
+   r@ intr-head@ over =  if		( qh )  ( R: idx )
+1A580D8 	E4 45 A0  1 74 69 A5  1 
+1A580E0 	54 49 A0  1 24 48 A0  1 
+1A580E8 	DC 41 A0  1 4C  0  0  0 
+      dup >qh-next l@ dup r@ intr-head!	( qh nqh )  ( R: idx )
+1A580F0 	40 49 A0  1 BC 6F A5  1 
+1A580F8 	6C 4C A0  1 40 49 A0  1 
+1A58100 	E4 45 A0  1 98 69 A5  1 
+      ?dup  if  >qh-phys l@ TYP_QH or  else  TERMINATE  then  r@ framelist!
+1A58108 	B4 70 A0  1 DC 41 A0  1 
+1A58110 	1C  0  0  0 A4 6F A5  1 
+1A58118 	6C 4C A0  1 F0 66 A5  1 
+1A58120 	70 44 A0  1 C8 41 A0  1 
+1A58128 	 8  0  0  0 C8 66 A5  1 
+1A58130 	E4 45 A0  1 24 68 A5  1 
+					( qh )  ( R: idx )
+   then
+   r@ intr-tail@ over =  if		( qh )  ( R: idx )
+1A58138 	E4 45 A0  1 BC 69 A5  1 
+1A58140 	54 49 A0  1 24 48 A0  1 
+1A58148 	DC 41 A0  1 18  0  0  0 
+      dup >qh-prev l@ r@ intr-tail!	( qh )  ( R: idx )
+1A58150 	40 49 A0  1 D4 6F A5  1 
+1A58158 	6C 4C A0  1 E4 45 A0  1 
+1A58160 	E0 69 A5  1 
+   then
+   r> 2drop
+1A58164 	D0 45 A0  1 
+1A58168 	AC 49 A0  1 
+;
+1A5816C 	58 46 A0  1 
+: remove-intr-qh  ( qh -- )
+1A58170 	 0 72 65 6D 6F 76 65 2D 
+1A58178 	69 6E 74 72 2D 71 68 8E 
+1A58180 	70 80 A5  1 20 40 A0  1 
+   #intr--
+1A58188 	 C 7E A5  1 
+   ( qh ) #framelist 0  do  dup i (remove-intr-qh)  intr-interval +loop  drop
+1A5818C 	A0 67 A5  1 
+1A58190 	70 6F A0  1 88 42 A0  1 
+1A58198 	1C  0  0  0 40 49 A0  1 
+1A581A0 	B4 42 A0  1 70 80 A5  1 
+1A581A8 	D4 7D A5  1 1C 42 A0  1 
+1A581B0 	EC FF FF FF 30 49 A0  1 
+   #intr #iso or  0=  if  disable-periodic  then
+1A581B8 	B8 7D A5  1 5C 7D A5  1 
+1A581C0 	70 44 A0  1 24 47 A0  1 
+1A581C8 	DC 41 A0  1  8  0  0  0 
+1A581D0 	D0 7E A5  1 
+;
+1A581D4 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Wait for a QH to be done and process any errors.
+\
+\ When done? returns no error found yet, the caller should check if errors
+\ were found in the TDs.
+\ ---------------------------------------------------------------------------
+
+: .qtd-error  ( cc -- )
+1A581D8 	 0 2E 71 74 64 2D 65 72 
+1A581E0 	72 6F 72 8A 84 81 A5  1 
+1A581E8 	20 40 A0  1 
+   dup TD_STAT_HALTED  and  if  " Stalled; "                USB_ERR_STALL       set-usb-error  then
+1A581EC 	40 49 A0  1 
+1A581F0 	84 6D A5  1 5C 44 A0  1 
+1A581F8 	DC 41 A0  1 1C  0  0  0 
+1A58200 	9C 53 A0  1  9 53 74 61 
+1A58208 	6C 6C 65 64 3B 20  0  0 
+1A58210 	A4 2B A4  1 20 40 A4  1 
+   dup TD_STAT_DBUFF   and  if  " Data Buffer Error; "      USB_ERR_DBUFERR     set-usb-error  then
+1A58218 	40 49 A0  1 A0 6D A5  1 
+1A58220 	5C 44 A0  1 DC 41 A0  1 
+1A58228 	28  0  0  0 9C 53 A0  1 
+1A58230 	13 44 61 74 61 20 42 75 
+1A58238 	66 66 65 72 20 45 72 72 
+1A58240 	6F 72 3B 20  0  0  0  0 
+1A58248 	FC 2C A4  1 20 40 A4  1 
+   dup TD_STAT_BABBLE  and  if  " Babble Detected; "        USB_ERR_BABBLE      set-usb-error  then
+1A58250 	40 49 A0  1 BC 6D A5  1 
+1A58258 	5C 44 A0  1 DC 41 A0  1 
+1A58260 	24  0  0  0 9C 53 A0  1 
+1A58268 	11 42 61 62 62 6C 65 20 
+1A58270 	44 65 74 65 63 74 65 64 
+1A58278 	3B 20  0  0 18 2D A4  1 
+1A58280 	20 40 A4  1 
+   dup TD_STAT_XERR    and  if  " CRC/Timeout/Bad PID; "    USB_ERR_CRC         set-usb-error  then
+1A58284 	40 49 A0  1 
+1A58288 	D8 6D A5  1 5C 44 A0  1 
+1A58290 	DC 41 A0  1 28  0  0  0 
+1A58298 	9C 53 A0  1 15 43 52 43 
+1A582A0 	2F 54 69 6D 65 6F 75 74 
+1A582A8 	2F 42 61 64 20 50 49 44 
+1A582B0 	3B 20  0  0 40 2B A4  1 
+1A582B8 	20 40 A4  1 
+   dup TD_STAT_MISS_MF and  if  " Missed Micro-frame; "     USB_ERR_MICRO_FRAME set-usb-error  then
+1A582BC 	40 49 A0  1 
+1A582C0 	F4 6D A5  1 5C 44 A0  1 
+1A582C8 	DC 41 A0  1 28  0  0  0 
+1A582D0 	9C 53 A0  1 14 4D 69 73 
+1A582D8 	73 65 64 20 4D 69 63 72 
+1A582E0 	6F 2D 66 72 61 6D 65 3B 
+1A582E8 	20  0  0  0 50 2D A4  1 
+1A582F0 	20 40 A4  1 
+   TD_STAT_SPLIT_ERR   and  if  " Periodic split-x error; " USB_ERR_SPLIT       set-usb-error  then
+1A582F4 	80 6E A5  1 
+1A582F8 	5C 44 A0  1 DC 41 A0  1 
+1A58300 	2C  0  0  0 9C 53 A0  1 
+1A58308 	18 50 65 72 69 6F 64 69 
+1A58310 	63 20 73 70 6C 69 74 2D 
+1A58318 	78 20 65 72 72 6F 72 3B 
+1A58320 	20  0  0  0 6C 2D A4  1 
+1A58328 	20 40 A4  1 
+;
+1A5832C 	58 46 A0  1 
+
+: qtd-done?  ( qtd -- done? )
+1A58330 	 0  0 71 74 64 2D 64 6F 
+1A58338 	6E 65 3F 89 E8 81 A5  1 
+1A58340 	20 40 A0  1 
+   >hcqtd-token le-l@  TD_STAT_ACTIVE and  0=
+1A58344 	80 6A A5  1 
+1A58348 	C4 34 A4  1 68 6D A5  1 
+1A58350 	5C 44 A0  1 24 47 A0  1 
+;
+1A58358 	58 46 A0  1 
+
+[ifdef] notdef
+\ This version looks for the ending condition in the transfer overlay
+: qh-done?  ( qh -- done? )
+   hc-interrupt? 0=  if  drop false exit  then   ( qh )
+   dup pull-qh                    ( qh )
+   dup >hcqh-cur-pqtd l@  0=  if  ( qh )
+      drop false exit             ( -- done? )
+   then                           ( qh )
+   >hcqh-overlay               ( qtd )
+   dup >hcqtd-token le-l@      ( qtd token )
+   dup TD_STAT_ACTIVE and  if  ( qtd token )
+      2drop false              ( done? )
+   else                        ( qtd token )
+      TD_STAT_HALTED and  if   ( qtd )
+         drop true             ( done? )
+      else                     ( qtd )
+         >hcqtd-next le-l@     ( next )
+	 TERMINATE =           ( done? )
+      then                     ( done? )
+   then                        ( done? )
+;
+[then]
+
+\ This version traverses the list of QTDs, looking for an ending condition
+: qh-done?  ( qh -- done? )
+1A5835C 	 0  0  0 71 
+1A58360 	68 2D 64 6F 6E 65 3F 88 
+1A58368 	40 83 A5  1 20 40 A0  1 
+   dup pull-qh      ( qh )
+1A58370 	40 49 A0  1 E0 71 A5  1 
+\   d# 30 us         ( qh )
+   /qh +                                      ( qtd )
+1A58378 	A4 70 A5  1  4 45 A0  1 
+   begin                                      ( qtd )
+      dup >hcqtd-token le-l@                  ( qtd token )
+1A58380 	40 49 A0  1 80 6A A5  1 
+1A58388 	C4 34 A4  1 
+      dup TD_STAT_ACTIVE and  0=              ( qtd token qtd-complete? )
+1A5838C 	40 49 A0  1 
+1A58390 	68 6D A5  1 5C 44 A0  1 
+1A58398 	24 47 A0  1 
+   while                                      ( qtd token )
+1A5839C 	DC 41 A0  1 
+1A583A0 	58  0  0  0 
+      \ This QTD is complete - it is the end of the list if either
+      \ the next field is TERMINATE or if the HALTED bit is set
+      TD_STAT_HALTED and  if                  ( qtd )
+1A583A4 	84 6D A5  1 
+1A583A8 	5C 44 A0  1 DC 41 A0  1 
+1A583B0 	10  0  0  0 
+         drop true exit                       ( -- done? )
+1A583B4 	30 49 A0  1 
+1A583B8 	 4 70 A0  1 40 46 A0  1 
+      then                                    ( qtd )
+      dup >hcqtd-next le-l@ TERMINATE =  if   ( qtd )
+1A583C0 	40 49 A0  1 48 6A A5  1 
+1A583C8 	C4 34 A4  1 C8 66 A5  1 
+1A583D0 	24 48 A0  1 DC 41 A0  1 
+1A583D8 	10  0  0  0 
+         drop true exit                       ( -- done? )
+1A583DC 	30 49 A0  1 
+1A583E0 	 4 70 A0  1 40 46 A0  1 
+      then                                    ( qtd )
+      /qtd +                                  ( qtd' )
+1A583E8 	18 6C A5  1  4 45 A0  1 
+   repeat                                     ( qtd token )
+1A583F0 	C8 41 A0  1 8C FF FF FF 
+   \ If we get here, we hit a QTD that is still active
+   2drop false                                ( done? )
+1A583F8 	AC 49 A0  1 18 70 A0  1 
+;
+1A58400 	58 46 A0  1 
+
+: intr-qh-done?  ( qh -- done? )
+1A58404 	 0  0 69 6E 
+1A58408 	74 72 2D 71 68 2D 64 6F 
+1A58410 	6E 65 3F 8D 6C 83 A5  1 
+1A58418 	20 40 A0  1 
+   hc-interrupt?  if   ( qh )
+1A5841C 	BC 60 A5  1 
+1A58420 	DC 41 A0  1 10  0  0  0 
+      qh-done?         ( done? )
+1A58428 	6C 83 A5  1 
+   else                ( qh )
+1A5842C 	C8 41 A0  1 
+1A58430 	 C  0  0  0 
+      drop false       ( done? )
+1A58434 	30 49 A0  1 
+1A58438 	18 70 A0  1 
+   then                ( done? )
+;
+1A5843C 	58 46 A0  1 
+
+: qtd-error?  ( qtd qh -- usberr )
+1A58440 	 0 71 74 64 2D 65 72 72 
+1A58448 	6F 72 3F 8A 18 84 A5  1 
+1A58450 	20 40 A0  1 
+   >hcqh-endp-char le-l@ d# 12 >> 3 and         ( qtd speed )
+1A58454 	24 6F A5  1 
+1A58458 	C4 34 A4  1 58 41 A0  1 
+1A58460 	 C  0  0  0 DC 44 A0  1 
+1A58468 	A0 6F A0  1 5C 44 A0  1 
+   speed-high =  if  h# fc  else  h# fd  then   ( qtd error-mask )
+1A58470 	98 2E A4  1 24 48 A0  1 
+1A58478 	DC 41 A0  1 14  0  0  0 
+1A58480 	58 41 A0  1 FC  0  0  0 
+1A58488 	C8 41 A0  1  C  0  0  0 
+1A58490 	58 41 A0  1 FD  0  0  0 
+   swap >hcqtd-token le-l@  and ?dup  if  .qtd-error  then
+1A58498 	68 49 A0  1 80 6A A5  1 
+1A584A0 	C4 34 A4  1 5C 44 A0  1 
+1A584A8 	B4 70 A0  1 DC 41 A0  1 
+1A584B0 	 8  0  0  0 E8 81 A5  1 
+   usb-error
+1A584B8 	DC 3F A4  1 
+;
+1A584BC 	58 46 A0  1 
+
+: qh-error?  ( qh -- usberr )  dup >hcqh-overlay  swap  qtd-error?   ;
+1A584C0 	 0  0 71 68 2D 65 72 72 
+1A584C8 	6F 72 3F 89 50 84 A5  1 
+1A584D0 	20 40 A0  1 40 49 A0  1 
+1A584D8 	78 6F A5  1 68 49 A0  1 
+1A584E0 	50 84 A5  1 58 46 A0  1 
+
+: done-error?  ( qh -- usberr )
+1A584E8 	64 6F 6E 65 2D 65 72 72 
+1A584F0 	6F 72 3F 8B D0 84 A5  1 
+1A584F8 	20 40 A0  1 
+   dup >qh-timeout l@  get-msecs +   ( qh timeout )
+1A584FC 	40 49 A0  1 
+1A58500 	94 70 A5  1 6C 4C A0  1 
+1A58508 	50 E0 A1  1  4 45 A0  1 
+   begin  over intr-qh-done?  0=  while   ( qh timeout )
+1A58510 	54 49 A0  1 18 84 A5  1 
+1A58518 	24 47 A0  1 DC 41 A0  1 
+1A58520 	70  0  0  0 
+      usb-error ?dup if  ." USB ERROR " . cr  then
+1A58524 	DC 3F A4  1 
+1A58528 	B4 70 A0  1 DC 41 A0  1 
+1A58530 	1C  0  0  0 20 7C A0  1 
+1A58538 	 A 55 53 42 20 45 52 52 
+1A58540 	4F 52 20  0 94 7A A0  1 
+1A58548 	80 6D A0  1 
+      dup get-msecs - 0<  if         ( qh timeout )
+1A5854C 	40 49 A0  1 
+1A58550 	50 E0 A1  1 18 45 A0  1 
+1A58558 	64 47 A0  1 DC 41 A0  1 
+1A58560 	28  0  0  0 
+         " Timeout" USB_ERR_TIMEOUT set-usb-error ( qh timeout )
+1A58564 	9C 53 A0  1 
+1A58568 	 7 54 69 6D 65 6F 75 74 
+1A58570 	 0  0  0  0 C4 2D A4  1 
+1A58578 	20 40 A4  1 
+         2drop                       ( )
+1A5857C 	AC 49 A0  1 
+         usb-error                   ( usberr )
+1A58580 	DC 3F A4  1 
+         exit
+1A58584 	40 46 A0  1 
+      then                           ( qh timeout )
+   repeat                            ( qh timeout )
+1A58588 	C8 41 A0  1 84 FF FF FF 
+   drop                              ( qh )
+1A58590 	30 49 A0  1 
+
+   qh-error?	                     ( usberr )
+1A58594 	D0 84 A5  1 
+;
+1A58598 	58 46 A0  1 
+
+: get-actual  ( qtd #qtd -- actual )
+1A5859C 	 0 67 65 74 
+1A585A0 	2D 61 63 74 75 61 6C 8A 
+1A585A8 	F8 84 A5  1 20 40 A0  1 
+   0 -rot 0  ?do			( actual qtd )
+1A585B0 	70 6F A0  1 94 49 A0  1 
+1A585B8 	70 6F A0  1 50 42 A0  1 
+1A585C0 	84  0  0  0 
+      dup pull-qtd			( actual qtd )
+1A585C4 	40 49 A0  1 
+1A585C8 	38 72 A5  1 
+      dup >hcqtd-token le-l@ dup TD_STAT_ACTIVE and 0=  if
+1A585CC 	40 49 A0  1 
+1A585D0 	80 6A A5  1 C4 34 A4  1 
+1A585D8 	40 49 A0  1 68 6D A5  1 
+1A585E0 	5C 44 A0  1 24 47 A0  1 
+1A585E8 	DC 41 A0  1 44  0  0  0 
+         over >qtd-/buf l@		( actual qtd token len )
+1A585F0 	54 49 A0  1 B4 6B A5  1 
+1A585F8 	6C 4C A0  1 
+         swap d# 16 >> h# 7fff and -	( actual qtd len' )
+1A585FC 	68 49 A0  1 
+1A58600 	58 41 A0  1 10  0  0  0 
+1A58608 	DC 44 A0  1 58 41 A0  1 
+1A58610 	FF 7F  0  0 5C 44 A0  1 
+1A58618 	18 45 A0  1 
+         rot + swap			( actual' qtd )
+1A5861C 	7C 49 A0  1 
+1A58620 	 4 45 A0  1 68 49 A0  1 
+      else
+1A58628 	C8 41 A0  1  8  0  0  0 
+         drop				( actual qtd )
+1A58630 	30 49 A0  1 
+      then
+      >qtd-next l@			( actual qtd )
+1A58634 	6C 6B A5  1 
+1A58638 	6C 4C A0  1 
+   loop  drop				( qtd )
+1A5863C 	F8 41 A0  1 
+1A58640 	84 FF FF FF 30 49 A0  1 
+;
+1A58648 	58 46 A0  1 
+
+: qtd-get-actual  ( qtd -- actual )
+1A5864C 	 0 71 74 64 
+1A58650 	2D 67 65 74 2D 61 63 74 
+1A58658 	75 61 6C 8E AC 85 A5  1 
+1A58660 	20 40 A0  1 
+   0 swap  begin			( actual qtd )
+1A58664 	70 6F A0  1 
+1A58668 	68 49 A0  1 
+      dup pull-qtd			( actual qtd )
+1A5866C 	40 49 A0  1 
+1A58670 	38 72 A5  1 
+      dup >hcqtd-token le-l@ dup TD_STAT_ACTIVE and 0=  if
+1A58674 	40 49 A0  1 
+1A58678 	80 6A A5  1 C4 34 A4  1 
+1A58680 	40 49 A0  1 68 6D A5  1 
+1A58688 	5C 44 A0  1 24 47 A0  1 
+1A58690 	DC 41 A0  1 44  0  0  0 
+         over >qtd-/buf l@		( actual qtd token len )
+1A58698 	54 49 A0  1 B4 6B A5  1 
+1A586A0 	6C 4C A0  1 
+         swap d# 16 >> h# 7fff and -	( actual qtd len' )
+1A586A4 	68 49 A0  1 
+1A586A8 	58 41 A0  1 10  0  0  0 
+1A586B0 	DC 44 A0  1 58 41 A0  1 
+1A586B8 	FF 7F  0  0 5C 44 A0  1 
+1A586C0 	18 45 A0  1 
+         rot + swap			( actual' qtd )
+1A586C4 	7C 49 A0  1 
+1A586C8 	 4 45 A0  1 68 49 A0  1 
+      else
+1A586D0 	C8 41 A0  1  8  0  0  0 
+         drop				( actual qtd )
+1A586D8 	30 49 A0  1 
+      then
+      dup >hcqtd-next l@		( actual qtd next )
+1A586DC 	40 49 A0  1 
+1A586E0 	48 6A A5  1 6C 4C A0  1 
+      over >hcqtd-next-alt l@		( actual qtd next alt-next )
+1A586E8 	54 49 A0  1 64 6A A5  1 
+1A586F0 	6C 4C A0  1 
+   <> while
+1A586F4 	44 48 A0  1 
+1A586F8 	DC 41 A0  1 14  0  0  0 
+      \ If next and alt differ, the next one is part of the same transaction.
+      \ If they are the same, it's a different transaction
+      >qtd-next l@			( actual qtd' )
+1A58700 	6C 6B A5  1 6C 4C A0  1 
+   repeat  drop				( actual )
+1A58708 	C8 41 A0  1 60 FF FF FF 
+1A58710 	30 49 A0  1 
+;
+1A58714 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Allocate a dummy qh to be head of the queue to get around the fact that
+\ the VIA 2.0 controller does not stop async when told to.
+\ ---------------------------------------------------------------------------
+
+0 value dummy-qh
+1A58718 	 0  0  0 64 75 6D 6D 79 
+1A58720 	2D 71 68 88 60 86 A5  1 
+1A58728 	50 40 A0  1 28  F  0  0 
+
+: alloc-dummy-qh  ( -- )
+1A58730 	 0 61 6C 6C 6F 63 2D 64 
+1A58738 	75 6D 6D 79 2D 71 68 8E 
+1A58740 	28 87 A5  1 20 40 A0  1 
+   dummy-qh 0=  if
+1A58748 	28 87 A5  1 24 47 A0  1 
+1A58750 	DC 41 A0  1 2C  0  0  0 
+      1 alloc-qhqtds			( qh qtd )
+1A58758 	80 6F A0  1 4C 75 A5  1 
+      drop to dummy-qh
+1A58760 	30 49 A0  1 B8 40 A0  1 
+1A58768 	28 87 A5  1 
+      TERMINATE dummy-qh >hcqh-overlay >hcqtd-next le-l!
+1A5876C 	C8 66 A5  1 
+1A58770 	28 87 A5  1 78 6F A5  1 
+1A58778 	48 6A A5  1 5C 35 A4  1 
+   then
+   0 to qh-ptr
+1A58780 	70 6F A0  1 B8 40 A0  1 
+1A58788 	A4 71 A5  1 
+   dummy-qh insert-qh
+1A5878C 	28 87 A5  1 
+1A58790 	C4 7A A5  1 
+;
+1A58794 	58 46 A0  1 
+
+: free-dummy-qh  ( -- )
+1A58798 	 0  0 66 72 65 65 2D 64 
+1A587A0 	75 6D 6D 79 2D 71 68 8D 
+1A587A8 	44 87 A5  1 20 40 A0  1 
+   dummy-qh ?dup  if  free-qh  0 to dummy-qh  then
+1A587B0 	28 87 A5  1 B4 70 A0  1 
+1A587B8 	DC 41 A0  1 14  0  0  0 
+1A587C0 	 0 75 A5  1 70 6F A0  1 
+1A587C8 	B8 40 A0  1 28 87 A5  1 
+;
+1A587D0 	58 46 A0  1 
+
+
+: ?alloc-dummy-qh  ( -- )
+1A587D4 	3F 61 6C 6C 
+1A587D8 	6F 63 2D 64 75 6D 6D 79 
+1A587E0 	2D 71 68 8F AC 87 A5  1 
+1A587E8 	20 40 A0  1 
+   needs-dummy-qh?  if  alloc-dummy-qh  then
+1A587EC 	20 58 A5  1 
+1A587F0 	DC 41 A0  1  8  0  0  0 
+1A587F8 	44 87 A5  1 
+;
+1A587FC 	58 46 A0  1 
+
+\ The words this calls are written so they can be called again
+\ on resume from S3 state without causing redundant memory allocation.
+: (init-extra)  ( -- )
+1A58800 	 0  0  0 28 69 6E 69 74 
+1A58808 	2D 65 78 74 72 61 29 8C 
+1A58810 	E8 87 A5  1 20 40 A0  1 
+   ?alloc-dummy-qh
+1A58818 	E8 87 A5  1 
+   init-intr
+1A5881C 	 4 6A A5  1 
+   init-framelist
+1A58820 	54 68 A5  1 
+;
+1A58824 	58 46 A0  1 
+
+' (init-extra) to init-extra
+
+headers

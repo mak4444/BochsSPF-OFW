@@ -1,0 +1,177 @@
+: v-report  ( char -- )
+1A425A0 	 0  0  0 76 2D 72 65 70 
+1A425A8 	6F 72 74 88 EC 24 A4  1 
+1A425B0 	20 40 A0  1 
+   " # al mov  al h# b8000 #) mov  h# 1d # al mov  al h# b8001 #) mov" evaluate
+1A425B4 	9C 53 A0  1 
+1A425B8 	40 23 20 61 6C 20 6D 6F 
+1A425C0 	76 20 20 61 6C 20 68 23 
+1A425C8 	20 62 38 30 30 30 20 23 
+1A425D0 	29 20 6D 6F 76 20 20 68 
+1A425D8 	23 20 31 64 20 23 20 61 
+1A425E0 	6C 20 6D 6F 76 20 20 61 
+1A425E8 	6C 20 68 23 20 62 38 30 
+1A425F0 	30 31 20 23 29 20 6D 6F 
+1A425F8 	76  0  0  0 D8 E5 A0  1 
+;
+1A42600 	58 46 A0  1 
+: vr-report  ( char -- )  \ Real mode version
+1A42604 	 0  0 76 72 
+1A42608 	2D 72 65 70 6F 72 74 89 
+1A42610 	B0 25 A4  1 20 40 A0  1 
+   " ds push  h# b000 # push ds pop" evaluate   
+1A42618 	9C 53 A0  1 1E 64 73 20 
+1A42620 	70 75 73 68 20 20 68 23 
+1A42628 	20 62 30 30 30 20 23 20 
+1A42630 	70 75 73 68 20 64 73 20 
+1A42638 	70 6F 70  0 D8 E5 A0  1 
+   " # al mov  al h# 8000 #) mov   h# 1d # al mov  al h# 8001 #) mov"  evaluate
+1A42640 	9C 53 A0  1 3F 23 20 61 
+1A42648 	6C 20 6D 6F 76 20 20 61 
+1A42650 	6C 20 68 23 20 38 30 30 
+1A42658 	30 20 23 29 20 6D 6F 76 
+1A42660 	20 20 20 68 23 20 31 64 
+1A42668 	20 23 20 61 6C 20 6D 6F 
+1A42670 	76 20 20 61 6C 20 68 23 
+1A42678 	20 38 30 30 31 20 23 29 
+1A42680 	20 6D 6F 76  0  0  0  0 
+1A42688 	D8 E5 A0  1 
+   " ds pop" evaluate
+1A4268C 	9C 53 A0  1 
+1A42690 	 6 64 73 20 70 6F 70  0 
+1A42698 	D8 E5 A0  1 
+;
+1A4269C 	58 46 A0  1 
+
+\  mmo  from boot.fth 
+
+
+label prom-cold-code  ( -- )
+1A426A0 	 0 70 72 6F 6D 2D 63 6F 
+1A426A8 	6C 64 2D 63 6F 64 65 8E 
+1A426B0 	14 26 A4  1 30 40 A0  1 
+
+   \ We assume that the machine is already in protected mode, with a
+   \ linear mapping.  DS = ES = SS = FS = GS.  The descriptor referenced
+   \ by CS maps the same memory as the DS descriptor.
+   \ Interrupts are off.
+
+   cld
+1A426B8 	FC 
+
+\ carret report
+\ linefeed report
+ascii c report
+1A426B9 	BA FD  3  0  0 EC 24 
+1A426C0 	20 74 F6 B0 63 BA F8  3 
+1A426C8 	 0  0 EE BA FD  3  0  0 
+1A426D0 	EC 24 20 74 F6 
+
+\ Get the origin address
+   here 5 + #) call   here origin -  ( offset )
+1A426D5 	E8  0  0 
+1A426D8 	 0  0 
+   bx  pop
+1A426DA 	5B 
+   ( offset ) #  bx  sub	\ Origin in bx
+1A426DB 	81 EB DA 26  4 
+1A426E0 	 0 
+
+\ Copy the initial User Area image to the RAM copy
+   init-user-area #  si  mov	\ Init-up pointer in bx
+1A426E1 	BE 20  0  0  0 
+   bx si add                    \ add origin
+1A426E6 	 1 DE 
+   prom-main-task #  di  mov	\ Destination of copy
+1A426E8 	BF  0 C0 BF  1 
+   user-size #       cx  mov
+1A426ED 	B9  0 40 
+1A426F0 	 0  0 
+   rep byte movs
+1A426F2 	F2 A4 
+
+ascii s report
+1A426F4 	BA FD  3  0 
+1A426F8 	 0 EC 24 20 74 F6 B0 73 
+1A42700 	BA F8  3  0  0 EE BA FD 
+1A42708 	 3  0  0 EC 24 20 74 F6 
+
+   prom-main-task #      up  mov        \ Set User Area Pointer
+1A42710 	BF  0 C0 BF  1 
+
+\ The User Area is now initialized
+   up        'user up0   mov	\ Set the up0 user variable
+1A42715 	89 7F 4C 
+
+\ Set the value of flat? so later code knows that we are running
+\ in a single address space, i.e. Forth is not in a private segment.
+
+   true #  ax  mov   ax  'user flat?  mov
+1A42718 	B8 FF FF FF FF 89 87 F8 
+1A42720 	 2  0  0 
+
+   prom-main-task #  rp  mov	\ Initialize the Return Stack Pointer
+1A42723 	BD  0 C0 BF  1 
+   rp        'user rp0   mov    \ Set the rp0 user variable
+1A42728 	89 6F 58 
+   rp        ax          mov
+1A4272B 	8B C5 
+   rs-size # ax          sub
+1A4272D 	2D  0  8 
+1A42730 	 0  0 
+
+\ Establish the Parameter Stack
+   ax        sp          mov
+1A42732 	8B E0 
+   sp        'user sp0   mov	\ Set the sp0 user variable
+1A42734 	89 67 54 
+
+\   ps-size # ax          sub
+\   ax  'user next-free-mem   mov        \ Set heap pointer
+
+    'user dp-loc    ax    mov
+1A42737 	8B 
+1A42738 	87 F8  9  0  0 
+    ax        'user dp    mov    \ Initialize the dictionary pointer
+1A4273D 	89 47 24 
+
+\ ascii s report
+h# 20 report
+1A42740 	BA FD  3  0  0 EC 24 20 
+1A42748 	74 F6 B0 20 BA F8  3  0 
+1A42750 	 0 EE BA FD  3  0  0 EC 
+1A42758 	24 20 74 F6 
+
+\ Enter Forth
+   make-odd
+1A4275C 	90 
+   'body cold fw-pa +  dup #  ip  mov
+1A4275D 	BE 58 ED 
+1A42760 	A0  1 
+   -4 allot token,
+c;
+1A42762 	FF E7 
+
+: patchboot  ( -- )
+1A42764 	 0  0 70 61 
+1A42768 	74 63 68 62 6F 6F 74 89 
+1A42770 	B4 26 A4  1 20 40 A0  1 
+   prom-main-task ['] main-task >body !
+1A42778 	38 26 A3  1 60 53 A0  1 
+1A42780 	94 EF A0  1 E4 59 A0  1 
+1A42788 	54 4D A0  1 
+
+   here origin -  RAMbase +  is dp-loc
+1A4278C 	70 54 A0  1 
+1A42790 	50 55 A0  1 18 45 A0  1 
+1A42798 	A0 25 A3  1  4 45 A0  1 
+1A427A0 	B8 40 A0  1 D8 25 A3  1 
+
+   \ Set offset field of branch at origin
+   prom-cold-code origin 5 + -  origin 1+ !
+1A427A8 	B4 26 A4  1 50 55 A0  1 
+1A427B0 	C0 6F A0  1  4 45 A0  1 
+1A427B8 	18 45 A0  1 50 55 A0  1 
+1A427C0 	30 4B A0  1 54 4D A0  1 
+;
+1A427C8 	58 46 A0  1 

@@ -1,0 +1,296 @@
+purpose: words which are useful for both SCSI disk and SCSI tape device drivers.
+
+: scsicomfth 
+1A4A680 	 0 73 63 73 69 63 6F 6D 
+1A4A688 	66 74 68 8A 28 9E A4  1 
+1A4A690 	20 40 A0  1 
+hex
+1A4A694 	C0 8D A0  1 
+\ The SCSI disk and SCSI tape packages need to export dma-alloc and dma-free
+\ methods so the deblocker can allocate DMA-capable buffer memory.
+
+ " : dma-alloc  ( n -- vaddr )  "" dma-alloc"" $call-parent  ;" eval
+1A4A698 	9C 53 A0  1 39 3A 20 64 
+1A4A6A0 	6D 61 2D 61 6C 6C 6F 63 
+1A4A6A8 	20 20 28 20 6E 20 2D 2D 
+1A4A6B0 	20 76 61 64 64 72 20 29 
+1A4A6B8 	20 20 22 20 64 6D 61 2D 
+1A4A6C0 	61 6C 6C 6F 63 22 20 24 
+1A4A6C8 	63 61 6C 6C 2D 70 61 72 
+1A4A6D0 	65 6E 74 20 20 3B  0  0 
+1A4A6D8 	D8 E5 A0  1 
+ " : dma-free   ( vaddr n -- )  "" dma-free""  $call-parent  ;" eval
+1A4A6DC 	9C 53 A0  1 
+1A4A6E0 	39 3A 20 64 6D 61 2D 66 
+1A4A6E8 	72 65 65 20 20 20 28 20 
+1A4A6F0 	76 61 64 64 72 20 6E 20 
+1A4A6F8 	2D 2D 20 29 20 20 22 20 
+1A4A700 	64 6D 61 2D 66 72 65 65 
+1A4A708 	22 20 20 24 63 61 6C 6C 
+1A4A710 	2D 70 61 72 65 6E 74 20 
+1A4A718 	20 3B  0  0 D8 E5 A0  1 
+ " : parent-max-transfer  ( -- n )  "" max-transfer""  $call-parent  ;" eval
+1A4A720 	9C 53 A0  1 41 3A 20 70 
+1A4A728 	61 72 65 6E 74 2D 6D 61 
+1A4A730 	78 2D 74 72 61 6E 73 66 
+1A4A738 	65 72 20 20 28 20 2D 2D 
+1A4A740 	20 6E 20 29 20 20 22 20 
+1A4A748 	6D 61 78 2D 74 72 61 6E 
+1A4A750 	73 66 65 72 22 20 20 24 
+1A4A758 	63 61 6C 6C 2D 70 61 72 
+1A4A760 	65 6E 74 20 20 3B  0  0 
+1A4A768 	D8 E5 A0  1 
+ " : parent-set-address  ( lun -- )  "" set-address"" $call-parent  ;" eval
+1A4A76C 	9C 53 A0  1 
+1A4A770 	40 3A 20 70 61 72 65 6E 
+1A4A778 	74 2D 73 65 74 2D 61 64 
+1A4A780 	64 72 65 73 73 20 20 28 
+1A4A788 	20 6C 75 6E 20 2D 2D 20 
+1A4A790 	29 20 20 22 20 73 65 74 
+1A4A798 	2D 61 64 64 72 65 73 73 
+1A4A7A0 	22 20 24 63 61 6C 6C 2D 
+1A4A7A8 	70 61 72 65 6E 74 20 20 
+1A4A7B0 	3B  0  0  0 D8 E5 A0  1 
+
+
+\ Calls the parent device's "retry-command?" method.  The parent device is
+\ assumed to be a driver for a SCSI host adapter (device-type = "scsi")
+
+s" : retry-command?" eval  ( dma-addr dma-len dma-dir cmd-addr cmd-len #retries -- actual errcode )
+1A4A7B8 	9C 53 A0  1 10 3A 20 72 
+1A4A7C0 	65 74 72 79 2D 63 6F 6D 
+1A4A7C8 	6D 61 6E 64 3F  0  0  0 
+1A4A7D0 	D8 E5 A0  1 
+ "    "" retry-command?"" $call-parent ;" eval
+1A4A7D4 	9C 53 A0  1 
+1A4A7D8 	23 20 20 20 22 20 72 65 
+1A4A7E0 	74 72 79 2D 63 6F 6D 6D 
+1A4A7E8 	61 6E 64 3F 22 20 24 63 
+1A4A7F0 	61 6C 6C 2D 70 61 72 65 
+1A4A7F8 	6E 74 20 3B  0  0  0  0 
+1A4A800 	D8 E5 A0  1 
+
+
+\ Simplified command execution routines for common simple command forms
+
+ " : no-data-command  ( cmdbuf -- error? )  "" no-data-command"" $call-parent  ;" eval
+1A4A804 	9C 53 A0  1 
+1A4A808 	4B 3A 20 6E 6F 2D 64 61 
+1A4A810 	74 61 2D 63 6F 6D 6D 61 
+1A4A818 	6E 64 20 20 28 20 63 6D 
+1A4A820 	64 62 75 66 20 2D 2D 20 
+1A4A828 	65 72 72 6F 72 3F 20 29 
+1A4A830 	20 20 22 20 6E 6F 2D 64 
+1A4A838 	61 74 61 2D 63 6F 6D 6D 
+1A4A840 	61 6E 64 22 20 24 63 61 
+1A4A848 	6C 6C 2D 70 61 72 65 6E 
+1A4A850 	74 20 20 3B  0  0  0  0 
+1A4A858 	D8 E5 A0  1 
+
+s" : short-data-command" eval  ( data-len cmdbuf cmdlen #retries -- true | buffer len false )
+1A4A85C 	9C 53 A0  1 
+1A4A860 	14 3A 20 73 68 6F 72 74 
+1A4A868 	2D 64 61 74 61 2D 63 6F 
+1A4A870 	6D 6D 61 6E 64  0  0  0 
+1A4A878 	D8 E5 A0  1 
+ "    "" short-data-command"" $call-parent ;" eval
+1A4A87C 	9C 53 A0  1 
+1A4A880 	27 20 20 20 22 20 73 68 
+1A4A888 	6F 72 74 2D 64 61 74 61 
+1A4A890 	2D 63 6F 6D 6D 61 6E 64 
+1A4A898 	22 20 24 63 61 6C 6C 2D 
+1A4A8A0 	70 61 72 65 6E 74 20 3B 
+1A4A8A8 	 0  0  0  0 D8 E5 A0  1 
+
+
+\ Some tools for reading and writing 2, 3, and 4 byte numbers to and from
+\ SCSI command and data buffers.  The ones defined below are used both in
+\ the SCSI disk and the SCSI tape packages.  Other variations that are
+\ used only by one of the packages are defined in the package where they
+\ are used.
+
+s" : +c!  ( n addr -- addr' )  tuck c! 1+  ;" eval
+1A4A8B0 	9C 53 A0  1 29 3A 20 2B 
+1A4A8B8 	63 21 20 20 28 20 6E 20 
+1A4A8C0 	61 64 64 72 20 2D 2D 20 
+1A4A8C8 	61 64 64 72 27 20 29 20 
+1A4A8D0 	20 74 75 63 6B 20 63 21 
+1A4A8D8 	20 31 2B 20 20 3B  0  0 
+1A4A8E0 	D8 E5 A0  1 
+s" : 3c!  ( n addr -- )  >r lbsplit drop  r> +c! +c! c!  ;" eval
+1A4A8E4 	9C 53 A0  1 
+1A4A8E8 	37 3A 20 33 63 21 20 20 
+1A4A8F0 	28 20 6E 20 61 64 64 72 
+1A4A8F8 	20 2D 2D 20 29 20 20 3E 
+1A4A900 	72 20 6C 62 73 70 6C 69 
+1A4A908 	74 20 64 72 6F 70 20 20 
+1A4A910 	72 3E 20 2B 63 21 20 2B 
+1A4A918 	63 21 20 63 21 20 20 3B 
+1A4A920 	 0  0  0  0 D8 E5 A0  1 
+s" : -c@  ( addr -- n addr' )  dup c@  swap 1-  ;" eval
+1A4A928 	9C 53 A0  1 2E 3A 20 2D 
+1A4A930 	63 40 20 20 28 20 61 64 
+1A4A938 	64 72 20 2D 2D 20 6E 20 
+1A4A940 	61 64 64 72 27 20 29 20 
+1A4A948 	20 64 75 70 20 63 40 20 
+1A4A950 	20 73 77 61 70 20 31 2D 
+1A4A958 	20 20 3B  0 D8 E5 A0  1 
+s" : 3c@  ( addr -- n )  2 +  -c@ -c@  c@       0  bljoin  ;" eval
+1A4A960 	9C 53 A0  1 39 3A 20 33 
+1A4A968 	63 40 20 20 28 20 61 64 
+1A4A970 	64 72 20 2D 2D 20 6E 20 
+1A4A978 	29 20 20 32 20 2B 20 20 
+1A4A980 	2D 63 40 20 2D 63 40 20 
+1A4A988 	20 63 40 20 20 20 20 20 
+1A4A990 	20 20 30 20 20 62 6C 6A 
+1A4A998 	6F 69 6E 20 20 3B  0  0 
+1A4A9A0 	D8 E5 A0  1 
+s" : 4c@  ( addr -- n )  3 +  -c@ -c@ -c@  c@      bljoin  ;" eval
+1A4A9A4 	9C 53 A0  1 
+1A4A9A8 	39 3A 20 34 63 40 20 20 
+1A4A9B0 	28 20 61 64 64 72 20 2D 
+1A4A9B8 	2D 20 6E 20 29 20 20 33 
+1A4A9C0 	20 2B 20 20 2D 63 40 20 
+1A4A9C8 	2D 63 40 20 2D 63 40 20 
+1A4A9D0 	20 63 40 20 20 20 20 20 
+1A4A9D8 	20 62 6C 6A 6F 69 6E 20 
+1A4A9E0 	20 3B  0  0 D8 E5 A0  1 
+
+
+\ "Scratch" command buffer useful for construction of read and write commands
+
+s" d# 10 constant /cmdbuf" eval
+1A4A9E8 	9C 53 A0  1 16 64 23 20 
+1A4A9F0 	31 30 20 63 6F 6E 73 74 
+1A4A9F8 	61 6E 74 20 2F 63 6D 64 
+1A4AA00 	62 75 66  0 D8 E5 A0  1 
+s" create cmdbuf  0 c, 0 c, 0 c, 0 c, 0 c, 0 c, 0 c, 0 c, 0 c, 0 c," eval
+1A4AA08 	9C 53 A0  1 40 63 72 65 
+1A4AA10 	61 74 65 20 63 6D 64 62 
+1A4AA18 	75 66 20 20 30 20 63 2C 
+1A4AA20 	20 30 20 63 2C 20 30 20 
+1A4AA28 	63 2C 20 30 20 63 2C 20 
+1A4AA30 	30 20 63 2C 20 30 20 63 
+1A4AA38 	2C 20 30 20 63 2C 20 30 
+1A4AA40 	20 63 2C 20 30 20 63 2C 
+1A4AA48 	20 30 20 63 2C  0  0  0 
+1A4AA50 	D8 E5 A0  1 
+s" : cb!  ( byte index -- )  cmdbuf + c!  ;" eval        \ Write byte to command buffer
+1A4AA54 	9C 53 A0  1 
+1A4AA58 	28 3A 20 63 62 21 20 20 
+1A4AA60 	28 20 62 79 74 65 20 69 
+1A4AA68 	6E 64 65 78 20 2D 2D 20 
+1A4AA70 	29 20 20 63 6D 64 62 75 
+1A4AA78 	66 20 2B 20 63 21 20 20 
+1A4AA80 	3B  0  0  0 D8 E5 A0  1 
+
+s" create eject-cmd  h# 1b c, 1 c, 0 c, 0 c, 2 c, 0 c," eval
+1A4AA88 	9C 53 A0  1 33 63 72 65 
+1A4AA90 	61 74 65 20 65 6A 65 63 
+1A4AA98 	74 2D 63 6D 64 20 20 68 
+1A4AAA0 	23 20 31 62 20 63 2C 20 
+1A4AAA8 	31 20 63 2C 20 30 20 63 
+1A4AAB0 	2C 20 30 20 63 2C 20 32 
+1A4AAB8 	20 63 2C 20 30 20 63 2C 
+1A4AAC0 	 0  0  0  0 D8 E5 A0  1 
+
+s" : device-present?" eval  ( lun -- present? )  
+1A4AAC8 	9C 53 A0  1 11 3A 20 64 
+1A4AAD0 	65 76 69 63 65 2D 70 72 
+1A4AAD8 	65 73 65 6E 74 3F  0  0 
+1A4AAE0 	D8 E5 A0  1 
+s"    parent-set-address" eval
+1A4AAE4 	9C 53 A0  1 
+1A4AAE8 	15 20 20 20 70 61 72 65 
+1A4AAF0 	6E 74 2D 73 65 74 2D 61 
+1A4AAF8 	64 64 72 65 73 73  0  0 
+1A4AB00 	D8 E5 A0  1 
+ "    "" inquiry""  $call-parent  0= ;" eval
+1A4AB04 	9C 53 A0  1 
+1A4AB08 	21 20 20 20 22 20 69 6E 
+1A4AB10 	71 75 69 72 79 22 20 20 
+1A4AB18 	24 63 61 6C 6C 2D 70 61 
+1A4AB20 	72 65 6E 74 20 20 30 3D 
+1A4AB28 	20 3B  0  0 D8 E5 A0  1 
+s" : eject ( -- )" eval
+1A4AB30 	9C 53 A0  1  E 3A 20 65 
+1A4AB38 	6A 65 63 74 20 28 20 2D 
+1A4AB40 	2D 20 29  0 D8 E5 A0  1 
+s"    my-unit device-present?  if" eval
+1A4AB48 	9C 53 A0  1 1E 20 20 20 
+1A4AB50 	6D 79 2D 75 6E 69 74 20 
+1A4AB58 	64 65 76 69 63 65 2D 70 
+1A4AB60 	72 65 73 65 6E 74 3F 20 
+1A4AB68 	20 69 66  0 D8 E5 A0  1 
+s"       eject-cmd no-data-command  drop" eval
+1A4AB70 	9C 53 A0  1 25 20 20 20 
+1A4AB78 	20 20 20 65 6A 65 63 74 
+1A4AB80 	2D 63 6D 64 20 6E 6F 2D 
+1A4AB88 	64 61 74 61 2D 63 6F 6D 
+1A4AB90 	6D 61 6E 64 20 20 64 72 
+1A4AB98 	6F 70  0  0 D8 E5 A0  1 
+s"    then ;" eval
+1A4ABA0 	9C 53 A0  1  9 20 20 20 
+1A4ABA8 	74 68 65 6E 20 3B  0  0 
+1A4ABB0 	D8 E5 A0  1 
+ 
+\ The deblocker converts a block/record-oriented interface to a byte-oriented
+\ interface, using internal buffering.  Disk and tape devices are usually
+\ block or record oriented, but the OBP external interface is byte-oriented,
+\ in order to be independent of particular device block sizes.
+
+s" 0 value deblocker" eval
+1A4ABB4 	9C 53 A0  1 
+1A4ABB8 	11 30 20 76 61 6C 75 65 
+1A4ABC0 	20 64 65 62 6C 6F 63 6B 
+1A4ABC8 	65 72  0  0 D8 E5 A0  1 
+s" : init-deblocker  ( -- okay? )" eval
+1A4ABD0 	9C 53 A0  1 1E 3A 20 69 
+1A4ABD8 	6E 69 74 2D 64 65 62 6C 
+1A4ABE0 	6F 63 6B 65 72 20 20 28 
+1A4ABE8 	20 2D 2D 20 6F 6B 61 79 
+1A4ABF0 	3F 20 29  0 D8 E5 A0  1 
+ "    "" ""  "" deblocker""  $open-package  to deblocker" eval
+1A4ABF8 	9C 53 A0  1 31 20 20 20 
+1A4AC00 	22 20 22 20 20 22 20 64 
+1A4AC08 	65 62 6C 6F 63 6B 65 72 
+1A4AC10 	22 20 20 24 6F 70 65 6E 
+1A4AC18 	2D 70 61 63 6B 61 67 65 
+1A4AC20 	20 20 74 6F 20 64 65 62 
+1A4AC28 	6C 6F 63 6B 65 72  0  0 
+1A4AC30 	D8 E5 A0  1 
+s"    deblocker if" eval
+1A4AC34 	9C 53 A0  1 
+1A4AC38 	 F 20 20 20 64 65 62 6C 
+1A4AC40 	6F 63 6B 65 72 20 69 66 
+1A4AC48 	 0  0  0  0 D8 E5 A0  1 
+s"       true" eval
+1A4AC50 	9C 53 A0  1  A 20 20 20 
+1A4AC58 	20 20 20 74 72 75 65  0 
+1A4AC60 	D8 E5 A0  1 
+s"    else" eval
+1A4AC64 	9C 53 A0  1 
+1A4AC68 	 7 20 20 20 65 6C 73 65 
+1A4AC70 	 0  0  0  0 D8 E5 A0  1 
+ "       ."" Can't open deblocker package""  cr  false" eval
+1A4AC78 	9C 53 A0  1 31 20 20 20 
+1A4AC80 	20 20 20 2E 22 20 43 61 
+1A4AC88 	6E 27 74 20 6F 70 65 6E 
+1A4AC90 	20 64 65 62 6C 6F 63 6B 
+1A4AC98 	65 72 20 70 61 63 6B 61 
+1A4ACA0 	67 65 22 20 20 63 72 20 
+1A4ACA8 	20 66 61 6C 73 65  0  0 
+1A4ACB0 	D8 E5 A0  1 
+s"    then ;" eval
+1A4ACB4 	9C 53 A0  1 
+1A4ACB8 	 9 20 20 20 74 68 65 6E 
+1A4ACC0 	20 3B  0  0 D8 E5 A0  1 
+
+\ headerless
+\ : selftest  ( -- )
+\       my-unit " set-address" $call-parent
+\       " diagnose" $call-parent
+\ ;
+;
+1A4ACC8 	58 46 A0  1 
+

@@ -1,0 +1,343 @@
+purpose: Data structures describing the overall media layout parameters
+
+hex
+
+\ DOS 2.x and 3.2 and Windows 95 BIOS Parameter Block
+
+\ mmo private
+
+variable bpb
+1A2B73C 	62 70 62 83 
+1A2B740 	E0 B6 A2  1 48 40 A0  1 
+1A2B748 	FC  8  0  0 
+
+: bfield  \ name  ( bpb-offset size -- bpb-offset' )
+1A2B74C 	 0 62 66 69 
+1A2B750 	65 6C 64 86 44 B7 A2  1 
+1A2B758 	20 40 A0  1 
+   create over , +   does>  @ bpb @ +
+1A2B75C 	A8 A2 A0  1 
+1A2B760 	54 49 A0  1 98 55 A0  1 
+1A2B768 	 4 45 A0  1 50 A3 A0  1 
+1A2B770 	90 90 90 E8  4 89 FD FF 
+1A2B778 	5C 4C A0  1 44 B7 A2  1 
+1A2B780 	5C 4C A0  1  4 45 A0  1 
+;
+1A2B788 	58 46 A0  1 
+
+struct  \ bpb
+   3 bfield bp_branch	\  0  "branch to boot code" instruction 
+1A2B78C 	 0  0 62 70 
+1A2B790 	5F 62 72 61 6E 63 68 89 
+1A2B798 	58 B7 A2  1 70 B7 A2  1 
+1A2B7A0 	 0  0  0  0 
+   8 bfield bp_name	\  3  System name
+1A2B7A4 	62 70 5F 6E 
+1A2B7A8 	61 6D 65 87 9C B7 A2  1 
+1A2B7B0 	70 B7 A2  1  3  0  0  0 
+   2 bfield bp_bps	\  b  bytes/sector        (leword)
+1A2B7B8 	 0 62 70 5F 62 70 73 86 
+1A2B7C0 	B0 B7 A2  1 70 B7 A2  1 
+1A2B7C8 	 B  0  0  0 
+   1 bfield bp_spc	\  d  sectors/cluster
+1A2B7CC 	 0 62 70 5F 
+1A2B7D0 	73 70 63 86 C4 B7 A2  1 
+1A2B7D8 	70 B7 A2  1  D  0  0  0 
+   2 bfield bp_res	\  e  #reserved-sectors   (leword)
+1A2B7E0 	 0 62 70 5F 72 65 73 86 
+1A2B7E8 	D8 B7 A2  1 70 B7 A2  1 
+1A2B7F0 	 E  0  0  0 
+   1 bfield bp_nfats	\ 10  #FATs
+1A2B7F4 	 0  0  0 62 
+1A2B7F8 	70 5F 6E 66 61 74 73 88 
+1A2B800 	EC B7 A2  1 70 B7 A2  1 
+1A2B808 	10  0  0  0 
+   2 bfield bp_ndirs	\ 11  #directory-entries  (leword)
+1A2B80C 	 0  0  0 62 
+1A2B810 	70 5F 6E 64 69 72 73 88 
+1A2B818 	 4 B8 A2  1 70 B7 A2  1 
+1A2B820 	11  0  0  0 
+   2 bfield bp_nsects	\ 13  total-#sectors (with reserved) (leword)
+1A2B824 	 0  0 62 70 
+1A2B828 	5F 6E 73 65 63 74 73 89 
+1A2B830 	1C B8 A2  1 70 B7 A2  1 
+1A2B838 	13  0  0  0 
+   1 bfield bp_media	\ 15  media descriptor ("magic" number)
+1A2B83C 	 0  0  0 62 
+1A2B840 	70 5F 6D 65 64 69 61 88 
+1A2B848 	34 B8 A2  1 70 B7 A2  1 
+1A2B850 	15  0  0  0 
+   2 bfield bp_spf	\ 16  sectors/FAT         (leword)
+1A2B854 	 0 62 70 5F 
+1A2B858 	73 70 66 86 4C B8 A2  1 
+1A2B860 	70 B7 A2  1 16  0  0  0 
+   2 bfield bp_spt	\ 18  sectors/track       (leword)
+1A2B868 	 0 62 70 5F 73 70 74 86 
+1A2B870 	60 B8 A2  1 70 B7 A2  1 
+1A2B878 	18  0  0  0 
+   2 bfield bp_nsides	\ 1a  #sides (#heads)     (leword)
+1A2B87C 	 0  0 62 70 
+1A2B880 	5F 6E 73 69 64 65 73 89 
+1A2B888 	74 B8 A2  1 70 B7 A2  1 
+1A2B890 	1A  0  0  0 
+   4 bfield bp_nhid	\ 1c  #hidden-sectors                  (lelong)
+1A2B894 	62 70 5F 6E 
+1A2B898 	68 69 64 87 8C B8 A2  1 
+1A2B8A0 	70 B7 A2  1 1C  0  0  0 
+   4 bfield bp_xnsects	\ 20  total#sectors if bp_nsects is 0  (lelong)
+1A2B8A8 	 0 62 70 5F 78 6E 73 65 
+1A2B8B0 	63 74 73 8A A0 B8 A2  1 
+1A2B8B8 	70 B7 A2  1 20  0  0  0 
+
+   \ Windows95 FAT32 BPB entries
+   4 bfield bp_bspf	\ 24  big sectors/FAT	  (lelong)
+1A2B8C0 	62 70 5F 62 73 70 66 87 
+1A2B8C8 	B8 B8 A2  1 70 B7 A2  1 
+1A2B8D0 	24  0  0  0 
+   2 bfield bp_flags	\ 28  extended flags	  (leword)
+1A2B8D4 	 0  0  0 62 
+1A2B8D8 	70 5F 66 6C 61 67 73 88 
+1A2B8E0 	CC B8 A2  1 70 B7 A2  1 
+1A2B8E8 	28  0  0  0 
+   2 bfield bp_fsver	\ 2a  file system version (leword)
+1A2B8EC 	 0  0  0 62 
+1A2B8F0 	70 5F 66 73 76 65 72 88 
+1A2B8F8 	E4 B8 A2  1 70 B7 A2  1 
+1A2B900 	2A  0  0  0 
+   4 bfield bp_rdirclus	\ 2c  root directory starting cluster  (lelong)
+1A2B904 	62 70 5F 72 
+1A2B908 	64 69 72 63 6C 75 73 8B 
+1A2B910 	FC B8 A2  1 70 B7 A2  1 
+1A2B918 	2C  0  0  0 
+   2 bfield bp_fsinfos	\ 30  file system info sector	       (leword)
+1A2B91C 	 0 62 70 5F 
+1A2B920 	66 73 69 6E 66 6F 73 8A 
+1A2B928 	14 B9 A2  1 70 B7 A2  1 
+1A2B930 	30  0  0  0 
+   2 bfield bp_bkboots	\ 32  backup boot sector  (leword)
+1A2B934 	 0 62 70 5F 
+1A2B938 	62 6B 62 6F 6F 74 73 8A 
+1A2B940 	2C B9 A2  1 70 B7 A2  1 
+1A2B948 	32  0  0  0 
+   c bfield bp_reserved	\ 34  reserved
+1A2B94C 	62 70 5F 72 
+1A2B950 	65 73 65 72 76 65 64 8B 
+1A2B958 	44 B9 A2  1 70 B7 A2  1 
+1A2B960 	34  0  0  0 
+   
+   \ The rest of the sector contains boot code, and a magic number (55aa)
+   \ in the last 2 bytes.  (aa is in the last byte).
+aligned
+constant   /bpb
+1A2B964 	 0  0  0 2F 
+1A2B968 	62 70 62 84 5C B9 A2  1 
+1A2B970 	68 40 A0  1 40  0  0  0 
+
+create fssignature0 h# 52 c, h# 52 c, h# 61 c, h# 41 c,
+1A2B978 	 0  0  0 66 73 73 69 67 
+1A2B980 	6E 61 74 75 72 65 30 8C 
+1A2B988 	70 B9 A2  1 30 40 A0  1 
+1A2B990 	52 52 61 41 
+create fssignature  h# 72 c, h# 72 c, h# 41 c, h# 61 c,
+1A2B994 	66 73 73 69 
+1A2B998 	67 6E 61 74 75 72 65 8B 
+1A2B9A0 	8C B9 A2  1 30 40 A0  1 
+1A2B9A8 	72 72 41 61 
+variable fssector
+1A2B9AC 	 0  0  0 66 
+1A2B9B0 	73 73 65 63 74 6F 72 88 
+1A2B9B8 	A4 B9 A2  1 48 40 A0  1 
+1A2B9C0 	 0  9  0  0 
+variable fsinfo
+1A2B9C4 	 0 66 73 69 
+1A2B9C8 	6E 66 6F 86 BC B9 A2  1 
+1A2B9D0 	48 40 A0  1  4  9  0  0 
+
+: fsfield  \ name  ( fsinfo-offset size -- fsinfo-offset' )
+1A2B9D8 	66 73 66 69 65 6C 64 87 
+1A2B9E0 	D0 B9 A2  1 20 40 A0  1 
+   create over , +   does>  @ fsinfo @ +
+1A2B9E8 	A8 A2 A0  1 54 49 A0  1 
+1A2B9F0 	98 55 A0  1  4 45 A0  1 
+1A2B9F8 	50 A3 A0  1 90 90 90 E8 
+1A2BA00 	78 86 FD FF 5C 4C A0  1 
+1A2BA08 	D0 B9 A2  1 5C 4C A0  1 
+1A2BA10 	 4 45 A0  1 
+;
+1A2BA14 	58 46 A0  1 
+
+struct  \ fsinfo
+   /n fsfield fs_sig		\ signature
+1A2BA18 	 0 66 73 5F 73 69 67 86 
+1A2BA20 	E4 B9 A2  1 FC B9 A2  1 
+1A2BA28 	 0  0  0  0 
+   /n fsfield fs_#freeclusters	\ # of free clusters	(lelong)
+1A2BA2C 	 0  0  0 66 
+1A2BA30 	73 5F 23 66 72 65 65 63 
+1A2BA38 	6C 75 73 74 65 72 73 90 
+1A2BA40 	24 BA A2  1 FC B9 A2  1 
+1A2BA48 	 4  0  0  0 
+   /n fsfield fs_freecluster#	\ next free cluster #	(lelong)
+1A2BA4C 	66 73 5F 66 
+1A2BA50 	72 65 65 63 6C 75 73 74 
+1A2BA58 	65 72 23 8F 44 BA A2  1 
+1A2BA60 	FC B9 A2  1  8  0  0  0 
+3 /n * fsfield fs_reserved
+1A2BA68 	66 73 5F 72 65 73 65 72 
+1A2BA70 	76 65 64 8B 60 BA A2  1 
+1A2BA78 	FC B9 A2  1  C  0  0  0 
+constant  /fsinfo
+1A2BA80 	2F 66 73 69 6E 66 6F 87 
+1A2BA88 	78 BA A2  1 68 40 A0  1 
+1A2BA90 	18  0  0  0 
+ 
+instance variable current-device  -1 current-device !
+1A2BA94 	 0 63 75 72 
+1A2BA98 	72 65 6E 74 2D 64 65 76 
+1A2BAA0 	69 63 65 8E 8C BA A2  1 
+1A2BAA8 	40  1 A2  1 18  0  0  0 
+
+: dfield \ name ( dev-offset size -- dev-offset')
+1A2BAB0 	 0 64 66 69 65 6C 64 86 
+1A2BAB8 	A8 BA A2  1 20 40 A0  1 
+   create over , +  does>  @ current-device @ +
+1A2BAC0 	A8 A2 A0  1 54 49 A0  1 
+1A2BAC8 	98 55 A0  1  4 45 A0  1 
+1A2BAD0 	50 A3 A0  1 90 90 90 E8 
+1A2BAD8 	A0 85 FD FF 5C 4C A0  1 
+1A2BAE0 	A8 BA A2  1 5C 4C A0  1 
+1A2BAE8 	 4 45 A0  1 
+;
+1A2BAEC 	58 46 A0  1 
+
+struct \ device
+/n dfield fat-cache         \ Address of the FAT cache for this device
+1A2BAF0 	 0  0 66 61 74 2D 63 61 
+1A2BAF8 	63 68 65 89 BC BA A2  1 
+1A2BB00 	D4 BA A2  1  0  0  0  0 
+/n dfield fat-sector        \ First sector of the FAT that is in the cache
+1A2BB08 	 0 66 61 74 2D 73 65 63 
+1A2BB10 	74 6F 72 8A  0 BB A2  1 
+1A2BB18 	D4 BA A2  1  4  0  0  0 
+/n dfield spf		    \ Sectors per fat     (from BPB)
+1A2BB20 	73 70 66 83 18 BB A2  1 
+1A2BB28 	D4 BA A2  1  8  0  0  0 
+/n dfield rdirclus	    \ Root directory starting cluster
+1A2BB30 	 0  0  0 72 64 69 72 63 
+1A2BB38 	6C 75 73 88 28 BB A2  1 
+1A2BB40 	D4 BA A2  1  C  0  0  0 
+/n dfield max-cl#           \ last cluster on device (0.. ** 9/28/90 cpt)
+1A2BB48 	6D 61 78 2D 63 6C 23 87 
+1A2BB50 	40 BB A2  1 D4 BA A2  1 
+1A2BB58 	10  0  0  0 
+/n dfield cl-sector0        \ device relative start sector of cluster 0
+1A2BB5C 	 0 63 6C 2D 
+1A2BB60 	73 65 63 74 6F 72 30 8A 
+1A2BB68 	54 BB A2  1 D4 BA A2  1 
+1A2BB70 	14  0  0  0 
+/n dfield dv_cwd-cl         \ Working directory starting cluster
+1A2BB74 	 0  0 64 76 
+1A2BB78 	5F 63 77 64 2D 63 6C 89 
+1A2BB80 	6C BB A2  1 D4 BA A2  1 
+1A2BB88 	18  0  0  0 
+/w dfield sectors/fat-cache \ Size of the FAT cache for this device
+1A2BB8C 	 0  0 73 65 
+1A2BB90 	63 74 6F 72 73 2F 66 61 
+1A2BB98 	74 2D 63 61 63 68 65 91 
+1A2BBA0 	84 BB A2  1 D4 BA A2  1 
+1A2BBA8 	1C  0  0  0 
+/w dfield fat-dirty         \ Does the FAT need to be flushed to disk?
+1A2BBAC 	 0  0 66 61 
+1A2BBB0 	74 2D 64 69 72 74 79 89 
+1A2BBB8 	A4 BB A2  1 D4 BA A2  1 
+1A2BBC0 	1E  0  0  0 
+/w dfield cl#/fat-cache     \ Number of cluster entries in the FAT cache
+1A2BBC4 	 0  0 63 6C 
+1A2BBC8 	23 2F 66 61 74 2D 63 61 
+1A2BBD0 	63 68 65 8D BC BB A2  1 
+1A2BBD8 	D4 BA A2  1 20  0  0  0 
+/w dfield fat-sector0       \ device relative start sector of FAT 1
+1A2BBE0 	66 61 74 2D 73 65 63 74 
+1A2BBE8 	6F 72 30 8B D8 BB A2  1 
+1A2BBF0 	D4 BA A2  1 22  0  0  0 
+/w dfield dir-sector0       \ device relative start sector of root dir.
+1A2BBF8 	64 69 72 2D 73 65 63 74 
+1A2BC00 	6F 72 30 8B F0 BB A2  1 
+1A2BC08 	D4 BA A2  1 24  0  0  0 
+/w dfield #dir-sectors      \ of root directory
+1A2BC10 	 0  0  0 23 64 69 72 2D 
+1A2BC18 	73 65 63 74 6F 72 73 8C 
+1A2BC20 	 8 BC A2  1 D4 BA A2  1 
+1A2BC28 	26  0  0  0 
+/w dfield bps		    \ Bytes per sector    (from BPB)
+1A2BC2C 	62 70 73 83 
+1A2BC30 	24 BC A2  1 D4 BA A2  1 
+1A2BC38 	28  0  0  0 
+/w dfield fsinfos	    \ File system info sector #  (from BPB)
+1A2BC3C 	66 73 69 6E 
+1A2BC40 	66 6F 73 87 34 BC A2  1 
+1A2BC48 	D4 BA A2  1 2A  0  0  0 
+/c dfield spc		    \ Sectors per cluster (from BPB)
+1A2BC50 	73 70 63 83 48 BC A2  1 
+1A2BC58 	D4 BA A2  1 2C  0  0  0 
+/c dfield media		    \ Media type (f8 for hard disk, f0 for 3.5" floppy)
+1A2BC60 	 0  0 6D 65 64 69 61 85 
+1A2BC68 	58 BC A2  1 D4 BA A2  1 
+1A2BC70 	2D  0  0  0 
+/c dfield fat-type	    \ Bytes per cluster number
+1A2BC74 	 0  0  0 66 
+1A2BC78 	61 74 2D 74 79 70 65 88 
+1A2BC80 	6C BC A2  1 D4 BA A2  1 
+1A2BC88 	2E  0  0  0 
+/c dfield fsinfos-dirty	    \ Does the file system info need to be written to disk?
+1A2BC8C 	 0  0 66 73 
+1A2BC90 	69 6E 66 6F 73 2D 64 69 
+1A2BC98 	72 74 79 8D 84 BC A2  1 
+1A2BCA0 	D4 BA A2  1 2F  0  0  0 
+constant /device
+1A2BCA8 	2F 64 65 76 69 63 65 87 
+1A2BCB0 	A0 BC A2  1 68 40 A0  1 
+1A2BCB8 	30  0  0  0 
+
+d# 12 constant fat12
+1A2BCBC 	 0  0 66 61 
+1A2BCC0 	74 31 32 85 B4 BC A2  1 
+1A2BCC8 	68 40 A0  1  C  0  0  0 
+d# 16 constant fat16
+1A2BCD0 	 0  0 66 61 74 31 36 85 
+1A2BCD8 	C8 BC A2  1 68 40 A0  1 
+1A2BCE0 	10  0  0  0 
+d# 32 constant fat32
+1A2BCE4 	 0  0 66 61 
+1A2BCE8 	74 33 32 85 DC BC A2  1 
+1A2BCF0 	68 40 A0  1 20  0  0  0 
+
+: +fs-#free  ( incr -- )
+1A2BCF8 	 0  0 2B 66 73 2D 23 66 
+1A2BD00 	72 65 65 89 F0 BC A2  1 
+1A2BD08 	20 40 A0  1 
+   fs_#freeclusters  dup lel@                ( incr adr n )
+1A2BD0C 	44 BA A2  1 
+1A2BD10 	40 49 A0  1 DC B4 A2  1 
+   dup h# ffffffff =  if  3drop exit  then   ( incr adr n )
+1A2BD18 	40 49 A0  1 58 41 A0  1 
+1A2BD20 	FF FF FF FF 24 48 A0  1 
+1A2BD28 	DC 41 A0  1  C  0  0  0 
+1A2BD30 	90 52 A0  1 40 46 A0  1 
+   rot +  swap lel!
+1A2BD38 	7C 49 A0  1  4 45 A0  1 
+1A2BD40 	68 49 A0  1  8 B5 A2  1 
+   true fsinfos-dirty c!
+1A2BD48 	 4 70 A0  1 A0 BC A2  1 
+1A2BD50 	B8 4D A0  1 
+;
+1A2BD54 	58 46 A0  1 
+: fs-free#!  ( cluster# -- )  fs_freecluster# lel!  true fsinfos-dirty c!  ;
+1A2BD58 	 0  0 66 73 2D 66 72 65 
+1A2BD60 	65 23 21 89  8 BD A2  1 
+1A2BD68 	20 40 A0  1 60 BA A2  1 
+1A2BD70 	 8 B5 A2  1  4 70 A0  1 
+1A2BD78 	A0 BC A2  1 B8 4D A0  1 
+1A2BD80 	58 46 A0  1 
+
+

@@ -1,0 +1,98 @@
+purpose: Call MMU node methods
+
+0 value pagesize
+1A27F40 	 0  0  0 70 61 67 65 73 
+1A27F48 	69 7A 65 88 2C 7F A2  1 
+1A27F50 	50 40 A0  1 20  8  0  0 
+headerless
+0 value pageshift
+1A27F58 	 0  0 70 61 67 65 73 68 
+1A27F60 	69 66 74 89 50 7F A2  1 
+1A27F68 	50 40 A0  1 24  8  0  0 
+
+headers
+variable mmu-node   ' mmu-node  " mmu" chosen-variable
+1A27F70 	 0  0  0 6D 6D 75 2D 6E 
+1A27F78 	6F 64 65 88 68 7F A2  1 
+1A27F80 	48 40 A0  1 28  8  0  0 
+1A27F88 	6D 6D 75 83 6C 7E A2  1 
+1A27F90 	F0 52 A2  1 80 7F A2  1 
+
+: $call-mmu-method ( ??? method$ -- ???  )  mmu-node @  $call-method  ;
+1A27F98 	 0  0  0 24 63 61 6C 6C 
+1A27FA0 	2D 6D 6D 75 2D 6D 65 74 
+1A27FA8 	68 6F 64 90 80 7F A2  1 
+1A27FB0 	20 40 A0  1 80 7F A2  1 
+1A27FB8 	5C 4C A0  1 B4 31 A2  1 
+1A27FC0 	58 46 A0  1 
+
+: mmu-translate  ( virt -- false | phys.. mode true )
+1A27FC4 	 0  0 6D 6D 
+1A27FC8 	75 2D 74 72 61 6E 73 6C 
+1A27FD0 	61 74 65 8D B0 7F A2  1 
+1A27FD8 	20 40 A0  1 
+   " translate" $call-mmu-method
+1A27FDC 	9C 53 A0  1 
+1A27FE0 	 9 74 72 61 6E 73 6C 61 
+1A27FE8 	74 65  0  0 B0 7F A2  1 
+;
+1A27FF0 	58 46 A0  1 
+
+: mmu-map  ( phys.. virt size mode -- )  " map" $call-mmu-method  ;
+1A27FF4 	6D 6D 75 2D 
+1A27FF8 	6D 61 70 87 D8 7F A2  1 
+1A28000 	20 40 A0  1 9C 53 A0  1 
+1A28008 	 3 6D 61 70  0  0  0  0 
+1A28010 	B0 7F A2  1 58 46 A0  1 
+: mmu-claim  ( [ virt ] size align -- base )  " claim" $call-mmu-method  ;
+1A28018 	 0  0 6D 6D 75 2D 63 6C 
+1A28020 	61 69 6D 89  0 80 A2  1 
+1A28028 	20 40 A0  1 9C 53 A0  1 
+1A28030 	 5 63 6C 61 69 6D  0  0 
+1A28038 	B0 7F A2  1 58 46 A0  1 
+: mmu-release  ( virt size -- )  " release" $call-mmu-method  ;
+1A28040 	6D 6D 75 2D 72 65 6C 65 
+1A28048 	61 73 65 8B 28 80 A2  1 
+1A28050 	20 40 A0  1 9C 53 A0  1 
+1A28058 	 7 72 65 6C 65 61 73 65 
+1A28060 	 0  0  0  0 B0 7F A2  1 
+1A28068 	58 46 A0  1 
+: mmu-unmap  ( virt size -- )  " unmap" $call-mmu-method  ;
+1A2806C 	 0  0 6D 6D 
+1A28070 	75 2D 75 6E 6D 61 70 89 
+1A28078 	50 80 A2  1 20 40 A0  1 
+1A28080 	9C 53 A0  1  5 75 6E 6D 
+1A28088 	61 70  0  0 B0 7F A2  1 
+1A28090 	58 46 A0  1 
+
+: mmu-lowbits   ( adr1 -- lowbits  )  pagesize  1-     and  ;
+1A28094 	6D 6D 75 2D 
+1A28098 	6C 6F 77 62 69 74 73 8B 
+1A280A0 	7C 80 A2  1 20 40 A0  1 
+1A280A8 	50 7F A2  1 54 4B A0  1 
+1A280B0 	5C 44 A0  1 58 46 A0  1 
+: mmu-highbits  ( adr1 -- highbits )  pagesize  round-down  ;
+1A280B8 	 0  0  0 6D 6D 75 2D 68 
+1A280C0 	69 67 68 62 69 74 73 8C 
+1A280C8 	A4 80 A2  1 20 40 A0  1 
+1A280D0 	50 7F A2  1 80 91 A0  1 
+1A280D8 	58 46 A0  1 
+
+: >physical  ( virt -- phys.. )
+1A280DC 	 0  0 3E 70 
+1A280E0 	68 79 73 69 63 61 6C 89 
+1A280E8 	CC 80 A2  1 20 40 A0  1 
+   >r r@ mmu-translate  if  drop r> drop  else  r>  then
+1A280F0 	BC 45 A0  1 E4 45 A0  1 
+1A280F8 	D8 7F A2  1 DC 41 A0  1 
+1A28100 	18  0  0  0 30 49 A0  1 
+1A28108 	D0 45 A0  1 30 49 A0  1 
+1A28110 	C8 41 A0  1  8  0  0  0 
+1A28118 	D0 45 A0  1 
+;
+1A2811C 	58 46 A0  1 
+
+defer memory?  ( phys.. -- flag )
+1A28120 	6D 65 6D 6F 72 79 3F 87 
+1A28128 	EC 80 A2  1 5C 40 A0  1 
+1A28130 	2C  8  0  0 

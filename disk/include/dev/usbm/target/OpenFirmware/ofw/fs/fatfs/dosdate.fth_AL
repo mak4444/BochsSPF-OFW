@@ -1,0 +1,85 @@
+purpose: Convert date and time to DOS packed format
+
+: >hms  ( dos-packed-time -- secs mins hours )
+1A2B5AC 	 0  0  0 3E 
+1A2B5B0 	68 6D 73 84 78 B5 A2  1 
+1A2B5B8 	20 40 A0  1 
+   dup h#   1f and      2*   swap  ( secs packed )
+1A2B5BC 	40 49 A0  1 
+1A2B5C0 	58 41 A0  1 1F  0  0  0 
+1A2B5C8 	5C 44 A0  1 A0 4B A0  1 
+1A2B5D0 	68 49 A0  1 
+   dup h# 07e0 and      5 >> swap  ( secs mins packed )
+1A2B5D4 	40 49 A0  1 
+1A2B5D8 	58 41 A0  1 E0  7  0  0 
+1A2B5E0 	5C 44 A0  1 C0 6F A0  1 
+1A2B5E8 	DC 44 A0  1 68 49 A0  1 
+       h# f800 and  d# 11 >>       ( secs mins hours )
+1A2B5F0 	58 41 A0  1  0 F8  0  0 
+1A2B5F8 	5C 44 A0  1 58 41 A0  1 
+1A2B600 	 B  0  0  0 DC 44 A0  1 
+;  
+1A2B608 	58 46 A0  1 
+: hms>  ( secs mins hours -- dos-packed-time )
+1A2B60C 	 0  0  0 68 
+1A2B610 	6D 73 3E 84 B8 B5 A2  1 
+1A2B618 	20 40 A0  1 
+   d# 11 << h# f800 and swap      ( secs packed mins )
+1A2B61C 	58 41 A0  1 
+1A2B620 	 B  0  0  0 C8 44 A0  1 
+1A2B628 	58 41 A0  1  0 F8  0  0 
+1A2B630 	5C 44 A0  1 68 49 A0  1 
+       5 << h# 07e0 and + swap    ( packed secs )
+1A2B638 	C0 6F A0  1 C8 44 A0  1 
+1A2B640 	58 41 A0  1 E0  7  0  0 
+1A2B648 	5C 44 A0  1  4 45 A0  1 
+1A2B650 	68 49 A0  1 
+         2/ h# 001f and +         ( packed )
+1A2B654 	78 4B A0  1 
+1A2B658 	58 41 A0  1 1F  0  0  0 
+1A2B660 	5C 44 A0  1  4 45 A0  1 
+;
+1A2B668 	58 46 A0  1 
+: >dmy  ( dos-packed-date -- day month year )
+1A2B66C 	 0  0  0 3E 
+1A2B670 	64 6D 79 84 18 B6 A2  1 
+1A2B678 	20 40 A0  1 
+   dup h#   1f and          swap   ( day packed )
+1A2B67C 	40 49 A0  1 
+1A2B680 	58 41 A0  1 1F  0  0  0 
+1A2B688 	5C 44 A0  1 68 49 A0  1 
+   dup h# 01e0 and  5 >>    swap   ( day month packed )
+1A2B690 	40 49 A0  1 58 41 A0  1 
+1A2B698 	E0  1  0  0 5C 44 A0  1 
+1A2B6A0 	C0 6F A0  1 DC 44 A0  1 
+1A2B6A8 	68 49 A0  1 
+       h# fe00 and  9 >> d# 1980 + ( day month year )
+1A2B6AC 	58 41 A0  1 
+1A2B6B0 	 0 FE  0  0 5C 44 A0  1 
+1A2B6B8 	58 41 A0  1  9  0  0  0 
+1A2B6C0 	DC 44 A0  1 58 41 A0  1 
+1A2B6C8 	BC  7  0  0  4 45 A0  1 
+;  
+1A2B6D0 	58 46 A0  1 
+: dmy>  ( day month year -- dos-packed-date )
+1A2B6D4 	 0  0  0 64 
+1A2B6D8 	6D 79 3E 84 78 B6 A2  1 
+1A2B6E0 	20 40 A0  1 
+   d# 1980 -
+1A2B6E4 	58 41 A0  1 
+1A2B6E8 	BC  7  0  0 18 45 A0  1 
+   9 << h# fe00 and   swap    ( day packed month )
+1A2B6F0 	58 41 A0  1  9  0  0  0 
+1A2B6F8 	C8 44 A0  1 58 41 A0  1 
+1A2B700 	 0 FE  0  0 5C 44 A0  1 
+1A2B708 	68 49 A0  1 
+   5 << h# 01e0 and + swap    ( packed day )
+1A2B70C 	C0 6F A0  1 
+1A2B710 	C8 44 A0  1 58 41 A0  1 
+1A2B718 	E0  1  0  0 5C 44 A0  1 
+1A2B720 	 4 45 A0  1 68 49 A0  1 
+        h# 001f and +         ( packed )
+1A2B728 	58 41 A0  1 1F  0  0  0 
+1A2B730 	5C 44 A0  1  4 45 A0  1 
+;
+1A2B738 	58 46 A0  1 

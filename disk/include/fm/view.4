@@ -1,0 +1,510 @@
+CR .( S" VIEW" *INCL )
+
+
+h# 1F VALUE VIEWCOLOR
+
+ascii D CONSTANT #LEFT_BKEY
+ascii C CONSTANT #RIGHF_BKEY
+ascii A CONSTANT #UP_BKEY
+ascii B CONSTANT #DOWN_BKEY
+ascii ? CONSTANT #PAGE_UP_BKEY
+ascii / CONSTANT #PAGE_DOWN_BKEY
+ascii H CONSTANT #HOME_BKEY
+ascii K CONSTANT #END_BKEY 
+ascii P CONSTANT #DEL_BKEY 
+8	CONSTANT #BACK_BKEY
+ascii @ CONSTANT #INS_BKEY
+\ EOF
+\ CREATE T_IMG    VIDBUF-SIZE ALLOT
+
+[IFNDEF] SCAN
+: SCAN ( adr len char -- adr' len' )
+\ Scan for char through addr for len, returning addr' and len' of char.
+        >R 2DUP R> -ROT
+        OVER + SWAP
+        ?DO DUP I C@ =
+                IF LEAVE
+                ELSE >R 1 -1 D+ R>
+                THEN
+        LOOP DROP ;
+[THEN]
+
+[IFNDEF] COLS   h# 50 CONSTANT COLS
+[THEN]
+
+[IFNDEF] ROWS   h# 19 CONSTANT ROWS
+[THEN]
+
+
+\ 40 ' COLS >BODY ! 24 ' ROWS >BODY !
+\ h# 4E ' COLS >BODY ! h# 17 ' ROWS >BODY !
+
+[IFNDEF] VIEW-SIZE h# F000 CONSTANT VIEW-SIZE
+[THEN]
+
+[IFNDEF] ON : ON TRUE SWAP ! ;
+[THEN]
+
+[IFNDEF] OFF : OFF FALSE SWAP ! ;
+[THEN]
+
+[IFNDEF] BREAK : BREAK POSTPONE EXIT POSTPONE THEN ; IMMEDIATE
+[THEN]
+[IFNDEF] U=< : U=< 1+ U< ;
+[THEN]
+\- 1+! : 1+! 1 SWAP +! ;
+\- CELL- : CELL- 4 - ;
+
+\- LCOUNT         : LCOUNT   CELL+ DUP CELL- @ ;
+
+\- CLIPBOARD CREATE      CLIPBOARD 0 , VIEW-SIZE ALLOT
+
+\- VIEW_BUF CREATE VIEW_BUF      VIEW-SIZE CELL+ ALLOT
+VIEW_BUF OFF
+
+
+[IFNDEF] LPLACE
+: LPLACE         ( addr len dest -- )
+                2DUP 2>R
+                CELL+ SWAP MOVE
+                2R> ! ;
+[THEN]
+
+\- $! : $!  PLACE ;
+
+VARIABLE VIEW-MAX-POINT
+ROWS 2- VALUE MAX-VIEW-Y
+VARIABLE VIEW-#Y0
+VARIABLE VIEW-X
+VARIABLE VIEW-Y
+VARIABLE VIEW0-X
+VARIABLE VIEW0-Y
+VIEW_BUF VALUE ADDR_CUR
+VARIABLE BLOCK-BIG
+VARIABLE BLOCK-END
+VARIABLE BLOCK-#
+
+
+defer VVVEMIT
+defer VVVGETXY
+defer VVVSETXY
+
+: MOCK_SETXY  VIEW0-Y !  VIEW0-X ! ;
+: MOCK_GETXY  VIEW0-X @  VIEW0-Y @ ;
+
+: CUR@  ( -- N )
+  VVVGETXY COLS * + ;
+
+: MOCK_EMIT ( c -- )
+ DROP  CUR@ 1+  COLS /MOD MOCK_SETXY ;
+
+: VIEW_CUR@  ( -- N )
+ VIEW-X @ VIEW-Y @ 1+ COLS *  + ;
+
+0 VALUE MOCK_FLG
+
+: REAL_OUT
+        [']   emit TO  VVVEMIT
+        [']  GETXY TO  VVVGETXY
+        [']  SETXY TO  VVVSETXY
+        FALSE TO MOCK_FLG
+;
+
+: MOCK_OUT
+\ EXIT
+  KBD_SHIFT? IF EXIT THEN
+        [']  MOCK_EMIT TO  VVVEMIT
+        [']  MOCK_GETXY TO  VVVGETXY
+        [']  MOCK_SETXY TO  VVVSETXY
+        TRUE TO MOCK_FLG
+        GETXY MOCK_SETXY
+;
+
+' EMIT TO  VVVEMIT
+
+: EMITTAB
+
+  KBD_SHIFT? IF
+
+\           GKEY DROP
+ THEN
+
+
+  DUP 9 =
+        IF DROP
+         BEGIN BL VVVEMIT VVVGETXY DROP 7 AND 0=
+         UNTIL
+        ELSE  VVVEMIT
+        THEN ;
+
+
+: AA-DEL ( ADDR1 ADDR2 -- )
+  2DUP DUP  VIEW_BUF - VIEW-MAX-POINT @ - NEGATE CMOVE
+  - NEGATE VIEW-MAX-POINT +! ;
+
+: PBACK ( ADDR -- )
+  DUP 1- AA-DEL
+\   DUP 1- DUP  VIEW_BUF - VIEW-MAX-POINT @ - NEGATE 1- CMOVE
+\  -1 VIEW-MAX-POINT +!
+ ;
+
+: LINE-END?  ( ADDR -- ADDR+1 C FLAG )
+
+ COUNT
+ DUP h# D = IF DROP  DUP PBACK 1- COUNT  THEN
+
+ DUP h# A = IF FALSE EXIT THEN
+ OVER VIEW_BUF - VIEW-MAX-POINT @ U=< ;
+
+\ : COLOR-SET   ( ADDR C -- ADDR C )
+\  OVER 1- BLOCK-BIG @ 1+ BLOCK-END @ 1+ WITHIN  h# C0 AND VIEWCOLOR XOR  COLOR! ;
+
+: COLOR-SET   ( ADDR -- ADDR )
+\  DUP BLOCK-BIG @ 1+ BLOCK-END @ 1+ WITHIN  h# C0 AND VIEWCOLOR XOR  COLOR! ;
+  DUP BLOCK-BIG @  BLOCK-END @  WITHIN  h# 33 AND VIEWCOLOR XOR  COLOR! ;
+
+: VIEW-EMIT  ( ADDR C -- ADDR )
+\  COLOR-SET
+ VVVGETXY DROP COLS 1- U< 0=
+        IF      COLOR@ h# FF XOR COLOR!
+                DROP [CHAR] > VVVEMIT
+                COLOR@ h# FF XOR COLOR!
+                VVVGETXY NIP COLS 1- SWAP 1- VVVSETXY EXIT
+        THEN  EMITTAB  ;
+
+:  VIEW-LINE-FROM ( ADDR C -- ADDR )
+  DROP
+  MOCK_FLG IF  VIEW0-Y 1+!  VIEW0-X OFF  EXIT THEN
+\  COLOR-SET
+  COLS VVVGETXY DROP - DUP 1 <>
+  IF  SPACES ELSE DROP CR THEN
+\ 1- DUP IF DUP SPACES THEN DROP
+  ;
+
+0 VALUE ADDR_CURT
+
+: VIEW-LINE-XY2A-. ( ADDR -- ADDR1 )
+
+   BEGIN  VIEW_CUR@ CUR@ 1+ U< 0=
+          IF
+
+  KBD_SHIFT?
+  IF
+
+        BLOCK-BIG @ ADDR_CUR =
+        IF DUP 1+ BLOCK-BIG ! ELSE
+
+        BLOCK-END @ ADDR_CUR =
+        IF DUP 1+ BLOCK-END !
+        THEN    THEN
+
+        BLOCK-END @ BLOCK-BIG @ U<
+ IF
+        BLOCK-END @ BLOCK-BIG @
+        BLOCK-END ! BLOCK-BIG !
+ THEN
+
+\  GETXY DROP
+\ IF 1-  COLOR-SET  GETXY SWAP 1- SWAP SETXY  COUNT EMITTAB
+
+\ THEN
+
+  THEN	DUP 1+ TO ADDR_CUR
+
+          THEN
+
+  COLOR-SET
+  LINE-END?
+
+
+   WHILE  VIEW-EMIT
+   REPEAT VIEW-LINE-FROM
+    ADDR_CUR VIEW-MAX-POINT @ VIEW_BUF + UMIN TO ADDR_CUR
+    ;
+
+: VIEW-LINE-A2XY-. ( ADDR -- ADDR1 )
+   BEGIN  ADDR_CUR OVER U< 0=
+          IF VVVGETXY 1- VIEW-Y ! VIEW-X !
+          THEN
+        COLOR-SET
+        LINE-END?
+   WHILE  VIEW-EMIT
+   REPEAT VIEW-LINE-FROM ;
+
+:  VIEW-PAGE-INIT ( -- ADDR MAX-VIEW-Y 0 )
+   0 1 VVVSETXY   VIEW-#Y0 @ VIEW_BUF +
+   MAX-VIEW-Y 0 ;
+
+: VIEW-PAGE1   \  set VIEW-XY
+   VIEW-PAGE-INIT
+   ?DO  VIEW-LINE-A2XY-. LOOP DROP ;
+
+: VIEW-PAGE \ set ADDR_CUR
+\  VIEWCOLOR 1 XOR TO VIEWCOLOR
+   VIEW-#Y0 @ VIEW_BUF + TO ADDR_CURT
+   VIEW-PAGE-INIT
+   DO  VIEW-LINE-XY2A-. LOOP DROP
+ ;
+
+CREATE ZZZZ h# 101 ALLOT
+
+: NEXT-LINE ( ADDR LEN -- ADDR1 LEN1 )
+     h# A SCAN DUP IF  1 /STRING  THEN  ;
+
+: VIEW-#Y0>      ( -- OFFSET LEN )
+ VIEW-#Y0 @ DUP VIEW-MAX-POINT @ - NEGATE
+ >R VIEW_BUF + R>
+ ;
+
+: UP_ ( offset -- )
+        1-
+        DUP
+        IF      BEGIN 1-
+                        DUP VIEW_BUF + C@ h# A =
+                        OVER 0=    OR
+                UNTIL
+        THEN
+        DUP VIEW_BUF + C@ h# A = IF 1+ THEN
+        VIEW-#Y0  !
+;
+
+0 VALUE FILECHANGED?
+
+: FUNC-KEY ( C -- )
+\  h# FF AND EMIT EXIT
+            CASE
+ #LEFT_BKEY      OF  VIEW-X @
+                        IF      -1  VIEW-X +!
+                                MOCK_OUT VIEW-PAGE
+
+\                               ADDR_CUR 1- C@ h# A > IF ADDR_CUR 1- TO ADDR_CUR THEN
+                        THEN    ENDOF
+
+ #RIGHF_BKEY     OF  VIEW-X @  COLS 1- U<
+                        IF      VIEW-X 1+!
+                                MOCK_OUT VIEW-PAGE
+\                               ADDR_CUR C@ h# A > IF ADDR_CUR 1+ TO ADDR_CUR THEN
+                        THEN ENDOF
+
+ #UP_BKEY                OF  VIEW-Y @
+                        IF   -1  VIEW-Y +!  MOCK_OUT
+                        ELSE  VIEW-#Y0 @ ?DUP
+                           IF UP_
+                           THEN
+                        THEN VIEW-PAGE ENDOF    \ Up
+
+ #DOWN_BKEY      OF  VIEW-Y @  MAX-VIEW-Y 1- U<
+                        IF    VIEW-Y 1+!    MOCK_OUT
+                        ELSE  VIEW-#Y0> \ OFFSET LEN
+                                MAX-VIEW-Y 0 ?DO NEXT-LINE LOOP NIP
+                                IF  VIEW-#Y0>  NEXT-LINE DROP
+                                    VIEW_BUF - VIEW-#Y0   !
+                                THEN
+                        THEN    VIEW-PAGE       ENDOF    \ Down
+
+ #PAGE_UP_BKEY   OF  VIEW-#Y0 @
+                        IF MAX-VIEW-Y 0
+                                ?DO VIEW-#Y0 @  UP_
+                                   VIEW-#Y0 @ 0= IF LEAVE THEN
+                                LOOP
+                        THEN VIEW-PAGE
+        ENDOF   \  Page Up
+
+ #PAGE_DOWN_BKEY OF
+                        MAX-VIEW-Y 0
+                        ?DO VIEW-#Y0> \ OFFSET LEN
+                           MAX-VIEW-Y 0
+                           ?DO NEXT-LINE LOOP NIP
+                                IF VIEW-#Y0>  NEXT-LINE DROP
+                                   VIEW_BUF - VIEW-#Y0   !
+                                THEN
+                        LOOP VIEW-PAGE  ENDOF   \ Page Down
+
+ #HOME_BKEY      OF VIEW-X OFF VIEW-PAGE  ENDOF   \ Home
+
+ #END_BKEY       OF COLS 1- VIEW-X ! VIEW-PAGE
+                        ADDR_CUR 1- TO ADDR_CUR VIEW-PAGE1
+                ENDOF   \ End
+
+
+ #BACK_BKEY      OF  ADDR_CUR VIEW_BUF -
+                  IF
+
+                    ADDR_CUR  ADDR_CUR 1-   AA-DEL
+                        ADDR_CUR 1- TO ADDR_CUR
+        VIEW-PAGE1
+                  THEN
+                ENDOF
+
+ #DEL_BKEY       OF   KBD_SHIFT?
+                     IF BLOCK-BIG @ BLOCK-END @  OVER - CLIPBOARD LPLACE
+                        BLOCK-END @ BLOCK-BIG @  DUP BLOCK-END !
+                     ELSE
+                        ADDR_CUR 1+ ADDR_CUR
+                     THEN   AA-DEL      VIEW-PAGE1  -1 TO FILECHANGED?
+                ENDOF
+
+\ CTRL_INS_BKEY  OF   BLOCK-BIG @ BLOCK-END @  OVER - CLIPBOARD LPLACE
+\                ENDOF
+
+      INS_BKEY  OF
+
+  KBD_CTRL?  IF    BLOCK-BIG @ BLOCK-END @  OVER - CLIPBOARD LPLACE
+
+	     ELSE
+  KBD_SHIFT? CLIPBOARD @ VIEW-MAX-POINT @ + VIEW-SIZE U< AND
+			IF
+		ADDR_CUR DUP CLIPBOARD @ +
+  \ DUP TO ADDR_CUR
+                OVER VIEW_BUF - VIEW-MAX-POINT @  - NEGATE
+		CMOVE>               \ allocate memory
+	 	CLIPBOARD LCOUNT ADDR_CUR SWAP CMOVE
+		CLIPBOARD @ VIEW-MAX-POINT +!  
+		ADDR_CUR DUP BLOCK-BIG !
+                CLIPBOARD @ + DUP
+                BLOCK-END ! TO ADDR_CUR
+		VIEW-PAGE1  -1 TO FILECHANGED?
+
+		THEN	THEN
+                ENDOF
+
+
+\    DUP   h# FF AND ?DUP        IF
+
+                DUP
+
+                DUP h# D = IF DROP h# A THEN
+
+                ADDR_CUR DUP DUP 1+ DUP TO ADDR_CUR
+                OVER VIEW_BUF - VIEW-MAX-POINT @  - NEGATE
+                CMOVE>  C!
+                VIEW-MAX-POINT @ 1+ VIEW-SIZE UMIN VIEW-MAX-POINT !
+                VIEW-PAGE1  -1 TO FILECHANGED?
+\       THEN
+
+            ENDCASE
+\ VIEW-PAGE
+;
+
+CREATE VIEWFILENAME h# 104 ALLOT
+CREATE VIEWFILENAMEBAK h# 104 ALLOT
+
+0 VALUE VIEW#Y0
+0 VALUE VIEW#X0
+
+: _VIEW
+\  VIDBUF T_IMG  VIDBUF-SIZE CMOVE
+[IFDEF] c-ega-emit
+   ['] type	behavior >r
+   ['] (emit	behavior >r
+   ['] cr	behavior >r
+   ['] c-ega-emit       is (emit
+   ['] default-type     is type
+   ['] fm_cr		is cr
+[THEN]
+
+  #out @ >R
+
+
+  COLOR@ >R
+  GETXY 2>R
+\   h# 3 COLOR!  0 0 SETXY  COLS SPACES
+   VIEW-#Y0 OFF VIEW#X0 VIEW-X !
+   VIEW_BUF DUP BLOCK-BIG ! BLOCK-END !
+
+        VIEW#Y0 4 - 0 MAX 0
+        ?DO VIEW-#Y0> \ OFFSET LEN
+           MAX-VIEW-Y 0
+           ?DO NEXT-LINE LOOP NIP
+                IF VIEW-#Y0>  NEXT-LINE DROP
+                   VIEW_BUF - VIEW-#Y0   !
+                THEN
+        LOOP
+	VIEW#Y0 3 MIN  VIEW-Y !
+        0 TO VIEW#Y0
+        0 TO VIEW#X0
+
+   REAL_OUT      VIEW-PAGE
+
+        BEGIN h# F COLOR!  REAL_OUT
+\     SETXY? 2>R 0 0 SETXY KBD_SHIFT? . 2R> SETXY
+0 0 SETXY  COLS SPACES
+0 0 SETXY VIEWFILENAME COUNT TYPE
+ ."  Point" 9 EMIT ADDR_CUR VIEW_BUF - U. ." / " VIEW-MAX-POINT @ U.
+   ADDR_CUR C@ ." $" .H
+\ ." Line "  ???? VIEW-Y @ +  U.
+
+." Blk "  BLOCK-BIG @ VIEW_BUF - U. ." - "  BLOCK-END @ VIEW_BUF - U.
+
+ZZZZ .H \  COUNT TYPE
+
+        VIEW-X @  VIEW-Y @ 1+ 2DUP SETXY
+	set-cursor
+         KEY DUP  h# 1B <>
+        WHILE
+			DUP h# 9b =
+		IF DROP KEY FUNC-KEY
+		ELSE
+\        	        DUP
+	                DUP h# D = IF DROP h# A THEN
+
+        	        ADDR_CUR DUP DUP 1+ DUP TO ADDR_CUR
+	                OVER VIEW_BUF - VIEW-MAX-POINT @  - NEGATE
+                	CMOVE>  C!
+        	       VIEW-MAX-POINT @ 1+ VIEW-SIZE UMIN VIEW-MAX-POINT !
+	                VIEW-PAGE1  -1 TO FILECHANGED?
+		THEN
+        REPEAT DROP
+
+  2R> SETXY
+  R>  COLOR!
+
+   r> #out !
+
+[IFDEF] c-ega-emit
+      r> is cr
+      r> is (emit
+      r> is type
+[THEN]
+
+\  T_IMG VIDBUF  VIDBUF-SIZE CMOVE
+;
+
+: $VIEW  (  adrR lenR \ idfR  -- )
+
+  2DUP  VIEWFILENAME $!
+  R/W OPEN-FILE THROW >R
+  VIEW_BUF VIEW-SIZE R@  READ-FILE DROP VIEW-MAX-POINT !
+   R> CLOSE-FILE DROP
+
+ _VIEW   ;
+
+\EOF 
+
+: $EDIT
+  0 TO FILECHANGED?
+   $VIEW
+ FILECHANGED? DUP
+  IF  DROP
+  CR  ." SAVE THE FILE? Y/N"
+    KEY h# 20 OR
+\    [CHAR] n <>
+     [CHAR] y = 
+  THEN
+  IF
+   VIEWFILENAME COUNT VIEWFILENAMEBAK $!
+  [CHAR] -  VIEWFILENAMEBAK COUNT + 1- C!
+   VIEWFILENAME COUNT + OFF
+   VIEWFILENAMEBAK COUNT + OFF
+\  VIEWFILENAME 1+ VIEWFILENAMEBAK 1+  ZRENAME-FILE DROP
+  VIEWFILENAME COUNT W/O CREATE-FILE DROP >R
+     VIEW_BUF VIEW-MAX-POINT @ R@ WRITE-FILE DROP
+
+   R> CLOSE-FILE DROP
+ THEN  CR
+
+;
+
+: VIEW   parse-word  $VIEW ;
+
+\EOF 

@@ -1,0 +1,64 @@
+purpose: Establish configuration definitions
+
+\ --- The environment that "boots" OFW ---
+\ - Image Format - Example Media - previous stage bootloader
+
+\ - ELF format w/ Multiboot signature - various media - GRUB
+create grub-loaded
+1A322D8 	67 72 75 62 2D 6C 6F 61 
+1A322E0 	64 65 64 8B D0 22 A3  1 
+1A322E8 	30 40 A0  1 
+
+create debug-startup
+1A322EC 	 0  0 64 65 
+1A322F0 	62 75 67 2D 73 74 61 72 
+1A322F8 	74 75 70 8D E8 22 A3  1 
+1A32300 	30 40 A0  1 
+\ create serial-console
+create resident-packages
+1A32304 	 0  0 72 65 
+1A32308 	73 69 64 65 6E 74 2D 70 
+1A32310 	61 63 6B 61 67 65 73 91 
+1A32318 	 0 23 A3  1 30 40 A0  1 
+create addresses-assigned  \ Don't reassign PCI addresses
+1A32320 	 0 61 64 64 72 65 73 73 
+1A32328 	65 73 2D 61 73 73 69 67 
+1A32330 	6E 65 64 92 1C 23 A3  1 
+1A32338 	30 40 A0  1 
+\ create virtual-mode
+\ create use-root-isa
+create use-timestamp-counter
+1A3233C 	 0  0 75 73 
+1A32340 	65 2D 74 69 6D 65 73 74 
+1A32348 	61 6D 70 2D 63 6F 75 6E 
+1A32350 	74 65 72 95 38 23 A3  1 
+1A32358 	30 40 A0  1 
+create use-pci-isa
+1A3235C 	75 73 65 2D 
+1A32360 	70 63 69 2D 69 73 61 8B 
+1A32368 	58 23 A3  1 30 40 A0  1 
+create use-isa-ide
+1A32370 	75 73 65 2D 69 73 61 2D 
+1A32378 	69 64 65 8B 6C 23 A3  1 
+1A32380 	30 40 A0  1 
+create use-ega
+1A32384 	75 73 65 2D 
+1A32388 	65 67 61 87 80 23 A3  1 
+1A32390 	30 40 A0  1 
+create use-elf
+1A32394 	75 73 65 2D 
+1A32398 	65 6C 66 87 90 23 A3  1 
+1A323A0 	30 40 A0  1 
+\ create use-ne2000
+create use-watch-all
+1A323A4 	 0  0 75 73 
+1A323A8 	65 2D 77 61 74 63 68 2D 
+1A323B0 	61 6C 6C 8D A0 23 A3  1 
+1A323B8 	30 40 A0  1 
+create use-null-nvram
+1A323BC 	 0 75 73 65 
+1A323C0 	2D 6E 75 6C 6C 2D 6E 76 
+1A323C8 	72 61 6D 8E B8 23 A3  1 
+1A323D0 	30 40 A0  1 
+\ create no-floppy-node
+

@@ -1,0 +1,192 @@
+purpose: Interface methods for FAT file system package
+
+\ mmo private
+false instance value file-open?
+1A30480 	 0 66 69 6C 65 2D 6F 70 
+1A30488 	65 6E 3F 8A 6C  4 A3  1 
+1A30490 	C0 FE A1  1 2C  0  0  0 
+: free-device  ( -- )  current-device @ /device free-mem  ;
+1A30498 	66 72 65 65 2D 64 65 76 
+1A304A0 	69 63 65 8B 90  4 A3  1 
+1A304A8 	20 40 A0  1 A8 BA A2  1 
+1A304B0 	5C 4C A0  1 B4 BC A2  1 
+1A304B8 	 8 6D A0  1 58 46 A0  1 
+
+: open  ( -- okay? )
+1A304C0 	 0  0  0 6F 70 65 6E 84 
+1A304C8 	A8  4 A3  1 20 40 A0  1 
+   /device alloc-mem  (set-device)
+1A304D0 	B4 BC A2  1 F0 6C A0  1 
+1A304D8 	28 C5 A2  1 
+   current-device @ /device erase
+1A304DC 	A8 BA A2  1 
+1A304E0 	5C 4C A0  1 B4 BC A2  1 
+1A304E8 	F0 72 A0  1 
+
+   current-device @  drive !
+1A304EC 	A8 BA A2  1 
+1A304F0 	5C 4C A0  1 F4 D6 A2  1 
+1A304F8 	54 4D A0  1 
+
+   init-dir
+1A304FC 	EC DC A2  1 
+
+   my-args " <NoFile>"  $=  if  true exit  then
+1A30500 	10  7 A2  1 9C 53 A0  1 
+1A30508 	 8 3C 4E 6F 46 69 6C 65 
+1A30510 	3E  0  0  0 88 8D A0  1 
+1A30518 	DC 41 A0  1  C  0  0  0 
+1A30520 	 4 70 A0  1 40 46 A0  1 
+
+   ['] ?read-bpb catch  if  free-device  false  exit  then
+1A30528 	60 53 A0  1 58 CB A2  1 
+1A30530 	14 7F A0  1 DC 41 A0  1 
+1A30538 	10  0  0  0 A8  4 A3  1 
+1A30540 	18 70 A0  1 40 46 A0  1 
+
+   my-args  ascii \ split-after                 ( file$ path$ )
+1A30548 	10  7 A2  1 58 41 A0  1 
+1A30550 	5C  0  0  0 BC 19 A1  1 
+   $chdir  if  free-device false  exit  then    ( file$ )
+1A30558 	80 FA A2  1 DC 41 A0  1 
+1A30560 	10  0  0  0 A8  4 A3  1 
+1A30568 	18 70 A0  1 40 46 A0  1 
+
+   \ Filename ends in "\"; select the directory and exit with success
+   dup  0=  if  2drop  true exit  then          ( file$ )
+1A30570 	40 49 A0  1 24 47 A0  1 
+1A30578 	DC 41 A0  1 10  0  0  0 
+1A30580 	AC 49 A0  1  4 70 A0  1 
+1A30588 	40 46 A0  1 
+
+   file @ >r  dos-fd file !                     ( file$ )
+1A3058C 	84 AB A0  1 
+1A30590 	5C 4C A0  1 BC 45 A0  1 
+1A30598 	44 B3 A2  1 84 AB A0  1 
+1A305A0 	54 4D A0  1 
+
+   2dup r/w $dosopen 0=  if                     ( file$ )
+1A305A4 	C0 49 A0  1 
+1A305A8 	3C D6 A0  1 EC  1 A3  1 
+1A305B0 	24 47 A0  1 DC 41 A0  1 
+1A305B8 	58  0  0  0 
+      2dup r/o $dosopen 0=  if                  ( file$ )
+1A305BC 	C0 49 A0  1 
+1A305C0 	1C D6 A0  1 EC  1 A3  1 
+1A305C8 	24 47 A0  1 DC 41 A0  1 
+1A305D0 	40  0  0  0 
+         r> file !                              ( file$ )
+1A305D4 	D0 45 A0  1 
+1A305D8 	84 AB A0  1 54 4D A0  1 
+         $chdir  0=  if  true  exit  then       ( )
+1A305E0 	80 FA A2  1 24 47 A0  1 
+1A305E8 	DC 41 A0  1  C  0  0  0 
+1A305F0 	 4 70 A0  1 40 46 A0  1 
+         ?free-fat-cache  free-bpb  free-fssector  free-device  false    exit
+1A305F8 	C8 C4 A2  1 68 C5 A2  1 
+1A30600 	20 C7 A2  1 A8  4 A3  1 
+1A30608 	18 70 A0  1 40 46 A0  1 
+      then
+   then            ( file$ file-ops ... )
+   setupfd
+1A30610 	64 C9 A0  1 
+   2drop
+1A30614 	AC 49 A0  1 
+   true to file-open?
+1A30618 	 4 70 A0  1 48 B8 A1  1 
+1A30620 	90  4 A3  1 
+   true
+1A30624 	 4 70 A0  1 
+   r> file !
+1A30628 	D0 45 A0  1 84 AB A0  1 
+1A30630 	54 4D A0  1 
+;
+1A30634 	58 46 A0  1 
+
+: close  ( -- )
+1A30638 	 0  0 63 6C 6F 73 65 85 
+1A30640 	CC  4 A3  1 20 40 A0  1 
+   file-open?  if
+1A30648 	90  4 A3  1 DC 41 A0  1 
+1A30650 	28  0  0  0 
+      dos-fd ['] fclose catch  ?dup  if  .error drop  then
+1A30654 	44 B3 A2  1 
+1A30658 	60 53 A0  1 5C CC A0  1 
+1A30660 	14 7F A0  1 B4 70 A0  1 
+1A30668 	DC 41 A0  1  C  0  0  0 
+1A30670 	70 CF A0  1 30 49 A0  1 
+   then
+   ?free-fat-cache
+1A30678 	C8 C4 A2  1 
+   free-bpb
+1A3067C 	68 C5 A2  1 
+   free-fssector
+1A30680 	20 C7 A2  1 
+   free-device
+1A30684 	A8  4 A3  1 
+;
+1A30688 	58 46 A0  1 
+: read  ( adr len -- actual )
+1A3068C 	 0  0  0 72 
+1A30690 	65 61 64 84 44  6 A3  1 
+1A30698 	20 40 A0  1 
+   dos-fd  ['] fgets catch  if  3drop 0  then
+1A3069C 	44 B3 A2  1 
+1A306A0 	60 53 A0  1 1C D4 A0  1 
+1A306A8 	14 7F A0  1 DC 41 A0  1 
+1A306B0 	 C  0  0  0 90 52 A0  1 
+1A306B8 	70 6F A0  1 
+;
+1A306BC 	58 46 A0  1 
+: write  ( adr len -- actual )
+1A306C0 	 0  0 77 72 69 74 65 85 
+1A306C8 	98  6 A3  1 20 40 A0  1 
+   tuck  dos-fd  ['] fputs catch  if  2drop 2drop -1  then
+1A306D0 	E8 46 A0  1 44 B3 A2  1 
+1A306D8 	60 53 A0  1  8 B3 A0  1 
+1A306E0 	14 7F A0  1 DC 41 A0  1 
+1A306E8 	14  0  0  0 AC 49 A0  1 
+1A306F0 	AC 49 A0  1 58 41 A0  1 
+1A306F8 	FF FF FF FF 
+;
+1A306FC 	58 46 A0  1 
+: seek   ( offset.low offset.high -- error? )
+1A30700 	 0  0  0 73 65 65 6B 84 
+1A30708 	CC  6 A3  1 20 40 A0  1 
+   dos-fd  ['] dfseek catch  if  2drop true  else  false  then
+1A30710 	44 B3 A2  1 60 53 A0  1 
+1A30718 	F8 D1 A0  1 14 7F A0  1 
+1A30720 	DC 41 A0  1 14  0  0  0 
+1A30728 	AC 49 A0  1  4 70 A0  1 
+1A30730 	C8 41 A0  1  8  0  0  0 
+1A30738 	18 70 A0  1 
+;
+1A3073C 	58 46 A0  1 
+: size  ( -- d )  fh_length l@  0  ;
+1A30740 	 0  0  0 73 69 7A 65 84 
+1A30748 	 C  7 A3  1 20 40 A0  1 
+1A30750 	F8 E5 A2  1 6C 4C A0  1 
+1A30758 	70 6F A0  1 58 46 A0  1 
+: load  ( adr -- size )  size drop read  ;
+1A30760 	 0  0  0 6C 6F 61 64 84 
+1A30768 	4C  7 A3  1 20 40 A0  1 
+1A30770 	4C  7 A3  1 30 49 A0  1 
+1A30778 	98  6 A3  1 58 46 A0  1 
+
+[ifdef] notdef
+\ XXX we need to figure out what environment this runs in! open or not open
+\ Creates an empty file with name "name".  The file still must be
+\ opened if it is to be accessed. true = success, false = failure.
+: $create  ( name$ mode -- flag )  
+   3dup  dos-create  ?dup if  ( adr len mode [-2|-1|0>] )
+      -1 = if  \ file exists, delete it first and try again
+         2 pick 2 pick  $delete  if  ( adr len mode )
+            3drop false
+         else
+            dos-create  0=   then
+      else  3drop  false  then  \ i/o error or no space
+   else 
+      3drop true
+   then
+;
+[then]

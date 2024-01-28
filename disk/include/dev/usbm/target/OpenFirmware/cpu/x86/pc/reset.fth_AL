@@ -1,0 +1,97 @@
+purpose: Warm reset
+
+\ There are two ways to reset a PC.  Some use a bit in port 92, and
+\ others use the keyboard controller.  We try both.
+
+: eat-data  ( -- )  begin  h# 64 pc@  1 and  while  h# 60 pc@ drop  repeat  ;
+1A41FA8 	 0  0  0 65 61 74 2D 64 
+1A41FB0 	61 74 61 88 14 1F A4  1 
+1A41FB8 	20 40 A0  1 58 41 A0  1 
+1A41FC0 	64  0  0  0 AC 81 A2  1 
+1A41FC8 	80 6F A0  1 5C 44 A0  1 
+1A41FD0 	DC 41 A0  1 1C  0  0  0 
+1A41FD8 	58 41 A0  1 60  0  0  0 
+1A41FE0 	AC 81 A2  1 30 49 A0  1 
+1A41FE8 	C8 41 A0  1 D0 FF FF FF 
+1A41FF0 	58 46 A0  1 
+: inbuf-wait  ( -- )  begin  h# 64 pc@  2 and  0= until  ;
+1A41FF4 	 0 69 6E 62 
+1A41FF8 	75 66 2D 77 61 69 74 8A 
+1A42000 	B8 1F A4  1 20 40 A0  1 
+1A42008 	58 41 A0  1 64  0  0  0 
+1A42010 	AC 81 A2  1 90 6F A0  1 
+1A42018 	5C 44 A0  1 24 47 A0  1 
+1A42020 	DC 41 A0  1 E4 FF FF FF 
+1A42028 	58 46 A0  1 
+: outbuf-wait  ( -- )  begin  h# 64 pc@  1 and  until  ;
+1A4202C 	6F 75 74 62 
+1A42030 	75 66 2D 77 61 69 74 8B 
+1A42038 	 4 20 A4  1 20 40 A0  1 
+1A42040 	58 41 A0  1 64  0  0  0 
+1A42048 	AC 81 A2  1 80 6F A0  1 
+1A42050 	5C 44 A0  1 DC 41 A0  1 
+1A42058 	E8 FF FF FF 58 46 A0  1 
+: cmd-put  ( cmd -- )  inbuf-wait  h# 64 pc!  ;
+1A42060 	63 6D 64 2D 70 75 74 87 
+1A42068 	3C 20 A4  1 20 40 A0  1 
+1A42070 	 4 20 A4  1 58 41 A0  1 
+1A42078 	64  0  0  0 E8 81 A2  1 
+1A42080 	58 46 A0  1 
+: data-get  ( -- data )   outbuf-wait  h# 60 pc@  ;
+1A42084 	 0  0  0 64 
+1A42088 	61 74 61 2D 67 65 74 88 
+1A42090 	6C 20 A4  1 20 40 A0  1 
+1A42098 	3C 20 A4  1 58 41 A0  1 
+1A420A0 	60  0  0  0 AC 81 A2  1 
+1A420A8 	58 46 A0  1 
+: data-put  ( data -- data )   inbuf-wait  h# 60 pc!  ;
+1A420AC 	 0  0  0 64 
+1A420B0 	61 74 61 2D 70 75 74 88 
+1A420B8 	94 20 A4  1 20 40 A0  1 
+1A420C0 	 4 20 A4  1 58 41 A0  1 
+1A420C8 	60  0  0  0 E8 81 A2  1 
+1A420D0 	58 46 A0  1 
+: kbd-reset-all  ( -- )
+1A420D4 	 0  0 6B 62 
+1A420D8 	64 2D 72 65 73 65 74 2D 
+1A420E0 	61 6C 6C 8D BC 20 A4  1 
+1A420E8 	20 40 A0  1 
+   eat-data                           \ Discard pending kbd data
+1A420EC 	B8 1F A4  1 
+   h# d0 cmd-put  data-get  ( val )   \ Get old output register value
+1A420F0 	58 41 A0  1 D0  0  0  0 
+1A420F8 	6C 20 A4  1 94 20 A4  1 
+   1 invert and             ( val' )  \ Clear RESET* bit
+1A42100 	80 6F A0  1 30 45 A0  1 
+1A42108 	5C 44 A0  1 
+   h# d1 cmd-put  data-put  ( )       \ Write new output register val
+1A4210C 	58 41 A0  1 
+1A42110 	D1  0  0  0 6C 20 A4  1 
+1A42118 	BC 20 A4  1 
+;
+1A4211C 	58 46 A0  1 
+
+: (reset-all)  ( -- )
+1A42120 	28 72 65 73 65 74 2D 61 
+1A42128 	6C 6C 29 8B E8 20 A4  1 
+1A42130 	20 40 A0  1 
+   h# 92 pc@  1 invert and  dup  h# 92 pc!  1 or  h# 92 pc!  d# 1000 ms
+1A42134 	58 41 A0  1 
+1A42138 	92  0  0  0 AC 81 A2  1 
+1A42140 	80 6F A0  1 30 45 A0  1 
+1A42148 	5C 44 A0  1 40 49 A0  1 
+1A42150 	58 41 A0  1 92  0  0  0 
+1A42158 	E8 81 A2  1 80 6F A0  1 
+1A42160 	70 44 A0  1 58 41 A0  1 
+1A42168 	92  0  0  0 E8 81 A2  1 
+1A42170 	58 41 A0  1 E8  3  0  0 
+1A42178 	60 E0 A1  1 
+
+   \ If port 92 doesn't work, try the keyboard controller reset
+   kbd-reset-all  d# 1000 ms
+1A4217C 	E8 20 A4  1 
+1A42180 	58 41 A0  1 E8  3  0  0 
+1A42188 	60 E0 A1  1 
+;
+1A4218C 	58 46 A0  1 
+' (reset-all) to reset-all

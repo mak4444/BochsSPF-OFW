@@ -1,0 +1,59 @@
+cr .( autoexec.4) cr
+
+fl d:include\autoexec.4
+\eof
+
+: ss s" dir u:" eval ;
+: ss1 s" dev /pci/isa@1 ls" evaluate ;
+: zz  s" /pci/isa@1/ide@i1f0/disk:" $dir ;
+\ s" /isa@1/ide@i1f0/disk:" $dir
+: sss    s" /" show-devs ;
+: ss> parse-word show-devs ;
+\ >data token@
+\ debug  ?usb-keyboard
+: xx 16 0 do i . i interrupt-handler@ (see) loop ;
+\ : ii s" c:cbfs.fth" included ;
+
+: SKK  " shift?" in-mux-ih $call-method ;
+: ssk  ( -- )  " /keyboard" " shift?" execute-device-method drop ;
+
+: KKK BEGIN KEY DUP .H ssk . BL = UNTIL ;
+
+: GGG BEGIN stdin-getchar \  console-key
+ DUP .H BL = UNTIL ;
+\- \EOF : \EOF  BEGIN REFILL 0= UNTIL  POSTPONE \ ;
+
+dev /pci
+-1 to pcimsg?	\ Optional Debug Msgs
+-1 to probemsg?	\ Optional Probing Msgs
+device-end
+
+\ debug (.error)
+: xxx s" qwerty" included ;
+: xx22 22 abort" xxxz\x\zx" ;
+\ xx22
+
+\ fl d:fff.4 dev u: pwd words
+fl d:include\fm\mmterm.4 
+fl d:include\fm\FPCNUM.4
+fl d:include\fm\view.4 \ s" d:include\fm\FPCNUM.4" $view
+\ view d:view.4
+ NEWLT
+
+: $mdir
+
+   dup  if   ?add\  separator?  else  true  then        ( pattern$ no-name? )
+
+   if  string2 pack  " *" rot $cat  string2 count  then
+
+   begin-search
+   begin  another-match?  while           ( 8*attributes name$ )
+      type cr
+  5drop 3drop
+      exit?  if  close-search exit  then
+   repeat
+;
+ fl d:include\fm\fm.4 
+
+FMDIR_DRAW
+

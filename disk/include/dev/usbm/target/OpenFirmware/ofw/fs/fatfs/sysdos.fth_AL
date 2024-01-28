@@ -1,0 +1,189 @@
+\ DOS file interface
+
+hex
+
+\ mmo private
+
+\ Protection to be assigned to newly-created files
+\ Defaults to unprotected
+
+\ variable file-protection
+
+\ Interfaces between the buffering code and the lower level operating
+\ system code.  This is the stuff that has to be reimplemented to port
+\ to a different operating system.
+
+\ Rounds down to a block boundary.  This causes all file accesses to the
+\ underlying operating system to occur on disk block boundaries.  Some
+\ systems (e.g. CP/M) require this; others which don't require it (e.g. GEM)
+\ usually run faster with alignment than without.  It is required for
+\ the Forth DOS file system, which only handle cluster-sized chunks
+\ at the low level, depending on the higher level buffering to handle
+\ the fragments.
+
+: dosdfalign  ( d.byte# 'fh -- d.aligned )
+1A300A4 	 0 64 6F 73 
+1A300A8 	64 66 61 6C 69 67 6E 8A 
+1A300B0 	D8 FD A2  1 20 40 A0  1 
+   drop swap /cluster 1- invert and  swap
+1A300B8 	30 49 A0  1 68 49 A0  1 
+1A300C0 	18 C3 A2  1 54 4B A0  1 
+1A300C8 	30 45 A0  1 5C 44 A0  1 
+1A300D0 	68 49 A0  1 
+;
+1A300D4 	58 46 A0  1 
+
+: dosdflen   ( 'fhandle -- d.size )  fh !  fh_length l@  0  ;
+1A300D8 	 0  0  0 64 6F 73 64 66 
+1A300E0 	6C 65 6E 88 B4  0 A3  1 
+1A300E8 	20 40 A0  1 5C E5 A2  1 
+1A300F0 	54 4D A0  1 F8 E5 A2  1 
+1A300F8 	6C 4C A0  1 70 6F A0  1 
+1A30100 	58 46 A0  1 
+
+: dosdfseek  ( d.byte# 'fh -- )  nip dos-seek  abort" dosdfseek failed"  ;
+1A30104 	 0  0 64 6F 
+1A30108 	73 64 66 73 65 65 6B 89 
+1A30110 	E8  0 A3  1 20 40 A0  1 
+1A30118 	FC 46 A0  1 88 E8 A2  1 
+1A30120 	 8 81 A0  1 10 64 6F 73 
+1A30128 	64 66 73 65 65 6B 20 66 
+1A30130 	61 69 6C 65 64  0  0  0 
+1A30138 	58 46 A0  1 
+
+: dosfread   ( addr count 'fh -- #read )  dos-read  abort" dosfread failed"  ;
+1A3013C 	 0  0  0 64 
+1A30140 	6F 73 66 72 65 61 64 88 
+1A30148 	14  1 A3  1 20 40 A0  1 
+1A30150 	E0 EB A2  1  8 81 A0  1 
+1A30158 	 F 64 6F 73 66 72 65 61 
+1A30160 	64 20 66 61 69 6C 65 64 
+1A30168 	 0  0  0  0 58 46 A0  1 
+
+: dosfwrite  ( addr count 'fh -- #written )  dos-write  if  0  then  ;
+1A30170 	 0  0 64 6F 73 66 77 72 
+1A30178 	69 74 65 89 4C  1 A3  1 
+1A30180 	20 40 A0  1 BC F1 A2  1 
+1A30188 	DC 41 A0  1  8  0  0  0 
+1A30190 	70 6F A0  1 58 46 A0  1 
+
+: dosfclose  ( 'fh -- )
+1A30198 	 0  0 64 6F 73 66 63 6C 
+1A301A0 	6F 73 65 89 80  1 A3  1 
+1A301A8 	20 40 A0  1 
+   dos-close abort" dosfclose failed"
+1A301AC 	34 F4 A2  1 
+1A301B0 	 8 81 A0  1 10 64 6F 73 
+1A301B8 	66 63 6C 6F 73 65 20 66 
+1A301C0 	61 69 6C 65 64  0  0  0 
+   bfbase @  /cluster free-mem
+1A301C8 	98 AB A0  1 5C 4C A0  1 
+1A301D0 	18 C3 A2  1  8 6D A0  1 
+;
+1A301D8 	58 46 A0  1 
+
+: $dosopen  ( adr len mode -- ... )
+1A301DC 	 0  0  0 24 
+1A301E0 	64 6F 73 6F 70 65 6E 88 
+1A301E8 	A8  1 A3  1 20 40 A0  1 
+   dup >r  name-open  ( error? )  if
+1A301F0 	40 49 A0  1 BC 45 A0  1 
+1A301F8 	8C EA A2  1 DC 41 A0  1 
+1A30200 	10  0  0  0 
+      false
+1A30204 	18 70 A0  1 
+   else
+1A30208 	C8 41 A0  1 94  0  0  0 
+[ifndef] dos-fd
+\ In the context of the file system reading support package, a buffer
+\ hasn't been previously allocated.
+      bfbase @ /fbuf free-mem
+[then]
+      /cluster alloc-mem /cluster initbuf
+1A30210 	18 C3 A2  1 F0 6C A0  1 
+1A30218 	18 C3 A2  1 F4 CA A0  1 
+      r@  ['] dosdflen  ['] dosdfalign  ['] dosfclose  ['] dosdfseek
+1A30220 	E4 45 A0  1 60 53 A0  1 
+1A30228 	E8  0 A3  1 60 53 A0  1 
+1A30230 	B4  0 A3  1 60 53 A0  1 
+1A30238 	A8  1 A3  1 60 53 A0  1 
+1A30240 	14  1 A3  1 
+      r@ read  =  if  ['] nullwrite  else  ['] dosfwrite  then
+1A30244 	E4 45 A0  1 
+1A30248 	E8 C9 A0  1 24 48 A0  1 
+1A30250 	DC 41 A0  1 14  0  0  0 
+1A30258 	60 53 A0  1 40 CA A0  1 
+1A30260 	C8 41 A0  1  C  0  0  0 
+1A30268 	60 53 A0  1 80  1 A3  1 
+      r@ write =  if  ['] nullread   else  ['] dosfread   then
+1A30270 	E4 45 A0  1 FC C9 A0  1 
+1A30278 	24 48 A0  1 DC 41 A0  1 
+1A30280 	14  0  0  0 60 53 A0  1 
+1A30288 	9C CA A0  1 C8 41 A0  1 
+1A30290 	 C  0  0  0 60 53 A0  1 
+1A30298 	4C  1 A3  1 
+      true
+1A3029C 	 4 70 A0  1 
+   then
+   r> drop
+1A302A0 	D0 45 A0  1 30 49 A0  1 
+;
+1A302A8 	58 46 A0  1 
+[ifdef] dos-ui
+: dosopen  ( name mode -- ...)
+   ( ... -- fid sizeop alignop closeop seekop writeop readop true  | false )
+   >r  count  r> $dosopen
+;
+
+\ Creates an empty file with name "name".  The file still must be
+\ opened if it is to be accessed. true = success, false = failure.
+: dosmake  ( name -- flag )  
+   count
+   2dup file-protection @  dos-create  ?dup if  ( adr len [-2|-1|0>] )
+      -1 = if  \ file exists, delete it first and try again ***
+         2dup  $delete  if  ( adr len )
+            2drop false
+         else
+            file-protection @  dos-create  0=   then
+      else  2drop  false  then  \ i/o error or no space  *** 10/28/91
+   else 
+      2drop true
+   then
+;
+
+\ Installs DOS filing in basic file I/O.
+: install-dos-files  ( -- )
+   0 is file-protection  \ no special protection
+   ['] dosopen  to do-fopen
+   ['] dosmake  to make
+;
+[then]
+
+[ifdef] notdef
+\ Removes DOS filing from basic file I/O.
+: unload-dos-files  ( -- )
+   o# 664 is file-protection \ rw-rw-r--
+   ['] sys_fopen  to do-fopen
+   ['] sys_make   to make
+;
+[then]
+
+[ifdef] dos-ui
+public
+
+warning @ warning off
+: stand-init  ( -- )  stand-init  install-dos-files  ;
+warning !
+[then]
+
+[ifdef] notdef
+public
+\ ** cpt 10/30/90: added fast dos I/O words. RESTRICTION: they are  
+\ good only for ONE SHOT (whole) I/O after the file is opened/created.
+\ Fclose must be called after this calls.
+\ file handle pointing is based on current Kernel 'fd' field offset (32) !
+
+: fread   ( addr count 'fd -- #read )  d# 32 + @ dosfread  ;
+
+: fwrite  ( addr count 'fd -- )        d# 32 + @ dosfwrite drop  ;
+[then]

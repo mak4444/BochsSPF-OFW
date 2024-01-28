@@ -1,0 +1,68 @@
+\ Access to alternate segments
+
+code spacec@  ( adr space -- byte )
+1A28134 	73 70 61 63 
+1A28138 	65 63 40 87 2C 81 A2  1 
+1A28140 	44 81 A2  1 
+   ax pop   ax fs mov   bx pop   ax ax sub  fs: 0 [bx] al mov  1push
+1A28144 	58 8E E0 5B 
+1A28148 	29 C0 64 8A  3 50 
+c;
+1A2814E 	FF E7 
+
+code spacec!  ( byte adr space -- )
+1A28150 	73 70 61 63 65 63 21 87 
+1A28158 	40 81 A2  1 60 81 A2  1 
+   ax pop   ax fs mov   bx pop   ax pop  fs: al 0 [bx] mov
+1A28160 	58 8E E0 5B 58 64 88  3 
+c;
+1A28168 	FF E7 
+
+code spacel@  ( adr space -- byte )
+1A2816A 	 0  0 73 70 61 63 
+1A28170 	65 6C 40 87 5C 81 A2  1 
+1A28178 	7C 81 A2  1 
+   ax pop   ax fs mov   bx pop   fs: 0 [bx] ax mov  1push
+1A2817C 	58 8E E0 5B 
+1A28180 	64 8B  3 50 
+c;
+1A28184 	FF E7 
+
+code spacel!  ( byte adr space -- )
+1A28186 	 0  0 
+1A28188 	73 70 61 63 65 6C 21 87 
+1A28190 	78 81 A2  1 98 81 A2  1 
+   ax pop   ax fs mov   bx pop   ax pop  fs: ax 0 [bx] mov
+1A28198 	58 8E E0 5B 58 64 89  3 
+c;
+1A281A0 	FF E7 
+
+\ I/O space access via IN and OUT instructions
+
+code pc@  ( b adr -- )  dx pop  ax ax xor      dx al in  ax push   c;
+1A281A2 	 0  0 70 63 40 83 
+1A281A8 	94 81 A2  1 B0 81 A2  1 
+1A281B0 	5A 31 C0 EC 50 FF E7 
+code pw@  ( adr -- w )  dx pop  ax ax xor  op: dx ax in  ax push  c;
+1A281B7 	 0 
+1A281B8 	70 77 40 83 AC 81 A2  1 
+1A281C0 	C4 81 A2  1 5A 31 C0 66 
+1A281C8 	ED 50 FF E7 
+code pl@  ( adr -- l )  dx pop                 dx ax in  ax push  c;
+1A281CC 	70 6C 40 83 
+1A281D0 	C0 81 A2  1 D8 81 A2  1 
+1A281D8 	5A ED 50 FF E7 
+code pc!  ( adr -- b )  dx pop  ax pop         al dx out  c;
+1A281DD 	 0  0  0 
+1A281E0 	70 63 21 83 D4 81 A2  1 
+1A281E8 	EC 81 A2  1 5A 58 EE FF 
+1A281F0 	E7 
+code pw!  ( w adr -- )  dx pop  ax pop     op: ax dx out  c;
+1A281F1 	 0  0  0 70 77 21 83 
+1A281F8 	E8 81 A2  1  0 82 A2  1 
+1A28200 	5A 58 66 EF FF E7 
+code pl!  ( l adr -- )  dx pop  ax pop         ax dx out  c;
+1A28206 	 0  0 
+1A28208 	70 6C 21 83 FC 81 A2  1 
+1A28210 	14 82 A2  1 5A 58 EF FF 
+1A28218 	E7 

@@ -1,0 +1,126 @@
+purpose: Diagnostic (before console installation) access to serial port
+
+headerless
+[ifdef] mem-uart-base
+d# 64,000,000 constant uart-clock-frequency
+[else]
+d# 1843200 constant uart-clock-frequency
+1A4132C 	 0  0  0 75 
+1A41330 	61 72 74 2D 63 6C 6F 63 
+1A41338 	6B 2D 66 72 65 71 75 65 
+1A41340 	6E 63 79 94 28 10 A4  1 
+1A41348 	68 40 A0  1  0 20 1C  0 
+[then]
+
+[ifdef] mem-uart-base
+: uart@  ( reg# -- byte )  mem-uart-base +  c@  ;	\ Read from a UART register
+: uart!  ( byte reg# -- )  mem-uart-base +  c!  ;	\ Write to a UART register
+[else]
+h# 3f8 value uart-base	\ Virtual address of UART; perhaps overridden later
+1A41350 	 0  0 75 61 72 74 2D 62 
+1A41358 	61 73 65 89 48 13 A4  1 
+1A41360 	50 40 A0  1 7C  D  0  0 
+
+: uart@  ( reg# -- byte )  uart-base +  pc@  ;	\ Read from a UART register
+1A41368 	 0  0 75 61 72 74 40 85 
+1A41370 	60 13 A4  1 20 40 A0  1 
+1A41378 	60 13 A4  1  4 45 A0  1 
+1A41380 	AC 81 A2  1 58 46 A0  1 
+: uart!  ( byte reg# -- )  uart-base +  pc!  ;	\ Write to a UART register
+1A41388 	 0  0 75 61 72 74 21 85 
+1A41390 	74 13 A4  1 20 40 A0  1 
+1A41398 	60 13 A4  1  4 45 A0  1 
+1A413A0 	E8 81 A2  1 58 46 A0  1 
+[then]
+
+: baud  ( baud-rate -- )
+1A413A8 	 0  0  0 62 61 75 64 84 
+1A413B0 	94 13 A4  1 20 40 A0  1 
+   uart-clock-frequency d# 16 /  swap rounded-/    ( baud-rate-divisor )
+1A413B8 	48 13 A4  1 58 41 A0  1 
+1A413C0 	10  0  0  0 98 5F A0  1 
+1A413C8 	68 49 A0  1 48 13 A1  1 
+
+   begin  5 uart@ h# 40 and  until		\ Wait until transmit done
+1A413D0 	C0 6F A0  1 74 13 A4  1 
+1A413D8 	58 41 A0  1 40  0  0  0 
+1A413E0 	5C 44 A0  1 DC 41 A0  1 
+1A413E8 	E8 FF FF FF 
+
+   3 uart@  dup >r  h# 80 or  3 uart!		\ divisor latch access bit on
+1A413EC 	A0 6F A0  1 
+1A413F0 	74 13 A4  1 40 49 A0  1 
+1A413F8 	BC 45 A0  1 58 41 A0  1 
+1A41400 	80  0  0  0 70 44 A0  1 
+1A41408 	A0 6F A0  1 94 13 A4  1 
+   dup h# ff and  0 uart!  8 >> 1 uart!		\ Write lsb and msb
+1A41410 	40 49 A0  1 58 41 A0  1 
+1A41418 	FF  0  0  0 5C 44 A0  1 
+1A41420 	70 6F A0  1 94 13 A4  1 
+1A41428 	F0 6F A0  1 DC 44 A0  1 
+1A41430 	80 6F A0  1 94 13 A4  1 
+   r> 3 uart!					\ Restore old state
+1A41438 	D0 45 A0  1 A0 6F A0  1 
+1A41440 	94 13 A4  1 
+;
+1A41444 	58 46 A0  1 
+
+: inituarts  ( -- )
+1A41448 	 0  0 69 6E 69 74 75 61 
+1A41450 	72 74 73 89 B4 13 A4  1 
+1A41458 	20 40 A0  1 
+   3 3 uart!  		\ 8 bits, no parity
+1A4145C 	A0 6F A0  1 
+1A41460 	A0 6F A0  1 94 13 A4  1 
+   7 2 uart!		\ Clear and enable FIFOs
+1A41468 	E0 6F A0  1 90 6F A0  1 
+1A41470 	94 13 A4  1 
+\   d# 38400 baud
+\   d# 9600 baud
+   d# 115200 baud
+1A41474 	58 41 A0  1 
+1A41478 	 0 C2  1  0 B4 13 A4  1 
+;
+1A41480 	58 46 A0  1 
+
+: ukey?    ( -- flag )  5 uart@      1 and  0<>  ;  \ Test for rcv character
+1A41484 	 0  0 75 6B 
+1A41488 	65 79 3F 85 58 14 A4  1 
+1A41490 	20 40 A0  1 C0 6F A0  1 
+1A41498 	74 13 A4  1 80 6F A0  1 
+1A414A0 	5C 44 A0  1 44 47 A0  1 
+1A414A8 	58 46 A0  1 
+: uemit?   ( -- flag )  5 uart@  h# 20 and  0<>  ;  \ Test for xmit ready
+1A414AC 	 0 75 65 6D 
+1A414B0 	69 74 3F 86 90 14 A4  1 
+1A414B8 	20 40 A0  1 C0 6F A0  1 
+1A414C0 	74 13 A4  1 58 41 A0  1 
+1A414C8 	20  0  0  0 5C 44 A0  1 
+1A414D0 	44 47 A0  1 58 46 A0  1 
+: ubreak?  ( -- flag )  5 uart@  h# 10 and  0<>  ;  \ Test for received break
+1A414D8 	75 62 72 65 61 6B 3F 87 
+1A414E0 	B8 14 A4  1 20 40 A0  1 
+1A414E8 	C0 6F A0  1 74 13 A4  1 
+1A414F0 	58 41 A0  1 10  0  0  0 
+1A414F8 	5C 44 A0  1 44 47 A0  1 
+1A41500 	58 46 A0  1 
+: clear-break   ( -- )  5 uart@  drop  ;	    \ Clear break indication
+1A41504 	63 6C 65 61 
+1A41508 	72 2D 62 72 65 61 6B 8B 
+1A41510 	E4 14 A4  1 20 40 A0  1 
+1A41518 	C0 6F A0  1 74 13 A4  1 
+1A41520 	30 49 A0  1 58 46 A0  1 
+
+: ukey   ( -- char )  begin  ukey?   until  0 uart@  ;  \ Receive a character
+1A41528 	 0  0  0 75 6B 65 79 84 
+1A41530 	14 15 A4  1 20 40 A0  1 
+1A41538 	90 14 A4  1 DC 41 A0  1 
+1A41540 	F8 FF FF FF 70 6F A0  1 
+1A41548 	74 13 A4  1 58 46 A0  1 
+: uemit  ( char -- )  begin  uemit?  until  0 uart!  ;  \ Transmit a character
+1A41550 	 0  0 75 65 6D 69 74 85 
+1A41558 	34 15 A4  1 20 40 A0  1 
+1A41560 	B8 14 A4  1 DC 41 A0  1 
+1A41568 	F8 FF FF FF 70 6F A0  1 
+1A41570 	94 13 A4  1 58 46 A0  1 
+headers

@@ -1,0 +1,518 @@
+purpose: disk-label package
+
+headers
+
+: offset  ( d1 -- d2 )  sector-offset /sector um*  d+  ;
+1A31638 	 0 6F 66 66 73 65 74 86 
+1A31640 	E0 15 A3  1 20 40 A0  1 
+1A31648 	B4  A A3  1 80  A A3  1 
+1A31650 	50 5D A0  1 E0 5D A0  1 
+1A31658 	58 46 A0  1 
+
+headerless
+
+\ Recognizers for various filesystem types
+
+: dropin?  ( -- flag )  sector-buf  " OBMD" comp 0=  ;
+1A3165C 	64 72 6F 70 
+1A31660 	69 6E 3F 87 44 16 A3  1 
+1A31668 	20 40 A0  1 98  A A3  1 
+1A31670 	9C 53 A0  1  4 4F 42 4D 
+1A31678 	44  0  0  0 38 52 A0  1 
+1A31680 	24 47 A0  1 58 46 A0  1 
+: zip?  ( -- flag )  sector-buf  " PK" comp 0=  ;
+1A31688 	 0  0  0 7A 69 70 3F 84 
+1A31690 	68 16 A3  1 20 40 A0  1 
+1A31698 	98  A A3  1 9C 53 A0  1 
+1A316A0 	 2 50 4B  0 38 52 A0  1 
+1A316A8 	24 47 A0  1 58 46 A0  1 
+
+
+0 0 2value filename
+1A316B0 	 0  0  0 66 69 6C 65 6E 
+1A316B8 	61 6D 65 88 94 16 A3  1 
+1A316C0 	24 BA A1  1 AC  9  0  0 
+
+\ Sets size-high and size-low to the total size of the disk in bytes,
+\ as determined by the parent's "#blocks" and "block-size" methods.
+: get-disk-size  ( -- )
+1A316C8 	 0  0 67 65 74 2D 64 69 
+1A316D0 	73 6B 2D 73 69 7A 65 8D 
+1A316D8 	C0 16 A3  1 20 40 A0  1 
+   " #blocks" ['] $call-parent catch  if
+1A316E0 	9C 53 A0  1  7 23 62 6C 
+1A316E8 	6F 63 6B 73  0  0  0  0 
+1A316F0 	60 53 A0  1 DC 31 A2  1 
+1A316F8 	14 7F A0  1 DC 41 A0  1 
+1A31700 	10  0  0  0 
+      2drop
+1A31704 	AC 49 A0  1 
+   else   ( #blocks )
+1A31708 	C8 41 A0  1 2C  0  0  0 
+      " block-size" $call-parent  um*
+1A31710 	9C 53 A0  1  A 62 6C 6F 
+1A31718 	63 6B 2D 73 69 7A 65  0 
+1A31720 	DC 31 A2  1 50 5D A0  1 
+      to size-high  to size-low
+1A31728 	48 B8 A1  1 8C  9 A3  1 
+1A31730 	48 B8 A1  1 74  9 A3  1 
+   then
+;
+1A31738 	58 46 A0  1 
+
+\ It would be nice if this word could be in partition.fth, but it can't
+\ because of interactions between FDISK and UFS partition maps.
+: fdisk-map  ( -- )
+1A3173C 	 0  0 66 64 
+1A31740 	69 73 6B 2D 6D 61 70 89 
+1A31748 	DC 16 A3  1 20 40 A0  1 
+   0 to extended-offset
+1A31750 	70 6F A0  1 48 B8 A1  1 
+1A31758 	DC  F A3  1 
+   #part 0>  if
+1A3175C 	6C  A A3  1 
+1A31760 	A4 47 A0  1 DC 41 A0  1 
+1A31768 	10  0  0  0 
+      \ An explicit partition number was specified.  Select that partition.
+      find-partition
+1A3176C 	54 12 A3  1 
+   else		\ Use default FDISK partition
+1A31770 	C8 41 A0  1 68  0  0  0 
+
+      \ If the arguments specified a partition letter (a..h), try to find
+      \ an FDISK partition that contains a UFS partition map, then select
+      \ the specified sub-partition.
+      ufs-partition  if
+1A31778 	3C  A A3  1 DC 41 A0  1 
+1A31780 	34  0  0  0 
+         0 ['] is-ufs?  (find-partition) abort" No UFS partition"
+1A31784 	70 6F A0  1 
+1A31788 	60 53 A0  1 D8 11 A3  1 
+1A31790 	AC 11 A3  1  8 81 A0  1 
+1A31798 	10 4E 6F 20 55 46 53 20 
+1A317A0 	70 61 72 74 69 74 69 6F 
+1A317A8 	6E  0  0  0 
+      else
+1A317AC 	C8 41 A0  1 
+1A317B0 	2C  0  0  0 
+         0 ['] bootable?  (find-partition)  if
+1A317B4 	70 6F A0  1 
+1A317B8 	60 53 A0  1 FC 11 A3  1 
+1A317C0 	AC 11 A3  1 DC 41 A0  1 
+1A317C8 	14  0  0  0 
+            \ If no bootable partition was found, use the first one
+            1 to #part  find-partition
+1A317CC 	80 6F A0  1 
+1A317D0 	48 B8 A1  1 6C  A A3  1 
+1A317D8 	54 12 A3  1 
+         then
+      then
+   then
+
+[ifdef] ufs-support
+   \ If the partition type is UFS and a filename is specified, select
+   \ one of the UFS sub-partitions.  Otherwise use the raw partition.
+   partition-type ufs-type =  if
+      filename nip  if  ufs-map  then
+   then
+[then]
+;
+1A317DC 	58 46 A0  1 
+
+: select-partition  ( -- )
+1A317E0 	 0  0  0 73 65 6C 65 63 
+1A317E8 	74 2D 70 61 72 74 69 74 
+1A317F0 	69 6F 6E 90 4C 17 A3  1 
+1A317F8 	20 40 A0  1 
+   \ If parse-partition set #part to -2, it already mapped the partition
+   #part -2 =  if  exit  then
+1A317FC 	6C  A A3  1 
+1A31800 	58 41 A0  1 FE FF FF FF 
+1A31808 	24 48 A0  1 DC 41 A0  1 
+1A31810 	 8  0  0  0 40 46 A0  1 
+
+   \ Partition 0 is the raw disk, in which case we leave sector-offset at 0
+   \ and avoid reading the disk.  Otherwise, we try to determine what sort
+   \ of partition map the disk has, if any, and from that determine the
+   \ offset to the beginning of the specified partition.
+   #part 0=  if  get-disk-size exit  then
+1A31818 	6C  A A3  1 24 47 A0  1 
+1A31820 	DC 41 A0  1  C  0  0  0 
+1A31828 	DC 16 A3  1 40 46 A0  1 
+   
+   \ Get the first sector into the buffer so we can examine it
+   0 read-sector
+1A31830 	70 6F A0  1 A0  B A3  1 
+
+   \ If we find certain things in the first sector, we need not bother
+   \ with partitions, and we ignore the partition specification
+   fat? unpartitioned?  and  if  get-disk-size exit  then
+1A31838 	28  C A3  1 AC  C A3  1 
+1A31840 	5C 44 A0  1 DC 41 A0  1 
+1A31848 	 C  0  0  0 DC 16 A3  1 
+1A31850 	40 46 A0  1 
+   dropin?  if  get-disk-size exit  then
+1A31854 	68 16 A3  1 
+1A31858 	DC 41 A0  1  C  0  0  0 
+1A31860 	DC 16 A3  1 40 46 A0  1 
+   zip?     if  get-disk-size exit  then
+1A31868 	94 16 A3  1 DC 41 A0  1 
+1A31870 	 C  0  0  0 DC 16 A3  1 
+1A31878 	40 46 A0  1 
+
+[ifdef] hfs-support
+   mac-disk?  if  mac-map exit  then
+[then]
+
+   gpt?  if  gpt-map exit  then
+1A3187C 	A8 12 A3  1 
+1A31880 	DC 41 A0  1  C  0  0  0 
+1A31888 	E0 15 A3  1 40 46 A0  1 
+
+   fdisk?  if  fdisk-map exit  then
+1A31890 	98  D A3  1 DC 41 A0  1 
+1A31898 	 C  0  0  0 4C 17 A3  1 
+1A318A0 	40 46 A0  1 
+
+   \ Nothing we tried worked.
+   abort
+1A318A4 	28 91 A0  1 
+;
+1A318A8 	58 46 A0  1 
+
+: choose-file-system  ( -- package-name$ )
+1A318AC 	 0 63 68 6F 
+1A318B0 	6F 73 65 2D 66 69 6C 65 
+1A318B8 	2D 73 79 73 74 65 6D 92 
+1A318C0 	F8 17 A3  1 20 40 A0  1 
+   \ Execute found-iso-9660? (an instance value) before changing my-self !
+   partition-type iso-type =  if  " iso9660-file-system" exit  then
+1A318C8 	A8  9 A3  1  8  A A3  1 
+1A318D0 	24 48 A0  1 DC 41 A0  1 
+1A318D8 	24  0  0  0 9C 53 A0  1 
+1A318E0 	13 69 73 6F 39 36 36 30 
+1A318E8 	2D 66 69 6C 65 2D 73 79 
+1A318F0 	73 74 65 6D  0  0  0  0 
+1A318F8 	40 46 A0  1 
+
+[ifdef] hfs-support
+   hfs-partition?  if  " hfs-file-system" exit  then
+   \ XXX handle boot portion of HFS partition, one of these days
+   \ ( filename$ ) 2dup " %BOOT" $=  if
+   \    ( change sector-offset and size.low,high ) ...
+[then]
+
+   2 read-sector
+1A318FC 	90 6F A0  1 
+1A31900 	A0  B A3  1 
+   ext2?  if  
+1A31904 	90 12 A3  1 
+1A31908 	DC 41 A0  1 98  0  0  0 
+      partition-type ext2fs-type <>  if
+1A31910 	A8  9 A3  1 D8  9 A3  1 
+1A31918 	44 48 A0  1 DC 41 A0  1 
+1A31920 	68  0  0  0 
+         ." Warning: Filesystem is ext2/3, but partition type is 0x"  
+1A31924 	20 7C A0  1 
+1A31928 	37 57 61 72 6E 69 6E 67 
+1A31930 	3A 20 46 69 6C 65 73 79 
+1A31938 	73 74 65 6D 20 69 73 20 
+1A31940 	65 78 74 32 2F 33 2C 20 
+1A31948 	62 75 74 20 70 61 72 74 
+1A31950 	69 74 69 6F 6E 20 74 79 
+1A31958 	70 65 20 69 73 20 30 78 
+1A31960 	 0  0  0  0 
+         partition-type .x ." (should be 0x83)."  cr
+1A31964 	A8  9 A3  1 
+1A31968 	2C  E A1  1 20 7C A0  1 
+1A31970 	11 28 73 68 6F 75 6C 64 
+1A31978 	20 62 65 20 30 78 38 33 
+1A31980 	29 2E  0  0 80 6D A0  1 
+      then
+      " ext2-file-system" exit
+1A31988 	9C 53 A0  1 10 65 78 74 
+1A31990 	32 2D 66 69 6C 65 2D 73 
+1A31998 	79 73 74 65 6D  0  0  0 
+1A319A0 	40 46 A0  1 
+   then
+
+[ifdef] ufs-support
+   partition-type ufs-type    =  if  " ufs-file-system"    exit  then
+[then]
+   partition-type minix-type  =  if  " minix-file-system"  exit  then
+1A319A4 	A8  9 A3  1 
+1A319A8 	C0  9 A3  1 24 48 A0  1 
+1A319B0 	DC 41 A0  1 20  0  0  0 
+1A319B8 	9C 53 A0  1 11 6D 69 6E 
+1A319C0 	69 78 2D 66 69 6C 65 2D 
+1A319C8 	73 79 73 74 65 6D  0  0 
+1A319D0 	40 46 A0  1 
+
+   0 read-sector   \ Get the first sector of the selected partition
+1A319D4 	70 6F A0  1 
+1A319D8 	A0  B A3  1 
+   dropin?  if  " dropin-file-system" exit  then
+1A319DC 	68 16 A3  1 
+1A319E0 	DC 41 A0  1 20  0  0  0 
+1A319E8 	9C 53 A0  1 12 64 72 6F 
+1A319F0 	70 69 6E 2D 66 69 6C 65 
+1A319F8 	2D 73 79 73 74 65 6D  0 
+1A31A00 	40 46 A0  1 
+   zip?     if  " zip-file-system"    exit  then
+1A31A04 	94 16 A3  1 
+1A31A08 	DC 41 A0  1 20  0  0  0 
+1A31A10 	9C 53 A0  1  F 7A 69 70 
+1A31A18 	2D 66 69 6C 65 2D 73 79 
+1A31A20 	73 74 65 6D  0  0  0  0 
+1A31A28 	40 46 A0  1 
+   fat?     if
+1A31A2C 	28  C A3  1 
+1A31A30 	DC 41 A0  1 80  0  0  0 
+      partition-type ext2fs-type =  if
+1A31A38 	A8  9 A3  1 D8  9 A3  1 
+1A31A40 	24 48 A0  1 DC 41 A0  1 
+1A31A48 	50  0  0  0 
+         ." Warning: Filesystem is FAT, but partition type is 0x83 (ext2/3)." cr
+1A31A4C 	20 7C A0  1 
+1A31A50 	40 57 61 72 6E 69 6E 67 
+1A31A58 	3A 20 46 69 6C 65 73 79 
+1A31A60 	73 74 65 6D 20 69 73 20 
+1A31A68 	46 41 54 2C 20 62 75 74 
+1A31A70 	20 70 61 72 74 69 74 69 
+1A31A78 	6F 6E 20 74 79 70 65 20 
+1A31A80 	69 73 20 30 78 38 33 20 
+1A31A88 	28 65 78 74 32 2F 33 29 
+1A31A90 	2E  0  0  0 80 6D A0  1 
+      then
+      " fat-file-system"    exit
+1A31A98 	9C 53 A0  1  F 66 61 74 
+1A31AA0 	2D 66 69 6C 65 2D 73 79 
+1A31AA8 	73 74 65 6D  0  0  0  0 
+1A31AB0 	40 46 A0  1 
+   then
+\ mmo   ntfs?    if  " nt-file-system"     exit  then
+
+   ." Error: Unknown file system" cr
+1A31AB4 	20 7C A0  1 
+1A31AB8 	1A 45 72 72 6F 72 3A 20 
+1A31AC0 	55 6E 6B 6E 6F 77 6E 20 
+1A31AC8 	66 69 6C 65 20 73 79 73 
+1A31AD0 	74 65 6D  0 80 6D A0  1 
+
+   abort
+1A31AD8 	28 91 A0  1 
+;
+1A31ADC 	58 46 A0  1 
+
+\ If the arguments include a filename, we determine the type of filesystem
+\ that the disk or partition contains and interpose a handler for that
+\ type, passing it the filename.
+: select-file  ( -- )
+1A31AE0 	73 65 6C 65 63 74 2D 66 
+1A31AE8 	69 6C 65 8B C4 18 A3  1 
+1A31AF0 	20 40 A0  1 
+   filename nip 0=  if  exit  then
+1A31AF4 	C0 16 A3  1 
+1A31AF8 	FC 46 A0  1 24 47 A0  1 
+1A31B00 	DC 41 A0  1  8  0  0  0 
+1A31B08 	40 46 A0  1 
+
+   choose-file-system  find-package  0=  if  abort  then  ( phandle )
+1A31B0C 	C4 18 A3  1 
+1A31B10 	E0 39 A2  1 24 47 A0  1 
+1A31B18 	DC 41 A0  1  8  0  0  0 
+1A31B20 	28 91 A0  1 
+   filename rot  interpose
+1A31B24 	C0 16 A3  1 
+1A31B28 	7C 49 A0  1 34 35 A2  1 
+;
+1A31B30 	58 46 A0  1 
+
+\ partition$ syntax:
+\ null:     use default partition
+\ <digit>:  FDISK partition number
+\ <letter>: UFS partition letter (a..h)
+\ <digit><letter>: UFS partition embedded within FDISK partition
+\ -<decimal-digits>: The last N blocks of the disk
+
+\ partition# is one of:
+\ -1, meaning the default partition, i.e. no partition was specified
+\  0, meaning the raw disk
+\ >0, meaning an explicit partition
+
+\ In addition, ufs-partition is set to the UFS partition letter (a..h)
+\ if the string appears to contain a letter.
+
+: decode-partition  ( adr len -- rem$ )
+1A31B34 	 0  0  0 64 
+1A31B38 	65 63 6F 64 65 2D 70 61 
+1A31B40 	72 74 69 74 69 6F 6E 90 
+1A31B48 	F0 1A A3  1 20 40 A0  1 
+\ CR ." decode-partition=<" 2DUP TYPE ." >"
+   \ If the string parses as a decimal number, it's a partition# if
+   \ positive or the last N blocks if negative
+   2dup push-decimal $number pop-base 0= ( DUP .)  if   ( adr len n )
+1A31B50 	C0 49 A0  1 48 F4 A0  1 
+1A31B58 	40 FE A0  1 9C F4 A0  1 
+1A31B60 	24 47 A0  1 DC 41 A0  1 
+1A31B68 	80  0  0  0 
+      dup 0<  if                               ( adr len n )
+1A31B6C 	40 49 A0  1 
+1A31B70 	64 47 A0  1 DC 41 A0  1 
+1A31B78 	5C  0  0  0 
+         /sector um*                           ( adr len d.partition-size )
+1A31B7C 	80  A A3  1 
+1A31B80 	50 5D A0  1 
+         get-disk-size  size-low size-high     ( adr len d.partition-size d.disk-size )
+1A31B84 	DC 16 A3  1 
+1A31B88 	74  9 A3  1 8C  9 A3  1 
+         2over d-  /sector um/mod nip          ( adr len d.partition-size partition-sector )
+1A31B90 	D8 49 A0  1 F8 5D A0  1 
+1A31B98 	80  A A3  1 7C 5D A0  1 
+1A31BA0 	FC 46 A0  1 
+         to sector-offset                      ( adr len d.partition-size )
+1A31BA4 	48 B8 A1  1 
+1A31BA8 	B4  A A3  1 
+         to size-high to size-low              ( adr len )
+1A31BAC 	48 B8 A1  1 
+1A31BB0 	8C  9 A3  1 48 B8 A1  1 
+1A31BB8 	74  9 A3  1 
+         -2 to #part                           ( adr len )   \ Tell select-partition
+1A31BBC 	58 41 A0  1 
+1A31BC0 	FE FF FF FF 48 B8 A1  1 
+1A31BC8 	6C  A A3  1 
+      else                                     ( adr len n )
+1A31BCC 	C8 41 A0  1 
+1A31BD0 	 C  0  0  0 
+         to #part                              ( adr len )
+1A31BD4 	48 B8 A1  1 
+1A31BD8 	6C  A A3  1 
+      then                                     ( adr len )
+      drop 0                                   ( adr 0 )
+1A31BDC 	30 49 A0  1 
+1A31BE0 	70 6F A0  1 
+      exit                                     ( rem$ -- )
+1A31BE4 	40 46 A0  1 
+   then                                      ( adr len )
+
+   \ If the first character of the string is a decimal number, it's a partition #,
+   \ possibly followed by UFS partition letter
+   over c@  ascii 0 ascii 9 between  if      ( adr len )
+1A31BE8 	54 49 A0  1 C4 4C A0  1 
+1A31BF0 	58 41 A0  1 30  0  0  0 
+1A31BF8 	58 41 A0  1 39  0  0  0 
+1A31C00 	D8 70 A0  1 DC 41 A0  1 
+1A31C08 	3C  0  0  0 
+      over c@  ascii 0 -  to #part           ( adr len )
+1A31C0C 	54 49 A0  1 
+1A31C10 	C4 4C A0  1 58 41 A0  1 
+1A31C18 	30  0  0  0 18 45 A0  1 
+1A31C20 	48 B8 A1  1 6C  A A3  1 
+      1 /string                              ( adr' len' )
+1A31C28 	80 6F A0  1 3C 85 A0  1 
+      dup  0=  if  exit  then                ( adr len )
+1A31C30 	40 49 A0  1 24 47 A0  1 
+1A31C38 	DC 41 A0  1  8  0  0  0 
+1A31C40 	40 46 A0  1 
+   then
+
+[ifdef] ufs-support
+   \ If the first character is "a".."h", it's a UFS partition letter
+   over c@ lcc  ascii a ascii h between  if  ( adr len )
+      over c@  to ufs-partition              ( adr len )
+      1 /string                              ( adr' len' )
+      dup  0=  if  exit  then                ( adr len )
+   then					     ( adr len )
+[then]
+;
+1A31C44 	58 46 A0  1 
+: parse-partition  ( -- )
+1A31C48 	70 61 72 73 65 2D 70 61 
+1A31C50 	72 74 69 74 69 6F 6E 8F 
+1A31C58 	4C 1B A3  1 20 40 A0  1 
+   null$ to filename  null$ to partition-name$  -1 to #part  0 to ufs-partition
+1A31C60 	7C E1 A1  1 48 B8 A1  1 
+1A31C68 	C0 16 A3  1 7C E1 A1  1 
+1A31C70 	48 B8 A1  1 58  A A3  1 
+1A31C78 	58 41 A0  1 FF FF FF FF 
+1A31C80 	48 B8 A1  1 6C  A A3  1 
+1A31C88 	70 6F A0  1 B8 40 A0  1 
+1A31C90 	3C  A A3  1 
+
+   my-args				     ( adr len )
+1A31C94 	10  7 A2  1 
+
+   \ An empty arg string is treated as a null partition and a null filename
+   dup  0=  if  2drop exit  then	     ( adr len )
+1A31C98 	40 49 A0  1 24 47 A0  1 
+1A31CA0 	DC 41 A0  1  C  0  0  0 
+1A31CA8 	AC 49 A0  1 40 46 A0  1 
+
+   \ If the string contains a comma, the first half is the partition name
+   " ," lex  if                              ( tail$ head$ delim )
+1A31CB0 	9C 53 A0  1  1 2C  0  0 
+1A31CB8 	B0 74 A1  1 DC 41 A0  1 
+1A31CC0 	28  0  0  0 
+      drop  2dup to partition-name$          ( tail$ head$ )
+1A31CC4 	30 49 A0  1 
+1A31CC8 	C0 49 A0  1 48 B8 A1  1 
+1A31CD0 	58  A A3  1 
+      decode-partition  2drop                ( tail$ )
+1A31CD4 	4C 1B A3  1 
+1A31CD8 	AC 49 A0  1 
+      to filename                            ( )
+1A31CDC 	48 B8 A1  1 
+1A31CE0 	C0 16 A3  1 
+      exit                                   ( -- )
+1A31CE4 	40 46 A0  1 
+   then                                      ( adr len )
+
+   decode-partition                          ( rem$ )
+1A31CE8 	4C 1B A3  1 
+
+   \ The remainder of the string, if any, is the filename
+   to filename
+1A31CEC 	48 B8 A1  1 
+1A31CF0 	C0 16 A3  1 
+;
+1A31CF4 	58 46 A0  1 
+
+: try-open  ( -- )
+1A31CF8 	 0  0  0 74 72 79 2D 6F 
+1A31D00 	70 65 6E 88 5C 1C A3  1 
+1A31D08 	20 40 A0  1 
+   " block-size" $call-parent to /sector
+1A31D0C 	9C 53 A0  1 
+1A31D10 	 A 62 6C 6F 63 6B 2D 73 
+1A31D18 	69 7A 65  0 DC 31 A2  1 
+1A31D20 	48 B8 A1  1 80  A A3  1 
+   sector-alloc
+1A31D28 	D0  A A3  1 
+   parse-partition	( )
+1A31D2C 	5C 1C A3  1 
+   select-partition     ( )
+1A31D30 	F8 17 A3  1 
+
+   \ Establish initial position at beginning of partition
+   0 0 offset  " seek" $call-parent drop        ( )
+1A31D34 	70 6F A0  1 
+1A31D38 	70 6F A0  1 44 16 A3  1 
+1A31D40 	9C 53 A0  1  4 73 65 65 
+1A31D48 	6B  0  0  0 DC 31 A2  1 
+1A31D50 	30 49 A0  1 
+
+   select-file          ( )
+1A31D54 	F0 1A A3  1 
+;
+1A31D58 	58 46 A0  1 
+
+headers
+\ In order to simplify the error handling logic, instead of passing
+\ flags around, we just abort when a fatal error occurs.  The "catch"
+\ intercepts the abort and returns the appropriate flag value.
+: open  ( -- okay? )  ['] try-open  catch  0=  ;
+1A31D5C 	 0  0  0 6F 
+1A31D60 	70 65 6E 84  8 1D A3  1 
+1A31D68 	20 40 A0  1 60 53 A0  1 
+1A31D70 	 8 1D A3  1 14 7F A0  1 
+1A31D78 	24 47 A0  1 58 46 A0  1 

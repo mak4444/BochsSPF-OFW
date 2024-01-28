@@ -1,0 +1,45 @@
+[ifndef] tokenizing
+also forth definitions
+warning @  warning off
+: beep  ( -- )  " /isa/timer" " ring-bell" execute-device-method drop  ;
+1A39CF0 	 0  0  0 62 65 65 70 84 
+1A39CF8 	C8 91 A3  1 20 40 A0  1 
+1A39D00 	9C 53 A0  1  A 2F 69 73 
+1A39D08 	61 2F 74 69 6D 65 72  0 
+1A39D10 	9C 53 A0  1  9 72 69 6E 
+1A39D18 	67 2D 62 65 6C 6C  0  0 
+1A39D20 	84 3F A2  1 30 49 A0  1 
+1A39D28 	58 46 A0  1 
+warning !
+
+stand-init: ISA
+1A39D2C 	 0 73 74 61 
+1A39D30 	6E 64 2D 69 6E 69 74 8A 
+1A39D38 	FC 9C A3  1 20 40 A0  1 
+1A39D40 	C8 91 A3  1 9C 53 A0  1 
+1A39D48 	 3 49 53 41  0  0  0  0 
+1A39D50 	80 6D A0  1  4 6C A0  1 
+   " /isa"                 " init"  execute-device-method drop
+1A39D58 	9C 53 A0  1  4 2F 69 73 
+1A39D60 	61  0  0  0 9C 53 A0  1 
+1A39D68 	 4 69 6E 69 74  0  0  0 
+1A39D70 	84 3F A2  1 30 49 A0  1 
+\ mmo   " /isa/interrupt-controller"  " init"  execute-device-method drop
+   " /isa/timer"           " init"  execute-device-method drop
+1A39D78 	9C 53 A0  1  A 2F 69 73 
+1A39D80 	61 2F 74 69 6D 65 72  0 
+1A39D88 	9C 53 A0  1  4 69 6E 69 
+1A39D90 	74  0  0  0 84 3F A2  1 
+1A39D98 	30 49 A0  1 
+   " /isa/dma-controller"  " init"  execute-device-method drop
+1A39D9C 	9C 53 A0  1 
+1A39DA0 	13 2F 69 73 61 2F 64 6D 
+1A39DA8 	61 2D 63 6F 6E 74 72 6F 
+1A39DB0 	6C 6C 65 72  0  0  0  0 
+1A39DB8 	9C 53 A0  1  4 69 6E 69 
+1A39DC0 	74  0  0  0 84 3F A2  1 
+1A39DC8 	30 49 A0  1 
+;
+1A39DCC 	58 46 A0  1 
+previous definitions
+[then]

@@ -1,0 +1,561 @@
+
+: le-w@  ( adr -- w )  dup c@ swap ca1+ c@ bwjoin  ;
+1A3FF8C 	 0  0 6C 65 
+1A3FF90 	2D 77 40 85 34 FF A3  1 
+1A3FF98 	20 40 A0  1 40 49 A0  1 
+1A3FFA0 	C4 4C A0  1 68 49 A0  1 
+1A3FFA8 	78 50 A0  1 C4 4C A0  1 
+1A3FFB0 	84 FB A0  1 58 46 A0  1 
+
+: ide-get-drive-parms  ( -- found? )
+1A3FFB8 	69 64 65 2D 67 65 74 2D 
+1A3FFC0 	64 72 69 76 65 2D 70 61 
+1A3FFC8 	72 6D 73 93 98 FF A3  1 
+1A3FFD0 	20 40 A0  1 
+   d# 512 /block!
+1A3FFD4 	58 41 A0  1 
+1A3FFD8 	 0  2  0  0 8C EB A3  1 
+
+   false  atapi-drive?!
+1A3FFE0 	18 70 A0  1 24 EC A3  1 
+   0      drive-type!
+1A3FFE8 	70 6F A0  1 D4 EB A3  1 
+
+   wait-while-busy  if  false exit  then
+1A3FFF0 	AC EE A3  1 DC 41 A0  1 
+1A3FFF8 	 C  0  0  0 18 70 A0  1 
+1A40000 	40 46 A0  1 
+   2 r-dor!             \ Turn off IRQ14
+1A40004 	90 6F A0  1 
+1A40008 	80 EE A3  1 
+
+   0 drive r-head!
+1A4000C 	70 6F A0  1 
+1A40010 	34 EA A3  1 10 F0 A3  1 
+
+   h# ec r-csr!		\ Identify command
+1A40018 	58 41 A0  1 EC  0  0  0 
+1A40020 	4C F0 A3  1 
+
+   scratchbuf d# 512 pio-rblock  if  false exit  then
+1A40024 	F4 F5 A3  1 
+1A40028 	58 41 A0  1  0  2  0  0 
+1A40030 	4C F3 A3  1 DC 41 A0  1 
+1A40038 	 C  0  0  0 18 70 A0  1 
+1A40040 	40 46 A0  1 
+
+   scratchbuf 1 wa+ le-w@ /cyls!
+1A40044 	F4 F5 A3  1 
+1A40048 	80 6F A0  1 18 50 A0  1 
+1A40050 	98 FF A3  1 A4 EC A3  1 
+   scratchbuf 3 wa+ le-w@ /heads!
+1A40058 	F4 F5 A3  1 A0 6F A0  1 
+1A40060 	18 50 A0  1 98 FF A3  1 
+1A40068 	E4 EC A3  1 
+   scratchbuf 6 wa+ le-w@ /secs!
+1A4006C 	F4 F5 A3  1 
+1A40070 	D0 6F A0  1 18 50 A0  1 
+1A40078 	98 FF A3  1 64 EC A3  1 
+
+\   /cyls h# 3fff u>=  if
+   scratchbuf d# 49 wa+ w@ h# 200 and  if  \ LBA
+1A40080 	F4 F5 A3  1 58 41 A0  1 
+1A40088 	31  0  0  0 18 50 A0  1 
+1A40090 	94 4C A0  1 58 41 A0  1 
+1A40098 	 0  2  0  0 5C 44 A0  1 
+1A400A0 	DC 41 A0  1 34  0  0  0 
+      scratchbuf d# 60 wa+ le-w@
+1A400A8 	F4 F5 A3  1 58 41 A0  1 
+1A400B0 	3C  0  0  0 18 50 A0  1 
+1A400B8 	98 FF A3  1 
+      scratchbuf d# 61 wa+ le-w@
+1A400BC 	F4 F5 A3  1 
+1A400C0 	58 41 A0  1 3D  0  0  0 
+1A400C8 	18 50 A0  1 98 FF A3  1 
+      wljoin /lba!
+1A400D0 	D4 4F A0  1 24 ED A3  1 
+   then
+
+   true
+1A400D8 	 4 70 A0  1 
+;
+1A400DC 	58 46 A0  1 
+
+: get-drive-parms  ( -- found? )
+1A400E0 	67 65 74 2D 64 72 69 76 
+1A400E8 	65 2D 70 61 72 6D 73 8F 
+1A400F0 	D0 FF A3  1 20 40 A0  1 
+   \ Reset this string (primary or secondary) on the first time through,
+   \ in order to clear any errors that might be hanging around from uses
+   \ of the drive by previous software.
+   drive 0=  if  4 r-dor!  0 r-dor!  then
+1A400F8 	34 EA A3  1 24 47 A0  1 
+1A40100 	DC 41 A0  1 14  0  0  0 
+1A40108 	B0 6F A0  1 80 EE A3  1 
+1A40110 	70 6F A0  1 80 EE A3  1 
+
+   wait-while-busy  if  false exit  then
+1A40118 	AC EE A3  1 DC 41 A0  1 
+1A40120 	 C  0  0  0 18 70 A0  1 
+1A40128 	40 46 A0  1 
+   0 drive r-head!		\ select drive
+1A4012C 	70 6F A0  1 
+1A40130 	34 EA A3  1 10 F0 A3  1 
+   0 r-dor!			\ flush ISA bus
+1A40138 	70 6F A0  1 80 EE A3  1 
+   6 reg@ h# a0 drive 4 lshift or  = if
+1A40140 	D0 6F A0  1 44 ED A3  1 
+1A40148 	58 41 A0  1 A0  0  0  0 
+1A40150 	34 EA A3  1 B0 6F A0  1 
+1A40158 	9C 44 A0  1 70 44 A0  1 
+1A40160 	24 48 A0  1 DC 41 A0  1 
+1A40168 	BC  0  0  0 
+      r-cyl@ eb14 =  if
+1A4016C 	E0 ED A3  1 
+1A40170 	58 41 A0  1 14 EB  0  0 
+1A40178 	24 48 A0  1 DC 41 A0  1 
+1A40180 	14  0  0  0 
+         \ If H/W reset resets the IDE bus, there's no need for atapi-reset
+	 \ Unfortunately, the vl-reset on the Shark does not seem to fully
+	 \ reset the ATAPI drive, therefore, we are doing it here.
+         atapi-reset		\ atapi soft reset
+1A40184 	E0 F9 A3  1 
+         atapi-get-drive-parms     ( found? )
+1A40188 	8C F8 A3  1 
+      else
+1A4018C 	C8 41 A0  1 
+1A40190 	8C  0  0  0 
+         r-csr@ 0<>  r-csr@ h# ff <>  and  if
+1A40194 	48 EE A3  1 
+1A40198 	44 47 A0  1 48 EE A3  1 
+1A401A0 	58 41 A0  1 FF  0  0  0 
+1A401A8 	44 48 A0  1 5C 44 A0  1 
+1A401B0 	DC 41 A0  1 64  0  0  0 
+            drive 0=  if
+1A401B8 	34 EA A3  1 24 47 A0  1 
+1A401C0 	DC 41 A0  1 18  0  0  0 
+               wait-until-ready  if  false exit  then
+1A401C8 	18 F2 A3  1 DC 41 A0  1 
+1A401D0 	 C  0  0  0 18 70 A0  1 
+1A401D8 	40 46 A0  1 
+            then	\ wait until spin-up
+            r-csr@ h# f0 and h# 50 =  if
+1A401DC 	48 EE A3  1 
+1A401E0 	58 41 A0  1 F0  0  0  0 
+1A401E8 	5C 44 A0  1 58 41 A0  1 
+1A401F0 	50  0  0  0 24 48 A0  1 
+1A401F8 	DC 41 A0  1 10  0  0  0 
+               ide-get-drive-parms                 ( found? )
+1A40200 	D0 FF A3  1 
+            else
+1A40204 	C8 41 A0  1 
+1A40208 	 8  0  0  0 
+               false                               ( found? )
+1A4020C 	18 70 A0  1 
+            then
+         else
+1A40210 	C8 41 A0  1  8  0  0  0 
+            false                                  ( found? )
+1A40218 	18 70 A0  1 
+         then
+      then
+   else
+1A4021C 	C8 41 A0  1 
+1A40220 	 8  0  0  0 
+      false                                        ( found? )
+1A40224 	18 70 A0  1 
+   then
+;
+1A40228 	58 46 A0  1 
+
+external
+
+: block-size  ( -- n )  0 drive r-head!  /block@  ;
+1A4022C 	 0 62 6C 6F 
+1A40230 	63 6B 2D 73 69 7A 65 8A 
+1A40238 	F4  0 A4  1 20 40 A0  1 
+1A40240 	70 6F A0  1 34 EA A3  1 
+1A40248 	10 F0 A3  1 6C EB A3  1 
+1A40250 	58 46 A0  1 
+: #blocks  ( -- n )
+1A40254 	23 62 6C 6F 
+1A40258 	63 6B 73 87 3C  2 A4  1 
+1A40260 	20 40 A0  1 
+   atapi-drive?@  if
+1A40264 	FC EB A3  1 
+1A40268 	DC 41 A0  1 10  0  0  0 
+     atapi-capacity
+1A40270 	34 FF A3  1 
+   else
+1A40274 	C8 41 A0  1 
+1A40278 	2C  0  0  0 
+     /lba ?dup  0=  if               ( )
+1A4027C 	 4 ED A3  1 
+1A40280 	B4 70 A0  1 24 47 A0  1 
+1A40288 	DC 41 A0  1 18  0  0  0 
+        /cyls /secs /heads * *       ( #blocks )
+1A40290 	84 EC A3  1 44 EC A3  1 
+1A40298 	C4 EC A3  1 1C 5F A0  1 
+1A402A0 	1C 5F A0  1 
+     then                            ( #blocks )
+   then                              ( #blocks )
+;
+1A402A4 	58 46 A0  1 
+
+: dma-alloc  ( n -- vaddr )  " dma-alloc" $call-parent  ;
+1A402A8 	 0  0 64 6D 61 2D 61 6C 
+1A402B0 	6C 6F 63 89 60  2 A4  1 
+1A402B8 	20 40 A0  1 9C 53 A0  1 
+1A402C0 	 9 64 6D 61 2D 61 6C 6C 
+1A402C8 	6F 63  0  0 DC 31 A2  1 
+1A402D0 	58 46 A0  1 
+: dma-free  ( vaddr n -- )  " dma-free" $call-parent  ;
+1A402D4 	 0  0  0 64 
+1A402D8 	6D 61 2D 66 72 65 65 88 
+1A402E0 	B8  2 A4  1 20 40 A0  1 
+1A402E8 	9C 53 A0  1  8 64 6D 61 
+1A402F0 	2D 66 72 65 65  0  0  0 
+1A402F8 	DC 31 A2  1 58 46 A0  1 
+: max-transfer  ( -- n )   d# 256 /block@ *  ;
+1A40300 	 0  0  0 6D 61 78 2D 74 
+1A40308 	72 61 6E 73 66 65 72 8C 
+1A40310 	E4  2 A4  1 20 40 A0  1 
+1A40318 	58 41 A0  1  0  1  0  0 
+1A40320 	6C EB A3  1 1C 5F A0  1 
+1A40328 	58 46 A0  1 
+: read-blocks   ( addr block# #blocks -- #read )
+1A4032C 	72 65 61 64 
+1A40330 	2D 62 6C 6F 63 6B 73 8B 
+1A40338 	14  3 A4  1 20 40 A0  1 
+   atapi-drive?@  if  atapi-read  else  true  r/w-blocks  then
+1A40340 	FC EB A3  1 DC 41 A0  1 
+1A40348 	10  0  0  0 34 FD A3  1 
+1A40350 	C8 41 A0  1  C  0  0  0 
+1A40358 	 4 70 A0  1  0 F5 A3  1 
+;
+1A40360 	58 46 A0  1 
+: write-blocks  ( addr block# #blocks -- #written )
+1A40364 	 0  0  0 77 
+1A40368 	72 69 74 65 2D 62 6C 6F 
+1A40370 	63 6B 73 8C 3C  3 A4  1 
+1A40378 	20 40 A0  1 
+   atapi-drive?@  if  atapi-write  else  false r/w-blocks  then
+1A4037C 	FC EB A3  1 
+1A40380 	DC 41 A0  1 10  0  0  0 
+1A40388 	 C FE A3  1 C8 41 A0  1 
+1A40390 	 C  0  0  0 18 70 A0  1 
+1A40398 	 0 F5 A3  1 
+;
+1A4039C 	58 46 A0  1 
+: ide-inquiry  ( -- false | drive-type true )
+1A403A0 	69 64 65 2D 69 6E 71 75 
+1A403A8 	69 72 79 8B 78  3 A4  1 
+1A403B0 	20 40 A0  1 
+   /block@ 0=  if  false  else  drive-type@ true  then
+1A403B4 	6C EB A3  1 
+1A403B8 	24 47 A0  1 DC 41 A0  1 
+1A403C0 	10  0  0  0 18 70 A0  1 
+1A403C8 	C8 41 A0  1  C  0  0  0 
+1A403D0 	B0 EB A3  1  4 70 A0  1 
+;
+1A403D8 	58 46 A0  1 
+: ide-drive-inquiry  ( log-drive -- false | drive-type true )
+1A403DC 	 0  0 69 64 
+1A403E0 	65 2D 64 72 69 76 65 2D 
+1A403E8 	69 6E 71 75 69 72 79 91 
+1A403F0 	B0  3 A4  1 20 40 A0  1 
+   dup max#drives >=  if  drop false  else  to log-drive  ide-inquiry  then
+1A403F8 	40 49 A0  1 50 E9 A3  1 
+1A40400 	EC 48 A0  1 DC 41 A0  1 
+1A40408 	14  0  0  0 30 49 A0  1 
+1A40410 	18 70 A0  1 C8 41 A0  1 
+1A40418 	10  0  0  0 48 B8 A1  1 
+1A40420 	4C EA A3  1 B0  3 A4  1 
+;
+1A40428 	58 46 A0  1 
+
+: set-address  ( dummy unit -- )
+1A4042C 	73 65 74 2D 
+1A40430 	61 64 64 72 65 73 73 8B 
+1A40438 	F4  3 A4  1 20 40 A0  1 
+   \ units 0 and 1 are primary ide drives, 2 and 3 are secondary ide drives
+   nip dup to log-drive 1 and to drive
+1A40440 	FC 46 A0  1 40 49 A0  1 
+1A40448 	48 B8 A1  1 4C EA A3  1 
+1A40450 	80 6F A0  1 5C 44 A0  1 
+1A40458 	48 B8 A1  1 34 EA A3  1 
+   log-drive 2 <  if  pri-chip-base pri-dor  else  sec-chip-base sec-dor  then
+1A40460 	4C EA A3  1 90 6F A0  1 
+1A40468 	E4 47 A0  1 DC 41 A0  1 
+1A40470 	14  0  0  0 9C E9 A3  1 
+1A40478 	B0 E9 A3  1 C8 41 A0  1 
+1A40480 	 C  0  0  0 CC E9 A3  1 
+1A40488 	E0 E9 A3  1 
+   to dor to chip-base
+1A4048C 	48 B8 A1  1 
+1A40490 	20 EA A3  1 48 B8 A1  1 
+1A40498 	10 EA A3  1 
+;
+1A4049C 	58 46 A0  1 
+
+\ For switching between programmed-I/O and DMA operational modes
+
+0 instance value 'open-dma
+1A404A0 	 0  0 27 6F 70 65 6E 2D 
+1A404A8 	64 6D 61 89 3C  4 A4  1 
+1A404B0 	C0 FE A1  1 30  0  0  0 
+0 instance value 'close-dma
+1A404B8 	 0 27 63 6C 6F 73 65 2D 
+1A404C0 	64 6D 61 8A B0  4 A4  1 
+1A404C8 	C0 FE A1  1 34  0  0  0 
+0 instance value 'set-drive-cfg
+1A404D0 	 0 27 73 65 74 2D 64 72 
+1A404D8 	69 76 65 2D 63 66 67 8E 
+1A404E0 	C8  4 A4  1 C0 FE A1  1 
+1A404E8 	38  0  0  0 
+defer close-dma  ' noop is close-dma
+1A404EC 	 0  0 63 6C 
+1A404F0 	6F 73 65 2D 64 6D 61 89 
+1A404F8 	E4  4 A4  1 5C 40 A0  1 
+1A40500 	4C  D  0  0 
+defer open-dma   ' noop to open-dma
+1A40504 	 0  0  0 6F 
+1A40508 	70 65 6E 2D 64 6D 61 88 
+1A40510 	FC  4 A4  1 5C 40 A0  1 
+1A40518 	50  D  0  0 
+defer set-drive-cfg  ' noop to set-drive-cfg
+1A4051C 	 0  0 73 65 
+1A40520 	74 2D 64 72 69 76 65 2D 
+1A40528 	63 66 67 8D 14  5 A4  1 
+1A40530 	5C 40 A0  1 54  D  0  0 
+: save-dma-open  ( -- )
+1A40538 	 0  0 73 61 76 65 2D 64 
+1A40540 	6D 61 2D 6F 70 65 6E 8D 
+1A40548 	30  5 A4  1 20 40 A0  1 
+   ['] open-dma      behavior to 'open-dma
+1A40550 	60 53 A0  1 14  5 A4  1 
+1A40558 	10 C7 A0  1 48 B8 A1  1 
+1A40560 	B0  4 A4  1 
+   ['] close-dma     behavior to 'close-dma
+1A40564 	60 53 A0  1 
+1A40568 	FC  4 A4  1 10 C7 A0  1 
+1A40570 	48 B8 A1  1 C8  4 A4  1 
+   ['] set-drive-cfg behavior to 'set-drive-cfg
+1A40578 	60 53 A0  1 30  5 A4  1 
+1A40580 	10 C7 A0  1 48 B8 A1  1 
+1A40588 	E4  4 A4  1 
+;
+1A4058C 	58 46 A0  1 
+: restore-open-dma  ( -- )
+1A40590 	 0  0  0 72 65 73 74 6F 
+1A40598 	72 65 2D 6F 70 65 6E 2D 
+1A405A0 	64 6D 61 90 4C  5 A4  1 
+1A405A8 	20 40 A0  1 
+   'open-dma      ?dup  if  to open-dma       then
+1A405AC 	B0  4 A4  1 
+1A405B0 	B4 70 A0  1 DC 41 A0  1 
+1A405B8 	 C  0  0  0 98 40 A0  1 
+1A405C0 	14  5 A4  1 
+   'close-dma     ?dup  if  to close-dma      then
+1A405C4 	C8  4 A4  1 
+1A405C8 	B4 70 A0  1 DC 41 A0  1 
+1A405D0 	 C  0  0  0 98 40 A0  1 
+1A405D8 	FC  4 A4  1 
+   'set-drive-cfg ?dup  if  to set-drive-cfg  then
+1A405DC 	E4  4 A4  1 
+1A405E0 	B4 70 A0  1 DC 41 A0  1 
+1A405E8 	 C  0  0  0 98 40 A0  1 
+1A405F0 	30  5 A4  1 
+;
+1A405F4 	58 46 A0  1 
+
+: parse-args  ( -- flag )
+1A405F8 	 0 70 61 72 73 65 2D 61 
+1A40600 	72 67 73 8A A8  5 A4  1 
+1A40608 	20 40 A0  1 
+   my-args  begin  dup  while       \ Execute mode modifiers
+1A4060C 	10  7 A2  1 
+1A40610 	40 49 A0  1 DC 41 A0  1 
+1A40618 	5C  0  0  0 
+      ascii , left-parse-string            ( rem$ first$ )
+1A4061C 	58 41 A0  1 
+1A40620 	2C  0  0  0 44 D7 A0  1 
+      my-self ['] $call-method  catch  if  ( rem$ x x x )
+1A40628 	EC 7E A0  1 60 53 A0  1 
+1A40630 	B4 31 A2  1 14 7F A0  1 
+1A40638 	DC 41 A0  1 30  0  0  0 
+         ." Unknown argument" cr
+1A40640 	20 7C A0  1 10 55 6E 6B 
+1A40648 	6E 6F 77 6E 20 61 72 67 
+1A40650 	75 6D 65 6E 74  0  0  0 
+1A40658 	80 6D A0  1 
+         3drop 2drop false exit
+1A4065C 	90 52 A0  1 
+1A40660 	AC 49 A0  1 18 70 A0  1 
+1A40668 	40 46 A0  1 
+      then                                 ( rem$ )
+   repeat                                  ( rem$ )
+1A4066C 	C8 41 A0  1 
+1A40670 	A0 FF FF FF 
+   2drop
+1A40674 	AC 49 A0  1 
+   true
+1A40678 	 4 70 A0  1 
+;
+1A4067C 	58 46 A0  1 
+
+: open-hardware  ( -- flag )
+1A40680 	 0  0 6F 70 65 6E 2D 68 
+1A40688 	61 72 64 77 61 72 65 8D 
+1A40690 	 8  6 A4  1 20 40 A0  1 
+   parse-args 0=  if  false exit  then
+1A40698 	 8  6 A4  1 24 47 A0  1 
+1A406A0 	DC 41 A0  1  C  0  0  0 
+1A406A8 	18 70 A0  1 40 46 A0  1 
+   (map)  to sec-dor  to sec-chip-base  to pri-dor  to pri-chip-base
+1A406B0 	C8 E7 A3  1 B8 40 A0  1 
+1A406B8 	E0 E9 A3  1 B8 40 A0  1 
+1A406C0 	CC E9 A3  1 B8 40 A0  1 
+1A406C8 	B0 E9 A3  1 B8 40 A0  1 
+1A406D0 	9C E9 A3  1 
+   open-dma
+1A406D4 	14  5 A4  1 
+
+   first-open?  if
+1A406D8 	68 E9 A3  1 DC 41 A0  1 
+1A406E0 	50  0  0  0 
+      max#drives 0  do
+1A406E4 	50 E9 A3  1 
+1A406E8 	70 6F A0  1 88 42 A0  1 
+1A406F0 	34  0  0  0 
+         d# 80 ms
+1A406F4 	58 41 A0  1 
+1A406F8 	50  0  0  0 60 E0 A1  1 
+         0 i  set-address  get-drive-parms  if  set-drive-cfg  then  loop
+1A40700 	70 6F A0  1 B4 42 A0  1 
+1A40708 	3C  4 A4  1 F4  0 A4  1 
+1A40710 	DC 41 A0  1  8  0  0  0 
+1A40718 	30  5 A4  1 F8 41 A0  1 
+1A40720 	D4 FF FF FF 
+      false to first-open?
+1A40724 	18 70 A0  1 
+1A40728 	B8 40 A0  1 68 E9 A3  1 
+   then
+
+   0 0 set-address		\ Default
+1A40730 	70 6F A0  1 70 6F A0  1 
+1A40738 	3C  4 A4  1 
+
+   \ should perform a quick "sanity check" selftest here,
+   \ returning true iff the test succeeds.
+
+   true
+1A4073C 	 4 70 A0  1 
+;
+1A40740 	58 46 A0  1 
+: reopen-hardware  ( -- flag )  parse-args  ;
+1A40744 	72 65 6F 70 
+1A40748 	65 6E 2D 68 61 72 64 77 
+1A40750 	61 72 65 8F 94  6 A4  1 
+1A40758 	20 40 A0  1  8  6 A4  1 
+1A40760 	58 46 A0  1 
+
+: close-hardware  ( -- )
+1A40764 	 0 63 6C 6F 
+1A40768 	73 65 2D 68 61 72 64 77 
+1A40770 	61 72 65 8E 58  7 A4  1 
+1A40778 	20 40 A0  1 
+   close-dma   
+1A4077C 	FC  4 A4  1 
+   pri-chip-base pri-dor sec-chip-base sec-dor (unmap)
+1A40780 	9C E9 A3  1 B0 E9 A3  1 
+1A40788 	CC E9 A3  1 E0 E9 A3  1 
+1A40790 	58 E8 A3  1 
+   restore-open-dma
+1A40794 	A8  5 A4  1 
+;
+1A40798 	58 46 A0  1 
+: reclose-hardware  ( -- )  restore-open-dma  ;
+1A4079C 	 0  0  0 72 
+1A407A0 	65 63 6C 6F 73 65 2D 68 
+1A407A8 	61 72 64 77 61 72 65 90 
+1A407B0 	78  7 A4  1 20 40 A0  1 
+1A407B8 	A8  5 A4  1 58 46 A0  1 
+
+: selftest  ( -- 0 | error-code )
+1A407C0 	 0  0  0 73 65 6C 66 74 
+1A407C8 	65 73 74 88 B4  7 A4  1 
+1A407D0 	20 40 A0  1 
+   \ perform reasonably extensive selftest here, displaying
+   \ a message if the test fails, and returning an error code if the
+   \ test fails or 0 if the test succeeds.
+   0
+1A407D4 	70 6F A0  1 
+;
+1A407D8 	58 46 A0  1 
+
+: open  ( -- flag )
+1A407DC 	 0  0  0 6F 
+1A407E0 	70 65 6E 84 D0  7 A4  1 
+1A407E8 	20 40 A0  1 
+   open-count  if
+1A407EC 	80 E9 A3  1 
+1A407F0 	DC 41 A0  1 30  0  0  0 
+      reopen-hardware  dup  if  open-count 1+ to open-count  then
+1A407F8 	58  7 A4  1 40 49 A0  1 
+1A40800 	DC 41 A0  1 14  0  0  0 
+1A40808 	80 E9 A3  1 30 4B A0  1 
+1A40810 	B8 40 A0  1 80 E9 A3  1 
+      exit
+1A40818 	40 46 A0  1 
+   else
+1A4081C 	C8 41 A0  1 
+1A40820 	20  0  0  0 
+      open-hardware  dup  if
+1A40824 	94  6 A4  1 
+1A40828 	40 49 A0  1 DC 41 A0  1 
+1A40830 	10  0  0  0 
+         1 to open-count
+1A40834 	80 6F A0  1 
+1A40838 	B8 40 A0  1 80 E9 A3  1 
+      then
+   then
+;
+1A40840 	58 46 A0  1 
+: close  ( -- )
+1A40844 	 0  0 63 6C 
+1A40848 	6F 73 65 85 E8  7 A4  1 
+1A40850 	20 40 A0  1 
+   open-count 1- to open-count
+1A40854 	80 E9 A3  1 
+1A40858 	54 4B A0  1 B8 40 A0  1 
+1A40860 	80 E9 A3  1 
+   open-count  if
+1A40864 	80 E9 A3  1 
+1A40868 	DC 41 A0  1 10  0  0  0 
+      reclose-hardware
+1A40870 	B4  7 A4  1 
+   else
+1A40874 	C8 41 A0  1 
+1A40878 	 8  0  0  0 
+      close-hardware
+1A4087C 	78  7 A4  1 
+   then
+;
+1A40880 	58 46 A0  1 
+
+: set-blk-w  ( w@-addr w!-addr -- )  to io-blk-w! to io-blk-w@  ;
+1A40884 	 0  0 73 65 
+1A40888 	74 2D 62 6C 6B 2D 77 89 
+1A40890 	50  8 A4  1 20 40 A0  1 
+1A40898 	98 40 A0  1 6C F0 A3  1 
+1A408A0 	98 40 A0  1 84 F0 A3  1 
+1A408A8 	58 46 A0  1 
+
+[ifdef] notyet
+: set-pio-mode  ( mode -- )
+   3 r-features!
+   8 or r-#secs!
+   h# ef r-csr!
+;
+[then]

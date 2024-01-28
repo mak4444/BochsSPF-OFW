@@ -1,0 +1,116 @@
+
+\ High level versions of string utilities needed for sifting
+
+only forth also hidden also definitions
+decimal
+forth definitions
+\ True if str1 is a substring of str2
+: substring?   ( adr1 len1  adr2 len2 -- flag )
+1A11674 	 0 73 75 62 
+1A11678 	73 74 72 69 6E 67 3F 8A 
+1A11680 	CC 15 A1  1 20 40 A0  1 
+   rot tuck     ( adr1 adr2 len1  len2 len1 )
+1A11688 	7C 49 A0  1 E8 46 A0  1 
+   <  if  3drop false  else  tuck $=  then
+1A11690 	E4 47 A0  1 DC 41 A0  1 
+1A11698 	14  0  0  0 90 52 A0  1 
+1A116A0 	18 70 A0  1 C8 41 A0  1 
+1A116A8 	 C  0  0  0 E8 46 A0  1 
+1A116B0 	88 8D A0  1 
+;
+1A116B4 	58 46 A0  1 
+
+headerless
+: unpack-name ( anf where -- where) \ Strip funny chars from a name field
+1A116B8 	75 6E 70 61 63 6B 2D 6E 
+1A116C0 	61 6D 65 8B 84 16 A1  1 
+1A116C8 	20 40 A0  1 
+   swap name>string rot pack
+1A116CC 	68 49 A0  1 
+1A116D0 	58 74 A0  1 7C 49 A0  1 
+1A116D8 	DC 52 A0  1 
+;
+1A116DC 	58 46 A0  1 
+\ hidden definitions
+: 4dup   ( n1 n2 n3 n4 -- n1 n2 n3 n4 n1 n2 n3 n4 )  2over 2over  ;
+1A116E0 	 0  0  0 34 64 75 70 84 
+1A116E8 	C8 16 A1  1 20 40 A0  1 
+1A116F0 	D8 49 A0  1 D8 49 A0  1 
+1A116F8 	58 46 A0  1 
+
+headers
+\ forth definitions
+: sindex  ( adr1 len1 adr2 len2 -- n )
+1A116FC 	 0 73 69 6E 
+1A11700 	64 65 78 86 EC 16 A1  1 
+1A11708 	20 40 A0  1 
+   0 >r
+1A1170C 	70 6F A0  1 
+1A11710 	BC 45 A0  1 
+   begin  ( adr1 len1 adr2' len2' )
+      \ If string 1 is longer than string 2, it is not a substring
+      2 pick over  >  if  r> 5drop  -1 exit   then
+1A11714 	90 6F A0  1 
+1A11718 	 C 4A A0  1 54 49 A0  1 
+1A11720 	 4 48 A0  1 DC 41 A0  1 
+1A11728 	18  0  0  0 D0 45 A0  1 
+1A11730 	4C 53 A0  1 58 41 A0  1 
+1A11738 	FF FF FF FF 40 46 A0  1 
+      4dup substring?  if  4drop r> exit  then
+1A11740 	EC 16 A1  1 84 16 A1  1 
+1A11748 	DC 41 A0  1 10  0  0  0 
+1A11750 	38 53 A0  1 D0 45 A0  1 
+1A11758 	40 46 A0  1 
+      \ Not found, so remove the first character from string 2 and try again
+      swap 1+ swap 1-
+1A1175C 	68 49 A0  1 
+1A11760 	30 4B A0  1 68 49 A0  1 
+1A11768 	54 4B A0  1 
+      r> 1+ >r
+1A1176C 	D0 45 A0  1 
+1A11770 	30 4B A0  1 BC 45 A0  1 
+   again
+1A11778 	C8 41 A0  1 98 FF FF FF 
+;
+1A11780 	58 46 A0  1 
+
+\ This version is faster (due to bscan being a code word) and arguably more convenient than sindex
+: $sindex  ( small$ big$ -- rem$ )
+1A11784 	24 73 69 6E 
+1A11788 	64 65 78 87  8 17 A1  1 
+1A11790 	20 40 A0  1 
+   2 pick 0=  if  4drop 0  then  \ Null string is initial substring of anything
+1A11794 	90 6F A0  1 
+1A11798 	 C 4A A0  1 24 47 A0  1 
+1A117A0 	DC 41 A0  1  C  0  0  0 
+1A117A8 	38 53 A0  1 70 6F A0  1 
+   3 pick c@  >r                 ( small$ big$  r: firstchar )
+1A117B0 	A0 6F A0  1  C 4A A0  1 
+1A117B8 	C4 4C A0  1 BC 45 A0  1 
+   begin  r@  bscan  dup while   ( small$ rem$  r: firstchar )
+1A117C0 	E4 45 A0  1 38 4F A0  1 
+1A117C8 	40 49 A0  1 DC 41 A0  1 
+1A117D0 	34  0  0  0 
+      4dup substring?  if        ( small$ rem$  r: firstchar )
+1A117D4 	EC 16 A1  1 
+1A117D8 	84 16 A1  1 DC 41 A0  1 
+1A117E0 	14  0  0  0 
+         2swap r> 3drop  exit    ( -- rem$ )
+1A117E4 	F4 49 A0  1 
+1A117E8 	D0 45 A0  1 90 52 A0  1 
+1A117F0 	40 46 A0  1 
+      then                       ( small$ rem$  r: firstchar )
+      1 /string                  ( small$ rem$'  r: firstchar )
+1A117F4 	80 6F A0  1 
+1A117F8 	3C 85 A0  1 
+   repeat                        ( small$ rem$  r: firstchar )
+1A117FC 	C8 41 A0  1 
+1A11800 	C0 FF FF FF 
+   2swap r> 3drop                ( rem$ )
+1A11804 	F4 49 A0  1 
+1A11808 	D0 45 A0  1 90 52 A0  1 
+;
+1A11810 	58 46 A0  1 
+
+only forth also definitions
+

@@ -1,0 +1,181 @@
+purpose: ATAPI interface
+
+: atapifth 
+1A4BFE8 	 0  0  0 61 74 61 70 69 
+1A4BFF0 	66 74 68 88 D8 AC A4  1 
+1A4BFF8 	20 40 A0  1 
+hex
+1A4BFFC 	C0 8D A0  1 
+s" d# 12 dup constant pkt-len" eval
+1A4C000 	9C 53 A0  1 1A 64 23 20 
+1A4C008 	31 32 20 64 75 70 20 63 
+1A4C010 	6F 6E 73 74 61 6E 74 20 
+1A4C018 	70 6B 74 2D 6C 65 6E  0 
+1A4C020 	D8 E5 A0  1 
+s" buffer: pkt-buf" eval
+1A4C024 	9C 53 A0  1 
+1A4C028 	 F 62 75 66 66 65 72 3A 
+1A4C030 	20 70 6B 74 2D 62 75 66 
+1A4C038 	 0  0  0  0 D8 E5 A0  1 
+
+\ ATAPI devices only accept 12 byte long commands
+\ Fixup the SCSI commands before sending them out
+
+s" : translate-atapi-command" eval  ( cmd-adr,len -- pkt-buf,len )
+1A4C040 	9C 53 A0  1 19 3A 20 74 
+1A4C048 	72 61 6E 73 6C 61 74 65 
+1A4C050 	2D 61 74 61 70 69 2D 63 
+1A4C058 	6F 6D 6D 61 6E 64  0  0 
+1A4C060 	D8 E5 A0  1 
+s"    pkt-buf dup >r pkt-len erase" eval			\ Zero pkt-buf
+1A4C064 	9C 53 A0  1 
+1A4C068 	1F 20 20 20 70 6B 74 2D 
+1A4C070 	62 75 66 20 64 75 70 20 
+1A4C078 	3E 72 20 70 6B 74 2D 6C 
+1A4C080 	65 6E 20 65 72 61 73 65 
+1A4C088 	 0  0  0  0 D8 E5 A0  1 
+s"    r@ swap move" eval				\ Copy cmd$ to pkt-buf
+1A4C090 	9C 53 A0  1  F 20 20 20 
+1A4C098 	72 40 20 73 77 61 70 20 
+1A4C0A0 	6D 6F 76 65  0  0  0  0 
+1A4C0A8 	D8 E5 A0  1 
+s"    r@ c@ dup h# 15 = swap h# 1a = or  if" eval	\ Mode send or mode select command
+1A4C0AC 	9C 53 A0  1 
+1A4C0B0 	28 20 20 20 72 40 20 63 
+1A4C0B8 	40 20 64 75 70 20 68 23 
+1A4C0C0 	20 31 35 20 3D 20 73 77 
+1A4C0C8 	61 70 20 68 23 20 31 61 
+1A4C0D0 	20 3D 20 6F 72 20 20 69 
+1A4C0D8 	66  0  0  0 D8 E5 A0  1 
+s"       r@ c@ h# 40 or r@ c!" eval		\ Fix it
+1A4C0E0 	9C 53 A0  1 1A 20 20 20 
+1A4C0E8 	20 20 20 72 40 20 63 40 
+1A4C0F0 	20 68 23 20 34 30 20 6F 
+1A4C0F8 	72 20 72 40 20 63 21  0 
+1A4C100 	D8 E5 A0  1 
+s"       r@ 4 + c@ r@ 8 + c!" eval
+1A4C104 	9C 53 A0  1 
+1A4C108 	19 20 20 20 20 20 20 72 
+1A4C110 	40 20 34 20 2B 20 63 40 
+1A4C118 	20 72 40 20 38 20 2B 20 
+1A4C120 	63 21  0  0 D8 E5 A0  1 
+s"       0 r@ 4 + c!" eval
+1A4C128 	9C 53 A0  1 11 20 20 20 
+1A4C130 	20 20 20 30 20 72 40 20 
+1A4C138 	34 20 2B 20 63 21  0  0 
+1A4C140 	D8 E5 A0  1 
+s"    else" eval
+1A4C144 	9C 53 A0  1 
+1A4C148 	 7 20 20 20 65 6C 73 65 
+1A4C150 	 0  0  0  0 D8 E5 A0  1 
+s"       r@ c@ dup 8 = swap h# a = or  if" eval		\ Read or write command
+1A4C158 	9C 53 A0  1 26 20 20 20 
+1A4C160 	20 20 20 72 40 20 63 40 
+1A4C168 	20 64 75 70 20 38 20 3D 
+1A4C170 	20 73 77 61 70 20 68 23 
+1A4C178 	20 61 20 3D 20 6F 72 20 
+1A4C180 	20 69 66  0 D8 E5 A0  1 
+s"          r@ c@ h# 20 or r@ c!" eval			\ Fix it
+1A4C188 	9C 53 A0  1 1D 20 20 20 
+1A4C190 	20 20 20 20 20 20 72 40 
+1A4C198 	20 63 40 20 68 23 20 32 
+1A4C1A0 	30 20 6F 72 20 72 40 20 
+1A4C1A8 	63 21  0  0 D8 E5 A0  1 
+s"          r@ 1+ c@ dup h# e0 and r@ 1+ c!" eval
+1A4C1B0 	9C 53 A0  1 28 20 20 20 
+1A4C1B8 	20 20 20 20 20 20 72 40 
+1A4C1C0 	20 31 2B 20 63 40 20 64 
+1A4C1C8 	75 70 20 68 23 20 65 30 
+1A4C1D0 	20 61 6E 64 20 72 40 20 
+1A4C1D8 	31 2B 20 63 21  0  0  0 
+1A4C1E0 	D8 E5 A0  1 
+s"          r@ 4 + c@ r@ 8 + c!" eval
+1A4C1E4 	9C 53 A0  1 
+1A4C1E8 	1C 20 20 20 20 20 20 20 
+1A4C1F0 	20 20 72 40 20 34 20 2B 
+1A4C1F8 	20 63 40 20 72 40 20 38 
+1A4C200 	20 2B 20 63 21  0  0  0 
+1A4C208 	D8 E5 A0  1 
+s"          r@ 3 + c@ r@ 5 + c!" eval
+1A4C20C 	9C 53 A0  1 
+1A4C210 	1C 20 20 20 20 20 20 20 
+1A4C218 	20 20 72 40 20 33 20 2B 
+1A4C220 	20 63 40 20 72 40 20 35 
+1A4C228 	20 2B 20 63 21  0  0  0 
+1A4C230 	D8 E5 A0  1 
+s"          r@ 2 + c@ r@ 4 + c!" eval
+1A4C234 	9C 53 A0  1 
+1A4C238 	1C 20 20 20 20 20 20 20 
+1A4C240 	20 20 72 40 20 32 20 2B 
+1A4C248 	20 63 40 20 72 40 20 34 
+1A4C250 	20 2B 20 63 21  0  0  0 
+1A4C258 	D8 E5 A0  1 
+s"          h# 1f and r@ 3 + c!" eval
+1A4C25C 	9C 53 A0  1 
+1A4C260 	1C 20 20 20 20 20 20 20 
+1A4C268 	20 20 68 23 20 31 66 20 
+1A4C270 	61 6E 64 20 72 40 20 33 
+1A4C278 	20 2B 20 63 21  0  0  0 
+1A4C280 	D8 E5 A0  1 
+s"          0 r@ 2 + c!" eval
+1A4C284 	9C 53 A0  1 
+1A4C288 	14 20 20 20 20 20 20 20 
+1A4C290 	20 20 30 20 72 40 20 32 
+1A4C298 	20 2B 20 63 21  0  0  0 
+1A4C2A0 	D8 E5 A0  1 
+s"       then" eval
+1A4C2A4 	9C 53 A0  1 
+1A4C2A8 	 A 20 20 20 20 20 20 74 
+1A4C2B0 	68 65 6E  0 D8 E5 A0  1 
+s"    then" eval
+1A4C2B8 	9C 53 A0  1  7 20 20 20 
+1A4C2C0 	74 68 65 6E  0  0  0  0 
+1A4C2C8 	D8 E5 A0  1 
+s"    r> pkt-len ;" eval
+1A4C2CC 	9C 53 A0  1 
+1A4C2D0 	 F 20 20 20 72 3E 20 70 
+1A4C2D8 	6B 74 2D 6C 65 6E 20 3B 
+1A4C2E0 	 0  0  0  0 D8 E5 A0  1 
+s" : init-atapi-execute-command" eval  ( -- )
+1A4C2E8 	9C 53 A0  1 1C 3A 20 69 
+1A4C2F0 	6E 69 74 2D 61 74 61 70 
+1A4C2F8 	69 2D 65 78 65 63 75 74 
+1A4C300 	65 2D 63 6F 6D 6D 61 6E 
+1A4C308 	64  0  0  0 D8 E5 A0  1 
+ "    "" is-atapi"" get-my-property 0=  if" eval
+1A4C310 	9C 53 A0  1 25 20 20 20 
+1A4C318 	22 20 69 73 2D 61 74 61 
+1A4C320 	70 69 22 20 67 65 74 2D 
+1A4C328 	6D 79 2D 70 72 6F 70 65 
+1A4C330 	72 74 79 20 30 3D 20 20 
+1A4C338 	69 66  0  0 D8 E5 A0  1 
+s"       2drop" eval
+1A4C340 	9C 53 A0  1  B 20 20 20 
+1A4C348 	20 20 20 32 64 72 6F 70 
+1A4C350 	 0  0  0  0 D8 E5 A0  1 
+s"       ['] translate-atapi-command to execute-command-hook" eval
+1A4C358 	9C 53 A0  1 39 20 20 20 
+1A4C360 	20 20 20 5B 27 5D 20 74 
+1A4C368 	72 61 6E 73 6C 61 74 65 
+1A4C370 	2D 61 74 61 70 69 2D 63 
+1A4C378 	6F 6D 6D 61 6E 64 20 74 
+1A4C380 	6F 20 65 78 65 63 75 74 
+1A4C388 	65 2D 63 6F 6D 6D 61 6E 
+1A4C390 	64 2D 68 6F 6F 6B  0  0 
+1A4C398 	D8 E5 A0  1 
+s"    then ;" eval
+1A4C39C 	9C 53 A0  1 
+1A4C3A0 	 9 20 20 20 74 68 65 6E 
+1A4C3A8 	20 3B  0  0 D8 E5 A0  1 
+s" ' init-atapi-execute-command  to init-execute-command" eval
+1A4C3B0 	9C 53 A0  1 35 27 20 69 
+1A4C3B8 	6E 69 74 2D 61 74 61 70 
+1A4C3C0 	69 2D 65 78 65 63 75 74 
+1A4C3C8 	65 2D 63 6F 6D 6D 61 6E 
+1A4C3D0 	64 20 20 74 6F 20 69 6E 
+1A4C3D8 	69 74 2D 65 78 65 63 75 
+1A4C3E0 	74 65 2D 63 6F 6D 6D 61 
+1A4C3E8 	6E 64  0  0 D8 E5 A0  1 
+;
+1A4C3F0 	58 46 A0  1 
+\

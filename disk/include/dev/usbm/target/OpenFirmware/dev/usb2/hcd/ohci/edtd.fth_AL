@@ -1,0 +1,1399 @@
+purpose: Data structures and manuipulation routines for OHCI USB Controller
+
+hex
+headers
+
+\ XXX Isochronous is not supported in the current version of the OHCI driver
+
+\ ---------------------------------------------------------------------------
+\ Data structures for this implementation of the OHCI USB Driver include:
+\   - hcca 		256 bytes defined by OCHI Spec for USB HC
+\   - ed-control	pointer to the control ED list
+\   - ed-bulk		pointer to the bulk ED list
+\   - intr		internal array of interrupts (to complement the hcca)
+\ ---------------------------------------------------------------------------
+
+\ ---------------------------------------------------------------------------
+\ HcHCCA as defined by the OHCI Spec; 256-byte aligned
+\ ---------------------------------------------------------------------------
+
+0 value intr			\ Software interrupt buffer
+1A52E9C 	 0  0  0 69 
+1A52EA0 	6E 74 72 84  0  0 A0  1 
+1A52EA8 	50 40 A0  1 94  E  0  0 
+0 value hcca			\ Virtual address of HcHCCA
+1A52EB0 	 0  0  0 68 63 63 61 84 
+1A52EB8 	A8 2E A5  1 50 40 A0  1 
+1A52EC0 	98  E  0  0 
+0 value hcca-unaligned		\ Unaligned virtual address of HcHCCA
+1A52EC4 	 0 68 63 63 
+1A52EC8 	61 2D 75 6E 61 6C 69 67 
+1A52ED0 	6E 65 64 8E BC 2E A5  1 
+1A52ED8 	50 40 A0  1 9C  E  0  0 
+0 value hcca-phys		\ Physical address of HcHCCA
+1A52EE0 	 0  0 68 63 63 61 2D 70 
+1A52EE8 	68 79 73 89 D8 2E A5  1 
+1A52EF0 	50 40 A0  1 A0  E  0  0 
+
+\ HCCA
+d# 32 constant #intr
+1A52EF8 	 0  0 23 69 6E 74 72 85 
+1A52F00 	F0 2E A5  1 68 40 A0  1 
+1A52F08 	20  0  0  0 
+
+struct  ( hcca )
+#intr 4 * field >hcca-intr	\ Physical addresses of interrupt EDs
+1A52F0C 	 0 3E 68 63 
+1A52F10 	63 61 2D 69 6E 74 72 8A 
+1A52F18 	 4 2F A5  1 50 EE A0  1 
+1A52F20 	 0  0  0  0 
+2 field >hcca-frame
+1A52F24 	3E 68 63 63 
+1A52F28 	61 2D 66 72 61 6D 65 8B 
+1A52F30 	1C 2F A5  1 50 EE A0  1 
+1A52F38 	80  0  0  0 
+2 field >hcca-pad
+1A52F3C 	 0  0 3E 68 
+1A52F40 	63 63 61 2D 70 61 64 89 
+1A52F48 	34 2F A5  1 50 EE A0  1 
+1A52F50 	82  0  0  0 
+4 field >hcca-done		\ Physical addresses of done EDs
+1A52F54 	 0 3E 68 63 
+1A52F58 	63 61 2D 64 6F 6E 65 8A 
+1A52F60 	4C 2F A5  1 50 EE A0  1 
+1A52F68 	84  0  0  0 
+d# 120 field >hcca-reserved
+1A52F6C 	 0 3E 68 63 
+1A52F70 	63 61 2D 72 65 73 65 72 
+1A52F78 	76 65 64 8E 64 2F A5  1 
+1A52F80 	50 EE A0  1 88  0  0  0 
+constant /hcca
+1A52F88 	 0  0 2F 68 63 63 61 85 
+1A52F90 	80 2F A5  1 68 40 A0  1 
+1A52F98 	 0  1  0  0 
+
+: hcca!  ( padr idx -- )  4 * hcca + le-l!  ;
+1A52F9C 	 0  0 68 63 
+1A52FA0 	63 61 21 85 94 2F A5  1 
+1A52FA8 	20 40 A0  1 B0 6F A0  1 
+1A52FB0 	1C 5F A0  1 BC 2E A5  1 
+1A52FB8 	 4 45 A0  1 5C 35 A4  1 
+1A52FC0 	58 46 A0  1 
+
+: init-hcca  ( -- )
+1A52FC4 	 0  0 69 6E 
+1A52FC8 	69 74 2D 68 63 63 61 89 
+1A52FD0 	A8 2F A5  1 20 40 A0  1 
+   \ Allocate hcca
+   /hcca aligned256-alloc
+1A52FD8 	94 2F A5  1 F8 38 A4  1 
+   dup to hcca				\ Aligned address
+1A52FE0 	40 49 A0  1 B8 40 A0  1 
+1A52FE8 	BC 2E A5  1 
+   swap to hcca-unaligned		\ Unaligned address
+1A52FEC 	68 49 A0  1 
+1A52FF0 	B8 40 A0  1 D8 2E A5  1 
+   /hcca true dma-map-in to hcca-phys	\ Physical address
+1A52FF8 	94 2F A5  1  4 70 A0  1 
+1A53000 	B8 36 A4  1 B8 40 A0  1 
+1A53008 	F0 2E A5  1 
+
+   \ Initialize hcca
+   hcca /hcca erase
+1A5300C 	BC 2E A5  1 
+1A53010 	94 2F A5  1 F0 72 A0  1 
+   hcca hcca-phys /hcca dma-push
+1A53018 	BC 2E A5  1 F0 2E A5  1 
+1A53020 	94 2F A5  1  8 36 A4  1 
+;
+1A53028 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Internal interrupt list per >hcca-intr entry
+\
+\ XXX I can see how this can be expanded to >intr-head32ms, >intr-tail32ms,
+\ XXX and so on, to support the various poll intervals.  See comment on
+\ XXX interrupt scheduling below.
+\ ---------------------------------------------------------------------------
+struct 				\ An entry of intr
+   4 field >intr-head		\ Virtual address of interrupt head
+1A5302C 	 0 3E 69 6E 
+1A53030 	74 72 2D 68 65 61 64 8A 
+1A53038 	D4 2F A5  1 50 EE A0  1 
+1A53040 	 0  0  0  0 
+   4 field >intr-tail		\ Virtual address of interrupt tail
+1A53044 	 0 3E 69 6E 
+1A53048 	74 72 2D 74 61 69 6C 8A 
+1A53050 	3C 30 A5  1 50 EE A0  1 
+1A53058 	 4  0  0  0 
+   4 field >iso-head		\ Virtual address of isochronous head
+1A5305C 	 0  0 3E 69 
+1A53060 	73 6F 2D 68 65 61 64 89 
+1A53068 	54 30 A5  1 50 EE A0  1 
+1A53070 	 8  0  0  0 
+   4 field >iso-tail		\ Virtual address of isochronous tail
+1A53074 	 0  0 3E 69 
+1A53078 	73 6F 2D 74 61 69 6C 89 
+1A53080 	6C 30 A5  1 50 EE A0  1 
+1A53088 	 C  0  0  0 
+dup constant /intr-entry
+1A5308C 	2F 69 6E 74 
+1A53090 	72 2D 65 6E 74 72 79 8B 
+1A53098 	84 30 A5  1 68 40 A0  1 
+1A530A0 	10  0  0  0 
+#intr * constant /intr
+1A530A4 	 0  0 2F 69 
+1A530A8 	6E 74 72 85 9C 30 A5  1 
+1A530B0 	68 40 A0  1  0  2  0  0 
+
+: init-intr  ( -- )
+1A530B8 	 0  0 69 6E 69 74 2D 69 
+1A530C0 	6E 74 72 89 B0 30 A5  1 
+1A530C8 	20 40 A0  1 
+   /intr alloc-mem dup to intr		\ Allocate intr
+1A530CC 	B0 30 A5  1 
+1A530D0 	F0 6C A0  1 40 49 A0  1 
+1A530D8 	B8 40 A0  1 A8 2E A5  1 
+   /intr erase				\ Initialize intr
+1A530E0 	B0 30 A5  1 F0 72 A0  1 
+;
+1A530E8 	58 46 A0  1 
+
+: 'intr  ( idx -- adr )   /intr-entry * intr +  ;
+1A530EC 	 0  0 27 69 
+1A530F0 	6E 74 72 85 C8 30 A5  1 
+1A530F8 	20 40 A0  1 9C 30 A5  1 
+1A53100 	1C 5F A0  1 A8 2E A5  1 
+1A53108 	 4 45 A0  1 58 46 A0  1 
+: intr-head@  ( idx -- adr )  'intr >intr-head l@  ;
+1A53110 	 0 69 6E 74 72 2D 68 65 
+1A53118 	61 64 40 8A F8 30 A5  1 
+1A53120 	20 40 A0  1 F8 30 A5  1 
+1A53128 	3C 30 A5  1 6C 4C A0  1 
+1A53130 	58 46 A0  1 
+: intr-head!  ( adr idx -- )  'intr >intr-head l!  ;
+1A53134 	 0 69 6E 74 
+1A53138 	72 2D 68 65 61 64 21 8A 
+1A53140 	20 31 A5  1 20 40 A0  1 
+1A53148 	F8 30 A5  1 3C 30 A5  1 
+1A53150 	7C 4D A0  1 58 46 A0  1 
+: intr-tail@  ( idx -- adr )  'intr >intr-tail l@  ;
+1A53158 	 0 69 6E 74 72 2D 74 61 
+1A53160 	69 6C 40 8A 44 31 A5  1 
+1A53168 	20 40 A0  1 F8 30 A5  1 
+1A53170 	54 30 A5  1 6C 4C A0  1 
+1A53178 	58 46 A0  1 
+: intr-tail!  ( adr idx -- )  'intr >intr-tail l!  ;
+1A5317C 	 0 69 6E 74 
+1A53180 	72 2D 74 61 69 6C 21 8A 
+1A53188 	68 31 A5  1 20 40 A0  1 
+1A53190 	F8 30 A5  1 54 30 A5  1 
+1A53198 	7C 4D A0  1 58 46 A0  1 
+: iso-head@   ( idx -- adr )  'intr >iso-head l@   ;
+1A531A0 	 0  0 69 73 6F 2D 68 65 
+1A531A8 	61 64 40 89 8C 31 A5  1 
+1A531B0 	20 40 A0  1 F8 30 A5  1 
+1A531B8 	6C 30 A5  1 6C 4C A0  1 
+1A531C0 	58 46 A0  1 
+: iso-head!   ( adr idx -- )  'intr >iso-head l!   ;
+1A531C4 	 0  0 69 73 
+1A531C8 	6F 2D 68 65 61 64 21 89 
+1A531D0 	B0 31 A5  1 20 40 A0  1 
+1A531D8 	F8 30 A5  1 6C 30 A5  1 
+1A531E0 	7C 4D A0  1 58 46 A0  1 
+: iso-tail@   ( idx -- adr )  'intr >iso-tail l@   ;
+1A531E8 	 0  0 69 73 6F 2D 74 61 
+1A531F0 	69 6C 40 89 D4 31 A5  1 
+1A531F8 	20 40 A0  1 F8 30 A5  1 
+1A53200 	84 30 A5  1 6C 4C A0  1 
+1A53208 	58 46 A0  1 
+: iso-tail!   ( adr idx -- )  'intr >iso-tail l!   ;
+1A5320C 	 0  0 69 73 
+1A53210 	6F 2D 74 61 69 6C 21 89 
+1A53218 	F8 31 A5  1 20 40 A0  1 
+1A53220 	F8 30 A5  1 84 30 A5  1 
+1A53228 	7C 4D A0  1 58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Endpoint descriptor (ED) as defined by the OHCI Spec; 16-byte aligned
+\ ---------------------------------------------------------------------------
+
+\ XXX If we add ed-control-tail & ed-bulk-tail, then insert-* does not have
+\ XXX to disable the function, we need to skip tail until insert is done.
+
+0 value ed-control		\ Virtual address of head of control ED list
+1A53230 	 0 65 64 2D 63 6F 6E 74 
+1A53238 	72 6F 6C 8A 1C 32 A5  1 
+1A53240 	50 40 A0  1 A4  E  0  0 
+0 value ed-bulk			\ Virtual address of head of bulk ED list
+1A53248 	65 64 2D 62 75 6C 6B 87 
+1A53250 	40 32 A5  1 50 40 A0  1 
+1A53258 	A8  E  0  0 
+
+struct				\ Beginning of ED
+4 field >hced-control		\ ED control info
+1A5325C 	 0  0 3E 68 
+1A53260 	63 65 64 2D 63 6F 6E 74 
+1A53268 	72 6F 6C 8D 54 32 A5  1 
+1A53270 	50 EE A0  1  0  0  0  0 
+4 field >hced-tdtail		\ Physical address of TD tail
+1A53278 	 0  0  0 3E 68 63 65 64 
+1A53280 	2D 74 64 74 61 69 6C 8C 
+1A53288 	70 32 A5  1 50 EE A0  1 
+1A53290 	 4  0  0  0 
+4 field >hced-tdhead		\ Physical address of TD head
+1A53294 	 0  0  0 3E 
+1A53298 	68 63 65 64 2D 74 64 68 
+1A532A0 	65 61 64 8C 8C 32 A5  1 
+1A532A8 	50 EE A0  1  8  0  0  0 
+4 field >hced-next		\ Physical address of next ED
+1A532B0 	 0 3E 68 63 65 64 2D 6E 
+1A532B8 	65 78 74 8A A8 32 A5  1 
+1A532C0 	50 EE A0  1  C  0  0  0 
+dup constant /hced
+1A532C8 	 0  0 2F 68 63 65 64 85 
+1A532D0 	C0 32 A5  1 68 40 A0  1 
+1A532D8 	10  0  0  0 
+				\ Driver specific fields
+4 field >ed-phys		\ Physical address of HC ED
+1A532DC 	 0  0  0 3E 
+1A532E0 	65 64 2D 70 68 79 73 88 
+1A532E8 	D4 32 A5  1 50 EE A0  1 
+1A532F0 	10  0  0  0 
+4 field >ed-next		\ Pointer to the next endpoint
+1A532F4 	 0  0  0 3E 
+1A532F8 	65 64 2D 6E 65 78 74 88 
+1A53300 	EC 32 A5  1 50 EE A0  1 
+1A53308 	14  0  0  0 
+4 field >ed-prev		\ Pointer to the previous endpoint
+1A5330C 	 0  0  0 3E 
+1A53310 	65 64 2D 70 72 65 76 88 
+1A53318 	 4 33 A5  1 50 EE A0  1 
+1A53320 	18  0  0  0 
+4 field >ed-unaligned		\ Unaligned virtual address of the ED
+1A53324 	 0  0 3E 65 
+1A53328 	64 2D 75 6E 61 6C 69 67 
+1A53330 	6E 65 64 8D 1C 33 A5  1 
+1A53338 	50 EE A0  1 1C  0  0  0 
+4 field >ed-size		\ Size of EDs+TDs
+1A53340 	 0  0  0 3E 65 64 2D 73 
+1A53348 	69 7A 65 88 38 33 A5  1 
+1A53350 	50 EE A0  1 20  0  0  0 
+d# 32 round-up			\ Multiple of 32 bytes
+				\ 32 bytes because there are cases where
+				\ EDs and TDs are allocated together
+dup constant /ed		\ Size of each ed
+1A53358 	2F 65 64 83 50 33 A5  1 
+1A53360 	68 40 A0  1 40  0  0  0 
+#intr * constant /eds		\ Size of all eds allocated at a time
+1A53368 	 0  0  0 2F 65 64 73 84 
+1A53370 	60 33 A5  1 68 40 A0  1 
+1A53378 	 0  8  0  0 
+
+\ >hced-control constants
+0000 constant ED_DIR_TD
+1A5337C 	 0  0 65 64 
+1A53380 	5F 64 69 72 5F 74 64 89 
+1A53388 	74 33 A5  1 68 40 A0  1 
+1A53390 	 0  0  0  0 
+0800 constant ED_DIR_OUT
+1A53394 	 0 65 64 5F 
+1A53398 	64 69 72 5F 6F 75 74 8A 
+1A533A0 	8C 33 A5  1 68 40 A0  1 
+1A533A8 	 0  8  0  0 
+1000 constant ED_DIR_IN
+1A533AC 	 0  0 65 64 
+1A533B0 	5F 64 69 72 5F 69 6E 89 
+1A533B8 	A4 33 A5  1 68 40 A0  1 
+1A533C0 	 0 10  0  0 
+1800 constant ED_DIR_MASK
+1A533C4 	65 64 5F 64 
+1A533C8 	69 72 5F 6D 61 73 6B 8B 
+1A533D0 	BC 33 A5  1 68 40 A0  1 
+1A533D8 	 0 18  0  0 
+
+0000 constant ED_SPEED_FULL
+1A533DC 	 0  0 65 64 
+1A533E0 	5F 73 70 65 65 64 5F 66 
+1A533E8 	75 6C 6C 8D D4 33 A5  1 
+1A533F0 	68 40 A0  1  0  0  0  0 
+2000 constant ED_SPEED_LO
+1A533F8 	65 64 5F 73 70 65 65 64 
+1A53400 	5F 6C 6F 8B F0 33 A5  1 
+1A53408 	68 40 A0  1  0 20  0  0 
+2000 constant ED_SPEED_MASK
+1A53410 	 0  0 65 64 5F 73 70 65 
+1A53418 	65 64 5F 6D 61 73 6B 8D 
+1A53420 	 8 34 A5  1 68 40 A0  1 
+1A53428 	 0 20  0  0 
+
+0000 constant ED_SKIP_OFF
+1A5342C 	65 64 5F 73 
+1A53430 	6B 69 70 5F 6F 66 66 8B 
+1A53438 	24 34 A5  1 68 40 A0  1 
+1A53440 	 0  0  0  0 
+4000 constant ED_SKIP_ON
+1A53444 	 0 65 64 5F 
+1A53448 	73 6B 69 70 5F 6F 6E 8A 
+1A53450 	3C 34 A5  1 68 40 A0  1 
+1A53458 	 0 40  0  0 
+4000 constant ED_SKIP_MASK
+1A5345C 	 0  0  0 65 
+1A53460 	64 5F 73 6B 69 70 5F 6D 
+1A53468 	61 73 6B 8C 54 34 A5  1 
+1A53470 	68 40 A0  1  0 40  0  0 
+
+0000 constant ED_FORMAT_G
+1A53478 	65 64 5F 66 6F 72 6D 61 
+1A53480 	74 5F 67 8B 70 34 A5  1 
+1A53488 	68 40 A0  1  0  0  0  0 
+8000 constant ED_FORMAT_I
+1A53490 	65 64 5F 66 6F 72 6D 61 
+1A53498 	74 5F 69 8B 88 34 A5  1 
+1A534A0 	68 40 A0  1  0 80  0  0 
+8000 constant ED_FORMAT_MASK
+1A534A8 	 0 65 64 5F 66 6F 72 6D 
+1A534B0 	61 74 5F 6D 61 73 6B 8E 
+1A534B8 	A0 34 A5  1 68 40 A0  1 
+1A534C0 	 0 80  0  0 
+
+0000 constant ED_TOGGLE_DATA0
+1A534C4 	65 64 5F 74 
+1A534C8 	6F 67 67 6C 65 5F 64 61 
+1A534D0 	74 61 30 8F BC 34 A5  1 
+1A534D8 	68 40 A0  1  0  0  0  0 
+0002 constant ED_TOGGLE_DATA1
+1A534E0 	65 64 5F 74 6F 67 67 6C 
+1A534E8 	65 5F 64 61 74 61 31 8F 
+1A534F0 	D8 34 A5  1 68 40 A0  1 
+1A534F8 	 2  0  0  0 
+0002 constant ED_TOGGLE_MASK
+1A534FC 	 0 65 64 5F 
+1A53500 	74 6F 67 67 6C 65 5F 6D 
+1A53508 	61 73 6B 8E F4 34 A5  1 
+1A53510 	68 40 A0  1  2  0  0  0 
+
+0001 constant ED_HALTED
+1A53518 	 0  0 65 64 5F 68 61 6C 
+1A53520 	74 65 64 89 10 35 A5  1 
+1A53528 	68 40 A0  1  1  0  0  0 
+
+: ed-data>di-data  ( n -- n' )  ED_TOGGLE_MASK and  if  1  else  0  then  ;
+1A53530 	65 64 2D 64 61 74 61 3E 
+1A53538 	64 69 2D 64 61 74 61 8F 
+1A53540 	28 35 A5  1 20 40 A0  1 
+1A53548 	10 35 A5  1 5C 44 A0  1 
+1A53550 	DC 41 A0  1 10  0  0  0 
+1A53558 	80 6F A0  1 C8 41 A0  1 
+1A53560 	 8  0  0  0 70 6F A0  1 
+1A53568 	58 46 A0  1 
+: di-data>ed-data  ( n -- n' )  if  ED_TOGGLE_DATA1  else  ED_TOGGLE_DATA0  then  ;
+1A5356C 	64 69 2D 64 
+1A53570 	61 74 61 3E 65 64 2D 64 
+1A53578 	61 74 61 8F 44 35 A5  1 
+1A53580 	20 40 A0  1 DC 41 A0  1 
+1A53588 	10  0  0  0 F4 34 A5  1 
+1A53590 	C8 41 A0  1  8  0  0  0 
+1A53598 	D8 34 A5  1 58 46 A0  1 
+
+: (set-skip)  ( ed skip-bit -- )
+1A535A0 	 0 28 73 65 74 2D 73 6B 
+1A535A8 	69 70 29 8A 80 35 A5  1 
+1A535B0 	20 40 A0  1 
+   >r
+1A535B4 	BC 45 A0  1 
+   dup >hced-control dup le-l@
+1A535B8 	40 49 A0  1 70 32 A5  1 
+1A535C0 	40 49 A0  1 C4 34 A4  1 
+   ED_SKIP_MASK invert and r> or
+1A535C8 	70 34 A5  1 30 45 A0  1 
+1A535D0 	5C 44 A0  1 D0 45 A0  1 
+1A535D8 	70 44 A0  1 
+   swap le-l!
+1A535DC 	68 49 A0  1 
+1A535E0 	5C 35 A4  1 
+   dup >ed-phys l@ /hced dma-push
+1A535E4 	40 49 A0  1 
+1A535E8 	EC 32 A5  1 6C 4C A0  1 
+1A535F0 	D4 32 A5  1  8 36 A4  1 
+;
+1A535F8 	58 46 A0  1 
+: ed-set-skip    ( ed -- )  ED_SKIP_ON  (set-skip)  ;
+1A535FC 	65 64 2D 73 
+1A53600 	65 74 2D 73 6B 69 70 8B 
+1A53608 	B0 35 A5  1 20 40 A0  1 
+1A53610 	54 34 A5  1 B0 35 A5  1 
+1A53618 	58 46 A0  1 
+: ed-unset-skip  ( ed -- )  ED_SKIP_OFF (set-skip)  ;
+1A5361C 	 0  0 65 64 
+1A53620 	2D 75 6E 73 65 74 2D 73 
+1A53628 	6B 69 70 8D  C 36 A5  1 
+1A53630 	20 40 A0  1 3C 34 A5  1 
+1A53638 	B0 35 A5  1 58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Transfer Descriptor (TD) as defined by the OHCI Spec:
+\ general TDs are 16-byte aligned; isochronous TDs are 32-byte aligned.
+\ ---------------------------------------------------------------------------
+
+struct				\ Beginning of General TD fields
+4 field >hctd-control		\ TD control info
+1A53640 	 0  0 3E 68 63 74 64 2D 
+1A53648 	63 6F 6E 74 72 6F 6C 8D 
+1A53650 	30 36 A5  1 50 EE A0  1 
+1A53658 	 0  0  0  0 
+4 field >hctd-cbp		\ Physical address of current buffer pointer
+1A5365C 	 0  0 3E 68 
+1A53660 	63 74 64 2D 63 62 70 89 
+1A53668 	54 36 A5  1 50 EE A0  1 
+1A53670 	 4  0  0  0 
+4 field >hctd-next		\ physical address of next TD
+1A53674 	 0 3E 68 63 
+1A53678 	74 64 2D 6E 65 78 74 8A 
+1A53680 	6C 36 A5  1 50 EE A0  1 
+1A53688 	 8  0  0  0 
+4 field >hctd-be		\ physical address of buffer end
+1A5368C 	 0  0  0 3E 
+1A53690 	68 63 74 64 2D 62 65 88 
+1A53698 	84 36 A5  1 50 EE A0  1 
+1A536A0 	 C  0  0  0 
+dup constant /gtd
+1A536A4 	 0  0  0 2F 
+1A536A8 	67 74 64 84 9C 36 A5  1 
+1A536B0 	68 40 A0  1 10  0  0  0 
+				\ Isochronous TD fields
+2 field >hctd-offset0		\ Offset 0 / PSW 0
+1A536B8 	 0  0 3E 68 63 74 64 2D 
+1A536C0 	6F 66 66 73 65 74 30 8D 
+1A536C8 	B0 36 A5  1 50 EE A0  1 
+1A536D0 	10  0  0  0 
+2 field >hctd-offset1		\ Offset 1 / PSW 1
+1A536D4 	 0  0 3E 68 
+1A536D8 	63 74 64 2D 6F 66 66 73 
+1A536E0 	65 74 31 8D CC 36 A5  1 
+1A536E8 	50 EE A0  1 12  0  0  0 
+2 field >hctd-offset2		\ Offset 2 / PSW 2
+1A536F0 	 0  0 3E 68 63 74 64 2D 
+1A536F8 	6F 66 66 73 65 74 32 8D 
+1A53700 	E8 36 A5  1 50 EE A0  1 
+1A53708 	14  0  0  0 
+2 field >hctd-offset3		\ Offset 3 / PSW 3
+1A5370C 	 0  0 3E 68 
+1A53710 	63 74 64 2D 6F 66 66 73 
+1A53718 	65 74 33 8D  4 37 A5  1 
+1A53720 	50 EE A0  1 16  0  0  0 
+2 field >hctd-offset4		\ Offset 4 / PSW 4
+1A53728 	 0  0 3E 68 63 74 64 2D 
+1A53730 	6F 66 66 73 65 74 34 8D 
+1A53738 	20 37 A5  1 50 EE A0  1 
+1A53740 	18  0  0  0 
+2 field >hctd-offset5		\ Offset 5 / PSW 5
+1A53744 	 0  0 3E 68 
+1A53748 	63 74 64 2D 6F 66 66 73 
+1A53750 	65 74 35 8D 3C 37 A5  1 
+1A53758 	50 EE A0  1 1A  0  0  0 
+2 field >hctd-offset6		\ Offset 6 / PSW 6
+1A53760 	 0  0 3E 68 63 74 64 2D 
+1A53768 	6F 66 66 73 65 74 36 8D 
+1A53770 	58 37 A5  1 50 EE A0  1 
+1A53778 	1C  0  0  0 
+2 field >hctd-offset7		\ Offset 7 / PSW 7
+1A5377C 	 0  0 3E 68 
+1A53780 	63 74 64 2D 6F 66 66 73 
+1A53788 	65 74 37 8D 74 37 A5  1 
+1A53790 	50 EE A0  1 1E  0  0  0 
+dup constant /itd
+1A53798 	 0  0  0 2F 69 74 64 84 
+1A537A0 	90 37 A5  1 68 40 A0  1 
+1A537A8 	20  0  0  0 
+				\ Driver specific fields
+4 field >td-phys		\ Physical address of HC TD
+1A537AC 	 0  0  0 3E 
+1A537B0 	74 64 2D 70 68 79 73 88 
+1A537B8 	A4 37 A5  1 50 EE A0  1 
+1A537C0 	20  0  0  0 
+4 field >td-next		\ Virtual address of next TD
+1A537C4 	 0  0  0 3E 
+1A537C8 	74 64 2D 6E 65 78 74 88 
+1A537D0 	BC 37 A5  1 50 EE A0  1 
+1A537D8 	24  0  0  0 
+4 field >td-cbp			\ Virtual address of current buffer pointer
+1A537DC 	3E 74 64 2D 
+1A537E0 	63 62 70 87 D4 37 A5  1 
+1A537E8 	50 EE A0  1 28  0  0  0 
+4 field >td-pcbp		\ Physical address of current buffer pointer
+1A537F0 	 0  0  0 3E 74 64 2D 70 
+1A537F8 	63 62 70 88 E8 37 A5  1 
+1A53800 	50 EE A0  1 2C  0  0  0 
+4 field >td-/cbp-all		\ Buffer length (size of the entire buffer)
+1A53808 	 0  0  0 3E 74 64 2D 2F 
+1A53810 	63 62 70 2D 61 6C 6C 8C 
+1A53818 	 0 38 A5  1 50 EE A0  1 
+1A53820 	30  0  0  0 
+				\ For bulk and intr TDs
+d# 32 round-up			\ Multiple of 32 bytes
+constant /td
+1A53824 	2F 74 64 83 
+1A53828 	1C 38 A5  1 68 40 A0  1 
+1A53830 	40  0  0  0 
+
+\ >hctd-control constants
+00040000 constant TD_ROUND_ON
+1A53834 	74 64 5F 72 
+1A53838 	6F 75 6E 64 5F 6F 6E 8B 
+1A53840 	2C 38 A5  1 68 40 A0  1 
+1A53848 	 0  0  4  0 
+00000000 constant TD_ROUND_ERR
+1A5384C 	 0  0  0 74 
+1A53850 	64 5F 72 6F 75 6E 64 5F 
+1A53858 	65 72 72 8C 44 38 A5  1 
+1A53860 	68 40 A0  1  0  0  0  0 
+00040000 constant TD_ROUND_MASK
+1A53868 	 0  0 74 64 5F 72 6F 75 
+1A53870 	6E 64 5F 6D 61 73 6B 8D 
+1A53878 	60 38 A5  1 68 40 A0  1 
+1A53880 	 0  0  4  0 
+
+00000000 constant TD_DIR_SETUP
+1A53884 	 0  0  0 74 
+1A53888 	64 5F 64 69 72 5F 73 65 
+1A53890 	74 75 70 8C 7C 38 A5  1 
+1A53898 	68 40 A0  1  0  0  0  0 
+00080000 constant TD_DIR_OUT
+1A538A0 	 0 74 64 5F 64 69 72 5F 
+1A538A8 	6F 75 74 8A 98 38 A5  1 
+1A538B0 	68 40 A0  1  0  0  8  0 
+00100000 constant TD_DIR_IN
+1A538B8 	 0  0 74 64 5F 64 69 72 
+1A538C0 	5F 69 6E 89 B0 38 A5  1 
+1A538C8 	68 40 A0  1  0  0 10  0 
+00180000 constant TD_DIR_MASK
+1A538D0 	74 64 5F 64 69 72 5F 6D 
+1A538D8 	61 73 6B 8B C8 38 A5  1 
+1A538E0 	68 40 A0  1  0  0 18  0 
+
+00c00000 constant TD_INTR_MIN
+1A538E8 	74 64 5F 69 6E 74 72 5F 
+1A538F0 	6D 69 6E 8B E0 38 A5  1 
+1A538F8 	68 40 A0  1  0  0 C0  0 
+00e00000 constant TD_INTR_OFF
+1A53900 	74 64 5F 69 6E 74 72 5F 
+1A53908 	6F 66 66 8B F8 38 A5  1 
+1A53910 	68 40 A0  1  0  0 E0  0 
+00e00000 constant TD_INTR_MASK
+1A53918 	 0  0  0 74 64 5F 69 6E 
+1A53920 	74 72 5F 6D 61 73 6B 8C 
+1A53928 	10 39 A5  1 68 40 A0  1 
+1A53930 	 0  0 E0  0 
+
+00000000 constant TD_TOGGLE_USE_ED
+1A53934 	 0  0  0 74 
+1A53938 	64 5F 74 6F 67 67 6C 65 
+1A53940 	5F 75 73 65 5F 65 64 90 
+1A53948 	2C 39 A5  1 68 40 A0  1 
+1A53950 	 0  0  0  0 
+02000000 constant TD_TOGGLE_USE_LSB0
+1A53954 	 0 74 64 5F 
+1A53958 	74 6F 67 67 6C 65 5F 75 
+1A53960 	73 65 5F 6C 73 62 30 92 
+1A53968 	4C 39 A5  1 68 40 A0  1 
+1A53970 	 0  0  0  2 
+03000000 constant TD_TOGGLE_USE_LSB1
+1A53974 	 0 74 64 5F 
+1A53978 	74 6F 67 67 6C 65 5F 75 
+1A53980 	73 65 5F 6C 73 62 31 92 
+1A53988 	6C 39 A5  1 68 40 A0  1 
+1A53990 	 0  0  0  3 
+01000000 constant TD_TOGGLE_MASK
+1A53994 	 0 74 64 5F 
+1A53998 	74 6F 67 67 6C 65 5F 6D 
+1A539A0 	61 73 6B 8E 8C 39 A5  1 
+1A539A8 	68 40 A0  1  0  0  0  1 
+0c000000 constant TD_ERR_CNT_MASK
+1A539B0 	74 64 5F 65 72 72 5F 63 
+1A539B8 	6E 74 5F 6D 61 73 6B 8F 
+1A539C0 	A8 39 A5  1 68 40 A0  1 
+1A539C8 	 0  0  0  C 
+
+00000000 constant TD_CC_NOERROR
+1A539CC 	 0  0 74 64 
+1A539D0 	5F 63 63 5F 6E 6F 65 72 
+1A539D8 	72 6F 72 8D C4 39 A5  1 
+1A539E0 	68 40 A0  1  0  0  0  0 
+10000000 constant TD_CC_CRC
+1A539E8 	 0  0 74 64 5F 63 63 5F 
+1A539F0 	63 72 63 89 E0 39 A5  1 
+1A539F8 	68 40 A0  1  0  0  0 10 
+20000000 constant TD_CC_BITSTUFFING
+1A53A00 	 0  0 74 64 5F 63 63 5F 
+1A53A08 	62 69 74 73 74 75 66 66 
+1A53A10 	69 6E 67 91 F8 39 A5  1 
+1A53A18 	68 40 A0  1  0  0  0 20 
+30000000 constant TD_CC_DATATOGGLEMISMATCH
+1A53A20 	 0  0  0 74 64 5F 63 63 
+1A53A28 	5F 64 61 74 61 74 6F 67 
+1A53A30 	67 6C 65 6D 69 73 6D 61 
+1A53A38 	74 63 68 98 18 3A A5  1 
+1A53A40 	68 40 A0  1  0  0  0 30 
+40000000 constant TD_CC_STALL
+1A53A48 	74 64 5F 63 63 5F 73 74 
+1A53A50 	61 6C 6C 8B 40 3A A5  1 
+1A53A58 	68 40 A0  1  0  0  0 40 
+50000000 constant TD_CC_DEVICENOTRESPONDING
+1A53A60 	 0  0 74 64 5F 63 63 5F 
+1A53A68 	64 65 76 69 63 65 6E 6F 
+1A53A70 	74 72 65 73 70 6F 6E 64 
+1A53A78 	69 6E 67 99 58 3A A5  1 
+1A53A80 	68 40 A0  1  0  0  0 50 
+60000000 constant TD_CC_PIDCHECKFAILURE
+1A53A88 	 0  0 74 64 5F 63 63 5F 
+1A53A90 	70 69 64 63 68 65 63 6B 
+1A53A98 	66 61 69 6C 75 72 65 95 
+1A53AA0 	80 3A A5  1 68 40 A0  1 
+1A53AA8 	 0  0  0 60 
+70000000 constant TD_CC_UNEXPECTEDPID
+1A53AAC 	74 64 5F 63 
+1A53AB0 	63 5F 75 6E 65 78 70 65 
+1A53AB8 	63 74 65 64 70 69 64 93 
+1A53AC0 	A4 3A A5  1 68 40 A0  1 
+1A53AC8 	 0  0  0 70 
+80000000 constant TD_CC_DATAOVERRUN
+1A53ACC 	 0  0 74 64 
+1A53AD0 	5F 63 63 5F 64 61 74 61 
+1A53AD8 	6F 76 65 72 72 75 6E 91 
+1A53AE0 	C4 3A A5  1 68 40 A0  1 
+1A53AE8 	 0  0  0 80 
+90000000 constant TD_CC_DATAUNDERRUN
+1A53AEC 	 0 74 64 5F 
+1A53AF0 	63 63 5F 64 61 74 61 75 
+1A53AF8 	6E 64 65 72 72 75 6E 92 
+1A53B00 	E4 3A A5  1 68 40 A0  1 
+1A53B08 	 0  0  0 90 
+c0000000 constant TD_CC_BUFFEROVERRUN
+1A53B0C 	74 64 5F 63 
+1A53B10 	63 5F 62 75 66 66 65 72 
+1A53B18 	6F 76 65 72 72 75 6E 93 
+1A53B20 	 4 3B A5  1 68 40 A0  1 
+1A53B28 	 0  0  0 C0 
+d0000000 constant TD_CC_BUFFERUNDERRUN
+1A53B2C 	 0  0  0 74 
+1A53B30 	64 5F 63 63 5F 62 75 66 
+1A53B38 	66 65 72 75 6E 64 65 72 
+1A53B40 	72 75 6E 94 24 3B A5  1 
+1A53B48 	68 40 A0  1  0  0  0 D0 
+f0000000 constant TD_CC_NOTACCESSED
+1A53B50 	 0  0 74 64 5F 63 63 5F 
+1A53B58 	6E 6F 74 61 63 63 65 73 
+1A53B60 	73 65 64 91 48 3B A5  1 
+1A53B68 	68 40 A0  1  0  0  0 F0 
+f0000000 constant TD_CC_MASK
+1A53B70 	 0 74 64 5F 63 63 5F 6D 
+1A53B78 	61 73 6B 8A 68 3B A5  1 
+1A53B80 	68 40 A0  1  0  0  0 F0 
+
+: td-data>di-data  ( n -- n' )  TD_TOGGLE_MASK and  if  1  else  0  then  ;
+1A53B88 	74 64 2D 64 61 74 61 3E 
+1A53B90 	64 69 2D 64 61 74 61 8F 
+1A53B98 	80 3B A5  1 20 40 A0  1 
+1A53BA0 	A8 39 A5  1 5C 44 A0  1 
+1A53BA8 	DC 41 A0  1 10  0  0  0 
+1A53BB0 	80 6F A0  1 C8 41 A0  1 
+1A53BB8 	 8  0  0  0 70 6F A0  1 
+1A53BC0 	58 46 A0  1 
+: di-data>td-data  ( n -- n' )  if  TD_TOGGLE_USE_LSB1  else  TD_TOGGLE_USE_LSB0  then  ;
+1A53BC4 	64 69 2D 64 
+1A53BC8 	61 74 61 3E 74 64 2D 64 
+1A53BD0 	61 74 61 8F 9C 3B A5  1 
+1A53BD8 	20 40 A0  1 DC 41 A0  1 
+1A53BE0 	10  0  0  0 8C 39 A5  1 
+1A53BE8 	C8 41 A0  1  8  0  0  0 
+1A53BF0 	6C 39 A5  1 58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+
+: init-struct  ( -- )
+1A53BF8 	69 6E 69 74 2D 73 74 72 
+1A53C00 	75 63 74 8B D8 3B A5  1 
+1A53C08 	20 40 A0  1 
+   init-struct
+1A53C0C 	48 45 A4  1 
+   0 to ed-control 0 to ed-bulk
+1A53C10 	70 6F A0  1 B8 40 A0  1 
+1A53C18 	40 32 A5  1 70 6F A0  1 
+1A53C20 	B8 40 A0  1 54 32 A5  1 
+   init-hcca
+1A53C28 	D4 2F A5  1 
+   init-intr
+1A53C2C 	C8 30 A5  1 
+;
+1A53C30 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ ED and TDs for bulk, control and interrupt operations.
+\ ED and its list of TDs are allocated as needed.
+\ ---------------------------------------------------------------------------
+
+: init-ed  ( ed.u,v,p len -- )
+1A53C34 	69 6E 69 74 
+1A53C38 	2D 65 64 87  8 3C A5  1 
+1A53C40 	20 40 A0  1 
+   2 pick >ed-size l!			( ed.u,v,p )
+1A53C44 	90 6F A0  1 
+1A53C48 	 C 4A A0  1 50 33 A5  1 
+1A53C50 	7C 4D A0  1 
+   over >ed-phys l!			( ed,u,v )
+1A53C54 	54 49 A0  1 
+1A53C58 	EC 32 A5  1 7C 4D A0  1 
+   >ed-unaligned l!			( )
+1A53C60 	38 33 A5  1 7C 4D A0  1 
+;
+1A53C68 	58 46 A0  1 
+
+: link-tds  ( td.v td.p #tds -- )
+1A53C6C 	 0  0  0 6C 
+1A53C70 	69 6E 6B 2D 74 64 73 88 
+1A53C78 	40 3C A5  1 20 40 A0  1 
+   1- 0  ?do				( td.v td.p )
+1A53C80 	54 4B A0  1 70 6F A0  1 
+1A53C88 	50 42 A0  1 54  0  0  0 
+      2dup swap >td-phys l!		( td.v td.p )
+1A53C90 	C0 49 A0  1 68 49 A0  1 
+1A53C98 	BC 37 A5  1 7C 4D A0  1 
+      /td + tuck over >hctd-next le-l!	( td.p' td.v )
+1A53CA0 	2C 38 A5  1  4 45 A0  1 
+1A53CA8 	E8 46 A0  1 54 49 A0  1 
+1A53CB0 	84 36 A5  1 5C 35 A4  1 
+      dup /td + tuck swap		( td.p td.v' td.v' td.v )
+1A53CB8 	40 49 A0  1 2C 38 A5  1 
+1A53CC0 	 4 45 A0  1 E8 46 A0  1 
+1A53CC8 	68 49 A0  1 
+      >td-next l!			( td.p td.v )
+1A53CCC 	D4 37 A5  1 
+1A53CD0 	7C 4D A0  1 
+      swap				( td.v td.p )
+1A53CD4 	68 49 A0  1 
+   loop
+1A53CD8 	F8 41 A0  1 B4 FF FF FF 
+   swap >td-phys l!			( )
+1A53CE0 	68 49 A0  1 BC 37 A5  1 
+1A53CE8 	7C 4D A0  1 
+;
+1A53CEC 	58 46 A0  1 
+: link-edtd  ( td.p #tds ed -- )
+1A53CF0 	 0  0 6C 69 6E 6B 2D 65 
+1A53CF8 	64 74 64 89 7C 3C A5  1 
+1A53D00 	20 40 A0  1 
+   >r					( td.p #tds )  ( R: ed )
+1A53D04 	BC 45 A0  1 
+   1- /td * over +			( td.p ptail )  ( R: ed )
+1A53D08 	54 4B A0  1 2C 38 A5  1 
+1A53D10 	1C 5F A0  1 54 49 A0  1 
+1A53D18 	 4 45 A0  1 
+   r@ >hced-tdtail le-l!		( td.p )  ( R: ed )
+1A53D1C 	E4 45 A0  1 
+1A53D20 	8C 32 A5  1 5C 35 A4  1 
+   r> >hced-tdhead le-l!		( )
+1A53D28 	D0 45 A0  1 A8 32 A5  1 
+1A53D30 	5C 35 A4  1 
+;
+1A53D34 	58 46 A0  1 
+: link-edtds  ( td.v td.p #tds ed -- )
+1A53D38 	 0 6C 69 6E 6B 2D 65 64 
+1A53D40 	74 64 73 8A  0 3D A5  1 
+1A53D48 	20 40 A0  1 
+   >r 2dup r> link-edtd			( td.v td.p #tds )	\ Link ED to TD
+1A53D4C 	BC 45 A0  1 
+1A53D50 	C0 49 A0  1 D0 45 A0  1 
+1A53D58 	 0 3D A5  1 
+   link-tds				( )			\ Link TDs
+1A53D5C 	7C 3C A5  1 
+;
+1A53D60 	58 46 A0  1 
+: alloc-edtds  ( #tds -- ed td )
+1A53D64 	61 6C 6C 6F 
+1A53D68 	63 2D 65 64 74 64 73 8B 
+1A53D70 	48 3D A5  1 20 40 A0  1 
+   dup >r /td * /ed + dup >r		( len )  ( R: #tds len )
+1A53D78 	40 49 A0  1 BC 45 A0  1 
+1A53D80 	2C 38 A5  1 1C 5F A0  1 
+1A53D88 	60 33 A5  1  4 45 A0  1 
+1A53D90 	40 49 A0  1 BC 45 A0  1 
+   aligned32-alloc-map-in		( ed.u,v,p )  ( R: #tds len )
+1A53D98 	84 38 A4  1 
+   over r@ erase			( ed.u,v,p )  ( R: #tds len )
+1A53D9C 	54 49 A0  1 
+1A53DA0 	E4 45 A0  1 F0 72 A0  1 
+   3dup r> init-ed			( ed.u,v,p )  ( R: #tds )
+1A53DA8 	78 3E A4  1 D0 45 A0  1 
+1A53DB0 	40 3C A5  1 
+   rot drop				( ed.v,p )  ( R: #tds )
+1A53DB4 	7C 49 A0  1 
+1A53DB8 	30 49 A0  1 
+   over /ed + dup -rot			( ed td ed.p td.v )  ( R: #tds )
+1A53DBC 	54 49 A0  1 
+1A53DC0 	60 33 A5  1  4 45 A0  1 
+1A53DC8 	40 49 A0  1 94 49 A0  1 
+   swap /ed + 				( ed td td.v td.p )  ( R: #tds )
+1A53DD0 	68 49 A0  1 60 33 A5  1 
+1A53DD8 	 4 45 A0  1 
+   r> 4 pick link-edtds			( ed td )
+1A53DDC 	D0 45 A0  1 
+1A53DE0 	B0 6F A0  1  C 4A A0  1 
+1A53DE8 	48 3D A5  1 
+;
+1A53DEC 	58 46 A0  1 
+: free-edtds  ( ed -- )
+1A53DF0 	 0 66 72 65 65 2D 65 64 
+1A53DF8 	74 64 73 8A 74 3D A5  1 
+1A53E00 	20 40 A0  1 
+   >r					( R: ed )
+1A53E04 	BC 45 A0  1 
+   r@ >ed-unaligned l@			( ed.u )  ( R: ed )
+1A53E08 	E4 45 A0  1 38 33 A5  1 
+1A53E10 	6C 4C A0  1 
+   r@ dup >ed-phys l@			( ed.u,v,p )  ( R: ed )
+1A53E14 	E4 45 A0  1 
+1A53E18 	40 49 A0  1 EC 32 A5  1 
+1A53E20 	6C 4C A0  1 
+   r> >ed-size l@			( ed.u,v,p size )
+1A53E24 	D0 45 A0  1 
+1A53E28 	50 33 A5  1 6C 4C A0  1 
+   aligned32-free-map-out		( )
+1A53E30 	C4 38 A4  1 
+;
+1A53E34 	58 46 A0  1 
+: push-edtds  ( ed -- )
+1A53E38 	 0 70 75 73 68 2D 65 64 
+1A53E40 	74 64 73 8A  0 3E A5  1 
+1A53E48 	20 40 A0  1 
+   dup >ed-phys l@			( ed.v,p )
+1A53E4C 	40 49 A0  1 
+1A53E50 	EC 32 A5  1 6C 4C A0  1 
+   over >ed-size l@			( ed.v,p len )
+1A53E58 	54 49 A0  1 50 33 A5  1 
+1A53E60 	6C 4C A0  1 
+   dma-push				( )
+1A53E64 	 8 36 A4  1 
+;
+1A53E68 	58 46 A0  1 
+: pull-edtds  ( ed -- )
+1A53E6C 	 0 70 75 6C 
+1A53E70 	6C 2D 65 64 74 64 73 8A 
+1A53E78 	48 3E A5  1 20 40 A0  1 
+   dup >ed-phys l@			( ed.v,p )
+1A53E80 	40 49 A0  1 EC 32 A5  1 
+1A53E88 	6C 4C A0  1 
+   over >ed-size l@			( ed.v,p len )
+1A53E8C 	54 49 A0  1 
+1A53E90 	50 33 A5  1 6C 4C A0  1 
+   dma-pull				( )
+1A53E98 	34 36 A4  1 
+;
+1A53E9C 	58 46 A0  1 
+: map-out-cbp  ( td -- )
+1A53EA0 	6D 61 70 2D 6F 75 74 2D 
+1A53EA8 	63 62 70 8B 7C 3E A5  1 
+1A53EB0 	20 40 A0  1 
+   dup >td-cbp l@ over >td-pcbp l@ rot >td-/cbp-all l@ hcd-map-out
+1A53EB4 	40 49 A0  1 
+1A53EB8 	E8 37 A5  1 6C 4C A0  1 
+1A53EC0 	54 49 A0  1  0 38 A5  1 
+1A53EC8 	6C 4C A0  1 7C 49 A0  1 
+1A53ED0 	1C 38 A5  1 6C 4C A0  1 
+1A53ED8 	98 3D A4  1 
+;
+1A53EDC 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Control scheduling
+\ ---------------------------------------------------------------------------
+
+: fixup-ed-next-prev  ( ed -- ed )
+1A53EE0 	 0 66 69 78 75 70 2D 65 
+1A53EE8 	64 2D 6E 65 78 74 2D 70 
+1A53EF0 	72 65 76 92 B0 3E A5  1 
+1A53EF8 	20 40 A0  1 
+   dup >ed-prev l@ ?dup  if  over >ed-next l@ swap >ed-next l!  then
+1A53EFC 	40 49 A0  1 
+1A53F00 	1C 33 A5  1 6C 4C A0  1 
+1A53F08 	B4 70 A0  1 DC 41 A0  1 
+1A53F10 	1C  0  0  0 54 49 A0  1 
+1A53F18 	 4 33 A5  1 6C 4C A0  1 
+1A53F20 	68 49 A0  1  4 33 A5  1 
+1A53F28 	7C 4D A0  1 
+   dup >ed-next l@ ?dup  if  over >ed-prev l@ swap >ed-prev l!  then
+1A53F2C 	40 49 A0  1 
+1A53F30 	 4 33 A5  1 6C 4C A0  1 
+1A53F38 	B4 70 A0  1 DC 41 A0  1 
+1A53F40 	1C  0  0  0 54 49 A0  1 
+1A53F48 	1C 33 A5  1 6C 4C A0  1 
+1A53F50 	68 49 A0  1 1C 33 A5  1 
+1A53F58 	7C 4D A0  1 
+;
+1A53F5C 	58 46 A0  1 
+
+: insert-ed  ( new-ed old-ed -- )
+1A53F60 	 0  0 69 6E 73 65 72 74 
+1A53F68 	2D 65 64 89 F8 3E A5  1 
+1A53F70 	20 40 A0  1 
+   ?dup 0=  if  drop exit  then		\ No old-ed, done
+1A53F74 	B4 70 A0  1 
+1A53F78 	24 47 A0  1 DC 41 A0  1 
+1A53F80 	 C  0  0  0 30 49 A0  1 
+1A53F88 	40 46 A0  1 
+   2dup >ed-prev l!			\ old-ed's prev is new-ed
+1A53F8C 	C0 49 A0  1 
+1A53F90 	1C 33 A5  1 7C 4D A0  1 
+   2dup swap >ed-next l!		\ new-ed's next is old-ed
+1A53F98 	C0 49 A0  1 68 49 A0  1 
+1A53FA0 	 4 33 A5  1 7C 4D A0  1 
+   >ed-phys l@ swap >hced-next le-l!	\ new-ed's hced-next is old-ed's phys
+1A53FA8 	EC 32 A5  1 6C 4C A0  1 
+1A53FB0 	68 49 A0  1 C0 32 A5  1 
+1A53FB8 	5C 35 A4  1 
+;
+1A53FBC 	58 46 A0  1 
+
+: insert-control-ed  ( ed -- )
+1A53FC0 	 0  0 69 6E 73 65 72 74 
+1A53FC8 	2D 63 6F 6E 74 72 6F 6C 
+1A53FD0 	2D 65 64 91 70 3F A5  1 
+1A53FD8 	20 40 A0  1 
+   dup ed-control insert-ed
+1A53FDC 	40 49 A0  1 
+1A53FE0 	40 32 A5  1 70 3F A5  1 
+   to ed-control
+1A53FE8 	B8 40 A0  1 40 32 A5  1 
+;
+1A53FF0 	58 46 A0  1 
+: remove-control-ed  ( ed -- )
+1A53FF4 	 0  0 72 65 
+1A53FF8 	6D 6F 76 65 2D 63 6F 6E 
+1A54000 	74 72 6F 6C 2D 65 64 91 
+1A54008 	D8 3F A5  1 20 40 A0  1 
+   fixup-ed-next-prev			( ed )
+1A54010 	F8 3E A5  1 
+   dup ed-control =  if  >ed-next l@ to ed-control  else  drop  then
+1A54014 	40 49 A0  1 
+1A54018 	40 32 A5  1 24 48 A0  1 
+1A54020 	DC 41 A0  1 1C  0  0  0 
+1A54028 	 4 33 A5  1 6C 4C A0  1 
+1A54030 	B8 40 A0  1 40 32 A5  1 
+1A54038 	C8 41 A0  1  8  0  0  0 
+1A54040 	30 49 A0  1 
+;
+1A54044 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Bulk scheduling
+\ ---------------------------------------------------------------------------
+
+: insert-bulk-ed  ( ed -- )
+1A54048 	 0 69 6E 73 65 72 74 2D 
+1A54050 	62 75 6C 6B 2D 65 64 8E 
+1A54058 	 C 40 A5  1 20 40 A0  1 
+   dup ed-bulk insert-ed
+1A54060 	40 49 A0  1 54 32 A5  1 
+1A54068 	70 3F A5  1 
+   to ed-bulk
+1A5406C 	B8 40 A0  1 
+1A54070 	54 32 A5  1 
+;
+1A54074 	58 46 A0  1 
+: remove-bulk-ed  ( ed -- )
+1A54078 	 0 72 65 6D 6F 76 65 2D 
+1A54080 	62 75 6C 6B 2D 65 64 8E 
+1A54088 	5C 40 A5  1 20 40 A0  1 
+   fixup-ed-next-prev			( ed )
+1A54090 	F8 3E A5  1 
+   dup ed-bulk =  if  >ed-next l@ to ed-bulk  else  drop  then
+1A54094 	40 49 A0  1 
+1A54098 	54 32 A5  1 24 48 A0  1 
+1A540A0 	DC 41 A0  1 1C  0  0  0 
+1A540A8 	 4 33 A5  1 6C 4C A0  1 
+1A540B0 	B8 40 A0  1 54 32 A5  1 
+1A540B8 	C8 41 A0  1  8  0  0  0 
+1A540C0 	30 49 A0  1 
+;
+1A540C4 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Interrupt scheduling
+\ Schedule interrupt at the rate min(interval,2**x).
+\
+\ XXX Need to determines which scheduling queue for that rate has the smallest
+\ committed bandwidth.
+\
+\ XXX To really implement the various poll intervals, the simplistic way is
+\ XXX to have 32 dummy EDs for 1ms interval; 16 dummy EDs for 2ms interval;
+\ XXX 8 dummy EDs for 4ms interval; 4 dummy EDs for 8ms interval; 
+\ XXX 2 dummy EDs for 16ms interval; and, 1 dummy ED for 32ms interval.
+\ XXX Then you link to the end of the lists of EDs for each interval.  Ughhh!
+\
+\ XXX For now, just implement fixed poll interval.
+\
+\ XXX On further thought, since we're polling the intr pipeline from the
+\ XXX device driver, the driver driver can poll the intr at the interval
+\ XXX specified.  And thus, the need to fully implement poll intervals at
+\ XXX the HCD level is redundant.
+\ ---------------------------------------------------------------------------
+
+8 constant intr-interval
+1A540C8 	 0  0 69 6E 74 72 2D 69 
+1A540D0 	6E 74 65 72 76 61 6C 8D 
+1A540D8 	8C 40 A5  1 68 40 A0  1 
+1A540E0 	 8  0  0  0 
+
+: (insert-intr-ed)  ( ed idx -- )
+1A540E4 	 0  0  0 28 
+1A540E8 	69 6E 73 65 72 74 2D 69 
+1A540F0 	6E 74 72 2D 65 64 29 90 
+1A540F8 	DC 40 A5  1 20 40 A0  1 
+   dup >r				( ed idx )  ( R: idx )
+1A54100 	40 49 A0  1 BC 45 A0  1 
+   intr-tail@ ?dup 0=  if		( ed )  ( R: idx )
+1A54108 	68 31 A5  1 B4 70 A0  1 
+1A54110 	24 47 A0  1 DC 41 A0  1 
+1A54118 	2C  0  0  0 
+      dup r@ intr-head!			( ed )  ( R: idx )
+1A5411C 	40 49 A0  1 
+1A54120 	E4 45 A0  1 44 31 A5  1 
+      dup >ed-phys l@ r@ hcca!		( ed )  ( R: idx )
+1A54128 	40 49 A0  1 EC 32 A5  1 
+1A54130 	6C 4C A0  1 E4 45 A0  1 
+1A54138 	A8 2F A5  1 
+   else					( ed ted )  ( R: idx )
+1A5413C 	C8 41 A0  1 
+1A54140 	34  0  0  0 
+      2dup >ed-next l!			( ed ted )  ( R: idx )
+1A54144 	C0 49 A0  1 
+1A54148 	 4 33 A5  1 7C 4D A0  1 
+      over >ed-phys l@ over >hced-next le-l!	( ed ted )  ( R: idx )
+1A54150 	54 49 A0  1 EC 32 A5  1 
+1A54158 	6C 4C A0  1 54 49 A0  1 
+1A54160 	C0 32 A5  1 5C 35 A4  1 
+      over >ed-prev l!			( ed )  ( R: idx )
+1A54168 	54 49 A0  1 1C 33 A5  1 
+1A54170 	7C 4D A0  1 
+   then
+   r@ iso-head@ over >ed-next l!	( ed )  ( R: idx )
+1A54174 	E4 45 A0  1 
+1A54178 	B0 31 A5  1 54 49 A0  1 
+1A54180 	 4 33 A5  1 7C 4D A0  1 
+   r> intr-tail!			( )
+1A54188 	D0 45 A0  1 8C 31 A5  1 
+;
+1A54190 	58 46 A0  1 
+: insert-intr-ed  ( ed interval -- )
+1A54194 	 0 69 6E 73 
+1A54198 	65 72 74 2D 69 6E 74 72 
+1A541A0 	2D 65 64 8E FC 40 A5  1 
+1A541A8 	20 40 A0  1 
+   drop
+1A541AC 	30 49 A0  1 
+   #intr 0  do  dup i (insert-intr-ed)  intr-interval +loop  drop
+1A541B0 	 4 2F A5  1 70 6F A0  1 
+1A541B8 	88 42 A0  1 1C  0  0  0 
+1A541C0 	40 49 A0  1 B4 42 A0  1 
+1A541C8 	FC 40 A5  1 DC 40 A5  1 
+1A541D0 	1C 42 A0  1 EC FF FF FF 
+1A541D8 	30 49 A0  1 
+;
+1A541DC 	58 46 A0  1 
+
+: (remove-intr-ed)  ( ed idx -- )
+1A541E0 	 0  0  0 28 72 65 6D 6F 
+1A541E8 	76 65 2D 69 6E 74 72 2D 
+1A541F0 	65 64 29 90 A8 41 A5  1 
+1A541F8 	20 40 A0  1 
+   >r					( ed )  ( R: idx )
+1A541FC 	BC 45 A0  1 
+   fixup-ed-next-prev			( ed )  ( R: idx )
+1A54200 	F8 3E A5  1 
+   r@ intr-head@ over =  if		( ed )  ( R: idx )
+1A54204 	E4 45 A0  1 
+1A54208 	20 31 A5  1 54 49 A0  1 
+1A54210 	24 48 A0  1 DC 41 A0  1 
+1A54218 	38  0  0  0 
+      dup >ed-next l@ dup r@ intr-head!	( ed ped )  ( R: idx )
+1A5421C 	40 49 A0  1 
+1A54220 	 4 33 A5  1 6C 4C A0  1 
+1A54228 	40 49 A0  1 E4 45 A0  1 
+1A54230 	44 31 A5  1 
+      dup  if  >ed-phys l@  then  r@ hcca!
+1A54234 	40 49 A0  1 
+1A54238 	DC 41 A0  1  C  0  0  0 
+1A54240 	EC 32 A5  1 6C 4C A0  1 
+1A54248 	E4 45 A0  1 A8 2F A5  1 
+      					( ed )  ( R: idx )
+   then
+   r@ intr-tail@ over =  if		( ed )  ( R: idx )
+1A54250 	E4 45 A0  1 68 31 A5  1 
+1A54258 	54 49 A0  1 24 48 A0  1 
+1A54260 	DC 41 A0  1 18  0  0  0 
+      dup >ed-prev l@ r@ intr-tail!	( ed )  ( R: idx )
+1A54268 	40 49 A0  1 1C 33 A5  1 
+1A54270 	6C 4C A0  1 E4 45 A0  1 
+1A54278 	8C 31 A5  1 
+   then
+   r> 2drop
+1A5427C 	D0 45 A0  1 
+1A54280 	AC 49 A0  1 
+;
+1A54284 	58 46 A0  1 
+: remove-intr-ed  ( ed -- )
+1A54288 	 0 72 65 6D 6F 76 65 2D 
+1A54290 	69 6E 74 72 2D 65 64 8E 
+1A54298 	F8 41 A5  1 20 40 A0  1 
+   #intr 0  do  dup i (remove-intr-ed)  intr-interval +loop  drop
+1A542A0 	 4 2F A5  1 70 6F A0  1 
+1A542A8 	88 42 A0  1 1C  0  0  0 
+1A542B0 	40 49 A0  1 B4 42 A0  1 
+1A542B8 	F8 41 A5  1 DC 40 A5  1 
+1A542C0 	1C 42 A0  1 EC FF FF FF 
+1A542C8 	30 49 A0  1 
+;
+1A542CC 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Wait for an ED to be done and process any errors.
+\
+\ When done? returns no error found yet, the caller should should if errors
+\ were found in the TDs.
+\ ---------------------------------------------------------------------------
+
+defer process-hc-status
+1A542D0 	 0  0 70 72 6F 63 65 73 
+1A542D8 	73 2D 68 63 2D 73 74 61 
+1A542E0 	74 75 73 91 9C 42 A5  1 
+1A542E8 	5C 40 A0  1 AC  E  0  0 
+
+0 value timeout
+1A542F0 	74 69 6D 65 6F 75 74 87 
+1A542F8 	E8 42 A5  1 50 40 A0  1 
+1A54300 	B0  E  0  0 
+
+: .td-error  ( cc -- )
+1A54304 	 0  0 2E 74 
+1A54308 	64 2D 65 72 72 6F 72 89 
+1A54310 	FC 42 A5  1 20 40 A0  1 
+   case
+      TD_CC_CRC			of  " CRC"			USB_ERR_CRC  endof
+1A54318 	F8 39 A5  1 48 43 A0  1 
+1A54320 	1C  0  0  0 9C 53 A0  1 
+1A54328 	 3 43 52 43  0  0  0  0 
+1A54330 	40 2B A4  1 6C 43 A0  1 
+1A54338 	1C  2  0  0 
+      TD_CC_BITSTUFFING		of  " Bit Stuffing"		USB_ERR_BITSTUFFING  endof
+1A5433C 	18 3A A5  1 
+1A54340 	48 43 A0  1 24  0  0  0 
+1A54348 	9C 53 A0  1  C 42 69 74 
+1A54350 	20 53 74 75 66 66 69 6E 
+1A54358 	67  0  0  0 60 2B A4  1 
+1A54360 	6C 43 A0  1 F0  1  0  0 
+      TD_CC_DATATOGGLEMISMATCH	of  " Data Toggle Mismatch"	USB_ERR_DATATOGGLEMISMATCH  endof
+1A54368 	40 3A A5  1 48 43 A0  1 
+1A54370 	2C  0  0  0 9C 53 A0  1 
+1A54378 	14 44 61 74 61 20 54 6F 
+1A54380 	67 67 6C 65 20 4D 69 73 
+1A54388 	6D 61 74 63 68  0  0  0 
+1A54390 	88 2B A4  1 6C 43 A0  1 
+1A54398 	BC  1  0  0 
+      TD_CC_STALL		of  " Stall"			USB_ERR_STALL  endof
+1A5439C 	58 3A A5  1 
+1A543A0 	48 43 A0  1 1C  0  0  0 
+1A543A8 	9C 53 A0  1  5 53 74 61 
+1A543B0 	6C 6C  0  0 A4 2B A4  1 
+1A543B8 	6C 43 A0  1 98  1  0  0 
+      TD_CC_DEVICENOTRESPONDING	of  " Device Not Responding"	USB_ERR_DEVICENOTRESPONDING  endof
+1A543C0 	80 3A A5  1 48 43 A0  1 
+1A543C8 	2C  0  0  0 9C 53 A0  1 
+1A543D0 	15 44 65 76 69 63 65 20 
+1A543D8 	4E 6F 74 20 52 65 73 70 
+1A543E0 	6F 6E 64 69 6E 67  0  0 
+1A543E8 	CC 2B A4  1 6C 43 A0  1 
+1A543F0 	64  1  0  0 
+      TD_CC_PIDCHECKFAILURE	of  " PID Check Failure"	USB_ERR_PIDCHECKFAILURE  endof
+1A543F4 	A4 3A A5  1 
+1A543F8 	48 43 A0  1 28  0  0  0 
+1A54400 	9C 53 A0  1 11 50 49 44 
+1A54408 	20 43 68 65 63 6B 20 46 
+1A54410 	61 69 6C 75 72 65  0  0 
+1A54418 	F0 2B A4  1 6C 43 A0  1 
+1A54420 	34  1  0  0 
+      TD_CC_UNEXPECTEDPID	of  " Unexpected PID"		USB_ERR_UNEXPECTEDPIC  endof
+1A54424 	C4 3A A5  1 
+1A54428 	48 43 A0  1 24  0  0  0 
+1A54430 	9C 53 A0  1  E 55 6E 65 
+1A54438 	78 70 65 63 74 65 64 20 
+1A54440 	50 49 44  0 14 2C A4  1 
+1A54448 	6C 43 A0  1  8  1  0  0 
+      TD_CC_DATAOVERRUN		of  " Data Overrun"		USB_ERR_DATAOVERRUN  endof
+1A54450 	E4 3A A5  1 48 43 A0  1 
+1A54458 	24  0  0  0 9C 53 A0  1 
+1A54460 	 C 44 61 74 61 20 4F 76 
+1A54468 	65 72 72 75 6E  0  0  0 
+1A54470 	34 2C A4  1 6C 43 A0  1 
+1A54478 	DC  0  0  0 
+      TD_CC_DATAUNDERRUN	of  " Data Underrun"		USB_ERR_DATAUNDERRUN  endof
+1A5447C 	 4 3B A5  1 
+1A54480 	48 43 A0  1 24  0  0  0 
+1A54488 	9C 53 A0  1  D 44 61 74 
+1A54490 	61 20 55 6E 64 65 72 72 
+1A54498 	75 6E  0  0 58 2C A4  1 
+1A544A0 	6C 43 A0  1 B0  0  0  0 
+      TD_CC_BUFFEROVERRUN	of  " Buffer Overrun"		USB_ERR_BUFFEROVERRUN  endof
+1A544A8 	24 3B A5  1 48 43 A0  1 
+1A544B0 	24  0  0  0 9C 53 A0  1 
+1A544B8 	 E 42 75 66 66 65 72 20 
+1A544C0 	4F 76 65 72 72 75 6E  0 
+1A544C8 	7C 2C A4  1 6C 43 A0  1 
+1A544D0 	84  0  0  0 
+      TD_CC_BUFFERUNDERRUN	of  " Buffer Underrun"		USB_ERR_BUFFERUNDERRUN  endof
+1A544D4 	48 3B A5  1 
+1A544D8 	48 43 A0  1 28  0  0  0 
+1A544E0 	9C 53 A0  1  F 42 75 66 
+1A544E8 	66 65 72 20 55 6E 64 65 
+1A544F0 	72 72 75 6E  0  0  0  0 
+1A544F8 	A0 2C A4  1 6C 43 A0  1 
+1A54500 	54  0  0  0 
+      TD_CC_NOTACCESSED		of  " Not Accessed"		USB_ERR_NOTACCESSED  endof
+1A54504 	68 3B A5  1 
+1A54508 	48 43 A0  1 24  0  0  0 
+1A54510 	9C 53 A0  1  C 4E 6F 74 
+1A54518 	20 41 63 63 65 73 73 65 
+1A54520 	64  0  0  0 C0 2C A4  1 
+1A54528 	6C 43 A0  1 28  0  0  0 
+      ( default )  " Unknown Error" rot USB_ERR_UNKNOWN swap
+1A54530 	9C 53 A0  1  D 55 6E 6B 
+1A54538 	6E 6F 77 6E 20 45 72 72 
+1A54540 	6F 72  0  0 7C 49 A0  1 
+1A54548 	1C 2E A4  1 68 49 A0  1 
+   endcase
+1A54550 	84 43 A0  1 
+   set-usb-error
+1A54554 	20 40 A4  1 
+;
+1A54558 	58 46 A0  1 
+
+: error?  ( td -- usberr )
+1A5455C 	 0 65 72 72 
+1A54560 	6F 72 3F 86 14 43 A5  1 
+1A54568 	20 40 A0  1 
+   begin
+      dup >td-next l@  if		\ Process a real TD
+1A5456C 	40 49 A0  1 
+1A54570 	D4 37 A5  1 6C 4C A0  1 
+1A54578 	DC 41 A0  1 48  0  0  0 
+         dup >hctd-control le-l@ TD_CC_MASK and  ?dup  if
+1A54580 	40 49 A0  1 54 36 A5  1 
+1A54588 	C4 34 A4  1 80 3B A5  1 
+1A54590 	5C 44 A0  1 B4 70 A0  1 
+1A54598 	DC 41 A0  1 18  0  0  0 
+            .td-error  drop 0		\ Error found in TD
+1A545A0 	14 43 A5  1 30 49 A0  1 
+1A545A8 	70 6F A0  1 
+         else
+1A545AC 	C8 41 A0  1 
+1A545B0 	 C  0  0  0 
+            >td-next l@			\ TD's ok, examine the next TD
+1A545B4 	D4 37 A5  1 
+1A545B8 	6C 4C A0  1 
+         then
+      else				\ Don't need to process last dummy TD
+1A545BC 	C8 41 A0  1 
+1A545C0 	 C  0  0  0 
+         drop 0
+1A545C4 	30 49 A0  1 
+1A545C8 	70 6F A0  1 
+      then
+   ?dup 0=  until
+1A545CC 	B4 70 A0  1 
+1A545D0 	24 47 A0  1 DC 41 A0  1 
+1A545D8 	94 FF FF FF 
+   usb-error
+1A545DC 	DC 3F A4  1 
+;
+1A545E0 	58 46 A0  1 
+
+: ed-done?  ( ed -- done? )
+1A545E4 	 0  0  0 65 
+1A545E8 	64 2D 64 6F 6E 65 3F 88 
+1A545F0 	68 45 A5  1 20 40 A0  1 
+   dup  >hced-tdhead le-l@ dup ED_HALTED and	( ed head halted? )
+1A545F8 	40 49 A0  1 A8 32 A5  1 
+1A54600 	C4 34 A4  1 40 49 A0  1 
+1A54608 	28 35 A5  1 5C 44 A0  1 
+   swap h# fffffff0 and			( ed halted? head )
+1A54610 	68 49 A0  1 58 41 A0  1 
+1A54618 	F0 FF FF FF 5C 44 A0  1 
+   rot >hced-tdtail le-l@ h# fffffff0 and =	( halted? head=tail? )
+1A54620 	7C 49 A0  1 8C 32 A5  1 
+1A54628 	C4 34 A4  1 58 41 A0  1 
+1A54630 	F0 FF FF FF 5C 44 A0  1 
+1A54638 	24 48 A0  1 
+   or						( done? )
+1A5463C 	70 44 A0  1 
+;
+1A54640 	58 46 A0  1 
+
+: done?  ( ed -- error? )
+1A54644 	 0  0 64 6F 
+1A54648 	6E 65 3F 85 F4 45 A5  1 
+1A54650 	20 40 A0  1 
+   begin
+      process-hc-status
+1A54654 	E8 42 A5  1 
+      dup pull-edtds
+1A54658 	40 49 A0  1 7C 3E A5  1 
+      dup ed-done? ?dup 0=  if
+1A54660 	40 49 A0  1 F4 45 A5  1 
+1A54668 	B4 70 A0  1 24 47 A0  1 
+1A54670 	DC 41 A0  1 24  0  0  0 
+         1 ms
+1A54678 	80 6F A0  1 60 E0 A1  1 
+	 timeout 1- dup to timeout 0=
+1A54680 	FC 42 A5  1 54 4B A0  1 
+1A54688 	40 49 A0  1 B8 40 A0  1 
+1A54690 	FC 42 A5  1 24 47 A0  1 
+      then
+   until
+1A54698 	DC 41 A0  1 B8 FF FF FF 
+   ed-done? 0=  if  " Timeout" USB_ERR_TIMEOUT set-usb-error  then
+1A546A0 	F4 45 A5  1 24 47 A0  1 
+1A546A8 	DC 41 A0  1 1C  0  0  0 
+1A546B0 	9C 53 A0  1  7 54 69 6D 
+1A546B8 	65 6F 75 74  0  0  0  0 
+1A546C0 	C4 2D A4  1 20 40 A4  1 
+   usb-error
+1A546C8 	DC 3F A4  1 
+;
+1A546CC 	58 46 A0  1 
+
+: get-actual  ( td -- actual )
+1A546D0 	 0 67 65 74 2D 61 63 74 
+1A546D8 	75 61 6C 8A 50 46 A5  1 
+1A546E0 	20 40 A0  1 
+   dup >hctd-cbp le-l@ ?dup  if
+1A546E4 	40 49 A0  1 
+1A546E8 	6C 36 A5  1 C4 34 A4  1 
+1A546F0 	B4 70 A0  1 DC 41 A0  1 
+1A546F8 	1C  0  0  0 
+      swap >td-pcbp l@ -
+1A546FC 	68 49 A0  1 
+1A54700 	 0 38 A5  1 6C 4C A0  1 
+1A54708 	18 45 A0  1 
+   else
+1A5470C 	C8 41 A0  1 
+1A54710 	24  0  0  0 
+      dup >hctd-be le-l@ swap >td-pcbp l@ - 1+
+1A54714 	40 49 A0  1 
+1A54718 	9C 36 A5  1 C4 34 A4  1 
+1A54720 	68 49 A0  1  0 38 A5  1 
+1A54728 	6C 4C A0  1 18 45 A0  1 
+1A54730 	30 4B A0  1 
+   then
+;
+1A54734 	58 46 A0  1 
+
+headers

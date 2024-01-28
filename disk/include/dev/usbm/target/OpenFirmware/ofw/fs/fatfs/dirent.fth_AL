@@ -1,0 +1,219 @@
+\ DOS directory entry structure
+
+hex
+
+\ mmo private
+
+variable dirent
+1A2BED0 	 0 64 69 72 65 6E 74 86 
+1A2BED8 	CC BE A2  1 48 40 A0  1 
+1A2BEE0 	 8  9  0  0 
+
+: efield \ name ( dirent-offset size -- dirent-offset')
+1A2BEE4 	 0 65 66 69 
+1A2BEE8 	65 6C 64 86 DC BE A2  1 
+1A2BEF0 	20 40 A0  1 
+   create over , + does> @ dirent @ +
+1A2BEF4 	A8 A2 A0  1 
+1A2BEF8 	54 49 A0  1 98 55 A0  1 
+1A2BF00 	 4 45 A0  1 50 A3 A0  1 
+1A2BF08 	90 90 90 E8 6C 81 FD FF 
+1A2BF10 	5C 4C A0  1 DC BE A2  1 
+1A2BF18 	5C 4C A0  1  4 45 A0  1 
+;
+1A2BF20 	58 46 A0  1 
+
+struct \ dirent
+ 8 efield de_name          \  0  base name
+1A2BF24 	64 65 5F 6E 
+1A2BF28 	61 6D 65 87 F0 BE A2  1 
+1A2BF30 	 8 BF A2  1  0  0  0  0 
+ 3 efield de_extension	   \  8  ext (first byte: 0 - empty; e5 - deleted)
+1A2BF38 	 0  0  0 64 65 5F 65 78 
+1A2BF40 	74 65 6E 73 69 6F 6E 8C 
+1A2BF48 	30 BF A2  1  8 BF A2  1 
+1A2BF50 	 8  0  0  0 
+ 1 efield de_attributes	   \  b  attributes
+1A2BF54 	 0  0 64 65 
+1A2BF58 	5F 61 74 74 72 69 62 75 
+1A2BF60 	74 65 73 8D 4C BF A2  1 
+1A2BF68 	 8 BF A2  1  B  0  0  0 
+
+\ Bits in attributes byte
+
+01 constant at_rdonly	   \ Read only
+1A2BF70 	 0  0 61 74 5F 72 64 6F 
+1A2BF78 	6E 6C 79 89 68 BF A2  1 
+1A2BF80 	68 40 A0  1  1  0  0  0 
+02 constant at_hidden	   \ Invisible in directory search
+1A2BF88 	 0  0 61 74 5F 68 69 64 
+1A2BF90 	64 65 6E 89 80 BF A2  1 
+1A2BF98 	68 40 A0  1  2  0  0  0 
+04 constant at_system	   \ System file
+1A2BFA0 	 0  0 61 74 5F 73 79 73 
+1A2BFA8 	74 65 6D 89 98 BF A2  1 
+1A2BFB0 	68 40 A0  1  4  0  0  0 
+08 constant at_vollab	   \ Volume label
+1A2BFB8 	 0  0 61 74 5F 76 6F 6C 
+1A2BFC0 	6C 61 62 89 B0 BF A2  1 
+1A2BFC8 	68 40 A0  1  8  0  0  0 
+10 constant at_subdir	   \ Subdirectory
+1A2BFD0 	 0  0 61 74 5F 73 75 62 
+1A2BFD8 	64 69 72 89 C8 BF A2  1 
+1A2BFE0 	68 40 A0  1 10  0  0  0 
+20 constant at_archiv	   \ Needs archiving (changed since last backup)
+1A2BFE8 	 0  0 61 74 5F 61 72 63 
+1A2BFF0 	68 69 76 89 E0 BF A2  1 
+1A2BFF8 	68 40 A0  1 20  0  0  0 
+
+ 1 efield de_reserved	   \  c  reserved
+1A2C000 	64 65 5F 72 65 73 65 72 
+1A2C008 	76 65 64 8B F8 BF A2  1 
+1A2C010 	 8 BF A2  1  C  0  0  0 
+ 1 efield de_csec	   \  d  # of 10 msec intervals in 2 secs (Win95)
+1A2C018 	64 65 5F 63 73 65 63 87 
+1A2C020 	10 C0 A2  1  8 BF A2  1 
+1A2C028 	 D  0  0  0 
+ 2 efield de_ctime	   \  e  creation time (Win95)
+1A2C02C 	 0  0  0 64 
+1A2C030 	65 5F 63 74 69 6D 65 88 
+1A2C038 	24 C0 A2  1  8 BF A2  1 
+1A2C040 	 E  0  0  0 
+ 2 efield de_cdate	   \ 10  creation date (Win95)
+1A2C044 	 0  0  0 64 
+1A2C048 	65 5F 63 64 61 74 65 88 
+1A2C050 	3C C0 A2  1  8 BF A2  1 
+1A2C058 	10  0  0  0 
+ 2 efield de_adate	   \ 12  last access date (Win95)
+1A2C05C 	 0  0  0 64 
+1A2C060 	65 5F 61 64 61 74 65 88 
+1A2C068 	54 C0 A2  1  8 BF A2  1 
+1A2C070 	12  0  0  0 
+ 2 efield de_firsthi	   \ 14  upper 12 bits of beginning cluster# (Win95)
+1A2C074 	 0 64 65 5F 
+1A2C078 	66 69 72 73 74 68 69 8A 
+1A2C080 	6C C0 A2  1  8 BF A2  1 
+1A2C088 	14  0  0  0 
+ 2 efield de_time	   \ 16  modification time
+1A2C08C 	64 65 5F 74 
+1A2C090 	69 6D 65 87 84 C0 A2  1 
+1A2C098 	 8 BF A2  1 16  0  0  0 
+ 2 efield de_date	   \ 18  modification date
+1A2C0A0 	64 65 5F 64 61 74 65 87 
+1A2C0A8 	98 C0 A2  1  8 BF A2  1 
+1A2C0B0 	18  0  0  0 
+ 2 efield de_first	   \ 1a  beginning cluster#
+1A2C0B4 	 0  0  0 64 
+1A2C0B8 	65 5F 66 69 72 73 74 88 
+1A2C0C0 	AC C0 A2  1  8 BF A2  1 
+1A2C0C8 	1A  0  0  0 
+ 4 efield de_length	   \ 1c  #bytes in file
+1A2C0CC 	 0  0 64 65 
+1A2C0D0 	5F 6C 65 6E 67 74 68 89 
+1A2C0D8 	C4 C0 A2  1  8 BF A2  1 
+1A2C0E0 	1C  0  0  0 
+
+constant /dirent
+1A2C0E4 	2F 64 69 72 
+1A2C0E8 	65 6E 74 87 DC C0 A2  1 
+1A2C0F0 	68 40 A0  1 20  0  0  0 
+
+13 buffer: file-name-buf
+1A2C0F8 	 0  0 66 69 6C 65 2D 6E 
+1A2C100 	61 6D 65 2D 62 75 66 8D 
+1A2C108 	F0 C0 A2  1 B4 A9 A0  1 
+1A2C110 	 C  9  0  0 13  0  0  0 
+1A2C118 	18 A4 A2  1 
+
+: "$append  ( pstr adr len -- pstr )
+1A2C11C 	 0  0  0 22 
+1A2C120 	24 61 70 70 65 6E 64 88 
+1A2C128 	 C C1 A2  1 20 40 A0  1 
+   dup >r   2 pick count +  swap cmove  ( pstr )
+1A2C130 	40 49 A0  1 BC 45 A0  1 
+1A2C138 	90 6F A0  1  C 4A A0  1 
+1A2C140 	BC 53 A0  1  4 45 A0  1 
+1A2C148 	68 49 A0  1 10 44 A0  1 
+   dup c@ r> + over c!
+1A2C150 	40 49 A0  1 C4 4C A0  1 
+1A2C158 	D0 45 A0  1  4 45 A0  1 
+1A2C160 	54 49 A0  1 B8 4D A0  1 
+;
+1A2C168 	58 46 A0  1 
+
+: file-name  ( -- adr len )
+1A2C16C 	 0  0 66 69 
+1A2C170 	6C 65 2D 6E 61 6D 65 89 
+1A2C178 	2C C1 A2  1 20 40 A0  1 
+   de_name 8 -trailing  file-name-buf pack  ( pstr )
+1A2C180 	30 BF A2  1 F0 6F A0  1 
+1A2C188 	84 8C A0  1  C C1 A2  1 
+1A2C190 	DC 52 A0  1 
+   de_extension 3 -trailing nip  if
+1A2C194 	4C BF A2  1 
+1A2C198 	A0 6F A0  1 84 8C A0  1 
+1A2C1A0 	FC 46 A0  1 DC 41 A0  1 
+1A2C1A8 	20  0  0  0 
+       " ."  "$append  de_extension 3 -trailing "$append  ( pstr )
+1A2C1AC 	9C 53 A0  1 
+1A2C1B0 	 1 2E  0  0 2C C1 A2  1 
+1A2C1B8 	4C BF A2  1 A0 6F A0  1 
+1A2C1C0 	84 8C A0  1 2C C1 A2  1 
+   then
+   count
+1A2C1C8 	BC 53 A0  1 
+;
+1A2C1CC 	58 46 A0  1 
+
+: file-size  ( -- #bytes )  de_length lel@ ;
+1A2C1D0 	 0  0 66 69 6C 65 2D 73 
+1A2C1D8 	69 7A 65 89 7C C1 A2  1 
+1A2C1E0 	20 40 A0  1 DC C0 A2  1 
+1A2C1E8 	DC B4 A2  1 58 46 A0  1 
+: file-date  ( -- day month year )  de_date lew@ >dmy  ;
+1A2C1F0 	 0  0 66 69 6C 65 2D 64 
+1A2C1F8 	61 74 65 89 E0 C1 A2  1 
+1A2C200 	20 40 A0  1 AC C0 A2  1 
+1A2C208 	7C B4 A2  1 78 B6 A2  1 
+1A2C210 	58 46 A0  1 
+: file-time  ( -- sec min hour )  de_time lew@ >hms  ;
+1A2C214 	 0  0 66 69 
+1A2C218 	6C 65 2D 74 69 6D 65 89 
+1A2C220 	 0 C2 A2  1 20 40 A0  1 
+1A2C228 	98 C0 A2  1 7C B4 A2  1 
+1A2C230 	B8 B5 A2  1 58 46 A0  1 
+: file-attributes  ( -- bitmask )  de_attributes c@ ;
+1A2C238 	66 69 6C 65 2D 61 74 74 
+1A2C240 	72 69 62 75 74 65 73 8F 
+1A2C248 	24 C2 A2  1 20 40 A0  1 
+1A2C250 	68 BF A2  1 C4 4C A0  1 
+1A2C258 	58 46 A0  1 
+
+: file-cluster!  ( cluster# -- )
+1A2C25C 	 0  0 66 69 
+1A2C260 	6C 65 2D 63 6C 75 73 74 
+1A2C268 	65 72 21 8D 4C C2 A2  1 
+1A2C270 	20 40 A0  1 
+   lwsplit de_firsthi lew!  de_first lew!
+1A2C274 	A0 4F A0  1 
+1A2C278 	84 C0 A2  1 A8 B4 A2  1 
+1A2C280 	C4 C0 A2  1 A8 B4 A2  1 
+;
+1A2C288 	58 46 A0  1 
+
+: file-cluster@  ( -- cluster# )
+1A2C28C 	 0  0 66 69 
+1A2C290 	6C 65 2D 63 6C 75 73 74 
+1A2C298 	65 72 40 8D 70 C2 A2  1 
+1A2C2A0 	20 40 A0  1 
+   de_first lew@
+1A2C2A4 	C4 C0 A2  1 
+1A2C2A8 	7C B4 A2  1 
+   fat-type c@  fat32 =  if  de_firsthi lew@  wljoin  then
+1A2C2AC 	84 BC A2  1 
+1A2C2B0 	C4 4C A0  1 F0 BC A2  1 
+1A2C2B8 	24 48 A0  1 DC 41 A0  1 
+1A2C2C0 	10  0  0  0 84 C0 A2  1 
+1A2C2C8 	7C B4 A2  1 D4 4F A0  1 
+;
+1A2C2D0 	58 46 A0  1 

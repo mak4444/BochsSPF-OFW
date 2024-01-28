@@ -1,0 +1,851 @@
+purpose: USB Mass Storage Device Driver
+
+: scsifth 
+1A4ACCC 	73 63 73 69 
+1A4ACD0 	66 74 68 87 90 A6 A4  1 
+1A4ACD8 	20 40 A0  1 
+hex
+1A4ACDC 	C0 8D A0  1 
+s" 0          value max-lun" eval
+1A4ACE0 	9C 53 A0  1 18 30 20 20 
+1A4ACE8 	20 20 20 20 20 20 20 20 
+1A4ACF0 	76 61 6C 75 65 20 6D 61 
+1A4ACF8 	78 2D 6C 75 6E  0  0  0 
+1A4AD00 	D8 E5 A0  1 
+s" 0 instance value lun" eval
+1A4AD04 	9C 53 A0  1 
+1A4AD08 	14 30 20 69 6E 73 74 61 
+1A4AD10 	6E 63 65 20 76 61 6C 75 
+1A4AD18 	65 20 6C 75 6E  0  0  0 
+1A4AD20 	D8 E5 A0  1 
+
+s" USB_ERR_STALL constant bus-reset" eval
+1A4AD24 	9C 53 A0  1 
+1A4AD28 	20 55 53 42 5F 45 52 52 
+1A4AD30 	5F 53 54 41 4C 4C 20 63 
+1A4AD38 	6F 6E 73 74 61 6E 74 20 
+1A4AD40 	62 75 73 2D 72 65 73 65 
+1A4AD48 	74  0  0  0 D8 E5 A0  1 
+
+s" defer execute-command-hook  ' noop to execute-command-hook" eval
+1A4AD50 	9C 53 A0  1 3A 64 65 66 
+1A4AD58 	65 72 20 65 78 65 63 75 
+1A4AD60 	74 65 2D 63 6F 6D 6D 61 
+1A4AD68 	6E 64 2D 68 6F 6F 6B 20 
+1A4AD70 	20 27 20 6E 6F 6F 70 20 
+1A4AD78 	74 6F 20 65 78 65 63 75 
+1A4AD80 	74 65 2D 63 6F 6D 6D 61 
+1A4AD88 	6E 64 2D 68 6F 6F 6B  0 
+1A4AD90 	D8 E5 A0  1 
+s" defer init-execute-command  ' noop to init-execute-command" eval
+1A4AD94 	9C 53 A0  1 
+1A4AD98 	3A 64 65 66 65 72 20 69 
+1A4ADA0 	6E 69 74 2D 65 78 65 63 
+1A4ADA8 	75 74 65 2D 63 6F 6D 6D 
+1A4ADB0 	61 6E 64 20 20 27 20 6E 
+1A4ADB8 	6F 6F 70 20 74 6F 20 69 
+1A4ADC0 	6E 69 74 2D 65 78 65 63 
+1A4ADC8 	75 74 65 2D 63 6F 6D 6D 
+1A4ADD0 	61 6E 64  0 D8 E5 A0  1 
+
+
+\ Class specific >dr-request constants
+s" h# ff constant DEV_RESET" eval
+1A4ADD8 	9C 53 A0  1 18 68 23 20 
+1A4ADE0 	66 66 20 63 6F 6E 73 74 
+1A4ADE8 	61 6E 74 20 44 45 56 5F 
+1A4ADF0 	52 45 53 45 54  0  0  0 
+1A4ADF8 	D8 E5 A0  1 
+s" h# fe constant GET_MAX_LUN" eval
+1A4ADFC 	9C 53 A0  1 
+1A4AE00 	1A 68 23 20 66 65 20 63 
+1A4AE08 	6F 6E 73 74 61 6E 74 20 
+1A4AE10 	47 45 54 5F 4D 41 58 5F 
+1A4AE18 	4C 55 4E  0 D8 E5 A0  1 
+
+\ Command Block Wrapper
+s" struct" eval
+1A4AE20 	9C 53 A0  1  6 73 74 72 
+1A4AE28 	75 63 74  0 D8 E5 A0  1 
+s"     4 field >cbw-sig" eval
+1A4AE30 	9C 53 A0  1 14 20 20 20 
+1A4AE38 	20 34 20 66 69 65 6C 64 
+1A4AE40 	20 3E 63 62 77 2D 73 69 
+1A4AE48 	67  0  0  0 D8 E5 A0  1 
+s"     4 field >cbw-tag" eval
+1A4AE50 	9C 53 A0  1 14 20 20 20 
+1A4AE58 	20 34 20 66 69 65 6C 64 
+1A4AE60 	20 3E 63 62 77 2D 74 61 
+1A4AE68 	67  0  0  0 D8 E5 A0  1 
+s"     4 field >cbw-dlen" eval
+1A4AE70 	9C 53 A0  1 15 20 20 20 
+1A4AE78 	20 34 20 66 69 65 6C 64 
+1A4AE80 	20 3E 63 62 77 2D 64 6C 
+1A4AE88 	65 6E  0  0 D8 E5 A0  1 
+s"     1 field >cbw-flag" eval
+1A4AE90 	9C 53 A0  1 15 20 20 20 
+1A4AE98 	20 31 20 66 69 65 6C 64 
+1A4AEA0 	20 3E 63 62 77 2D 66 6C 
+1A4AEA8 	61 67  0  0 D8 E5 A0  1 
+s"     1 field >cbw-lun" eval
+1A4AEB0 	9C 53 A0  1 14 20 20 20 
+1A4AEB8 	20 31 20 66 69 65 6C 64 
+1A4AEC0 	20 3E 63 62 77 2D 6C 75 
+1A4AEC8 	6E  0  0  0 D8 E5 A0  1 
+s"     1 field >cbw-cblen" eval
+1A4AED0 	9C 53 A0  1 16 20 20 20 
+1A4AED8 	20 31 20 66 69 65 6C 64 
+1A4AEE0 	20 3E 63 62 77 2D 63 62 
+1A4AEE8 	6C 65 6E  0 D8 E5 A0  1 
+s" h# 10 field >cbw-cb" eval
+1A4AEF0 	9C 53 A0  1 13 68 23 20 
+1A4AEF8 	31 30 20 66 69 65 6C 64 
+1A4AF00 	20 3E 63 62 77 2D 63 62 
+1A4AF08 	 0  0  0  0 D8 E5 A0  1 
+s" constant /cbw" eval
+1A4AF10 	9C 53 A0  1  D 63 6F 6E 
+1A4AF18 	73 74 61 6E 74 20 2F 63 
+1A4AF20 	62 77  0  0 D8 E5 A0  1 
+
+\ >cbw-flag definitions
+s" 80 constant cbw-flag-in" eval
+1A4AF28 	9C 53 A0  1 17 38 30 20 
+1A4AF30 	63 6F 6E 73 74 61 6E 74 
+1A4AF38 	20 63 62 77 2D 66 6C 61 
+1A4AF40 	67 2D 69 6E  0  0  0  0 
+1A4AF48 	D8 E5 A0  1 
+s" 00 constant cbw-flag-out" eval
+1A4AF4C 	9C 53 A0  1 
+1A4AF50 	18 30 30 20 63 6F 6E 73 
+1A4AF58 	74 61 6E 74 20 63 62 77 
+1A4AF60 	2D 66 6C 61 67 2D 6F 75 
+1A4AF68 	74  0  0  0 D8 E5 A0  1 
+
+\ Command Status Wrapper
+s" struct" eval
+1A4AF70 	9C 53 A0  1  6 73 74 72 
+1A4AF78 	75 63 74  0 D8 E5 A0  1 
+s"    4 field >csw-sig" eval
+1A4AF80 	9C 53 A0  1 13 20 20 20 
+1A4AF88 	34 20 66 69 65 6C 64 20 
+1A4AF90 	3E 63 73 77 2D 73 69 67 
+1A4AF98 	 0  0  0  0 D8 E5 A0  1 
+s"    4 field >csw-tag" eval
+1A4AFA0 	9C 53 A0  1 13 20 20 20 
+1A4AFA8 	34 20 66 69 65 6C 64 20 
+1A4AFB0 	3E 63 73 77 2D 74 61 67 
+1A4AFB8 	 0  0  0  0 D8 E5 A0  1 
+s"    4 field >csw-dlen" eval
+1A4AFC0 	9C 53 A0  1 14 20 20 20 
+1A4AFC8 	34 20 66 69 65 6C 64 20 
+1A4AFD0 	3E 63 73 77 2D 64 6C 65 
+1A4AFD8 	6E  0  0  0 D8 E5 A0  1 
+s"    1 field >csw-stat" eval
+1A4AFE0 	9C 53 A0  1 14 20 20 20 
+1A4AFE8 	31 20 66 69 65 6C 64 20 
+1A4AFF0 	3E 63 73 77 2D 73 74 61 
+1A4AFF8 	74  0  0  0 D8 E5 A0  1 
+s" constant /csw" eval
+1A4B000 	9C 53 A0  1  D 63 6F 6E 
+1A4B008 	73 74 61 6E 74 20 2F 63 
+1A4B010 	73 77  0  0 D8 E5 A0  1 
+
+s" h# 43425355 constant cbw-signature" eval	\ little-endian (USBC)
+1A4B018 	9C 53 A0  1 22 68 23 20 
+1A4B020 	34 33 34 32 35 33 35 35 
+1A4B028 	20 63 6F 6E 73 74 61 6E 
+1A4B030 	74 20 63 62 77 2D 73 69 
+1A4B038 	67 6E 61 74 75 72 65  0 
+1A4B040 	D8 E5 A0  1 
+s" h# 53425355 constant csw-signature" eval	\ little-endian (USBS)
+1A4B044 	9C 53 A0  1 
+1A4B048 	22 68 23 20 35 33 34 32 
+1A4B050 	35 33 35 35 20 63 6F 6E 
+1A4B058 	73 74 61 6E 74 20 63 73 
+1A4B060 	77 2D 73 69 67 6E 61 74 
+1A4B068 	75 72 65  0 D8 E5 A0  1 
+
+s" 0 value cbw-tag" eval
+1A4B070 	9C 53 A0  1  F 30 20 76 
+1A4B078 	61 6C 75 65 20 63 62 77 
+1A4B080 	2D 74 61 67  0  0  0  0 
+1A4B088 	D8 E5 A0  1 
+s" 0 value cbw" eval
+1A4B08C 	9C 53 A0  1 
+1A4B090 	 B 30 20 76 61 6C 75 65 
+1A4B098 	20 63 62 77  0  0  0  0 
+1A4B0A0 	D8 E5 A0  1 
+s" 0 value csw" eval
+1A4B0A4 	9C 53 A0  1 
+1A4B0A8 	 B 30 20 76 61 6C 75 65 
+1A4B0B0 	20 63 73 77  0  0  0  0 
+1A4B0B8 	D8 E5 A0  1 
+s" : init-cbw  ( -- )" eval
+1A4B0BC 	9C 53 A0  1 
+1A4B0C0 	12 3A 20 69 6E 69 74 2D 
+1A4B0C8 	63 62 77 20 20 28 20 2D 
+1A4B0D0 	2D 20 29  0 D8 E5 A0  1 
+s"    cbw /cbw erase" eval
+1A4B0D8 	9C 53 A0  1 11 20 20 20 
+1A4B0E0 	63 62 77 20 2F 63 62 77 
+1A4B0E8 	20 65 72 61 73 65  0  0 
+1A4B0F0 	D8 E5 A0  1 
+s"    cbw-signature cbw >cbw-sig le-l!" eval
+1A4B0F4 	9C 53 A0  1 
+1A4B0F8 	23 20 20 20 63 62 77 2D 
+1A4B100 	73 69 67 6E 61 74 75 72 
+1A4B108 	65 20 63 62 77 20 3E 63 
+1A4B110 	62 77 2D 73 69 67 20 6C 
+1A4B118 	65 2D 6C 21  0  0  0  0 
+1A4B120 	D8 E5 A0  1 
+s"    cbw-tag 1+ to cbw-tag" eval
+1A4B124 	9C 53 A0  1 
+1A4B128 	18 20 20 20 63 62 77 2D 
+1A4B130 	74 61 67 20 31 2B 20 74 
+1A4B138 	6F 20 63 62 77 2D 74 61 
+1A4B140 	67  0  0  0 D8 E5 A0  1 
+s"    cbw-tag cbw >cbw-tag le-l! ;" eval
+1A4B148 	9C 53 A0  1 1F 20 20 20 
+1A4B150 	63 62 77 2D 74 61 67 20 
+1A4B158 	63 62 77 20 3E 63 62 77 
+1A4B160 	2D 74 61 67 20 6C 65 2D 
+1A4B168 	6C 21 20 3B  0  0  0  0 
+1A4B170 	D8 E5 A0  1 
+s" : alloc-bulk  ( -- )" eval
+1A4B174 	9C 53 A0  1 
+1A4B178 	14 3A 20 61 6C 6C 6F 63 
+1A4B180 	2D 62 75 6C 6B 20 20 28 
+1A4B188 	20 2D 2D 20 29  0  0  0 
+1A4B190 	D8 E5 A0  1 
+s"    cbw 0=  if  /cbw dma-alloc to cbw  then" eval
+1A4B194 	9C 53 A0  1 
+1A4B198 	2A 20 20 20 63 62 77 20 
+1A4B1A0 	30 3D 20 20 69 66 20 20 
+1A4B1A8 	2F 63 62 77 20 64 6D 61 
+1A4B1B0 	2D 61 6C 6C 6F 63 20 74 
+1A4B1B8 	6F 20 63 62 77 20 20 74 
+1A4B1C0 	68 65 6E  0 D8 E5 A0  1 
+s"    csw 0=  if  /csw dma-alloc to csw  then ;" eval
+1A4B1C8 	9C 53 A0  1 2C 20 20 20 
+1A4B1D0 	63 73 77 20 30 3D 20 20 
+1A4B1D8 	69 66 20 20 2F 63 73 77 
+1A4B1E0 	20 64 6D 61 2D 61 6C 6C 
+1A4B1E8 	6F 63 20 74 6F 20 63 73 
+1A4B1F0 	77 20 20 74 68 65 6E 20 
+1A4B1F8 	3B  0  0  0 D8 E5 A0  1 
+s" : free-bulk  ( -- )" eval
+1A4B200 	9C 53 A0  1 13 3A 20 66 
+1A4B208 	72 65 65 2D 62 75 6C 6B 
+1A4B210 	20 20 28 20 2D 2D 20 29 
+1A4B218 	 0  0  0  0 D8 E5 A0  1 
+s"    cbw  if  cbw /cbw dma-free  0 to cbw  then" eval
+1A4B220 	9C 53 A0  1 2D 20 20 20 
+1A4B228 	63 62 77 20 20 69 66 20 
+1A4B230 	20 63 62 77 20 2F 63 62 
+1A4B238 	77 20 64 6D 61 2D 66 72 
+1A4B240 	65 65 20 20 30 20 74 6F 
+1A4B248 	20 63 62 77 20 20 74 68 
+1A4B250 	65 6E  0  0 D8 E5 A0  1 
+s"   csw  if  csw /csw dma-free  0 to csw  then ;" eval
+1A4B258 	9C 53 A0  1 2E 20 20 63 
+1A4B260 	73 77 20 20 69 66 20 20 
+1A4B268 	63 73 77 20 2F 63 73 77 
+1A4B270 	20 64 6D 61 2D 66 72 65 
+1A4B278 	65 20 20 30 20 74 6F 20 
+1A4B280 	63 73 77 20 20 74 68 65 
+1A4B288 	6E 20 3B  0 D8 E5 A0  1 
+s" 1 buffer: max-lun-buf" eval
+1A4B290 	9C 53 A0  1 15 31 20 62 
+1A4B298 	75 66 66 65 72 3A 20 6D 
+1A4B2A0 	61 78 2D 6C 75 6E 2D 62 
+1A4B2A8 	75 66  0  0 D8 E5 A0  1 
+
+s" : get-max-lun  ( -- )" eval
+1A4B2B0 	9C 53 A0  1 15 3A 20 67 
+1A4B2B8 	65 74 2D 6D 61 78 2D 6C 
+1A4B2C0 	75 6E 20 20 28 20 2D 2D 
+1A4B2C8 	20 29  0  0 D8 E5 A0  1 
+s"    max-lun-buf 1 my-address ( interface ) 0 DR_IN DR_CLASS DR_INTERFACE or or" eval
+1A4B2D0 	9C 53 A0  1 4D 20 20 20 
+1A4B2D8 	6D 61 78 2D 6C 75 6E 2D 
+1A4B2E0 	62 75 66 20 31 20 6D 79 
+1A4B2E8 	2D 61 64 64 72 65 73 73 
+1A4B2F0 	20 28 20 69 6E 74 65 72 
+1A4B2F8 	66 61 63 65 20 29 20 30 
+1A4B300 	20 44 52 5F 49 4E 20 44 
+1A4B308 	52 5F 43 4C 41 53 53 20 
+1A4B310 	44 52 5F 49 4E 54 45 52 
+1A4B318 	46 41 43 45 20 6F 72 20 
+1A4B320 	6F 72  0  0 D8 E5 A0  1 
+s"    GET_MAX_LUN control-get  if			" eval ( actual usberr )
+1A4B328 	9C 53 A0  1 21 20 20 20 
+1A4B330 	47 45 54 5F 4D 41 58 5F 
+1A4B338 	4C 55 4E 20 63 6F 6E 74 
+1A4B340 	72 6F 6C 2D 67 65 74 20 
+1A4B348 	20 69 66  9  9  9  0  0 
+1A4B350 	D8 E5 A0  1 
+s"       drop 0" eval
+1A4B354 	9C 53 A0  1 
+1A4B358 	 C 20 20 20 20 20 20 64 
+1A4B360 	72 6F 70 20 30  0  0  0 
+1A4B368 	D8 E5 A0  1 
+s"    else" eval
+1A4B36C 	9C 53 A0  1 
+1A4B370 	 7 20 20 20 65 6C 73 65 
+1A4B378 	 0  0  0  0 D8 E5 A0  1 
+s"       ( actual )  if  max-lun-buf c@  else  0  then" eval
+1A4B380 	9C 53 A0  1 33 20 20 20 
+1A4B388 	20 20 20 28 20 61 63 74 
+1A4B390 	75 61 6C 20 29 20 20 69 
+1A4B398 	66 20 20 6D 61 78 2D 6C 
+1A4B3A0 	75 6E 2D 62 75 66 20 63 
+1A4B3A8 	40 20 20 65 6C 73 65 20 
+1A4B3B0 	20 30 20 20 74 68 65 6E 
+1A4B3B8 	 0  0  0  0 D8 E5 A0  1 
+s"    then" eval
+1A4B3C0 	9C 53 A0  1  7 20 20 20 
+1A4B3C8 	74 68 65 6E  0  0  0  0 
+1A4B3D0 	D8 E5 A0  1 
+s"    to max-lun ;" eval
+1A4B3D4 	9C 53 A0  1 
+1A4B3D8 	 F 20 20 20 74 6F 20 6D 
+1A4B3E0 	61 78 2D 6C 75 6E 20 3B 
+1A4B3E8 	 0  0  0  0 D8 E5 A0  1 
+
+s" : init  ( -- )" eval
+1A4B3F0 	9C 53 A0  1  E 3A 20 69 
+1A4B3F8 	6E 69 74 20 20 28 20 2D 
+1A4B400 	2D 20 29  0 D8 E5 A0  1 
+s"    init" eval
+1A4B408 	9C 53 A0  1  7 20 20 20 
+1A4B410 	69 6E 69 74  0  0  0  0 
+1A4B418 	D8 E5 A0  1 
+s"    init-execute-command" eval
+1A4B41C 	9C 53 A0  1 
+1A4B420 	17 20 20 20 69 6E 69 74 
+1A4B428 	2D 65 78 65 63 75 74 65 
+1A4B430 	2D 63 6F 6D 6D 61 6E 64 
+1A4B438 	 0  0  0  0 D8 E5 A0  1 
+s"    alloc-bulk" eval
+1A4B440 	9C 53 A0  1  D 20 20 20 
+1A4B448 	61 6C 6C 6F 63 2D 62 75 
+1A4B450 	6C 6B  0  0 D8 E5 A0  1 
+s"    device set-target" eval
+1A4B458 	9C 53 A0  1 14 20 20 20 
+1A4B460 	64 65 76 69 63 65 20 73 
+1A4B468 	65 74 2D 74 61 72 67 65 
+1A4B470 	74  0  0  0 D8 E5 A0  1 
+s"    get-max-lun" eval
+1A4B478 	9C 53 A0  1  E 20 20 20 
+1A4B480 	67 65 74 2D 6D 61 78 2D 
+1A4B488 	6C 75 6E  0 D8 E5 A0  1 
+s"    free-bulk ;" eval
+1A4B490 	9C 53 A0  1  E 20 20 20 
+1A4B498 	66 72 65 65 2D 62 75 6C 
+1A4B4A0 	6B 20 3B  0 D8 E5 A0  1 
+s" : transport-reset" eval  ( -- )
+1A4B4A8 	9C 53 A0  1 11 3A 20 74 
+1A4B4B0 	72 61 6E 73 70 6F 72 74 
+1A4B4B8 	2D 72 65 73 65 74  0  0 
+1A4B4C0 	D8 E5 A0  1 
+s"    0 0 my-address ( interface ) 0 DR_OUT DR_CLASS DR_INTERFACE or or" eval
+1A4B4C4 	9C 53 A0  1 
+1A4B4C8 	44 20 20 20 30 20 30 20 
+1A4B4D0 	6D 79 2D 61 64 64 72 65 
+1A4B4D8 	73 73 20 28 20 69 6E 74 
+1A4B4E0 	65 72 66 61 63 65 20 29 
+1A4B4E8 	20 30 20 44 52 5F 4F 55 
+1A4B4F0 	54 20 44 52 5F 43 4C 41 
+1A4B4F8 	53 53 20 44 52 5F 49 4E 
+1A4B500 	54 45 52 46 41 43 45 20 
+1A4B508 	6F 72 20 6F 72  0  0  0 
+1A4B510 	D8 E5 A0  1 
+s"    DEV_RESET control-set-nostat  drop" eval
+1A4B514 	9C 53 A0  1 
+1A4B518 	25 20 20 20 44 45 56 5F 
+1A4B520 	52 45 53 45 54 20 63 6F 
+1A4B528 	6E 74 72 6F 6C 2D 73 65 
+1A4B530 	74 2D 6E 6F 73 74 61 74 
+1A4B538 	20 20 64 72 6F 70  0  0 
+1A4B540 	D8 E5 A0  1 
+    \ XXX Wait until devices does not NAK anymore
+s"    bulk-in-pipe  h# 80 or unstall-pipe" eval
+1A4B544 	9C 53 A0  1 
+1A4B548 	26 20 20 20 62 75 6C 6B 
+1A4B550 	2D 69 6E 2D 70 69 70 65 
+1A4B558 	20 20 68 23 20 38 30 20 
+1A4B560 	6F 72 20 75 6E 73 74 61 
+1A4B568 	6C 6C 2D 70 69 70 65  0 
+1A4B570 	D8 E5 A0  1 
+s"    bulk-out-pipe          unstall-pipe ;" eval
+1A4B574 	9C 53 A0  1 
+1A4B578 	28 20 20 20 62 75 6C 6B 
+1A4B580 	2D 6F 75 74 2D 70 69 70 
+1A4B588 	65 20 20 20 20 20 20 20 
+1A4B590 	20 20 20 75 6E 73 74 61 
+1A4B598 	6C 6C 2D 70 69 70 65 20 
+1A4B5A0 	3B  0  0  0 D8 E5 A0  1 
+
+s" : wrap-cbw" eval  ( data-len dir cmd-adr,len -- cbw-adr,len )
+1A4B5A8 	9C 53 A0  1  A 3A 20 77 
+1A4B5B0 	72 61 70 2D 63 62 77  0 
+1A4B5B8 	D8 E5 A0  1 
+s"    init-cbw" eval				( data-len dir cmd-adr,len )
+1A4B5BC 	9C 53 A0  1 
+1A4B5C0 	 B 20 20 20 69 6E 69 74 
+1A4B5C8 	2D 63 62 77  0  0  0  0 
+1A4B5D0 	D8 E5 A0  1 
+s"    cbw >r" eval				( data-len dir cmd-adr,len )  ( R: cbw )
+1A4B5D4 	9C 53 A0  1 
+1A4B5D8 	 9 20 20 20 63 62 77 20 
+1A4B5E0 	3E 72  0  0 D8 E5 A0  1 
+s"    dup r@ >cbw-cblen c!" eval			( data-len dir cmd-adr,len )  ( R: cbw )
+1A4B5E8 	9C 53 A0  1 17 20 20 20 
+1A4B5F0 	64 75 70 20 72 40 20 3E 
+1A4B5F8 	63 62 77 2D 63 62 6C 65 
+1A4B600 	6E 20 63 21  0  0  0  0 
+1A4B608 	D8 E5 A0  1 
+s"    r@ >cbw-cb swap move" eval			( data-len dir )  ( R: cbw )
+1A4B60C 	9C 53 A0  1 
+1A4B610 	17 20 20 20 72 40 20 3E 
+1A4B618 	63 62 77 2D 63 62 20 73 
+1A4B620 	77 61 70 20 6D 6F 76 65 
+1A4B628 	 0  0  0  0 D8 E5 A0  1 
+s"    if  cbw-flag-in  else  cbw-flag-out  then" eval	( data-len cbw-flag )  ( R: cbw )
+1A4B630 	9C 53 A0  1 2C 20 20 20 
+1A4B638 	69 66 20 20 63 62 77 2D 
+1A4B640 	66 6C 61 67 2D 69 6E 20 
+1A4B648 	20 65 6C 73 65 20 20 63 
+1A4B650 	62 77 2D 66 6C 61 67 2D 
+1A4B658 	6F 75 74 20 20 74 68 65 
+1A4B660 	6E  0  0  0 D8 E5 A0  1 
+s"    r@ >cbw-flag c!" eval			( data-len )  ( R: cbw )
+1A4B668 	9C 53 A0  1 12 20 20 20 
+1A4B670 	72 40 20 3E 63 62 77 2D 
+1A4B678 	66 6C 61 67 20 63 21  0 
+1A4B680 	D8 E5 A0  1 
+s"    r@ >cbw-dlen le-l!" eval			( )  ( R: cbw )
+1A4B684 	9C 53 A0  1 
+1A4B688 	15 20 20 20 72 40 20 3E 
+1A4B690 	63 62 77 2D 64 6C 65 6E 
+1A4B698 	20 6C 65 2D 6C 21  0  0 
+1A4B6A0 	D8 E5 A0  1 
+s"    lun r@ >cbw-lun c!" eval			( )  ( R: cbw )
+1A4B6A4 	9C 53 A0  1 
+1A4B6A8 	15 20 20 20 6C 75 6E 20 
+1A4B6B0 	72 40 20 3E 63 62 77 2D 
+1A4B6B8 	6C 75 6E 20 63 21  0  0 
+1A4B6C0 	D8 E5 A0  1 
+s"    r> /cbw ;" eval				( cbw-adr,len )
+1A4B6C4 	9C 53 A0  1 
+1A4B6C8 	 C 20 20 20 72 3E 20 2F 
+1A4B6D0 	63 62 77 20 3B  0  0  0 
+1A4B6D8 	D8 E5 A0  1 
+
+s" : (get-csw)  ( -- len usberr )  csw /csw erase  csw /csw bulk-in-pipe bulk-in  ;" eval
+1A4B6DC 	9C 53 A0  1 
+1A4B6E0 	50 3A 20 28 67 65 74 2D 
+1A4B6E8 	63 73 77 29 20 20 28 20 
+1A4B6F0 	2D 2D 20 6C 65 6E 20 75 
+1A4B6F8 	73 62 65 72 72 20 29 20 
+1A4B700 	20 63 73 77 20 2F 63 73 
+1A4B708 	77 20 65 72 61 73 65 20 
+1A4B710 	20 63 73 77 20 2F 63 73 
+1A4B718 	77 20 62 75 6C 6B 2D 69 
+1A4B720 	6E 2D 70 69 70 65 20 62 
+1A4B728 	75 6C 6B 2D 69 6E 20 20 
+1A4B730 	3B  0  0  0 D8 E5 A0  1 
+s" : get-csw" eval  ( -- len usberr )
+1A4B738 	9C 53 A0  1  9 3A 20 67 
+1A4B740 	65 74 2D 63 73 77  0  0 
+1A4B748 	D8 E5 A0  1 
+s"    (get-csw) dup  if  2drop (get-csw)  then ;" eval
+1A4B74C 	9C 53 A0  1 
+1A4B750 	2D 20 20 20 28 67 65 74 
+1A4B758 	2D 63 73 77 29 20 64 75 
+1A4B760 	70 20 20 69 66 20 20 32 
+1A4B768 	64 72 6F 70 20 28 67 65 
+1A4B770 	74 2D 63 73 77 29 20 20 
+1A4B778 	74 68 65 6E 20 3B  0  0 
+1A4B780 	D8 E5 A0  1 
+
+\ This used to be 15 seconds but I shortened it so timeouts can be
+\ retried without having to wait too long.
+s" d# 2000 constant bulk-timeout" eval
+1A4B784 	9C 53 A0  1 
+1A4B788 	1D 64 23 20 32 30 30 30 
+1A4B790 	20 63 6F 6E 73 74 61 6E 
+1A4B798 	74 20 62 75 6C 6B 2D 74 
+1A4B7A0 	69 6D 65 6F 75 74  0  0 
+1A4B7A8 	D8 E5 A0  1 
+
+s" : (execute-command)" eval  ( data-adr,len dir cbw-adr,len -- actual-len cswStatus  )
+1A4B7AC 	9C 53 A0  1 
+1A4B7B0 	13 3A 20 28 65 78 65 63 
+1A4B7B8 	75 74 65 2D 63 6F 6D 6D 
+1A4B7C0 	61 6E 64 29  0  0  0  0 
+1A4B7C8 	D8 E5 A0  1 
+s"    debug?  if" eval
+1A4B7CC 	9C 53 A0  1 
+1A4B7D0 	 D 20 20 20 64 65 62 75 
+1A4B7D8 	67 3F 20 20 69 66  0  0 
+1A4B7E0 	D8 E5 A0  1 
+ "       2dup "" dump"" evaluate cr" eval
+1A4B7E4 	9C 53 A0  1 
+1A4B7E8 	1E 20 20 20 20 20 20 32 
+1A4B7F0 	64 75 70 20 22 20 64 75 
+1A4B7F8 	6D 70 22 20 65 76 61 6C 
+1A4B800 	75 61 74 65 20 63 72  0 
+1A4B808 	D8 E5 A0  1 
+s"    then" eval
+1A4B80C 	9C 53 A0  1 
+1A4B810 	 7 20 20 20 74 68 65 6E 
+1A4B818 	 0  0  0  0 D8 E5 A0  1 
+s"    bulk-out-pipe bulk-out" eval		( data-adr,len dir usberr )
+1A4B820 	9C 53 A0  1 19 20 20 20 
+1A4B828 	62 75 6C 6B 2D 6F 75 74 
+1A4B830 	2D 70 69 70 65 20 62 75 
+1A4B838 	6C 6B 2D 6F 75 74  0  0 
+1A4B840 	D8 E5 A0  1 
+s"    USB_ERR_CRC invert and  if" eval		( data-adr,len dir )
+1A4B844 	9C 53 A0  1 
+1A4B848 	1D 20 20 20 55 53 42 5F 
+1A4B850 	45 52 52 5F 43 52 43 20 
+1A4B858 	69 6E 76 65 72 74 20 61 
+1A4B860 	6E 64 20 20 69 66  0  0 
+1A4B868 	D8 E5 A0  1 
+s"       transport-reset  3drop 0 2 exit" eval   ( actual=0 status=retry )
+1A4B86C 	9C 53 A0  1 
+1A4B870 	25 20 20 20 20 20 20 74 
+1A4B878 	72 61 6E 73 70 6F 72 74 
+1A4B880 	2D 72 65 73 65 74 20 20 
+1A4B888 	33 64 72 6F 70 20 30 20 
+1A4B890 	32 20 65 78 69 74  0  0 
+1A4B898 	D8 E5 A0  1 
+s"    then" eval                                 ( data-adr,len dir )
+1A4B89C 	9C 53 A0  1 
+1A4B8A0 	 7 20 20 20 74 68 65 6E 
+1A4B8A8 	 0  0  0  0 D8 E5 A0  1 
+s"    over  if" eval                             ( data-adr,len dir )
+1A4B8B0 	9C 53 A0  1  B 20 20 20 
+1A4B8B8 	6F 76 65 72 20 20 69 66 
+1A4B8C0 	 0  0  0  0 D8 E5 A0  1 
+s"       if" eval				( data-adr,len )
+1A4B8C8 	9C 53 A0  1  8 20 20 20 
+1A4B8D0 	20 20 20 69 66  0  0  0 
+1A4B8D8 	D8 E5 A0  1 
+s"          bulk-in-pipe bulk-in" eval           ( actual usberror )
+1A4B8DC 	9C 53 A0  1 
+1A4B8E0 	1D 20 20 20 20 20 20 20 
+1A4B8E8 	20 20 62 75 6C 6B 2D 69 
+1A4B8F0 	6E 2D 70 69 70 65 20 62 
+1A4B8F8 	75 6C 6B 2D 69 6E  0  0 
+1A4B900 	D8 E5 A0  1 
+s"       else" eval				( data-adr,len )
+1A4B904 	9C 53 A0  1 
+1A4B908 	 A 20 20 20 20 20 20 65 
+1A4B910 	6C 73 65  0 D8 E5 A0  1 
+s"          tuck bulk-out-pipe bulk-out" eval    ( len usberror )
+1A4B918 	9C 53 A0  1 24 20 20 20 
+1A4B920 	20 20 20 20 20 20 74 75 
+1A4B928 	63 6B 20 62 75 6C 6B 2D 
+1A4B930 	6F 75 74 2D 70 69 70 65 
+1A4B938 	20 62 75 6C 6B 2D 6F 75 
+1A4B940 	74  0  0  0 D8 E5 A0  1 
+s"          dup  if  nip 0 swap  then" eval      ( len' usberror )
+1A4B948 	9C 53 A0  1 22 20 20 20 
+1A4B950 	20 20 20 20 20 20 64 75 
+1A4B958 	70 20 20 69 66 20 20 6E 
+1A4B960 	69 70 20 30 20 73 77 61 
+1A4B968 	70 20 20 74 68 65 6E  0 
+1A4B970 	D8 E5 A0  1 
+s"       then" eval				( usberror )
+1A4B974 	9C 53 A0  1 
+1A4B978 	 A 20 20 20 20 20 20 74 
+1A4B980 	68 65 6E  0 D8 E5 A0  1 
+s"    else" eval					( data-adr,len dir )
+1A4B988 	9C 53 A0  1  7 20 20 20 
+1A4B990 	65 6C 73 65  0  0  0  0 
+1A4B998 	D8 E5 A0  1 
+s"       drop nip  0" eval			( len usberror )
+1A4B99C 	9C 53 A0  1 
+1A4B9A0 	11 20 20 20 20 20 20 64 
+1A4B9A8 	72 6F 70 20 6E 69 70 20 
+1A4B9B0 	20 30  0  0 D8 E5 A0  1 
+s"    then" eval					( actual usberror )
+1A4B9B8 	9C 53 A0  1  7 20 20 20 
+1A4B9C0 	74 68 65 6E  0  0  0  0 
+1A4B9C8 	D8 E5 A0  1 
+s"    get-csw" eval				( actual usberror csw-len csw-usberror )
+1A4B9CC 	9C 53 A0  1 
+1A4B9D0 	 A 20 20 20 67 65 74 2D 
+1A4B9D8 	63 73 77  0 D8 E5 A0  1 
+s"    rot  drop" eval				( actual csw-len csw-usberror )
+1A4B9E0 	9C 53 A0  1  C 20 20 20 
+1A4B9E8 	72 6F 74 20 20 64 72 6F 
+1A4B9F0 	70  0  0  0 D8 E5 A0  1 
+s"    ?dup  if" eval                             ( actual csw-len csw-usberror )
+1A4B9F8 	9C 53 A0  1  B 20 20 20 
+1A4BA00 	3F 64 75 70 20 20 69 66 
+1A4BA08 	 0  0  0  0 D8 E5 A0  1 
+s"       nip" eval                               ( actual csw-usberror )
+1A4BA10 	9C 53 A0  1  9 20 20 20 
+1A4BA18 	20 20 20 6E 69 70  0  0 
+1A4BA20 	D8 E5 A0  1 
+s"       dup h# 10000000 =  if" eval             ( actual csw-usberror )
+1A4BA24 	9C 53 A0  1 
+1A4BA28 	1B 20 20 20 20 20 20 64 
+1A4BA30 	75 70 20 68 23 20 31 30 
+1A4BA38 	30 30 30 30 30 30 20 3D 
+1A4BA40 	20 20 69 66  0  0  0  0 
+1A4BA48 	D8 E5 A0  1 
+s" notdef" $find ?dup
+1A4BA4C 	9C 53 A0  1 
+1A4BA50 	 6 6E 6F 74 64 65 66  0 
+1A4BA58 	C4 93 A0  1 B4 70 A0  1 
+if
+1A4BA60 	DC 41 A0  1 64  0  0  0 
+\ This is for testing the problem described in OLPC trac #9423
+\ The problem has been worked around so users no longer see it,
+\ apart from a short delay when it happens, but for testing you
+\ can enable this code to report the problem and count occurrences.
+ " cr 7 emit ."" TIMEOUT "" 7 emit" eval
+1A4BA68 	9C 53 A0  1 1D 63 72 20 
+1A4BA70 	37 20 65 6D 69 74 20 2E 
+1A4BA78 	22 20 54 49 4D 45 4F 55 
+1A4BA80 	54 20 22 20 37 20 65 6D 
+1A4BA88 	69 74  0  0 D8 E5 A0  1 
+ " h# 72 cmos@ 1+ dup .d h# 72 cmos!" postpone eval
+1A4BA90 	9C 53 A0  1 21 68 23 20 
+1A4BA98 	37 32 20 63 6D 6F 73 40 
+1A4BAA0 	20 31 2B 20 64 75 70 20 
+1A4BAA8 	2E 64 20 68 23 20 37 32 
+1A4BAB0 	20 63 6D 6F 73 21  0  0 
+1A4BAB8 	8C 75 A0  1 D8 E5 A0  1 
+  postpone cr
+1A4BAC0 	8C 75 A0  1 80 6D A0  1 
+then 2drop
+1A4BAC8 	AC 49 A0  1 
+s"          2drop 0 2" eval                      ( 0 2 )  \ Convert timeout error to a retry
+1A4BACC 	9C 53 A0  1 
+1A4BAD0 	12 20 20 20 20 20 20 20 
+1A4BAD8 	20 20 32 64 72 6F 70 20 
+1A4BAE0 	30 20 32  0 D8 E5 A0  1 
+s"       then" eval				( actual usberror )
+1A4BAE8 	9C 53 A0  1  A 20 20 20 
+1A4BAF0 	20 20 20 74 68 65 6E  0 
+1A4BAF8 	D8 E5 A0  1 
+s"       exit" eval
+1A4BAFC 	9C 53 A0  1 
+1A4BB00 	 A 20 20 20 20 20 20 65 
+1A4BB08 	78 69 74  0 D8 E5 A0  1 
+s"    then" eval					( actual csw-len csw-usberror )
+1A4BB10 	9C 53 A0  1  7 20 20 20 
+1A4BB18 	74 68 65 6E  0  0  0  0 
+1A4BB20 	D8 E5 A0  1 
+s"    drop" eval                                 ( actual )
+1A4BB24 	9C 53 A0  1 
+1A4BB28 	 7 20 20 20 64 72 6F 70 
+1A4BB30 	 0  0  0  0 D8 E5 A0  1 
+
+s"    debug?  if" eval
+1A4BB38 	9C 53 A0  1  D 20 20 20 
+1A4BB40 	64 65 62 75 67 3F 20 20 
+1A4BB48 	69 66  0  0 D8 E5 A0  1 
+ "       csw /csw "" dump"" evaluate cr" eval
+1A4BB50 	9C 53 A0  1 22 20 20 20 
+1A4BB58 	20 20 20 63 73 77 20 2F 
+1A4BB60 	63 73 77 20 22 20 64 75 
+1A4BB68 	6D 70 22 20 65 76 61 6C 
+1A4BB70 	75 61 74 65 20 63 72  0 
+1A4BB78 	D8 E5 A0  1 
+s"    then" eval
+1A4BB7C 	9C 53 A0  1 
+1A4BB80 	 7 20 20 20 74 68 65 6E 
+1A4BB88 	 0  0  0  0 D8 E5 A0  1 
+
+s"    csw >csw-stat c@" eval		        ( actual cswStatus )
+1A4BB90 	9C 53 A0  1 13 20 20 20 
+1A4BB98 	63 73 77 20 3E 63 73 77 
+1A4BBA0 	2D 73 74 61 74 20 63 40 
+1A4BBA8 	 0  0  0  0 D8 E5 A0  1 
+s"    dup 2 =  if  transport-reset  then" eval   ( actual cswStatus )
+1A4BBB0 	9C 53 A0  1 25 20 20 20 
+1A4BBB8 	64 75 70 20 32 20 3D 20 
+1A4BBC0 	20 69 66 20 20 74 72 61 
+1A4BBC8 	6E 73 70 6F 72 74 2D 72 
+1A4BBD0 	65 73 65 74 20 20 74 68 
+1A4BBD8 	65 6E  0  0 D8 E5 A0  1 
+   \ Values are:
+   \  0: No error - command is finished
+   \  1: Error - do get-sense and possibly retry
+   \  2: Phase error - retry after transport-reset
+   \  else: Invalid status code - abort command
+postpone ;
+1A4BBE0 	E4 A6 A0  1 
+
+s" : execute-command" eval  ( data-adr,len dir cmd-adr,len -- actual cswStatus )
+1A4BBE4 	9C 53 A0  1 
+1A4BBE8 	11 3A 20 65 78 65 63 75 
+1A4BBF0 	74 65 2D 63 6F 6D 6D 61 
+1A4BBF8 	6E 64  0  0 D8 E5 A0  1 
+s"    execute-command-hook" eval                         ( data$ dir cmd$ )
+1A4BC00 	9C 53 A0  1 17 20 20 20 
+1A4BC08 	65 78 65 63 75 74 65 2D 
+1A4BC10 	63 6F 6D 6D 61 6E 64 2D 
+1A4BC18 	68 6F 6F 6B  0  0  0  0 
+1A4BC20 	D8 E5 A0  1 
+s"    over c@ h# 1b =" eval                              ( data$ dir cmd$ flag )
+1A4BC24 	9C 53 A0  1 
+1A4BC28 	12 20 20 20 6F 76 65 72 
+1A4BC30 	20 63 40 20 68 23 20 31 
+1A4BC38 	62 20 3D  0 D8 E5 A0  1 
+s"    2 pick 4 + c@  1 =  and  >r" eval	                ( data$ dir cmd$ r: Start-command? )
+1A4BC40 	9C 53 A0  1 1E 20 20 20 
+1A4BC48 	32 20 70 69 63 6B 20 34 
+1A4BC50 	20 2B 20 63 40 20 20 31 
+1A4BC58 	20 3D 20 20 61 6E 64 20 
+1A4BC60 	20 3E 72  0 D8 E5 A0  1 
+s"    2over 2swap wrap-cbw" eval				( data-adr,len dir cbw-adr,len )
+1A4BC68 	9C 53 A0  1 17 20 20 20 
+1A4BC70 	32 6F 76 65 72 20 32 73 
+1A4BC78 	77 61 70 20 77 72 61 70 
+1A4BC80 	2D 63 62 77  0  0  0  0 
+1A4BC88 	D8 E5 A0  1 
+s"    (execute-command)" eval                            ( actual cswStatus )
+1A4BC8C 	9C 53 A0  1 
+1A4BC90 	14 20 20 20 28 65 78 65 
+1A4BC98 	63 75 74 65 2D 63 6F 6D 
+1A4BCA0 	6D 61 6E 64 29  0  0  0 
+1A4BCA8 	D8 E5 A0  1 
+s"    r>  if  drop 0  then ;" eval \ Fake ok if it's a start commmand
+1A4BCAC 	9C 53 A0  1 
+1A4BCB0 	19 20 20 20 72 3E 20 20 
+1A4BCB8 	69 66 20 20 64 72 6F 70 
+1A4BCC0 	20 30 20 20 74 68 65 6E 
+1A4BCC8 	20 3B  0  0 D8 E5 A0  1 
+s" : set-address" eval  ( lun -- )
+1A4BCD0 	9C 53 A0  1  D 3A 20 73 
+1A4BCD8 	65 74 2D 61 64 64 72 65 
+1A4BCE0 	73 73  0  0 D8 E5 A0  1 
+s"    0 max max-lun min  to lun" eval
+1A4BCE8 	9C 53 A0  1 1C 20 20 20 
+1A4BCF0 	30 20 6D 61 78 20 6D 61 
+1A4BCF8 	78 2D 6C 75 6E 20 6D 69 
+1A4BD00 	6E 20 20 74 6F 20 6C 75 
+1A4BD08 	6E  0  0  0 D8 E5 A0  1 
+s"    reset?  if" eval
+1A4BD10 	9C 53 A0  1  D 20 20 20 
+1A4BD18 	72 65 73 65 74 3F 20 20 
+1A4BD20 	69 66  0  0 D8 E5 A0  1 
+s"       configuration set-config  if" eval
+1A4BD28 	9C 53 A0  1 22 20 20 20 
+1A4BD30 	20 20 20 63 6F 6E 66 69 
+1A4BD38 	67 75 72 61 74 69 6F 6E 
+1A4BD40 	20 73 65 74 2D 63 6F 6E 
+1A4BD48 	66 69 67 20 20 69 66  0 
+1A4BD50 	D8 E5 A0  1 
+ "          ."" USB storage scsi layer: Failed to set configuration"" cr" eval
+1A4BD54 	9C 53 A0  1 
+1A4BD58 	43 20 20 20 20 20 20 20 
+1A4BD60 	20 20 2E 22 20 55 53 42 
+1A4BD68 	20 73 74 6F 72 61 67 65 
+1A4BD70 	20 73 63 73 69 20 6C 61 
+1A4BD78 	79 65 72 3A 20 46 61 69 
+1A4BD80 	6C 65 64 20 74 6F 20 73 
+1A4BD88 	65 74 20 63 6F 6E 66 69 
+1A4BD90 	67 75 72 61 74 69 6F 6E 
+1A4BD98 	22 20 63 72  0  0  0  0 
+1A4BDA0 	D8 E5 A0  1 
+s"       then" eval
+1A4BDA4 	9C 53 A0  1 
+1A4BDA8 	 A 20 20 20 20 20 20 74 
+1A4BDB0 	68 65 6E  0 D8 E5 A0  1 
+s"       bulk-in-pipe bulk-out-pipe reset-bulk-toggles" eval
+1A4BDB8 	9C 53 A0  1 33 20 20 20 
+1A4BDC0 	20 20 20 62 75 6C 6B 2D 
+1A4BDC8 	69 6E 2D 70 69 70 65 20 
+1A4BDD0 	62 75 6C 6B 2D 6F 75 74 
+1A4BDD8 	2D 70 69 70 65 20 72 65 
+1A4BDE0 	73 65 74 2D 62 75 6C 6B 
+1A4BDE8 	2D 74 6F 67 67 6C 65 73 
+1A4BDF0 	 0  0  0  0 D8 E5 A0  1 
+s"    then ;" eval
+1A4BDF8 	9C 53 A0  1  9 20 20 20 
+1A4BE00 	74 68 65 6E 20 3B  0  0 
+1A4BE08 	D8 E5 A0  1 
+s" : set-timeout  ( n -- )  bulk-timeout max set-bulk-in-timeout  ;" eval
+1A4BE0C 	9C 53 A0  1 
+1A4BE10 	40 3A 20 73 65 74 2D 74 
+1A4BE18 	69 6D 65 6F 75 74 20 20 
+1A4BE20 	28 20 6E 20 2D 2D 20 29 
+1A4BE28 	20 20 62 75 6C 6B 2D 74 
+1A4BE30 	69 6D 65 6F 75 74 20 6D 
+1A4BE38 	61 78 20 73 65 74 2D 62 
+1A4BE40 	75 6C 6B 2D 69 6E 2D 74 
+1A4BE48 	69 6D 65 6F 75 74 20 20 
+1A4BE50 	3B  0  0  0 D8 E5 A0  1 
+s" : reopen-hardware" eval   ( -- ok? )
+1A4BE58 	9C 53 A0  1 11 3A 20 72 
+1A4BE60 	65 6F 70 65 6E 2D 68 61 
+1A4BE68 	72 64 77 61 72 65  0  0 
+1A4BE70 	D8 E5 A0  1 
+s"    set-device?  if  false exit  then" eval  \ The device number may have changed if we recycled the node
+1A4BE74 	9C 53 A0  1 
+1A4BE78 	24 20 20 20 73 65 74 2D 
+1A4BE80 	64 65 76 69 63 65 3F 20 
+1A4BE88 	20 69 66 20 20 66 61 6C 
+1A4BE90 	73 65 20 65 78 69 74 20 
+1A4BE98 	20 74 68 65 6E  0  0  0 
+1A4BEA0 	D8 E5 A0  1 
+s"    device set-target" eval
+1A4BEA4 	9C 53 A0  1 
+1A4BEA8 	14 20 20 20 64 65 76 69 
+1A4BEB0 	63 65 20 73 65 74 2D 74 
+1A4BEB8 	61 72 67 65 74  0  0  0 
+1A4BEC0 	D8 E5 A0  1 
+s"    true ;" eval
+1A4BEC4 	9C 53 A0  1 
+1A4BEC8 	 9 20 20 20 74 72 75 65 
+1A4BED0 	20 3B  0  0 D8 E5 A0  1 
+s" : open-hardware     ( -- ok? )  alloc-bulk  reopen-hardware  ;" eval
+1A4BED8 	9C 53 A0  1 3E 3A 20 6F 
+1A4BEE0 	70 65 6E 2D 68 61 72 64 
+1A4BEE8 	77 61 72 65 20 20 20 20 
+1A4BEF0 	20 28 20 2D 2D 20 6F 6B 
+1A4BEF8 	3F 20 29 20 20 61 6C 6C 
+1A4BF00 	6F 63 2D 62 75 6C 6B 20 
+1A4BF08 	20 72 65 6F 70 65 6E 2D 
+1A4BF10 	68 61 72 64 77 61 72 65 
+1A4BF18 	20 20 3B  0 D8 E5 A0  1 
+s" : reclose-hardware  ( -- )	;" eval
+1A4BF20 	9C 53 A0  1 1C 3A 20 72 
+1A4BF28 	65 63 6C 6F 73 65 2D 68 
+1A4BF30 	61 72 64 77 61 72 65 20 
+1A4BF38 	20 28 20 2D 2D 20 29  9 
+1A4BF40 	3B  0  0  0 D8 E5 A0  1 
+s" : close-hardware    ( -- )      free-bulk  ;" eval
+1A4BF48 	9C 53 A0  1 2C 3A 20 63 
+1A4BF50 	6C 6F 73 65 2D 68 61 72 
+1A4BF58 	64 77 61 72 65 20 20 20 
+1A4BF60 	20 28 20 2D 2D 20 29 20 
+1A4BF68 	20 20 20 20 20 66 72 65 
+1A4BF70 	65 2D 62 75 6C 6B 20 20 
+1A4BF78 	3B  0  0  0 D8 E5 A0  1 
+s" : reset  ( -- )  transport-reset  ;" eval
+1A4BF80 	9C 53 A0  1 23 3A 20 72 
+1A4BF88 	65 73 65 74 20 20 28 20 
+1A4BF90 	2D 2D 20 29 20 20 74 72 
+1A4BF98 	61 6E 73 70 6F 72 74 2D 
+1A4BFA0 	72 65 73 65 74 20 20 3B 
+1A4BFA8 	 0  0  0  0 D8 E5 A0  1 
+s" : selftest  ( -- 0 | error-code )  0  ;" eval
+1A4BFB0 	9C 53 A0  1 27 3A 20 73 
+1A4BFB8 	65 6C 66 74 65 73 74 20 
+1A4BFC0 	20 28 20 2D 2D 20 30 20 
+1A4BFC8 	7C 20 65 72 72 6F 72 2D 
+1A4BFD0 	63 6F 64 65 20 29 20 20 
+1A4BFD8 	30 20 20 3B  0  0  0  0 
+1A4BFE0 	D8 E5 A0  1 
+;
+1A4BFE4 	58 46 A0  1 

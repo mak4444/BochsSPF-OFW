@@ -1,0 +1,485 @@
+purpose: Common USB control pipe API
+
+hex
+
+defer (control-get-m)
+1A450B4 	28 63 6F 6E 
+1A450B8 	74 72 6F 6C 2D 67 65 74 
+1A450C0 	2D 6D 29 8F 34 50 A4  1 
+1A450C8 	5C 40 A0  1 EC  D  0  0 
+defer (control-set-m)
+1A450D0 	28 63 6F 6E 74 72 6F 6C 
+1A450D8 	2D 73 65 74 2D 6D 29 8F 
+1A450E0 	C8 50 A4  1 5C 40 A0  1 
+1A450E8 	F0  D  0  0 
+defer (control-set-nostat-m)
+1A450EC 	 0 28 63 6F 
+1A450F0 	6E 74 72 6F 6C 2D 73 65 
+1A450F8 	74 2D 6E 6F 73 74 61 74 
+1A45100 	2D 6D 29 96 E4 50 A4  1 
+1A45108 	5C 40 A0  1 F4  D  0  0 
+defer set-my-dev
+1A45110 	 0 73 65 74 2D 6D 79 2D 
+1A45118 	64 65 76 8A  8 51 A4  1 
+1A45120 	5C 40 A0  1 F8  D  0  0 
+defer set-real-dev-m
+1A45128 	 0 73 65 74 2D 72 65 61 
+1A45130 	6C 2D 64 65 76 2D 6D 8E 
+1A45138 	20 51 A4  1 5C 40 A0  1 
+1A45140 	FC  D  0  0 
+
+
+: setup-buf-arg  ( -- sbuf sphy slen )  setup-buf setup-buf-phys /dr  ;
+1A45144 	 0  0 73 65 
+1A45148 	74 75 70 2D 62 75 66 2D 
+1A45150 	61 72 67 8D 3C 51 A4  1 
+1A45158 	20 40 A0  1 98 3B A4  1 
+1A45160 	B4 3B A4  1 58 2F A4  1 
+1A45168 	58 46 A0  1 
+: cfg-buf-arg    ( -- cbuf cphy )       cfg-buf cfg-buf-phys  ;
+1A4516C 	63 66 67 2D 
+1A45170 	62 75 66 2D 61 72 67 8B 
+1A45178 	58 51 A4  1 20 40 A0  1 
+1A45180 	C8 3B A4  1 E4 3B A4  1 
+1A45188 	58 46 A0  1 
+
+: fill-setup-buf  ( len idx value rtype req -- )
+1A4518C 	 0 66 69 6C 
+1A45190 	6C 2D 73 65 74 75 70 2D 
+1A45198 	62 75 66 8E 7C 51 A4  1 
+1A451A0 	20 40 A0  1 
+   setup-buf dup /dr  erase			( len idx value rtype req vpcbp )
+1A451A4 	98 3B A4  1 
+1A451A8 	40 49 A0  1 58 2F A4  1 
+1A451B0 	F0 72 A0  1 
+   tuck >dr-request c!				( len idx value rtype vpcbp )
+1A451B4 	E8 46 A0  1 
+1A451B8 	 4 2F A4  1 B8 4D A0  1 
+   tuck >dr-rtype c!				( len idx value vpcbp )
+1A451C0 	E8 46 A0  1 EC 2E A4  1 
+1A451C8 	B8 4D A0  1 
+   tuck >dr-value le-w!				( len idx vpcbp )
+1A451CC 	E8 46 A0  1 
+1A451D0 	1C 2F A4  1 94 34 A4  1 
+   tuck >dr-index le-w!				( len vpcbp )
+1A451D8 	E8 46 A0  1 34 2F A4  1 
+1A451E0 	94 34 A4  1 
+   >dr-len le-w!				( )
+1A451E4 	48 2F A4  1 
+1A451E8 	94 34 A4  1 
+   setup-buf setup-buf-phys /dr dma-push	( )
+1A451EC 	98 3B A4  1 
+1A451F0 	B4 3B A4  1 58 2F A4  1 
+1A451F8 	 8 36 A4  1 
+;
+1A451FC 	58 46 A0  1 
+
+external
+: control-get  ( adr len idx value rtype req -- actual usberr )
+1A45200 	63 6F 6E 74 72 6F 6C 2D 
+1A45208 	67 65 74 8B A0 51 A4  1 
+1A45210 	20 40 A0  1 
+   4 pick >r					( adr len idx value rtype req )  ( R: len )
+1A45214 	B0 6F A0  1 
+1A45218 	 C 4A A0  1 BC 45 A0  1 
+   fill-setup-buf				( adr )  ( R: len )
+1A45220 	A0 51 A4  1 
+   setup-buf-arg cfg-buf-arg r@  (control-get-m)	( adr actual usberr )  ( R: len )
+1A45224 	58 51 A4  1 
+1A45228 	7C 51 A4  1 E4 45 A0  1 
+1A45230 	C8 50 A4  1 
+   dup  if
+1A45234 	40 49 A0  1 
+1A45238 	DC 41 A0  1 24  0  0  0 
+      r> drop nip nip 0 swap			( actual usberr )
+1A45240 	D0 45 A0  1 30 49 A0  1 
+1A45248 	FC 46 A0  1 FC 46 A0  1 
+1A45250 	70 6F A0  1 68 49 A0  1 
+   else
+1A45258 	C8 41 A0  1 24  0  0  0 
+      -rot r> min tuck cfg-buf -rot move swap	( actual usberr )
+1A45260 	94 49 A0  1 D0 45 A0  1 
+1A45268 	74 4A A0  1 E8 46 A0  1 
+1A45270 	C8 3B A4  1 94 49 A0  1 
+1A45278 	F4 4A A0  1 68 49 A0  1 
+   then
+;
+1A45280 	58 46 A0  1 
+
+: control-set  ( adr len idx value rtype req -- usberr )
+1A45284 	63 6F 6E 74 
+1A45288 	72 6F 6C 2D 73 65 74 8B 
+1A45290 	10 52 A4  1 20 40 A0  1 
+   5 pick ?dup  if  cfg-buf 6 pick move	 then	( adr len idx value rtype req )
+1A45298 	C0 6F A0  1  C 4A A0  1 
+1A452A0 	B4 70 A0  1 DC 41 A0  1 
+1A452A8 	14  0  0  0 C8 3B A4  1 
+1A452B0 	D0 6F A0  1  C 4A A0  1 
+1A452B8 	F4 4A A0  1 
+   4 pick >r					( adr )  ( R: len )
+1A452BC 	B0 6F A0  1 
+1A452C0 	 C 4A A0  1 BC 45 A0  1 
+   fill-setup-buf drop				( )  ( R: len )
+1A452C8 	A0 51 A4  1 30 49 A0  1 
+   setup-buf-arg cfg-buf-arg r>  (control-set-m) 	( usberr )
+1A452D0 	58 51 A4  1 7C 51 A4  1 
+1A452D8 	D0 45 A0  1 E4 50 A4  1 
+;
+1A452E0 	58 46 A0  1 
+
+: control-set-nostat  ( adr len idx value rtype req -- usberr )
+1A452E4 	 0 63 6F 6E 
+1A452E8 	74 72 6F 6C 2D 73 65 74 
+1A452F0 	2D 6E 6F 73 74 61 74 92 
+1A452F8 	94 52 A4  1 20 40 A0  1 
+   5 pick ?dup  if  cfg-buf 6 pick move	 then	( adr len idx value rtype req )
+1A45300 	C0 6F A0  1  C 4A A0  1 
+1A45308 	B4 70 A0  1 DC 41 A0  1 
+1A45310 	14  0  0  0 C8 3B A4  1 
+1A45318 	D0 6F A0  1  C 4A A0  1 
+1A45320 	F4 4A A0  1 
+   4 pick >r					( adr )  ( R: len )
+1A45324 	B0 6F A0  1 
+1A45328 	 C 4A A0  1 BC 45 A0  1 
+   fill-setup-buf drop				( )  ( R: len )
+1A45330 	A0 51 A4  1 30 49 A0  1 
+   setup-buf-arg cfg-buf-arg r>  (control-set-nostat-m)	( usberr )
+1A45338 	58 51 A4  1 7C 51 A4  1 
+1A45340 	D0 45 A0  1  8 51 A4  1 
+;
+1A45348 	58 46 A0  1 
+
+headers
+
+: set-address  ( dev -- usberr )
+1A4534C 	73 65 74 2D 
+1A45350 	61 64 64 72 65 73 73 8B 
+1A45358 	FC 52 A4  1 20 40 A0  1 
+   " usb-delay" ['] eval catch  if  2drop  else  ms  then
+1A45360 	9C 53 A0  1  9 75 73 62 
+1A45368 	2D 64 65 6C 61 79  0  0 
+1A45370 	60 53 A0  1 D8 E5 A0  1 
+1A45378 	14 7F A0  1 DC 41 A0  1 
+1A45380 	10  0  0  0 AC 49 A0  1 
+1A45388 	C8 41 A0  1  8  0  0  0 
+1A45390 	60 E0 A1  1 
+
+   \ To get the right characteristics for dev in control-set, then normal
+   \ set-my-dev is nooped.  We set my-dev and my-real-dev here instead.
+   ['] set-my-dev behavior swap			( xt dev )	\ Save set-my-dev
+1A45394 	60 53 A0  1 
+1A45398 	20 51 A4  1 10 C7 A0  1 
+1A453A0 	68 49 A0  1 
+   ['] noop to set-my-dev			( xt dev )	\ Make it noop
+1A453A4 	60 53 A0  1 
+1A453A8 	64 4F A0  1 98 40 A0  1 
+1A453B0 	20 51 A4  1 
+   dup >r					( xt dev )  ( R: dev )
+1A453B4 	40 49 A0  1 
+1A453B8 	BC 45 A0  1 
+   0 set-real-dev-m				( xt )  ( R: dev )
+1A453BC 	70 6F A0  1 
+1A453C0 	3C 51 A4  1 
+
+   0 0 0 r@ DR_OUT DR_DEVICE or SET_ADDRESS control-set  if
+1A453C4 	70 6F A0  1 
+1A453C8 	70 6F A0  1 70 6F A0  1 
+1A453D0 	E4 45 A0  1 6C 2F A4  1 
+1A453D8 	E0 2F A4  1 70 44 A0  1 
+1A453E0 	24 31 A4  1 94 52 A4  1 
+1A453E8 	DC 41 A0  1 3C  0  0  0 
+      ." Failed to set device address: " r> u. cr
+1A453F0 	20 7C A0  1 1E 46 61 69 
+1A453F8 	6C 65 64 20 74 6F 20 73 
+1A45400 	65 74 20 64 65 76 69 63 
+1A45408 	65 20 61 64 64 72 65 73 
+1A45410 	73 3A 20  0 D0 45 A0  1 
+1A45418 	C8 77 A0  1 80 6D A0  1 
+   else
+1A45420 	C8 41 A0  1 18  0  0  0 
+      r> drop
+1A45428 	D0 45 A0  1 30 49 A0  1 
+      d# 10 ms        				\ Let the SET_ADDRESS settle
+1A45430 	58 41 A0  1  A  0  0  0 
+1A45438 	60 E0 A1  1 
+   then						( xt )
+
+   to set-my-dev				\ Restore set-my-dev
+1A4543C 	98 40 A0  1 
+1A45440 	20 51 A4  1 
+   usb-error
+1A45444 	DC 3F A4  1 
+;
+1A45448 	58 46 A0  1 
+
+external
+
+: get-desc  ( adr len lang didx dtype rtype -- actual usberr )
+1A4544C 	 0  0  0 67 
+1A45450 	65 74 2D 64 65 73 63 88 
+1A45458 	5C 53 A4  1 20 40 A0  1 
+   -rot bwjoin swap DR_IN or GET_DESCRIPTOR control-get
+1A45460 	94 49 A0  1 84 FB A0  1 
+1A45468 	68 49 A0  1 80 2F A4  1 
+1A45470 	70 44 A0  1 C0 30 A4  1 
+1A45478 	10 52 A4  1 
+;
+1A4547C 	58 46 A0  1 
+
+: get-status  ( adr len intf/endp rtype -- actual usberr )
+1A45480 	 0 67 65 74 2D 73 74 61 
+1A45488 	74 75 73 8A 5C 54 A4  1 
+1A45490 	20 40 A0  1 
+   0 swap DR_IN or GET_STATUS control-get
+1A45494 	70 6F A0  1 
+1A45498 	68 49 A0  1 80 2F A4  1 
+1A454A0 	70 44 A0  1  C 31 A4  1 
+1A454A8 	10 52 A4  1 
+;
+1A454AC 	58 46 A0  1 
+
+: set-config-m  ( cfg -- usberr )
+1A454B0 	 0  0  0 73 65 74 2D 63 
+1A454B8 	6F 6E 66 69 67 2D 6D 8C 
+1A454C0 	90 54 A4  1 20 40 A0  1 
+   >r 0 0 0 r> DR_DEVICE DR_OUT or SET_CONFIGURATION control-set 
+1A454C8 	BC 45 A0  1 70 6F A0  1 
+1A454D0 	70 6F A0  1 70 6F A0  1 
+1A454D8 	D0 45 A0  1 E0 2F A4  1 
+1A454E0 	6C 2F A4  1 70 44 A0  1 
+1A454E8 	44 31 A4  1 94 52 A4  1 
+;
+1A454F0 	58 46 A0  1 
+
+
+: set-interface  ( intf alt -- usberr )
+1A454F4 	 0  0 73 65 
+1A454F8 	74 2D 69 6E 74 65 72 66 
+1A45500 	61 63 65 8D C4 54 A4  1 
+1A45508 	20 40 A0  1 
+   0 0 2swap DR_INTERFACE DR_OUT or SET_INTERFACE control-set
+1A4550C 	70 6F A0  1 
+1A45510 	70 6F A0  1 F4 49 A0  1 
+1A45518 	FC 2F A4  1 6C 2F A4  1 
+1A45520 	70 44 A0  1 94 31 A4  1 
+1A45528 	94 52 A4  1 
+;
+1A4552C 	58 46 A0  1 
+
+: clear-feature  ( intf/endp feature rtype -- usberr )
+1A45530 	 0  0 63 6C 65 61 72 2D 
+1A45538 	66 65 61 74 75 72 65 8D 
+1A45540 	 8 55 A4  1 20 40 A0  1 
+   >r 0 0 2swap r> DR_OUT or CLEAR_FEATURE control-set
+1A45548 	BC 45 A0  1 70 6F A0  1 
+1A45550 	70 6F A0  1 F4 49 A0  1 
+1A45558 	D0 45 A0  1 6C 2F A4  1 
+1A45560 	70 44 A0  1 84 30 A4  1 
+1A45568 	94 52 A4  1 
+;
+1A4556C 	58 46 A0  1 
+: set-feature  ( intf/endp feature rtype -- usberr )
+1A45570 	73 65 74 2D 66 65 61 74 
+1A45578 	75 72 65 8B 44 55 A4  1 
+1A45580 	20 40 A0  1 
+   >r 0 0 2swap r> DR_OUT or SET_FEATURE control-set
+1A45584 	BC 45 A0  1 
+1A45588 	70 6F A0  1 70 6F A0  1 
+1A45590 	F4 49 A0  1 D0 45 A0  1 
+1A45598 	6C 2F A4  1 70 44 A0  1 
+1A455A0 	78 31 A4  1 94 52 A4  1 
+;
+1A455A8 	58 46 A0  1 
+
+headers
+
+
+: (unstall-pipe)  ( pipe -- )  0 DR_ENDPOINT clear-feature drop  ;
+1A455AC 	 0 28 75 6E 
+1A455B0 	73 74 61 6C 6C 2D 70 69 
+1A455B8 	70 65 29 8E 80 55 A4  1 
+1A455C0 	20 40 A0  1 70 6F A0  1 
+1A455C8 	14 30 A4  1 44 55 A4  1 
+1A455D0 	30 49 A0  1 58 46 A0  1 
+
+external
+: get-cfg-desc  ( adr idx -- actual )
+1A455D8 	 0  0  0 67 65 74 2D 63 
+1A455E0 	66 67 2D 64 65 73 63 8C 
+1A455E8 	C0 55 A4  1 20 40 A0  1 
+   swap >r					( idx )  ( R: adr )
+1A455F0 	68 49 A0  1 BC 45 A0  1 
+   r@ 9 0 3 pick CONFIGURATION DR_DEVICE get-desc nip 0=  if
+1A455F8 	E4 45 A0  1 58 41 A0  1 
+1A45600 	 9  0  0  0 70 6F A0  1 
+1A45608 	A0 6F A0  1  C 4A A0  1 
+1A45610 	DC 31 A4  1 E0 2F A4  1 
+1A45618 	5C 54 A4  1 FC 46 A0  1 
+1A45620 	24 47 A0  1 DC 41 A0  1 
+1A45628 	3C  0  0  0 
+      r> dup 2 + le-w@ rot 0 swap CONFIGURATION DR_DEVICE get-desc drop	( actual )
+1A4562C 	D0 45 A0  1 
+1A45630 	40 49 A0  1 90 6F A0  1 
+1A45638 	 4 45 A0  1 38 34 A4  1 
+1A45640 	7C 49 A0  1 70 6F A0  1 
+1A45648 	68 49 A0  1 DC 31 A4  1 
+1A45650 	E0 2F A4  1 5C 54 A4  1 
+1A45658 	30 49 A0  1 
+   else
+1A4565C 	C8 41 A0  1 
+1A45660 	10  0  0  0 
+      r> 2drop 0				( actual )
+1A45664 	D0 45 A0  1 
+1A45668 	AC 49 A0  1 70 6F A0  1 
+   then
+;
+1A45670 	58 46 A0  1 
+headers
+
+: get-dev-desc  ( adr len -- actual )
+1A45674 	 0  0  0 67 
+1A45678 	65 74 2D 64 65 76 2D 64 
+1A45680 	65 73 63 8C EC 55 A4  1 
+1A45688 	20 40 A0  1 
+   0 0 DEVICE DR_DEVICE get-desc drop		( actual )
+1A4568C 	70 6F A0  1 
+1A45690 	70 6F A0  1 C0 31 A4  1 
+1A45698 	E0 2F A4  1 5C 54 A4  1 
+1A456A0 	30 49 A0  1 
+;
+1A456A4 	58 46 A0  1 
+: (get-str-desc)  ( adr len lang idx -- actual )
+1A456A8 	 0 28 67 65 74 2D 73 74 
+1A456B0 	72 2D 64 65 73 63 29 8E 
+1A456B8 	88 56 A4  1 20 40 A0  1 
+   STRING DR_DEVICE get-desc drop		( actual )
+1A456C0 	F0 31 A4  1 E0 2F A4  1 
+1A456C8 	5C 54 A4  1 30 49 A0  1 
+;
+1A456D0 	58 46 A0  1 
+: get-str-desc  ( adr lang idx -- actual )
+1A456D4 	 0  0  0 67 
+1A456D8 	65 74 2D 73 74 72 2D 64 
+1A456E0 	65 73 63 8C BC 56 A4  1 
+1A456E8 	20 40 A0  1 
+   3dup 2 -rot (get-str-desc) 0=  if  3drop 0 exit  then	\ Read the length
+1A456EC 	78 3E A4  1 
+1A456F0 	90 6F A0  1 94 49 A0  1 
+1A456F8 	BC 56 A4  1 24 47 A0  1 
+1A45700 	DC 41 A0  1 10  0  0  0 
+1A45708 	A4 3E A4  1 70 6F A0  1 
+1A45710 	40 46 A0  1 
+   >r 2dup r>					( adr lang adr lang idx )
+1A45714 	BC 45 A0  1 
+1A45718 	C0 49 A0  1 D0 45 A0  1 
+   2 pick c@ -rot  (get-str-desc) 0=  if  2drop 0 exit  then	\ Then read the whole string
+1A45720 	90 6F A0  1  C 4A A0  1 
+1A45728 	C4 4C A0  1 94 49 A0  1 
+1A45730 	BC 56 A4  1 24 47 A0  1 
+1A45738 	DC 41 A0  1 10  0  0  0 
+1A45740 	AC 49 A0  1 70 6F A0  1 
+1A45748 	40 46 A0  1 
+   						( adr lang )
+   encoded$>ascii$				( )
+1A4574C 	D4 3A A4  1 
+;
+1A45750 	58 46 A0  1 
+
+headers
+: controlfth
+1A45754 	 0 63 6F 6E 
+1A45758 	74 72 6F 6C 66 74 68 8A 
+1A45760 	E8 56 A4  1 20 40 A0  1 
+
+\ s" ' (unstall-pipe) to unstall-pipe" eval
+
+s" alias set-config set-config-m" eval
+1A45768 	9C 53 A0  1 1D 61 6C 69 
+1A45770 	61 73 20 73 65 74 2D 63 
+1A45778 	6F 6E 66 69 67 20 73 65 
+1A45780 	74 2D 63 6F 6E 66 69 67 
+1A45788 	2D 6D  0  0 D8 E5 A0  1 
+
+\ Must be called after set-config for any device with bulk-in or
+\ bulk-out pipes.  Pass in 0 if one of the pipes is nonexistent.
+s" : reset-bulk-toggles" eval  ( bulk-in-pipe bulk-out-pipe -- )
+1A45790 	9C 53 A0  1 14 3A 20 72 
+1A45798 	65 73 65 74 2D 62 75 6C 
+1A457A0 	6B 2D 74 6F 67 67 6C 65 
+1A457A8 	73  0  0  0 D8 E5 A0  1 
+s"    ?dup   if  0 swap  target  di-out-data!  then" eval
+1A457B0 	9C 53 A0  1 30 20 20 20 
+1A457B8 	3F 64 75 70 20 20 20 69 
+1A457C0 	66 20 20 30 20 73 77 61 
+1A457C8 	70 20 20 74 61 72 67 65 
+1A457D0 	74 20 20 64 69 2D 6F 75 
+1A457D8 	74 2D 64 61 74 61 21 20 
+1A457E0 	20 74 68 65 6E  0  0  0 
+1A457E8 	D8 E5 A0  1 
+s"    ?dup   if  0 swap  target  di-in-data!   then ;" eval
+1A457EC 	9C 53 A0  1 
+1A457F0 	32 20 20 20 3F 64 75 70 
+1A457F8 	20 20 20 69 66 20 20 30 
+1A45800 	20 73 77 61 70 20 20 74 
+1A45808 	61 72 67 65 74 20 20 64 
+1A45810 	69 2D 69 6E 2D 64 61 74 
+1A45818 	61 21 20 20 20 74 68 65 
+1A45820 	6E 20 3B  0 D8 E5 A0  1 
+
+s" : set-pipe-maxpayload" eval  ( size pipe -- )
+1A45828 	9C 53 A0  1 15 3A 20 73 
+1A45830 	65 74 2D 70 69 70 65 2D 
+1A45838 	6D 61 78 70 61 79 6C 6F 
+1A45840 	61 64  0  0 D8 E5 A0  1 
+s"    target di-maxpayload! ;" eval
+1A45848 	9C 53 A0  1 1A 20 20 20 
+1A45850 	74 61 72 67 65 74 20 64 
+1A45858 	69 2D 6D 61 78 70 61 79 
+1A45860 	6C 6F 61 64 21 20 3B  0 
+1A45868 	D8 E5 A0  1 
+
+\ Returns true the first time it is called for a given target device
+\ after a reset of the USB subsystem.  Used for reinitializing hardware.
+
+s" : reset?  ( -- flag )  target di-reset?  ;" eval
+1A4586C 	9C 53 A0  1 
+1A45870 	2A 3A 20 72 65 73 65 74 
+1A45878 	3F 20 20 28 20 2D 2D 20 
+1A45880 	66 6C 61 67 20 29 20 20 
+1A45888 	74 61 72 67 65 74 20 64 
+1A45890 	69 2D 72 65 73 65 74 3F 
+1A45898 	20 20 3B  0 D8 E5 A0  1 
+
+
+s" ' (control-get) is (control-get-m)" eval
+1A458A0 	9C 53 A0  1 22 27 20 28 
+1A458A8 	63 6F 6E 74 72 6F 6C 2D 
+1A458B0 	67 65 74 29 20 69 73 20 
+1A458B8 	28 63 6F 6E 74 72 6F 6C 
+1A458C0 	2D 67 65 74 2D 6D 29  0 
+1A458C8 	D8 E5 A0  1 
+s" ' (control-set) is (control-set-m)" eval
+1A458CC 	9C 53 A0  1 
+1A458D0 	22 27 20 28 63 6F 6E 74 
+1A458D8 	72 6F 6C 2D 73 65 74 29 
+1A458E0 	20 69 73 20 28 63 6F 6E 
+1A458E8 	74 72 6F 6C 2D 73 65 74 
+1A458F0 	2D 6D 29  0 D8 E5 A0  1 
+s" ' (control-set-nostat) is (control-set-nostat-m)" eval
+1A458F8 	9C 53 A0  1 30 27 20 28 
+1A45900 	63 6F 6E 74 72 6F 6C 2D 
+1A45908 	73 65 74 2D 6E 6F 73 74 
+1A45910 	61 74 29 20 69 73 20 28 
+1A45918 	63 6F 6E 74 72 6F 6C 2D 
+1A45920 	73 65 74 2D 6E 6F 73 74 
+1A45928 	61 74 2D 6D 29  0  0  0 
+1A45930 	D8 E5 A0  1 
+s" ' set-real-dev is set-real-dev-m" eval
+1A45934 	9C 53 A0  1 
+1A45938 	20 27 20 73 65 74 2D 72 
+1A45940 	65 61 6C 2D 64 65 76 20 
+1A45948 	69 73 20 73 65 74 2D 72 
+1A45950 	65 61 6C 2D 64 65 76 2D 
+1A45958 	6D  0  0  0 D8 E5 A0  1 
+;
+1A45960 	58 46 A0  1 

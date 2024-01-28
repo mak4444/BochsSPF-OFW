@@ -1,0 +1,123 @@
+\ DOS file handle.  There is one of these for each open file.
+
+\ Logical cluster numbers are relative to the start of the file.
+\ Physical cluster numbers are relative to the start of the partition.
+
+hex
+
+\ mmo private
+
+instance variable  fh
+1A2E554 	 0 66 68 82 
+1A2E558 	F8 E4 A2  1 40  1 A2  1 
+1A2E560 	28  0  0  0 
+
+: hfield  (s handle-offset size -- handle-offset+size )
+1A2E564 	 0 68 66 69 
+1A2E568 	65 6C 64 86 5C E5 A2  1 
+1A2E570 	20 40 A0  1 
+   create over , + does> @ fh @ +
+1A2E574 	A8 A2 A0  1 
+1A2E578 	54 49 A0  1 98 55 A0  1 
+1A2E580 	 4 45 A0  1 50 A3 A0  1 
+1A2E588 	90 90 90 E8 EC 5A FD FF 
+1A2E590 	5C 4C A0  1 5C E5 A2  1 
+1A2E598 	5C 4C A0  1  4 45 A0  1 
+;
+1A2E5A0 	58 46 A0  1 
+
+struct \ fh
+  /n hfield fh_dev        \ Device # where file lives
+1A2E5A4 	 0 66 68 5F 
+1A2E5A8 	64 65 76 86 70 E5 A2  1 
+1A2E5B0 	88 E5 A2  1  0  0  0  0 
+  /n hfield fh_dircl      \ Cluster # of directory entry
+1A2E5B8 	 0  0  0 66 68 5F 64 69 
+1A2E5C0 	72 63 6C 88 B0 E5 A2  1 
+1A2E5C8 	88 E5 A2  1  4  0  0  0 
+                          \ Must be long because we must encode both
+                          \ negative root directory sector number and
+                          \ unsigned 16-bit cluster numbers
+  /l hfield fh_first      \ First cluster number of file
+1A2E5D0 	 0  0  0 66 68 5F 66 69 
+1A2E5D8 	72 73 74 88 C8 E5 A2  1 
+1A2E5E0 	88 E5 A2  1  8  0  0  0 
+  /l hfield fh_length     \ #bytes in file
+1A2E5E8 	 0  0 66 68 5F 6C 65 6E 
+1A2E5F0 	67 74 68 89 E0 E5 A2  1 
+1A2E5F8 	88 E5 A2  1  C  0  0  0 
+  /l hfield fh_logicalcl  \ Current position - logical cluster#
+1A2E600 	 0  0  0 66 68 5F 6C 6F 
+1A2E608 	67 69 63 61 6C 63 6C 8C 
+1A2E610 	F8 E5 A2  1 88 E5 A2  1 
+1A2E618 	10  0  0  0 
+  /l hfield fh_physicalcl \ Current position - physical cluster#
+1A2E61C 	 0  0 66 68 
+1A2E620 	5F 70 68 79 73 69 63 61 
+1A2E628 	6C 63 6C 8D 14 E6 A2  1 
+1A2E630 	88 E5 A2  1 14  0  0  0 
+  /l hfield fh_prevphyscl \ Predecessor of current physical cluster#
+1A2E638 	 0  0 66 68 5F 70 72 65 
+1A2E640 	76 70 68 79 73 63 6C 8D 
+1A2E648 	30 E6 A2  1 88 E5 A2  1 
+1A2E650 	18  0  0  0 
+   2 hfield fh_diroff     \ Offset of directory entry within its cluster
+1A2E654 	 0  0 66 68 
+1A2E658 	5F 64 69 72 6F 66 66 89 
+1A2E660 	4C E6 A2  1 88 E5 A2  1 
+1A2E668 	1C  0  0  0 
+   2 hfield fh_clshift    \ Shift count to convert from position to cl#
+1A2E66C 	 0 66 68 5F 
+1A2E670 	63 6C 73 68 69 66 74 8A 
+1A2E678 	64 E6 A2  1 88 E5 A2  1 
+1A2E680 	1E  0  0  0 
+   2 hfield fh_flags
+1A2E684 	 0  0  0 66 
+1A2E688 	68 5F 66 6C 61 67 73 88 
+1A2E690 	7C E6 A2  1 88 E5 A2  1 
+1A2E698 	20  0  0  0 
+
+       0001 constant fh_isopen
+1A2E69C 	 0  0 66 68 
+1A2E6A0 	5F 69 73 6F 70 65 6E 89 
+1A2E6A8 	94 E6 A2  1 68 40 A0  1 
+1A2E6B0 	 1  0  0  0 
+       0002 constant fh_writeable
+1A2E6B4 	 0  0  0 66 
+1A2E6B8 	68 5F 77 72 69 74 65 61 
+1A2E6C0 	62 6C 65 8C AC E6 A2  1 
+1A2E6C8 	68 40 A0  1  2  0  0  0 
+       0004 constant fh_dirty
+1A2E6D0 	 0  0  0 66 68 5F 64 69 
+1A2E6D8 	72 74 79 88 C8 E6 A2  1 
+1A2E6E0 	68 40 A0  1  4  0  0  0 
+
+   /l round-up
+constant /fh
+1A2E6E8 	2F 66 68 83 E0 E6 A2  1 
+1A2E6F0 	68 40 A0  1 24  0  0  0 
+
+\ Releases the current file handle
+: clear-fh  ( -- )  fh @ /fh free-mem  ;
+1A2E6F8 	 0  0  0 63 6C 65 61 72 
+1A2E700 	2D 66 68 88 F0 E6 A2  1 
+1A2E708 	20 40 A0  1 5C E5 A2  1 
+1A2E710 	5C 4C A0  1 F0 E6 A2  1 
+1A2E718 	 8 6D A0  1 58 46 A0  1 
+
+\ Allocates a free file handle if possible
+: allocate-fh  ( -- fh true  |  false )
+1A2E720 	61 6C 6C 6F 63 61 74 65 
+1A2E728 	2D 66 68 8B  8 E7 A2  1 
+1A2E730 	20 40 A0  1 
+   /fh alloc-mem fh !  fh @  if  fh @ true  else  false  then
+1A2E734 	F0 E6 A2  1 
+1A2E738 	F0 6C A0  1 5C E5 A2  1 
+1A2E740 	54 4D A0  1 5C E5 A2  1 
+1A2E748 	5C 4C A0  1 DC 41 A0  1 
+1A2E750 	18  0  0  0 5C E5 A2  1 
+1A2E758 	5C 4C A0  1  4 70 A0  1 
+1A2E760 	C8 41 A0  1  8  0  0  0 
+1A2E768 	18 70 A0  1 
+;
+1A2E76C 	58 46 A0  1 

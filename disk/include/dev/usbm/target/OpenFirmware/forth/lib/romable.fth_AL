@@ -1,0 +1,26 @@
+
+\ Warns about stores into the dictionary to help catch non-ROMable code.
+forth definitions
+: variable   nuser  ;
+1A0F284 	 0  0  0 76 
+1A0F288 	61 72 69 61 62 6C 65 88 
+1A0F290 	7C F2 A0  1 20 40 A0  1 
+1A0F298 	24 9A A0  1 58 46 A0  1 
+: 2variable  2 /n* ualloc user  ;
+1A0F2A0 	 0  0 32 76 61 72 69 61 
+1A0F2A8 	62 6C 65 89 94 F2 A0  1 
+1A0F2B0 	20 40 A0  1 90 6F A0  1 
+1A0F2B8 	98 51 A0  1 90 99 A0  1 
+1A0F2C0 	 4 9A A0  1 58 46 A0  1 
+: lvariable  /l ualloc user  ;
+1A0F2C8 	 0  0 6C 76 61 72 69 61 
+1A0F2D0 	62 6C 65 89 B0 F2 A0  1 
+1A0F2D8 	20 40 A0  1 30 51 A0  1 
+1A0F2E0 	90 99 A0  1  4 9A A0  1 
+1A0F2E8 	58 46 A0  1 
+: shared-variable  nuser  ;
+1A0F2EC 	73 68 61 72 
+1A0F2F0 	65 64 2D 76 61 72 69 61 
+1A0F2F8 	62 6C 65 8F D8 F2 A0  1 
+1A0F300 	20 40 A0  1 24 9A A0  1 
+1A0F308 	58 46 A0  1 

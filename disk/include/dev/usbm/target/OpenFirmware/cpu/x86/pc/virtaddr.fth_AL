@@ -1,0 +1,40 @@
+purpose: Defines Open Firmware virtual address space
+
+\ Low RAM
+h#     580 constant gdt-pa   \ Above the BDA, below the MBR area at 600
+1A324C0 	 0 67 64 74 2D 70 61 86 
+1A324C8 	B8 24 A3  1 68 40 A0  1 
+1A324D0 	80  5  0  0 
+h#      80 constant gdt-size
+1A324D4 	 0  0  0 67 
+1A324D8 	64 74 2D 73 69 7A 65 88 
+1A324E0 	CC 24 A3  1 68 40 A0  1 
+1A324E8 	80  0  0  0 
+
+h#    1000 constant mem-info-pa
+1A324EC 	6D 65 6D 2D 
+1A324F0 	69 6E 66 6F 2D 70 61 8B 
+1A324F8 	E4 24 A3  1 68 40 A0  1 
+1A32500 	 0 10  0  0 
+h#  9.fc00 constant 'ebda    \ Extended BIOS Data Area, which we co-opt for our
+1A32504 	 0  0 27 65 
+1A32508 	62 64 61 85 FC 24 A3  1 
+1A32510 	68 40 A0  1  0 FC  9  0 
+
+[ifdef] virtual-mode
+h#    2000 constant pdir-pa
+h#    3000 constant pt-pa
+h# ff80.0000 value fw-virt-base
+h# 0040.0000 value fw-virt-size
+[else]
+fw-pa value fw-virt-base
+1A32518 	 0  0  0 66 77 2D 76 69 
+1A32520 	72 74 2D 62 61 73 65 8C 
+1A32528 	10 25 A3  1 50 40 A0  1 
+1A32530 	F0  9  0  0 
+0 value fw-virt-size
+1A32534 	 0  0  0 66 
+1A32538 	77 2D 76 69 72 74 2D 73 
+1A32540 	69 7A 65 8C 2C 25 A3  1 
+1A32548 	50 40 A0  1 F4  9  0  0 
+[then]

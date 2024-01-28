@@ -1,0 +1,131 @@
+purpose: Select and install console I/O devices
+
+headers
+" keyboard" d# 32  config-string input-device
+1A2ABC0 	 0  0  0 69 6E 70 75 74 
+1A2ABC8 	2D 64 65 76 69 63 65 8C 
+1A2ABD0 	6C 52 A2  1  0  0  0  0 
+1A2ABD8 	B4  8  0 40  4  0  0  0 
+1A2ABE0 	6B 65 79 62 6F 61 72 64 
+1A2ABE8 	 0  0  0  0 
+" screen"   d# 32  config-string output-device
+1A2ABEC 	 0  0 6F 75 
+1A2ABF0 	74 70 75 74 2D 64 65 76 
+1A2ABF8 	69 63 65 8D D4 AB A2  1 
+1A2AC00 	 0  0  0  0 B8  8  0 40 
+1A2AC08 	 4  0  0  0 73 63 72 65 
+1A2AC10 	65 6E  0  0 
+
+variable prev-stdin
+1A2AC14 	 0 70 72 65 
+1A2AC18 	76 2D 73 74 64 69 6E 8A 
+1A2AC20 	38 A5 A2  1 48 40 A0  1 
+1A2AC28 	BC  8  0  0 
+
+headerless
+: report-fb  ( -- )
+1A2AC2C 	 0  0 72 65 
+1A2AC30 	70 6F 72 74 2D 66 62 89 
+1A2AC38 	24 AC A2  1 20 40 A0  1 
+   'fb-node token@  origin <>  if            ( phandle )
+1A2AC40 	CC 4B A2  1  C 54 A0  1 
+1A2AC48 	50 55 A0  1 44 48 A0  1 
+1A2AC50 	DC 41 A0  1 40  0  0  0 
+      'fb-node token@  " screen" 2dup aliased?  if  ( phandle name$ alias$ )
+1A2AC58 	CC 4B A2  1  C 54 A0  1 
+1A2AC60 	9C 53 A0  1  6 73 63 72 
+1A2AC68 	65 65 6E  0 C0 49 A0  1 
+1A2AC70 	 4 1F A2  1 DC 41 A0  1 
+1A2AC78 	14  0  0  0 
+	 \ There is already an alias called screen
+	 2drop 3drop                                (  )
+1A2AC7C 	AC 49 A0  1 
+1A2AC80 	90 52 A0  1 
+      else                                          ( phandle name$ alias$ )
+1A2AC84 	C8 41 A0  1 
+1A2AC88 	 C  0  0  0 
+	 2drop make-node-alias                      (  )
+1A2AC8C 	AC 49 A0  1 
+1A2AC90 	58 4E A2  1 
+      then
+   then
+;
+1A2AC94 	58 46 A0  1 
+
+headers
+: install-console  ( -- )
+1A2AC98 	69 6E 73 74 61 6C 6C 2D 
+1A2ACA0 	63 6F 6E 73 6F 6C 65 8F 
+1A2ACA8 	3C AC A2  1 20 40 A0  1 
+   report-fb
+1A2ACB0 	3C AC A2  1 
+
+   \ Switch to romvec I/O and use ttya at first.
+   fallback-device io  console-io
+1A2ACB4 	EC E3 A1  1 
+1A2ACB8 	6C 5C A2  1 18 5D A2  1 
+
+   \ Open NVRAM output-device as the output device
+   output-device output
+1A2ACC0 	 0 AC A2  1 4C 5B A2  1 
+
+   \ Open NVRAM input-device as the input device
+   stdin @  prev-stdin !  input-device  input
+1A2ACC8 	54 55 A2  1 5C 4C A0  1 
+1A2ACD0 	24 AC A2  1 54 4D A0  1 
+1A2ACD8 	D4 AB A2  1 3C 59 A2  1 
+
+   prev-stdin @ stdin @  =   input-device " keyboard" $=   and  if
+1A2ACE0 	24 AC A2  1 5C 4C A0  1 
+1A2ACE8 	54 55 A2  1 5C 4C A0  1 
+1A2ACF0 	24 48 A0  1 D4 AB A2  1 
+1A2ACF8 	9C 53 A0  1  8 6B 65 79 
+1A2AD00 	62 6F 61 72 64  0  0  0 
+1A2AD08 	88 8D A0  1 5C 44 A0  1 
+1A2AD10 	DC 41 A0  1 90  0  0  0 
+      \ NVRAM input-device was keyboard but could not open it.
+
+      output-device " screen"   $=  stdout @ 0<>  and  if
+1A2AD18 	 0 AC A2  1 9C 53 A0  1 
+1A2AD20 	 6 73 63 72 65 65 6E  0 
+1A2AD28 	88 8D A0  1 68 55 A2  1 
+1A2AD30 	5C 4C A0  1 44 47 A0  1 
+1A2AD38 	5C 44 A0  1 DC 41 A0  1 
+1A2AD40 	5C  0  0  0 
+
+         ." Keyboard not present.  Using "  fallback-device type
+1A2AD44 	20 7C A0  1 
+1A2AD48 	1D 4B 65 79 62 6F 61 72 
+1A2AD50 	64 20 6E 6F 74 20 70 72 
+1A2AD58 	65 73 65 6E 74 2E 20 20 
+1A2AD60 	55 73 69 6E 67 20  0  0 
+1A2AD68 	EC E3 A1  1  4 6C A0  1 
+         ."  for input and output." cr
+1A2AD70 	20 7C A0  1 16 20 66 6F 
+1A2AD78 	72 20 69 6E 70 75 74 20 
+1A2AD80 	61 6E 64 20 6F 75 74 70 
+1A2AD88 	75 74 2E  0 80 6D A0  1 
+
+         \ Give the user time to see the message before the screen goes blank
+         d# 4000 ms
+1A2AD90 	58 41 A0  1 A0  F  0  0 
+1A2AD98 	60 E0 A1  1 
+      then
+      fallback-device io
+1A2AD9C 	EC E3 A1  1 
+1A2ADA0 	6C 5C A2  1 
+   then
+
+   \ Fail-safe in case of bad input or output device
+   stdin  @  0=  if  fallback-device input   then
+1A2ADA4 	54 55 A2  1 
+1A2ADA8 	5C 4C A0  1 24 47 A0  1 
+1A2ADB0 	DC 41 A0  1  C  0  0  0 
+1A2ADB8 	EC E3 A1  1 3C 59 A2  1 
+   stdout @  0=  if  fallback-device output  then
+1A2ADC0 	68 55 A2  1 5C 4C A0  1 
+1A2ADC8 	24 47 A0  1 DC 41 A0  1 
+1A2ADD0 	 C  0  0  0 EC E3 A1  1 
+1A2ADD8 	4C 5B A2  1 
+;
+1A2ADDC 	58 46 A0  1 

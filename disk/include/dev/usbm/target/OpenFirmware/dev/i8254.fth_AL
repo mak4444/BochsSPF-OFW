@@ -1,0 +1,226 @@
+purpose: Driver for Intel 8254 Programmable Interval Timer chip
+
+\ The parallel port register at (hex) 61 in PC I/O space controls the GATE
+\ input on timer 2, enables/disables timer 2's output to the speaker, and
+\ lets you read back the state of the timer 2 OUT bit.
+
+internal
+h# 40 constant timer0
+1A399AC 	 0 74 69 6D 
+1A399B0 	65 72 30 86  0  0 A0  1 
+1A399B8 	68 40 A0  1 40  0  0  0 
+\ h# 41 constant timer1
+\ h# 42 constant timer2
+h# 43 constant timer-ctl
+1A399C0 	 0  0 74 69 6D 65 72 2D 
+1A399C8 	63 74 6C 89 B8 99 A3  1 
+1A399D0 	68 40 A0  1 43  0  0  0 
+
+\ Values for r/w field
+0 constant latch
+1A399D8 	 0  0 6C 61 74 63 68 85 
+1A399E0 	D0 99 A3  1 68 40 A0  1 
+1A399E8 	 0  0  0  0 
+1 constant lsb
+1A399EC 	6C 73 62 83 
+1A399F0 	E4 99 A3  1 68 40 A0  1 
+1A399F8 	 1  0  0  0 
+2 constant msb
+1A399FC 	6D 73 62 83 
+1A39A00 	F4 99 A3  1 68 40 A0  1 
+1A39A08 	 2  0  0  0 
+3 constant lsb,msb
+1A39A0C 	6C 73 62 2C 
+1A39A10 	6D 73 62 87  4 9A A3  1 
+1A39A18 	68 40 A0  1  3  0  0  0 
+
+\ Modes
+\ 0 - interrupt on count = 0
+\ 1 - one-shot
+\ 2 - rate generator  ( OUT goes high for one clock when count=0, reload count)
+\ 3 - square wave     ( period = initial count, duty cycle = .5 )
+\ 4 - software triggered strobe  ( OUT pulses low when count = 0, no reload)
+\ 4 - hardware triggered strobe  ( OUT pulses low when count = 0, no reload)
+
+: timer@  ( timer# -- byte )  timer0 + pc@  ;
+1A39A20 	 0 74 69 6D 65 72 40 86 
+1A39A28 	18 9A A3  1 20 40 A0  1 
+1A39A30 	B8 99 A3  1  4 45 A0  1 
+1A39A38 	AC 81 A2  1 58 46 A0  1 
+: timer!  ( byte timer# -- )  timer0 + pc!  ;
+1A39A40 	 0 74 69 6D 65 72 21 86 
+1A39A48 	2C 9A A3  1 20 40 A0  1 
+1A39A50 	B8 99 A3  1  4 45 A0  1 
+1A39A58 	E8 81 A2  1 58 46 A0  1 
+
+: latch-counter  ( timer# -- )  3 and 6 <<  timer-ctl pc!  ;
+1A39A60 	 0  0 6C 61 74 63 68 2D 
+1A39A68 	63 6F 75 6E 74 65 72 8D 
+1A39A70 	4C 9A A3  1 20 40 A0  1 
+1A39A78 	A0 6F A0  1 5C 44 A0  1 
+1A39A80 	D0 6F A0  1 C8 44 A0  1 
+1A39A88 	D0 99 A3  1 E8 81 A2  1 
+1A39A90 	58 46 A0  1 
+
+\ The timer-ctl register looks like:
+\ TTRR.MMMB
+\ TT  is timer# (0-2)
+\ RR  is the r/w field, with values as given above
+\ MMM is the mode field, with values as given above
+\ B   is 0 for binary, 1 for BCD
+
+: set-mode  ( r/w mode bcd? timer# -- )
+1A39A94 	 0  0  0 73 
+1A39A98 	65 74 2D 6D 6F 64 65 88 
+1A39AA0 	74 9A A3  1 20 40 A0  1 
+   3 and 6 <<  swap 1 and or  swap 7 and 1 << or  swap 3 and 4 << or
+1A39AA8 	A0 6F A0  1 5C 44 A0  1 
+1A39AB0 	D0 6F A0  1 C8 44 A0  1 
+1A39AB8 	68 49 A0  1 80 6F A0  1 
+1A39AC0 	5C 44 A0  1 70 44 A0  1 
+1A39AC8 	68 49 A0  1 E0 6F A0  1 
+1A39AD0 	5C 44 A0  1 80 6F A0  1 
+1A39AD8 	C8 44 A0  1 70 44 A0  1 
+1A39AE0 	68 49 A0  1 A0 6F A0  1 
+1A39AE8 	5C 44 A0  1 B0 6F A0  1 
+1A39AF0 	C8 44 A0  1 70 44 A0  1 
+   timer-ctl pc!
+1A39AF8 	D0 99 A3  1 E8 81 A2  1 
+;
+1A39B00 	58 46 A0  1 
+
+[ifdef] not-used
+: read-back  ( count? status? timer-mask -- )
+   7 and 1 <<                     ( count? status? bits )
+   swap  0=  if  h# 10 or  then   ( count? bits )
+   swap  0=  if  h# 20 or  then   ( bits )
+   h# c0 or  timer-ctl pc!
+;
+
+: get-status  ( timer# -- r/w mode bcd out stopped? )
+   >r  false true  1 r@ <<  read-back   r> timer@  ( status )
+   dup  4 >> 3 and  swap           ( r/w status )
+   dup  1 >> 7 and  swap           ( r/w mode status )
+   dup       1 and  swap           ( r/w mode bcd status )
+   dup  7 >> 1 and  swap           ( r/w mode bcd out status )
+        6 >> 1 and                 ( r/w mode bcd out stopped? )
+;
+[then]
+external
+: count@  ( timer# -- count )
+1A39B04 	 0 63 6F 75 
+1A39B08 	6E 74 40 86 A4 9A A3  1 
+1A39B10 	20 40 A0  1 
+   dup latch-counter  dup timer@  swap timer@ bwjoin
+1A39B14 	40 49 A0  1 
+1A39B18 	74 9A A3  1 40 49 A0  1 
+1A39B20 	2C 9A A3  1 68 49 A0  1 
+1A39B28 	2C 9A A3  1 84 FB A0  1 
+;
+1A39B30 	58 46 A0  1 
+: count!  ( count mode timer# -- )
+1A39B34 	 0 63 6F 75 
+1A39B38 	6E 74 21 86 10 9B A3  1 
+1A39B40 	20 40 A0  1 
+   >r  lsb,msb swap false r@ set-mode   ( count )
+1A39B44 	BC 45 A0  1 
+1A39B48 	18 9A A3  1 68 49 A0  1 
+1A39B50 	18 70 A0  1 E4 45 A0  1 
+1A39B58 	A4 9A A3  1 
+   wbsplit swap r@ timer!  r> timer!
+1A39B5C 	54 FB A0  1 
+1A39B60 	68 49 A0  1 E4 45 A0  1 
+1A39B68 	4C 9A A3  1 D0 45 A0  1 
+1A39B70 	4C 9A A3  1 
+;
+1A39B74 	58 46 A0  1 
+
+\ PC speaker control; the GATE bit in the register at I/O address 0x61
+\ is connected to the GATE2 input of the 8254 timer.
+
+\ 01 bit enables counting
+\ 02 bit enables output to speaker
+\ 20 bit reads back speaker OUT line
+
+: speaker!  ( xxxx|EIC|ERP|SPK|T2G -- )  h# 61 pc!  ;
+1A39B78 	 0  0  0 73 70 65 61 6B 
+1A39B80 	65 72 21 88 40 9B A3  1 
+1A39B88 	20 40 A0  1 58 41 A0  1 
+1A39B90 	61  0  0  0 E8 81 A2  1 
+1A39B98 	58 46 A0  1 
+: speaker@  ( -- PCK|CHKIO|T2O|RFD|EIC|ERP|SPK|T2G )   h# 61 pc@  ;
+1A39B9C 	 0  0  0 73 
+1A39BA0 	70 65 61 6B 65 72 40 88 
+1A39BA8 	88 9B A3  1 20 40 A0  1 
+1A39BB0 	58 41 A0  1 61  0  0  0 
+1A39BB8 	AC 81 A2  1 58 46 A0  1 
+
+: tone  ( hz msecs -- )
+1A39BC0 	 0  0  0 74 6F 6E 65 84 
+1A39BC8 	AC 9B A3  1 20 40 A0  1 
+   d# 1193180 rot /  3 2 count!  3 speaker!  ( msecs )
+1A39BD0 	58 41 A0  1 DC 34 12  0 
+1A39BD8 	7C 49 A0  1 98 5F A0  1 
+1A39BE0 	A0 6F A0  1 90 6F A0  1 
+1A39BE8 	40 9B A3  1 A0 6F A0  1 
+1A39BF0 	88 9B A3  1 
+   ms
+1A39BF4 	60 E0 A1  1 
+   0 speaker!
+1A39BF8 	70 6F A0  1 88 9B A3  1 
+;
+1A39C00 	58 46 A0  1 
+
+\ To set the tick timer
+: set-tick-limit  ( #ms -- )
+1A39C04 	 0 73 65 74 
+1A39C08 	2D 74 69 63 6B 2D 6C 69 
+1A39C10 	6D 69 74 8E CC 9B A3  1 
+1A39C18 	20 40 A0  1 
+   d# 10000000 * d# 8381 /  h# ffff min  2 0 count!
+1A39C1C 	58 41 A0  1 
+1A39C20 	80 96 98  0 1C 5F A0  1 
+1A39C28 	58 41 A0  1 BD 20  0  0 
+1A39C30 	98 5F A0  1 58 41 A0  1 
+1A39C38 	FF FF  0  0 74 4A A0  1 
+1A39C40 	90 6F A0  1 70 6F A0  1 
+1A39C48 	40 9B A3  1 
+;
+1A39C4C 	58 46 A0  1 
+
+\ XXX we really should map the registers
+: open  ( -- flag? )  true  ;
+1A39C50 	 0  0  0 6F 70 65 6E 84 
+1A39C58 	18 9C A3  1 20 40 A0  1 
+1A39C60 	 4 70 A0  1 58 46 A0  1 
+: close  ( -- )  ;
+1A39C68 	 0  0 63 6C 6F 73 65 85 
+1A39C70 	5C 9C A3  1 20 40 A0  1 
+1A39C78 	58 46 A0  1 
+
+: ring-bell  ( -- )
+1A39C7C 	 0  0 72 69 
+1A39C80 	6E 67 2D 62 65 6C 6C 89 
+1A39C88 	74 9C A3  1 20 40 A0  1 
+   open  drop
+1A39C90 	5C 9C A3  1 30 49 A0  1 
+   d# 2000  d# 100  tone
+1A39C98 	58 41 A0  1 D0  7  0  0 
+1A39CA0 	58 41 A0  1 64  0  0  0 
+1A39CA8 	CC 9B A3  1 
+   close
+1A39CAC 	74 9C A3  1 
+;
+1A39CB0 	58 46 A0  1 
+
+: init  ( -- )
+1A39CB4 	 0  0  0 69 
+1A39CB8 	6E 69 74 84 8C 9C A3  1 
+1A39CC0 	20 40 A0  1 
+   0 2 0 count!		\ Enable counter0 to free-run in pulse output mode
+1A39CC4 	70 6F A0  1 
+1A39CC8 	90 6F A0  1 70 6F A0  1 
+1A39CD0 	40 9B A3  1 
+;
+1A39CD4 	58 46 A0  1 
+[ifdef] tokenizing  init  [then]

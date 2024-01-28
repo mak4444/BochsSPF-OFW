@@ -1,0 +1,57 @@
+purpose: split and join operators
+
+[ifndef] lowbyte
+: lowbyte   h# ff and  ;
+1A0FB28 	6C 6F 77 62 79 74 65 87 
+1A0FB30 	20 FB A0  1 20 40 A0  1 
+1A0FB38 	58 41 A0  1 FF  0  0  0 
+1A0FB40 	5C 44 A0  1 58 46 A0  1 
+[then]
+
+[ifndef] lwsplit
+: lwsplit ( l -- w.low w.high )   dup n->w  swap  d# 16 rshift n->w  ;
+[then]
+[ifndef] wbsplit
+: wbsplit ( w -- b.low b.high )   dup lowbyte  swap  d# 8 rshift lowbyte  ;
+1A0FB48 	77 62 73 70 6C 69 74 87 
+1A0FB50 	34 FB A0  1 20 40 A0  1 
+1A0FB58 	40 49 A0  1 34 FB A0  1 
+1A0FB60 	68 49 A0  1 58 41 A0  1 
+1A0FB68 	 8  0  0  0 B4 44 A0  1 
+1A0FB70 	34 FB A0  1 58 46 A0  1 
+[then]
+[ifndef] bwjoin
+: bwjoin  ( b.low b.high -- w )   lowbyte d# 8 lshift swap lowbyte or  ;
+1A0FB78 	 0 62 77 6A 6F 69 6E 86 
+1A0FB80 	54 FB A0  1 20 40 A0  1 
+1A0FB88 	34 FB A0  1 58 41 A0  1 
+1A0FB90 	 8  0  0  0 9C 44 A0  1 
+1A0FB98 	68 49 A0  1 34 FB A0  1 
+1A0FBA0 	70 44 A0  1 58 46 A0  1 
+[then]
+[ifndef] wljoin
+: wljoin  ( w.low w.high -- l )   n->w d# 16 lshift swap n->w or  ;
+[then]
+
+64\ : xlsplit ( x -- l.low l.high )   dup n->l  swap  d# 32 rshift n->l  ;
+64\ : lxjoin  ( l.low l.high -- x )   n->l d# 32 lshift swap n->l or  ;
+
+: lbsplit ( l -- b.low b.lowmid b.highmid b.high )
+1A0FBA8 	6C 62 73 70 6C 69 74 87 
+1A0FBB0 	84 FB A0  1 20 40 A0  1 
+   lwsplit >r  wbsplit  r>  wbsplit  
+1A0FBB8 	A0 4F A0  1 BC 45 A0  1 
+1A0FBC0 	54 FB A0  1 D0 45 A0  1 
+1A0FBC8 	54 FB A0  1 
+;
+1A0FBCC 	58 46 A0  1 
+: bljoin  ( b.low b.lowmid b.highmid b.high -- l )
+1A0FBD0 	 0 62 6C 6A 6F 69 6E 86 
+1A0FBD8 	B4 FB A0  1 20 40 A0  1 
+   bwjoin >r  bwjoin  r>  wljoin
+1A0FBE0 	84 FB A0  1 BC 45 A0  1 
+1A0FBE8 	84 FB A0  1 D0 45 A0  1 
+1A0FBF0 	D4 4F A0  1 
+;
+1A0FBF4 	58 46 A0  1 
+

@@ -1,0 +1,2159 @@
+
+REQUIRE TH_H-	~mak/lib/THERE/RECOM.F
+REQUIRE D# ~mak/OpenFirmware/lib/th.fth 
+REQUIRE \needs ~mak/OpenFirmware/lib/needs.fth
+REQUIRE MWRITING ~mak/OpenFirmware/lib/filetool.fth
+REQUIRE $add-file  ~mak/OpenFirmware/lib/mkdropin.fth 
+
+REQUIRE REPLACE-WORD lib/ext/patch.f
+[IFNDEF] defined?
+: defined? POSTPONE  [DEFINED] ;
+[THEN]
+[IFNDEF] \+
+: \+  ( "name" "rest of line" -- )  defined?  0=  if   postpone \  then  ; immediate
+: \-  ( "name" "rest of line" -- )  defined?  if  postpone \  then  ; immediate
+[THEN]
+
+\- .S  : .S DEPTH .SN ;
+
+[IFNDEF] S'
+: S'
+  [CHAR] ' PARSE [COMPILE] SLITERAL
+; IMMEDIATE
+[THEN]
+
+[IFNDEF] .H  : .H H. ; 
+[THEN]
+
+: parse-word parse-name ;
+
+~mak/MWF/kernel.fth 
+
+h# 1a00000 constant fw-pa     \ OFW dictionary location
+h#  200000 constant /fw-ram
+4 constant #talign-t
+VARIABLE #user-t
+
+: meta-compile ;
+: setup-user-area ;
+
+: here-t HERE ;
+: ><DP DP M_@ T-DP M_@
+       DP M_! T-DP M_! ;
+
+:  DROP_FALSE   DROP FALSE ;
+
+' DROP_FALSE TO THERE?
+
+: THR? HERE THERE? 0= ;
+
+: BREAK POSTPONE EXIT POSTPONE THEN ; IMMEDIATE
+
+0xFFF CELLS CONSTANT TEB_SIZE
+
+CREATE TEXEC_BUF ' ABORT DUP , , TEB_SIZE ALLOT
+CREATE TEXEC_KEY       0 , 0 , TEB_SIZE ALLOT
+
+: TEXEC_SET ( cfa keycfa -- )
+	TEXEC_KEY TEXEC_KEY CELL+ TEB_SIZE MOVE	TEXEC_KEY !
+	TEXEC_BUF TEXEC_BUF CELL+ TEB_SIZE MOVE	TEXEC_BUF !
+;
+
+: HERE>EXEC
+	>IN @ >R
+	PARSE-NAME SFIND
+	IF	DUP HERE <>
+		IF
+			HERE TEXEC_SET
+		ELSE	DROP
+		THEN
+	ELSE	2DROP
+	THEN
+
+	R> >IN ! ;
+
+0xFFF CELLS CONSTANT VOC_SIZE
+
+CREATE VOC_BUF    0 , 0 , VOC_SIZE ALLOT
+CREATE VOC_KEY    0 , 0 , VOC_SIZE ALLOT
+
+: VOC_SET ( UHERE@ wid -- )
+ cr ." vocset=" 2dup h. h. here h.
+	VOC_KEY VOC_KEY CELL+ VOC_SIZE MOVE	VOC_KEY !
+	VOC_BUF VOC_BUF CELL+ VOC_SIZE MOVE	VOC_BUF !
+;
+
+\ VARIABLE FORTH-T fw-pa FORTH-T !
+
+\ FORTH-T FORTH-WORDLIST VOC_SET
+
+: wid>twid  ( wid -- twid )
+\ DROP FORTH-T EXIT
+  VOC_KEY CELL-
+  BEGIN CELL+
+ 2DUP @ 
+ DUP 0= ABORT" wid don't fined "
+ =
+ UNTIL
+	NIP
+	VOC_KEY -
+	VOC_BUF + @
+;
+
+: twid>wid  ( wid -- twid )
+\ DROP FORTH-T EXIT
+  VOC_BUF CELL-
+  BEGIN CELL+
+ 2DUP @ 
+ DUP 0= ABORT" twid don't fined "
+ =
+ UNTIL
+	NIP
+	VOC_BUF -
+	VOC_KEY + @
+;
+
+CREATE VOCR_BUF    0 , 0 , VOC_SIZE ALLOT
+CREATE VOCR_KEY    0 , 0 , VOC_SIZE ALLOT
+
+: VOCR_SET ( UHERE@ UHERE -- )
+ 
+	VOCR_KEY VOCR_KEY CELL+ VOC_SIZE MOVE	VOCR_KEY !
+	VOCR_BUF VOCR_BUF CELL+ VOC_SIZE MOVE	VOCR_BUF !
+;
+
+0 0 VOCR_SET
+: VOCR_REST
+ CR ."  VOCR_REST"
+  VOCR_KEY
+  BEGIN  DUP @
+  WHILE  DUP VOCR_KEY - VOCR_BUF + @ OVER @ 
+   2DUP  CR   dup  fw-pa - $20 -  H. @ h.  H.    2dup @ = 1 and .
+ !
+	CELL+	
+  REPEAT DROP ."  V_R;"
+;
+
+' BASE CONSTANT 'BASE
+
+: TCFA>XCFA
+  TEXEC_KEY CELL-
+  BEGIN CELL+
+ 2DUP @ 
+\ 2DUP U> ABORT" BAD TEXECUTE"
+ DUP 0= ABORT" BAD CFA"
+ =
+ UNTIL
+	NIP
+	TEXEC_KEY -
+	TEXEC_BUF + @
+;
+
+: TCFA>MCFA
+ BEGIN   TCFA>XCFA
+\ dup rest
+ DUP THERE? 0=
+ UNTIL
+;
+
+: ?TCFA>CFA
+ DUP THERE?	IF TCFA>MCFA THEN
+;
+
+: FTCFA>MCFA
+ BEGIN
+  TEXEC_KEY CELL-
+  BEGIN CELL+ 2DUP @	DUP 0= ABORT" BAD CFA"
+	=
+  UNTIL	NIP
+	TEXEC_KEY -
+	TEXEC_BUF + @  DUP THERE? 0=
+ UNTIL ;
+
+: TEXECUTE TCFA>MCFA EXECUTE ;
+
+: ?OLD
+  POSTPONE THR?
+  POSTPONE IF  ' COMPILE,
+  POSTPONE BREAK ; IMMEDIATE
+
+: ?[OLD]
+  POSTPONE THR?
+  POSTPONE IF  POSTPONE  POSTPONE
+  POSTPONE BREAK ; IMMEDIATE
+
+: :-H  ><DP : ;
+: ;-H POSTPONE ; ><DP ; IMMEDIATE
+
+: TCONSTANT ><DP CONSTANT ><DP ;
+
+: MMLABEL
+ CREATE ,  IMMEDIATE
+ DOES> @
+ STATE @
+ IF  fw-pa - LIT,
+ THEN
+;
+
+: mlabel HERE ><DP MMLABEL ><DP ;
+
+: mloclabel mlabel ;
+
+: code-lab:
+ mlabel  ALSO assembler !CSP
+;
+
+: code-field:	align-t code-lab: ;
+
+: compile-t 
+ PARSE-NAME SLIT, POSTPONE EVALUATE
+; IMMEDIATE
+
+: MCONTEXT CONTEXT ;
+: MCURRENT CURRENT ;
+
+: EQU TCONSTANT ;
+
+\ 0 VALUE userarea
+
+: MCOMPILE,
+ DUP THERE? IF TCFA>MCFA THEN
+    CON>LIT 
+    IF  INLINE?
+      IF     INLINE,
+      ELSE   _COMPILE,
+      THEN
+    THEN
+;
+
+: TCOMPILE,
+ DUP THERE? 0= IF CR H. -1 ABORT" BAD COM ADDR" THEN , ;
+
+: T_COMPILE, ?OLD MCOMPILE,  TCOMPILE, ;
+
+: MEXECUTE >R ;
+
+: T_EXECUTE DUP THERE? 0= IF MEXECUTE BREAK TEXECUTE ;
+
+: MLIT, ( W -> )
+  ['] DUP  INLINE,
+  OPT_INIT
+  SetOP 0xB8 C,  , OPT  \ MOV EAX, #
+  OPT_CLOSE ;
+
+: TLIT, S" (lit)" EVALUATE , ;
+
+: T_LIT, ?OLD MLIT, TLIT, ;
+: T_DLIT, S" (dlit)" EVALUATE SWAP , , ;
+
+: colon-cf S" docolon" EVALUATE ;
+
+0 value ttcc
+
+: $THEADER ( adr len -- )
+\ F7_ED
+  current @  wid>twid
+  $make-header ;
+
+: ttccdo
+\ ttcc if  FORTH-WORDLIST  current ! then
+ ;
+
+: TM_HEADER
+	HERE>EXEC
+ current @  ttccdo
+ HEADER 
+ current !
+ ;
+
+: THEADER
+ >IN @ PARSE-NAME $THEADER
+ >IN ! TM_HEADER ;
+
+: :        (s -- )
+ ?OLD :
+ THEADER
+ HIDE
+ !csp  \  hide
+ colon-cf , ]  ;
+
+: ;        (s -- )
+ ?OLD ;   ?comp  ?csp  SMUDGE
+ POSTPONE [ S" ' unnest"  EVALUATE , ; IMMEDIATE
+
+: MTHERE?  fw-pa DUP /fw-ram + WITHIN ;
+  
+: [COMPILE] ' TCOMPILE, ; IMMEDIATE
+
+: IF  ?OLD IF  S" ' ?branch" POSTPONE [ EVALUATE ] ,  HERE  0 , ; IMMEDIATE
+
+: AHEAD
+[IFDEF] AHEAD  ?OLD AHEAD [THEN]
+  S" ' branch"   POSTPONE [ EVALUATE ]  ,  HERE  0 , ; IMMEDIATE
+
+: THEN  ?OLD THEN 
+  HERE OVER - SWAP
+ ! ; IMMEDIATE
+: ELSE  ?OLD ELSE  POSTPONE AHEAD  SWAP POSTPONE THEN ; IMMEDIATE
+: CASE  ?OLD CASE  0 ; IMMEDIATE
+: OF  ?OLD OF  S" (of)" EVALUATE  HERE  0 , ; IMMEDIATE
+: ENDOF  ?OLD ENDOF  S" (endof)" EVALUATE  HERE  0 ,
+  SWAP POSTPONE THEN ; IMMEDIATE
+: ENDCASE  ?OLD ENDCASE  S" (endcase)" EVALUATE
+  BEGIN DUP
+  WHILE POSTPONE THEN
+  REPEAT DROP
+; IMMEDIATE
+: BEGIN ?OLD BEGIN HERE ; IMMEDIATE
+: WHILE ?OLD WHILE POSTPONE IF  SWAP ; IMMEDIATE
+: AGAIN ?OLD AGAIN S" ' branch" POSTPONE [ EVALUATE ] , HERE - , ; IMMEDIATE
+: UNTIL ?OLD UNTIL S" ' ?branch" POSTPONE [ EVALUATE ] , HERE - , ; IMMEDIATE
+: REPEAT ?OLD REPEAT  POSTPONE AGAIN  POSTPONE THEN ; IMMEDIATE
+: DO  ?OLD DO  S" ' (do)" POSTPONE [ EVALUATE ] , HERE  0 , ; IMMEDIATE
+: ?DO  ?OLD ?DO S" ' (?do)" POSTPONE [ EVALUATE ] , HERE  0 , ; IMMEDIATE
+: LOOP ?OLD LOOP S" ' (loop)" POSTPONE [ EVALUATE ] ,
+   DUP HERE - 4 + ,   POSTPONE THEN ; IMMEDIATE
+: +LOOP
+  ?OLD +LOOP
+  S" ' (+loop)" POSTPONE [ EVALUATE ] , DUP HERE - 4 + , POSTPONE THEN
+; IMMEDIATE
+
+
+: #forward_do
+ DP M_@ >R
+ DP M_!   TM_HEADER
+ R> DP M_! ;
+
+VECT #forward 
+
+\ $1A17038 VALUE current-device-t
+$0 VALUE current-device-t
+
+' #forward_do to #forward
+
+
+: INTERPRET_T ( -> )
+  BEGIN
+    PARSE-NAME DUP
+  WHILE
+    SFIND ?DUP
+    IF
+         STATE @ =
+         IF T_COMPILE, ELSE T_EXECUTE THEN
+    ELSE
+         S" NOTFOUND" SFIND 
+         IF EXECUTE
+         ELSE 2DROP ?SLITERAL THEN
+    THEN
+    ?STACK
+  REPEAT 2DROP
+;
+
+[IFNDEF] 3DUP : 3DUP DUP 2OVER ROT ; [THEN]
+
+: \t16 POSTPONE \ ; IMMEDIATE
+: \t32 ; IMMEDIATE
+: 16\ POSTPONE \ ; IMMEDIATE
+: 32\ ; IMMEDIATE
+: 64\ POSTPONE \ ; IMMEDIATE
+: headerless ;
+: headers ;
+4 constant /a
+4 constant /token
+4 constant #align-t
+4 constant #talign-t
+4 constant #acf-align-t
+4 constant /token-t
+4 constant /n-t
+1 constant #threads-t
+0x800 constant ps-size-t
+0x800 constant rs-size-t
+: /N* CELLS ;
+
+: origin-t fw-pa ;
+0x20	constant userarea-t
+userarea-t constant #user-init
+0x4000	constant user-size-t
+
+
+: >user  (s pfa -- addr-of-user-var ) @
+\ cr ." >user=" dup h.
+ userarea-t +
+ fw-pa +
+ ;
+
+: ualloc
+ #user-t @ dup >r + 
+ #user-t ! r> ;
+
+: ualloc-t  ualloc ;
+
+: USER
+  ?OLD USER
+ >IN @
+ PARSE-NAME $THEADER
+ DUP >IN !
+ OVER fw-pa + userarea-t + ><DP  CONSTANT  ><DP
+ >IN ! TM_HEADER
+\ HERE TTCONSTANT IMMEDIATE
+\ CR ." USER= " HERE H. DUP H.
+ S" douser" EVALUATE ,
+ ,
+;
+
+: UHERE   fw-pa  userarea-t + #user-t @ + ;
+
+: user????
+  #user-t @ 
+\ CR ." U,= " #user-t @ H. HERE H.  \  UHERE H.
+\  dup userarea-t + 0x54  >  ABORT"  user,!!! "
+;
+
+: user,
+ user???? dup , 
+
+ /n +  #user-t ! ;
+
+: NUSER
+ user???? dup
+ user    /n + 
+ #user-t ! ;
+
+: auser NUSER ;
+: tuser NUSER ;
+
+: (TCONSTANT
+ CREATE , DOES>
+ @ STATE @
+ IF ,
+ ELSE >BODY-T @
+ THEN ;
+
+: TTCONSTANT
+  ><DP (TCONSTANT ><DP ;
+
+: CONSTANT
+  ?OLD CONSTANT
+ >IN @  PARSE-NAME $THEADER
+ DUP >IN !
+ current @ >r  ttccdo
+ ><DP  OVER CONSTANT  ><DP
+ r> current !
+ >IN ! TM_HEADER \ HERE TTCONSTANT IMMEDIATE
+ S" doconstant" EVALUATE ,
+ , ;
+
+: CREATE_HED
+ >IN @
+ PARSE-NAME $THEADER
+ DUP >IN !
+ HERE CELL+ 
+ current @ >r  ttccdo
+  ><DP  CONSTANT  ><DP
+ r> current !
+
+ >IN !  TM_HEADER
+;
+: CREATE
+  ?OLD CREATE
+  CREATE_HED
+ S" docreate" EVALUATE ,
+;
+
+0 VALUE ^instance
+
+variable package-level
+variable next-is-instance
+variable next-is-package
+
+: package  ( -- )  next-is-package on  ;
+
+: instance?  ( -- flag )
+   package-level @ 0<>  next-is-instance @  and
+   next-is-instance off
+;
+
+: package?  ( -- flag )
+   package-level @ 0<>  next-is-package @  and
+   next-is-package off
+;
+
+: ufield-t  \ name  ( offset size -- offset' )
+   create  over ,   +
+   does> 
+ @  \ f7_ed
+   current-device-t
+\ cr ." ufield=< " dup h. 
+  cell+ >user +
+\ dup h.  ."  >" \  cr abort
+ ;
+
+0
+4 ufield-t 'threads
+4 ufield-t 'child
+4 ufield-t 'peer
+4 ufield-t 'properties
+4 ufield-t '#adr-cells
+4 ufield-t '#buffers
+4 ufield-t '#values
+4 ufield-t 'values
+drop
+
+0 value t-my-self
+\ 0 value my-parent
+0 value my-voc
+0 value my-args-len
+0 value my-args-adr
+
+: value#,  ( size -- adr )
+\ f7_ed
+   '#values
+ @
+  dup ,   ( size offset )
+   tuck +              ( offset offset' )
+\   dup /value-area >= abort" Too many instance variables/values/defers"
+   '#values !          ( offset )
+   t-my-self +           ( adr )
+;
+
+0 value dopackage-value
+
+: VALUE
+  ?OLD VALUE
+ >IN @  OVER
+ current @ >R ttccdo ><DP VALUE ><DP
+ R> current !
+ >IN !
+ >IN @
+ PARSE-NAME $THEADER
+ >IN ! TM_HEADER \ HERE TTCONSTANT IMMEDIATE
+   instance?
+   if \ f7_ed
+ ^instance
+  ,
+        4
+ value#, ! \ 2DROP
+   else
+
+   package?
+   if dopackage-value  ,
+	cr here h. cr \ f7_ed
+        t-my-self '#values @  + !
+	'#values @ ,
+	4 '#values +!
+   else  S" dovalue" EVALUATE   , ?DUP IF  UHERE !  THEN  user,
+
+   then   then
+ ;
+
+0 value ^instance-defer
+\ action-adr-t to ^instance-defer
+
+: DEFER
+  ?OLD  DEFER
+ >IN @
+ PARSE-NAME $THEADER
+ >IN ! TM_HEADER \ HERE TTCONSTANT IMMEDIATE
+   instance?
+   if \ f7_ed
+	^instance-defer  ,
+        $557825fc \ t-my-self '#values @  + !
+	4 value#, !
+   break
+ S" dodefer" EVALUATE ,
+ user, \ #user-t @ dup  ,   /n + #user-t !
+;
+
+0 VALUE vdo2value
+0 value ^instance-2value
+\ : instance-2value  ( d.initial-value -- )
+: 2VALUE
+ THEADER
+   instance?
+   if \ f7_ed
+	^instance-2value  ,
+\        $557825fc \ t-my-self '#values @  + !
+	8 value#, 2!
+   break
+  vdo2value 0= IF  S" ' 2value-cf" EVALUATE $C + @ TO vdo2value THEN
+  vdo2value  ,  uhere 2!  8 ualloc ,
+ ;
+
+: 0, 0 , ;
+vect var,
+
+' user, to var,
+
+-1 VALUE VARISUS?
+
+0 value ^instance-VARIABLE
+
+: VARIABLE
+  ?OLD VARIABLE
+ >IN @
+ PARSE-NAME $THEADER
+ >IN !
+
+   instance?
+   if
+  >IN @ '#values @ t-my-self +
+	current @ >R ttccdo ><DP  CONSTANT  ><DP
+	R> current !
+ >IN ! TM_HEADER 
+
+	^instance-VARIABLE  ,
+        0 \ t-my-self '#values @  + !
+	4 value#, !
+   break
+
+
+ VARISUS?
+ IF
+ >IN @ UHERE
+	current @ >R ttccdo ><DP  CONSTANT ><DP
+	R> current !
+ >IN ! TM_HEADER
+  S" douser" EVALUATE ,   var,
+ ELSE
+ >IN @ HERE CELL+
+	current @ >R ttccdo ><DP  CONSTANT  ><DP
+	R> current !
+ >IN ! TM_HEADER 
+   S" dovariable" EVALUATE , 0 ,
+ THEN
+;
+
+\ $1A17038 VALUE LASTACFV
+ $0 VALUE LASTACFV
+fw-pa  VALUE ##VOC
+VECT VOC0, ' NOOP TO VOC0,
+
+: xvocabulary,
+\ cr ." xvoc="  here h. UHERE h.
+ S" <vocabulary>" EVALUATE
+ ,
+   UHERE @ UHERE VOCR_SET
+   user,
+ ;
+: vocabulary,
+\  HERE TO LASTACFV
+	fw-pa UHERE !
+	xvocabulary,
+;
+
+
+: definitions-t  definitions ;
+
+vect vdefinitions
+' definitions to vdefinitions
+
+: definitions  vdefinitions ;
+
+: PREVIOUS ( --- )
+\ Remove the last wordlist from search order.
+ ?OLD PREVIOUS
+   PREVIOUS
+ ;
+
+: >TVOC:
+\ HERE  fw-pa , 
+ CREATE \ DROP \ 0  ,
+  ,
+ DOES>
+ @ context ! ;
+
+: TVOC:  WORDLIST >TVOC: ;
+
+FORTH-WORDLIST >TVOC: FORTH
+FORTH definitions-t
+
+' FORTH >body constant ffhh
+
+vocabulary root also root
+context @ >TVOC: root
+previous
+
+TVOC: disassembler
+TVOC: known-int-properties
+TVOC: keyboards
+TVOC: aliases
+TVOC: allocator 
+TVOC: hidden
+TVOC: bug
+TVOC: options
+
+
+TVOC: root-node
+TVOC: magic-properties
+TVOC: keys-forth
+TVOC: command-completion
+TVOC: magic-device-types
+TVOC: builtin-drivers
+TVOC: memory
+TVOC: breakpoints-installed
+\ TVOC: client-services
+
+TVOC: usb_lib_o
+TVOC: usb_lib_e
+TVOC: usb_lib_u
+TVOC: usb_storage
+
+' bug 1+ rel@ CONSTANT DOTVOC
+
+: vocabulary
+ ?OLD vocabulary
+ >IN @	 UHERE ' ?TCFA>CFA
+ DUP 1+ rel@ DOTVOC <> ABORT" NOT DOTVOC"
+ >body @
+ DUP   FORTH-WORDLIST =
+ IF	2DROP
+ ELSE
+ 	VOC_SET	fw-pa UHERE !
+ THEN 
+
+ >IN !
+ >IN @ PARSE-NAME $THEADER
+ >IN ! TM_HEADER
+ xvocabulary,
+ ##VOC ,
+ current @  wid>twid  @  TO ##VOC
+ VOC0,
+;
+
+: allot-t ALLOT ;
+: HERE-T HERE ;
+: token,-t , ;
+: token, token,-t ;
+: immediate
+  ?OLD  immediate
+  immediate
+ last-t @  n>flags  dup c@  0x40 or  swap c!  ;
+
+: 0_C, 1 ALLOT ;
+
+: T",
+  DUP C,
+  HERE SWAP DUP ALLOT CMOVE 0_C,
+  BEGIN HERE 3 AND
+  WHILE 0_C,
+  REPEAT ;
+
+create $buf0	$101 4 * allot 
+
+$buf0 value $buf
+
+
+: add-char $buf $c+! ;
+
+: get-char ( -- c )  EndOfChunk IF 0 ELSE PeekChar >IN 1+! THEN ;
+
+: get-hex-bytes-t  ( -- )
+   begin  get-char dup [char] ) <>  while
+	$10 digit
+	if   4 << get-char  $10 digit
+             0= ( ?? ) abort" Odd number of hex digits in string"
+              +  add-char
+	then
+   repeat drop
+;
+
+: get-escaped-string-t  ( -- adr len )
+   $buf $buf0 - $101 + $101 4 * MOD $buf0 + to $buf
+   0 $buf !
+   begin
+      [char] " parse
+   $buf $+!
+      get-char  dup bl <=  if  drop $buf count exit  then  ( char )
+      case
+         [char] n of  $a            add-char  endof
+         [char] r of  $d             add-char  endof
+         [char] t of  9          add-char  endof
+         [char] ( of  get-hex-bytes-t      endof
+
+         ( default ) dup                add-char
+      endcase
+   again
+;
+
+
+: ."
+  ?OLD ."
+  S' (.")' EVALUATE
+  get-escaped-string-t \  [CHAR] " PARSE
+ T", 
+; IMMEDIATE
+
+: ABORT"
+  ?OLD ABORT" 
+  S' (abort")' EVALUATE
+\  [CHAR] " PARSE
+ get-escaped-string-t
+ T",
+; IMMEDIATE
+
+: "
+  ?OLD "
+\  STATE @ 0= IF POSTPONE S" BREAK
+  get-escaped-string-t \  [CHAR] " PARSE
+ STATE @  0= IF BREAK
+  S' (")' EVALUATE
+ DUP C,
+\ 2dup dump 
+  HERE SWAP DUP ALLOT  CMOVE 0_C,
+  BEGIN HERE 3 AND
+  WHILE 0_C,
+  REPEAT 
+; IMMEDIATE
+
+: SLITERAL
+  HERE THERE? DROP
+  HERE
+ THERE? 
+ STATE
+ M_@
+ AND
+  IF  S' (")' EVALUATE	 T",
+  ELSE  POSTPONE SLITERAL
+  THEN   ; IMMEDIATE
+
+: S"  ( "ccc<quote>" --- )
+\ Parse a string delimited by " and compile the following runtime semantics.
+\ Runtime: ( --- c-addr u) Return start address and length of that string.
+  [CHAR] " PARSE
+  POSTPONE SLITERAL ; IMMEDIATE
+
+: literal ?OLD literal   LIT, ; IMMEDIATE
+
+: control
+   CHAR bl 1- and 
+  STATE @ IF LIT, THEN
+; IMMEDIATE
+
+: TROOT ROOT ;
+
+: only
+  ?OLD only
+  only  ROOT ALSO options ALSO forth ALSO ROOT ;
+
+: tonly
+ only ;
+
+: \ttc  POSTPONE \ ; immediate
+: \itc  POSTPONE \ ; immediate
+: \dtc ; immediate
+
+: \t8   POSTPONE \ ; immediate
+
+: forth-h ;
+
+: C!-T c! ;
+: l@ @ ;
+: !-t 2DROP ;
+: token!-t 2drop ;
+: token! ! ;
+: istuser 2drop ;
+: symbols ;
+: fixall drop ;
+: metaoff ;
+: fix-vocabularies ;
+variable warning 
+variable caps
+: set-transize 2drop ;
+: \NotTags ; immediate
+: \Tags postpone \ ;    immediate
+0 value limit
+
+: ::: SWAP  fw-pa +  C! ; 
+
+: alias
+  ?OLD alias
+ >IN @ >R
+ PARSE-NAME $THEADER
+
+ 0x20 HERE 5 - +!
+   PARSE-NAME
+ SFIND DUP 0=  THROW
+
+ R> >IN !
+
+ DP M_@ >R
+ OVER DP M_!   HEADER
+ R> DP M_!
+
+ 1 = IF IMMEDIATE  THEN
+ TCOMPILE,
+   PARSE-NAME 2DROP
+;
+
+0 value action#
+0 value #actions
+0 value action-adr-t
+
+0 VALUE 'isvalue
+0 VALUE 'is2value
+0 VALUE 'isdefer
+0 VALUE 'isuser
+0 VALUE vdovalue
+0 VALUE vdodefer
+0 VALUE vdouser
+0 VALUE ^current-device
+0 VALUE 'ac-to \ 0x1A21EA0
+0 value doregister
+0 value dotermemu-value
+0 value dotermemu-defer
+0 value dotermemu-array
+
+-1 value is_disable
+\ 1A2622C -> 1A21EA0
+\ 1A267DC -  1A21EA0
+\ 1A22224 -> 1a21ea0
+\ action-adr-t to ^current-device
+
+: IS
+\ ?old IS
+ ' DUP THERE?
+ IF
+ STATE @ IF \  cr ."  [is]= " dup @ h. here h. cr 
+ DUP @ vdodefer = IF 'isdefer , ,  BREAK
+ DUP @ vdouser = IF 'isuser , ,  BREAK
+ DUP @ vdovalue = IF  'isvalue ,  , BREAK
+ DUP @ vdo2value = IF  'is2value ,  , BREAK
+
+
+\       ." (is)(is)" cr
+ 'ac-to , ,  \  S" (is)" EVALUATE ,
+        BREAK
+\   cr ."  is= " DUP H. dup @ h. here h. cr 
+is_disable if  2drop break
+ DUP @ dopackage-value =  IF  CELL+ @ t-my-self + !  BREAK
+		CELL+ @  DUP 0x4000 u> abort" dois bad"
+ fw-pa + userarea-t + ( 2DUP H. H.)  !
+ BREAK
+   9 + STATE @
+  IF COMPILE, ELSE EXECUTE THEN 
+ ;  IMMEDIATE
+
+
+variable doestarget
+
+: resolves  doestarget @ ><DP constant ><DP  ;
+: place-does  here  doestarget !  S" startdoes" POSTPONE [ EVALUATE ] ;
+
+: #:  \ name  ( base -- )  \ Define a temporary-numeric-mode word
+ ?OLD #:
+ THEADER
+ 0x40 HERE 5 - +!
+  IMMEDIATE
+ doestarget @ ,
+ C,
+;
+
+: push-base:  \ name   ( base -- )  \  Define a base stash-and-set word
+ ?OLD push-base:
+  THEADER \ IMMEDIATE
+ doestarget @ ,
+ C,
+;
+
+: aligned-t  ( n1 -- n2 )  #align-t 1- +  #align-t negate and  ;
+
+fw-pa VALUE VBUFFER
+CREATE Tbuffer-link  0 ,
+
+0 VALUE DOBUFFER:
+0 VALUE ^instanceBUF
+
+: BUFFER:
+ >IN @ PARSE-NAME $THEADER
+ >IN ! TM_HEADER
+
+ instance?
+ IF ^instanceBUF ,  
+
+      '#buffers @ swap aligned-t -  dup  ,  ( offset' )
+\      dup negate /buffer-area > abort" Too many bytes of instance buffers"
+      '#buffers !
+
+ BREAK
+
+  DOBUFFER: , user,  , 
+  VBUFFER , HERE 0x10 - TO VBUFFER
+;
+
+0 value do-array
+: array
+  THEADER
+  do-array , user,  , 
+  VBUFFER , HERE 0x10 - TO VBUFFER
+;
+
+: ," [CHAR] " PARSE T", ;
+
+: circular-stack:
+  THEADER
+ S" docreate" EVALUATE ,
+  #user-t @ dup ,   /n + 
+  #user-t ! 1+ /n* ,
+  VBUFFER , HERE 0x10 - TO VBUFFER
+;
+
+0xFE1F constant magic#
+
+: start-module  ( -- here there magic# )  here here magic#  ;
+
+0 value do_case:
+
+: CASE:  THEADER HIDE  do_case: TCOMPILE,   ] ,  !csp ;
+
+: wt,   ' @ , ;
+
+: CF,   ' , ;
+
+: end-module 3DROP ;
+
+VARIABLE keys
+
+: LAST last-t ;
+
+: ['] ?OLD ['] s" (')" evaluate ' ,  ; IMMEDIATE
+
+
+\ : install-decomp 3drop ;
+
+
+: lastacf-t
+ LAST-T @ 5 + ;
+
+: round-up  ( adr granularity -- adr' )  1-  tuck +  swap invert and  ;
+
+4 constant #talign
+
+: taligned  (s adr -- adr' )  #talign round-up  ;
+
+: +str  (s pstr -- adr )     count + 1+ taligned ;
+
+: use-actions
+  STATE @ IF
+ S" (')" EVALUATE  action-adr-t
+ , S" used" EVALUATE
+  BREAK
+  action-adr-t
+ LAST-T @ 1+ cell+ !
+; IMMEDIATE
+
+0 value action-name-target
+: action-name
+  THEADER
+ action-name-target ,
+ , ;
+
+: addr s" [ ' addr ]" EVALUATE  cell+ @ , ; immediate
+
+: action-compiler:
+ >IN @ ' SWAP
+ >IN !
+  THEADER immediate
+  doestarget @ , , ;
+
+0 VALUE 'stand-init0
+
+: stand-init:
+  S" : stand-init" EVALUATE
+  'stand-init0 ?DUP IF here cell- to 'stand-init0 , THEN
+ SkipDelimiters 0 parse dup
+ if 
+  S' (")' EVALUATE
+ 2DUP + 1- C@ BL < IF 1- THEN    T",
+  s" cr type" EVALUATE
+ break
+ 2drop
+ ;
+
+: actions  ( #actions -- )
+   is #actions
+   #actions 1- /token * CELL+ allot    ( #actions )   \ Make the jump table
+   \ The default action is a code field, which must be aligned
+   align acf-align  here is action-adr-t
+   0 is action#
+   #actions  action-adr-t /n -  !
+;
+
+: mactions  ( #actions -- )
+   is #actions
+   #actions 1- /token * CELL+ allot    ( #actions )   \ Make the jump table
+   \ The default action is a code field, which must be aligned
+   align acf-align here is action-adr-t
+   0 is action#
+   #actions  action-adr-t /n -  !
+;
+
+\ Sets the address entry in the action table
+: set-action  ( -- )
+   action#  #actions  >= abort" Too many actions defined"
+  HERE CELL-
+  action-adr-t action# /n * -  /n -  !
+;
+
+: doaction  ( -- ) acf-align colon-cf , ;
+
+: action:  ( -- )
+   action# if   \ Not the default action
+      doaction
+ set-action
+   else \ The default action, like does>
+      place-does
+   then
+   LATEST ?DUP IF 1+ C@ C-SMUDGE C! SMUDGE THEN
+   action# 1+ is action#
+   !csp
+   ]
+;
+
+: transient ;
+: resident ;
+
+0 VALUE V_REG
+
+0 VALUE 'debug
+
+: n16,
+  >R  >R  >R  >R  >R
+  >R  >R  >R  >R  >R
+  >R  >R  >R  >R  >R  C,
+  R> C, R> C, R> C, R> C, R> C, 
+  R> C, R> C, R> C, R> C, R> C, 
+  R> C, R> C, R> C, R> C, R> C, 
+;
+
+: 0,S  0 DO 0 , LOOP ;
+
+' T_EXECUTE ' EXECUTE REPLACE-WORD
+' T_COMPILE, ' COMPILE, REPLACE-WORD
+' T_LIT, ' LIT, REPLACE-WORD
+' T_DLIT, ' DLIT, REPLACE-WORD
+' INTERPRET_T &INTERPRET !
+
+: DEFINED?-T ( -- f ) \ "name"
+  PARSE-NAME SFIND  IF THERE? ELSE 2DROP FALSE THEN ; 
+
+: struct  ( -- initial-offset )  0  ;
+
+0 VALUE doufield
+
+: ufield  \ name  ( offset size -- offset' )
+ THEADER
+ doufield 0= if doestarget @ to doufield then
+  doufield ,
+    over ,   + ;
+
+0 VALUE dofield
+
+: field  \ name  ( offset size -- offset' )
+ THEADER
+ dofield 0= if doestarget @ to dofield then
+  dofield , over ,   + ;
+
+0 VALUE dodifield
+
+: difield  \ name  ( offset size -- offset' )
+ THEADER
+ dodifield 0= if doestarget @ to dodifield then
+  dodifield , over ,   + ;
+
+0 VALUE dobfield
+
+: bfield  \ name  ( offset size -- offset' )
+ THEADER
+ dobfield 0= if doestarget @ to dobfield then
+  dobfield , over ,   + ;
+
+0 VALUE dofsfield
+
+: fsfield  \ name  ( offset size -- offset' )
+ THEADER
+ dofsfield 0= if doestarget @ to dofsfield then
+  dofsfield , over ,   + ;
+
+0 VALUE dodfield
+
+: dfield  \ name  ( offset size -- offset' )
+ THEADER
+ dodfield 0= if doestarget @ to dodfield then
+  dodfield , over ,   + ;
+
+0 VALUE doefield
+
+: efield  \ name  ( offset size -- offset' )
+ THEADER
+ doefield 0= if doestarget @ to doefield then
+  doefield , over ,   + ;
+
+0 VALUE dolfield
+
+: lfield  \ name  ( offset size -- offset' )
+ THEADER
+ dolfield 0= if doestarget @ to dolfield then
+  dolfield , over ,   + ;
+
+0 VALUE dohfield
+
+: hfield  \ name  ( offset size -- offset' )
+ THEADER
+ dohfield 0= if doestarget @ to dohfield then
+  dohfield , over ,   + ;
+
+: patch   ' ' '  CELL+
+  BEGIN   2DUP @ <>
+  WHILE  CELL+
+  REPEAT  NIP ! 
+ ;
+
+: fival:
+   THEADER
+  S" ' instance-value" EVALUATE  CELL+  CELL+  CELL+  @ ,
+ dup , cell+ ( offset' )
+\   use-actions
+;
+
+: fibuf:
+   THEADER
+  S" ' instance-value" EVALUATE  CELL+  CELL+  CELL+  @ ,
+ cell- dup ,  ( offset' )
+\   use-actions
+;
+
+: initial-addr  \ name  ( -- addr )
+   s"  [ ' addr ]" EVALUATE  cell+ @  , 
+ '  ,
+   s"  (initial-addr)" EVALUATE
+; immediate
+
+: erase-voc-link
+ -8 allot
+ here @ to ##VOC
+ here to current-device-t
+;
+
+fw-pa constant null
+: link, , ;
+
+: allot-package-data
+ acf-align here dup 'values !  '#values @ dup allot 2DROP \  erase
+;
+
+: device-end  only forth definitions  ;
+0 value doerror
+: error:
+ THEADER
+ doerror 0= if doestarget @ to doerror then
+  doerror ,
+;
+
+: recursive SMUDGE  LATEST 1+ C@ C-SMUDGE C! ; immediate
+
+: 2variable  \ name (s -- )
+  variable
+ VARISUS? IF 4 #user-t +! ELSE  0 , THEN
+;
+0 value root-packages
+: root-device   only forth also
+  root-packages 0= if   here to root-packages then
+  S" ' root-node" EVALUATE to current-device-t
+;
+: init-properties
+ HERE 'properties !
+  vocabulary,
+ UHERE cell-
+  ><DP WORDLIST ><DP
+ cr ." propset=" here h. 2dup h. h.
+  VOC_SET
+;
+
+: t-type  0 ?do count emit loop drop ;
+
+: current-properties  ( -- ) 
+ 'properties @  ;
+
+: (tsearch-wordlist)   ( adr len vocabulary -- false | xt -1 )
+ cell+ >user @ >R
+  begin r@
+ fw-pa = if 2drop rdrop 0  break
+	2dup r@ 
+	over -
+ 5 - over compare
+  while    R> cell- @ >r
+  repeat
+   2drop  R>  -1
+;
+
+: get-property-c  ( name-adr,len -- 2 | c )
+ current-properties  (tsearch-wordlist)
+ if DUP cell+ @ - 7 + c@
+ else 2
+ then ;
+
+: #adr-cells  ( -- n )
+   s" #address-cells" get-property-c ;
+
+: push-device  ( phandle -- )  to current-device-t  ;
+
+: !null-token  ( adr -- )
+\ cr ." !null-token=" dup h.
+  origin-t swap !  ;
+
+: tfibuf:  \ name  ( offset -- offset' )
+   create cell- dup ,  ( offset' )
+;
+: tfival:  \ name  ( offset -- offset' )
+ create dup , cell+ ( offset' )
+ DOES> @ t-my-self + @
+;
+
+0
+tfival: my-adr0-t	\ F: First component of device probe address
+tfival: my-adr1-t	\ F: Intermediate component of device probe address
+tfival: my-adr2-t	\ F: Intermediate component of device probe address
+tfival: my-space 	\ F: Last component of device probe address
+tfival: frame-buffer-adr-t \ F: Frame buffer address.  Strictly speaking, this
+                        \ should not be in every package, but we put it
+                        \ here as a work-around for some old CG6 FCode
+                        \ drivers whose selftest routines use frame-buffer-adr
+                        \ for diagnostics mappings.  If frame-buffer-adr is
+                        \ global, that would cause dual-cg6 systems to break.
+tfival: my-termemu-t
+constant #fixed-vals
+
+0
+tfibuf: &my-voc		\ Package definition (code) for this instance
+tfibuf: &my-parent	\ Current instance just before this one was created
+tfibuf: &my-args-adr	\ Argument string - base address
+tfibuf: &my-args-len	\ Argument string - length
+tfibuf: &my-unit-3	\ Fourth component of device instance address
+tfibuf: &my-unit-2	\ Third  component of device instance address
+tfibuf: &my-unit-1	\ Second component of device instance address
+tfibuf: &my-unit-low	\ First  component of device instance address
+
+constant #fixed-bufs
+
+: init-node
+  s" /devnode-extra" EVALUATE  ualloc drop
+ LASTACFV   push-device
+  '#adr-cells !
+\ cr ." i-n= "  here h. uhere h. #user-t @ H.
+
+  'child      !null-token      \ No children yet
+  'peer       !null-token      \ Null peer
+
+   #fixed-vals  '#values    !  \ Initialize data sizes
+   #fixed-bufs  '#buffers   !
+
+   'values    !null-token      \ No initial data values yet
+
+  init-properties
+ ;
+
+: link-to-peer  ( parent's-child-field -- )
+   dup @ 'peer !             ( parent's-child-field )
+   current-device-t  swap !         ( )
+;
+
+: new-node
+  HERE TO LASTACFV
+  vocabulary,
+  current-device-t ,
+   'child                              ( parent's-child-field )
+   #adr-cells init-node                ( parent's-child-field )
+   link-to-peer                        ( )
+    ><DP WORDLIST ><DP 
+ LASTACFV  CELL+ @   fw-pa + userarea-t + 
+ over
+cr  ." new-node=" 2dup h. h.
+   VOC_SET
+\ drop \
+ DUP context !  current ! 
+;
+
+: new-nodez
+  HERE TO LASTACFV
+  vocabulary,
+ f7_ed
+  current-device-t ,
+   'child                              ( parent's-child-field )
+   #adr-cells init-node                ( parent's-child-field )
+   link-to-peer                        ( )
+    ><DP WORDLIST ><DP 
+ LASTACFV  CELL+ @   fw-pa + userarea-t + 
+ over
+cr  ." new-node=" 2dup h. h.
+   VOC_SET
+\ drop \
+ DUP context !  current ! 
+;
+
+
+100 cells constant /value-area
+700 cells constant /buffer-area
+
+: allocate-instance  ( value-size variable-size -- )
+   \ Allocate instance record
+   t-my-self >r                                 ( val-size var-size )
+   tuck +  alloc-mem                          ( var-size base-adr )
+   + is t-my-self                               ( )
+
+   \ Set the fixed fields
+   r> &my-parent !                           ( )
+   current-device-t  to my-voc                  ( )
+   0 to my-args-len  0 to my-args-adr         ( )  \ May be changed later
+;
+
+: prime-package  ( -- )
+   next-is-instance off
+   1 package-level +!  /value-area /buffer-area  allocate-instance
+   t-my-self  'values !
+;
+: new-device   ( -- )
+\ f7_ed here drop
+  new-node
+  prime-package
+  ;
+
+
+: encode-string  ( adr len -- adr' len+1 )
+   here >r                             ( adr len )
+   bounds  ?do  i c@ c,  loop   0 c,   ( )  ( rs: start )
+   r> here over -                      ( adr' len+1 )
+;
+
+: $create
+ S"  CREATE "  PAD  $!  PAD  $+!
+  PAD COUNT  EVALUATE
+;
+
+
+: make-property-name  ( name-adr,len -- )
+   current @ >r  \  f7_ed
+ current-properties
+\ drop
+ cell+ >user
+  twid>wid 
+ current !
+\ abort
+   $create
+   r> current ! ;
+0 VALUE vproperty
+
+: change-property  ( value-adr,len property-acf -- )
+   \ Make a safe copy of the property value string if necessary
+   >body-t tuck cell+ !     ( value-adr property-apf )
+   dup rot - swap !      ( )
+;
+
+: (property)  ( value-adr,len  name-adr,len  -- )
+   
+   2dup current-properties (tsearch-wordlist)  if  ( value-str name-str acf )
+      nip nip change-property                     ( )
+   else                                           ( value-str name-str )
+
+      make-property-name
+   here
+ cell-
+ h.        ( value-str )
+      here
+ rot -
+ ,
+ , 
+ vproperty LAST-CFA @ @ ! \ align use-actions           ( )
+   then                                           ( )
+;
+
+: property
+  context @ >r
+ (property)
+ r>  context !
+;
+
+: string-property   ( value-adr,len name-adr,len -- )
+   2swap
+ encode-string
+ 2swap
+  property
+;
+
+: device-name  ( adr len -- )
+ CR 2DUP TYPE CR
+  S" name"
+ string-property
+ ;
+
+: device-type  ( adr len -- )  S" device_type" string-property  ;
+
+: model  ( adr len -- )
+ 2drop \ " model"  string-property
+  ;
+
+: phandle>voc ;
+
+: initial-values  ( -- adr )  'values @  ;
+
+: finish-package-data  ( -- )
+   '#values @  if  allot-package-data  then
+
+   t-my-self '#values @ dump
+
+   t-my-self  initial-values  '#values @  cmove            ( )
+
+  &my-parent @ is t-my-self
+
+   package-level @ 1- 0 max package-level !
+
+ ;
+
+: >parent 8 + @
+\ CR ." parent=" DUP H.
+ ;
+
+: parent-device  ( -- parent-node )  current-device-t >parent  ;
+
+: pop-device  ( -- )
+ parent-device dup fw-pa <>
+ if push-device
+ else drop
+ then ;
+
+: finish-device  ( -- )
+\ f7_ed
+  finish-package-data
+  pop-device
+ ;
+
+: device-end   ( -- )  only forth also definitions  package-level off  ;
+: init-allocator ;
+0 value donodetype
+: nodetype:  \ name  ( size -- )
+ >IN @
+ PARSE-NAME $THEADER
+ DUP >IN ! UHERE
+	current @ >R ttccdo ><DP  CONSTANT ><DP
+	R> current !
+ >IN ! TM_HEADER
+ donodetype 0= if doestarget @ to donodetype then
+  donodetype ,
+ 2* cells 0 uhere 2!
+ user, 4 #user-t +!
+;
+
+0x1c00000  CONSTANT stacktop
+
+: optional-arg-or-/$ ( -- adr len )
+   parse-word dup 0=  if  2drop s" /"  then  ( adr len )
+;
+
+0 value memory-device
+0 value pci-device
+0 value isa-device
+0 value interrupt-controller-device
+: client-services
+ S" ' client-services cell+ >user @  cell+ >user twid>wid MCONTEXT !"
+EVALUATE ; 
+: $DEV-T
+ also
+ 2DUP	s" /"		COMPARE 0=
+ IF   S" ' root-node" EVALUATE to current-device-t
+     root-node definitions
+ ELSE
+
+ 2DUP	s" /packages"	COMPARE 0=
+ IF   root-packages to current-device-t
+ ELSE
+
+ 2DUP	s" /client-services"	COMPARE 0=
+ IF	client-services
+ ELSE
+
+ 2DUP	s" /memory"	COMPARE 0=
+ IF 
+	memory-device
+	cell+ >user twid>wid MCONTEXT !
+ ELSE
+ 2DUP	s" /pci"	COMPARE 0=
+ IF 
+	pci-device dup push-device
+	cell+ >user twid>wid MCONTEXT !
+ ELSE
+
+ 2DUP	s" /isa"	COMPARE 0=
+ IF 
+	isa-device dup push-device
+	cell+ >user twid>wid MCONTEXT !
+ ELSE
+
+ 2DUP	s" /interrupt-controller"	COMPARE 0=
+ IF	interrupt-controller-device dup push-device
+	cell+ >user twid>wid MCONTEXT !
+ ELSE
+
+ root-node
+ THEN THEN THEN THEN THEN THEN THEN
+	definitions
+2DROP ;
+
+: dev
+ optional-arg-or-/$  $DEV-T ;
+
+: be-w!   ( w a -- )   >r wbsplit r@    c! r> 1+    c!  ;
+: be-l!   ( l a -- )   >r lwsplit r@ be-w! r> 2+ be-w!  ;
+
+: be-l,  ( l -- )  here  4 allot  be-l!  ;
+: encode-int  ( i -- adr len )   here  swap be-l, 4 ;
+
+: prime-package  ( -- )
+   next-is-instance off
+   1 package-level +!  /value-area /buffer-area  allocate-instance
+   t-my-self  'values !
+;
+
+: extend-package  ( -- )
+   initial-values              ( 'values )
+   prime-package               ( 'values )
+   t-my-self  '#values @  cmove   \ Preserve the initial values
+;
+
+: end-package  ( -- ) finish-package-data pop-device
+ previous definitions ;
+
+vect set-args  : >set-args  to set-args ;
+
+: set-args0  cr ." set-args0=" h. h. h. h. ;
+' set-args0 >set-args
+
+: set-args1  set-args0
+ $20 t-my-self !
+ 1 t-my-self $c + ! 
+ ;
+
+: set-args2  set-args0
+ $40 t-my-self !
+ 1 t-my-self $c + !
+ ['] set-args0 >set-args
+ ;
+
+: set-args3  set-args0
+ $60 t-my-self ! 1 t-my-self $c + ! 
+ ;
+
+
+: select-dev  ( adr,len -- ) 2DUP  cr ." select-dev=<" type ." >"
+  $DEV-T
+ ;
+
+: begin-package  ( arg-str reg-str parent-str -- )
+ cr ." begin-package"
+   select-dev .s cr
+\ cr here h. uhere h. ." ! \ begin-package"  cr  
+ new-device  .s cr  set-args  .s
+\  here uhere !
+ cr ." begin-package;"
+;
+
+: encode+    ( adr0 len0 adr1 len1 -- adr0 len0+len1 )  nip +  ;
+
+: external ;
+
+\ Copy a byte array into the dictionary.
+: encode-bytes  ( adr len -- adr' len )
+   here >r                      ( adr len )
+   bounds  ?do  i c@ c,  loop   ( rs: start )
+   r> here over -               ( adr' len )
+;
+
+: my-#adr-cells  ( -- n )
+      '#adr-cells @ ;
+
+: my-address  ( -- phys.lo .. )
+  t-my-self 
+  my-#adr-cells 1- 0 max cells bounds
+  ?do  i @  cell +loop
+
+\ $60
+ ;
+
+: encode-ints  ( nn .. n1 n -- adr len )
+   0 0
+ encode-bytes 
+  rot  0
+  ?do
+  rot
+ encode-int
+ encode+
+  loop
+;
+
+
+: encode-phys  ( phys.lo..hi -- addr len )
+\ f7_ed
+  my-#adr-cells
+ encode-ints
+  ;
+
+: encode-physz  ( phys.lo..hi -- addr len )
+ f7_ed
+  my-#adr-cells
+ encode-ints
+  ;
+
+: encode-reg  ( phys.lo..hi size -- adr len )
+   >r 
+\ f7_ed
+ encode-phys
+  r>
+ encode-int
+ encode+ ;
+
+: integer-property ( value  name-adr,len -- )
+   rot encode-int 2swap property ;
+
+: instance  ( -- )  next-is-instance on  ;
+
+: ch  ( "char" -- )  char c,  ;
+: xx  ( -- )  0 c,  ;
+
+0x77777 value dodevalias
+
+: $devalias  ( name-str expansion-str -- )
+   also aliases definitions
+\   strip-blanks  2swap strip-blanks
+     2swap 
+\ F7_ED
+	$THEADER
+  dodevalias
+ ,
+   previous definitions
+   T",
+;
+
+: devalias  \ name string  ( -- )
+   parse-word  parse-word      $devalias  (  )
+;
+
+: devaliasz  \ name string  ( -- )
+   parse-word  parse-word  f7_ed
+     $devalias  (  )
+;
+
+h# b8000 constant ega-line0
+d# 160 constant /ega-line
+: >ega-line  ( line# -- adr )  /ega-line *  ega-line0 +  ;
+
+
+: wait-tx-ready  ( -- )
+   " begin   h# 3fd # dx mov   dx al in  h# 20 # al and   0<> until" evaluate
+;
+
+: report  ( char -- )
+   wait-tx-ready
+   ( char )  " # al mov  h# 3f8 # dx mov  al dx out" evaluate
+   wait-tx-ready
+;
+: mmoname>string name>string ;
+: mmodrop drop ;
+
+: twds  ( lfa -- )
+  begin dup  fw-pa <>
+  while dup h. cell- dup  1- name>string t-type  cr @
+  repeat drop
+;
+
+: twdss ( addr [addr] -- )
+ \ dup h. cr
+	@ twds  
+	CELL+	  DUP @ ;
+
+: twdsss
+  VOCR_KEY   DUP @
+  BEGIN  dup
+  WHILE   ." ---"  dup h. dup  fw-pa - $20 - h. cr
+ twdss
+  REPEAT 2DROP
+;
+
+: ??4th
+ context @  FORTH-WORDLIST  <> abort"  bad context"
+ previous
+ context @  FORTH-WORDLIST  <> abort"  bad context2"
+ also
+ ;
+
+: color:
+ theader doestarget @ , T",
+;
+
+: tassociative: theader doestarget @ , , ;
+
+: 2constant  theader  s" do2constant" EVALUATE , swap  , , ;
+
+: .."   ( -- )  postpone " s' cr".'  EVALUATE ; immediate
+
+also hidden definitions
+
+: emacs-edit
+ s" ' beep             is  not-found" EVALUATE
+ s" ' insert-character is  printable-char" EVALUATE
+ s" ' xaccept          is  accept" EVALUATE
+;
+
+: init-breakpoints ;
+
+command-completion definitions
+
+: install-fcmd
+ s" ' end-of-word               is find-end" EVALUATE
+ s" ' insert-character          is cinsert" EVALUATE
+ s" ' erase-previous-character  is cerase" EVALUATE
+;
+
+root definitions
+
+: previous previous ;
+
+bug definitions
+: unbug   (s -- )
+ s"  normal-next debug-next ! "  EVALUATE ;
+
+previous definitions
+
+: mechanism1   ( -- )
+ s" ' config-setup1 to config-setup" EVALUATE
+ s" ' noop          to config-done" EVALUATE
+;
+
+: setalias  ( xt +-1 -- )
+   0 > if  immediate  then                ( acf )
+\   flagalias
+  last-t @  n>flags  dup c@  0x20 or  swap c!
+   -cell allot  ,
+;
+
+: $makealias
+  $create   -1 setalias
+;
+
+: is-install   ( xt -- )
+   ( xt )          S" install"   $makealias
+   s" ' disp-open     " EVALUATE  S" open"      $makealias
+   s" ' disp-write    " EVALUATE  S" write"     $makealias
+   s" ' draw-logo     " EVALUATE  S" draw-logo" $makealias
+   s" ' reset-screen  " EVALUATE  S" restore"   $makealias
+;
+
+: is-remove    ( xt -- )
+   ( xt )            S" remove"    $makealias
+   s" ' disp-close  " EVALUATE  " close"     $makealias
+;
+: is-selftest  ( xt -- )
+   ( xt )             S" disp-test"  $makealias
+   s" ' disp-selftest " EVALUATE S" selftest"   $makealias
+;
+
+
+: probe  ( -- )
+ s" ' ega-install  " EVALUATE is-install
+ s" ' ega-remove   " EVALUATE is-remove
+ s" ' ega-selftest " EVALUATE is-selftest
+;
+
+0 value do-string-array
+: string-array  \ name ( -- )
+      THEADER
+   do-string-array ,
+   0 ,    ( the number of strings )
+   0 ,    ( the starting address of the pointer table )
+;
+: end-string-array ( -- )
+   here                ( string-end-addr )
+   lastacf-t >body-t       ( string-end-addr pfa )
+   dup >r                 \ Remember pfa of word for use as the base address
+   cell+ here r@ - over !  \ Store table address in the second word of the pf
+   cell+                ( string-end-addr first-string-addr )
+   begin               ( string-end-addr this-string-addr )
+       2dup >          ( string-end-addr this-string-addr )
+   while
+       \ Store string address in table
+       dup r@ - ,      ( string-end-addr this-string-addr )
+       \ Find next string address
+       +str            ( string-end-addr next-string-addr )
+   repeat              ( string-end-addr next-string-addr )
+   2drop               ( )
+   \ Calculate and store number of strings
+   lastacf-t >body-t       ( pfa )
+   dup dup cell+ @ +    ( pfa table-addr )
+   here swap - /n /    ( pfa #strings )
+   swap !
+   r> drop
+;
+
+variable tnext-reg
+: alloc-reg-t  ( size -- offset ) 
+  tnext-reg @  swap tnext-reg +!  ;
+
+: register
+	THEADER
+	doregister , 4 alloc-reg-t ,
+;
+
+
+0 value dowregister
+
+: wregister
+	THEADER
+   dowregister 0= if  action-adr-t to dowregister then
+	dowregister , 4 alloc-reg-t ,
+
+;
+
+: dp! dp ! ;
+: postpone ?old postpone
+  PARSE-NAME SFIND DUP  0= IF -321 THROW THEN
+  1 =	IF ,
+	ELSE  s" compile" EVALUATE ,
+	THEN
+; IMMEDIATE
+
+: to-column:
+ theader doestarget @ , c, ;
+
+: install-decomp-definer 2drop ;
+
+0 VALUE dochosen-variable
+
+0 VALUE  chosen-device
+
+: chosen-variable  ( acf adr len -- )
+\   " /chosen" find-device
+\ f7_ed
+     chosen-device push-device
+      make-property-name ,
+    dochosen-variable  here cell- cell- !
+   device-end
+;
+
+: mmochosen-variable chosen-variable ;
+
+0 VALUE dochosen-value
+
+: chosen-value  ( acf adr len -- )
+\   " /chosen" find-device
+     chosen-device push-device
+      make-property-name ,
+    dochosen-value  here cell- cell- !
+   device-end
+;
+
+0 VALUE dochosen-string
+
+: chosen-string  ( acf adr len -- )
+\   " /chosen" find-device
+     chosen-device push-device
+      make-property-name ,
+    dochosen-string  here cell- cell- !
+   device-end
+;
+
+\ : cif-32 ;
+
+: offset-of  \ reg-name  ( -- offset )
+   ' >body-t @
+;
+
+: config-THEADER
+ mcurrent @ >r 
+  also options definitions
+	THEADER
+ previous      r> mcurrent !
+;
+
+0 value doconfig-flag
+
+: config-flag
+ config-THEADER	doconfig-flag ,
+ user, $40 here 1- c!  ,
+  ;
+
+0 value doconfig-int
+$C0 value flg-int
+
+: config-int
+  config-THEADER doconfig-int ,
+ user, flg-int here 1- c!  ,
+  ;
+
+0 value doconfig-string
+
+: ,cstr
+  here >r  dup 1+ aligned-t allot  r@ 
+ swap cmove \ $+!
+ r>  ;
+
+: rel!  ( adr1 adr2 -- )  tuck - swap !  ;
+
+: config-string  ( "name" default-value$ maxlen -- )
+  config-THEADER doconfig-string ,
+  user, $40 here 1- c!
+   drop                      ( default-value$ )
+ 2dup dump
+   here >r  4 allot          ( default-value$ r: where )  \ Place location of def$
+   ,cstr
+ r>
+ rel!             ( )
+;
+
+: forth-THEADER,
+ mcurrent @ >r   also forth definitions
+	THEADER
+ previous      r> mcurrent ! , ;
+
+
+: termemu-value
+ dotermemu-value   forth-THEADER,
+ t-my-self '#values @  + !
+ '#values @ , 4 '#values +!
+  ;
+
+
+: termemu-defer  \ name  ( -- )
+ dotermemu-defer  forth-THEADER,
+ 0x401fd9a8 t-my-self '#values @  + !
+ '#values @ , 4 '#values +!
+;
+
+
+: termemu-array  \ name  ( -- )
+ dotermemu-array forth-THEADER,
+ '#values @ , 4 * '#values +!
+;
+
+: class-name: ( code "name" --- )  ,  parse-word T",  align-t  ;
+
+0 value isa-dev-t
+
+: table:  \ name  ( offset size -- offset' )
+ THEADER  doestarget @ , ;
+
+0 VALUE  packages-device
+
+: support-package:  ( "name" -- )
+\   " /packages" find-device
+     packages-device push-device
+   new-device
+   parse-word encode-string " name" property
+;
+
+: end-support-package  ( -- )  finish-device device-end  ;
+: end-support-packagez  ( -- ) f7_ed
+  finish-device
+ device-end  ;
+
+: reg    ( adr space size -- )  encode-reg  " reg"   property  ;
+0 value ?itt
+: INTERPRET_TT ( -> )
+\ dup $aa = ABORT" INTERPRET_TT err"
+\ cr ." s=<" source type .s ." >"
+\ depth 1 = over 0= ?itt 0= and  ABORT" 0 INTERPRET_TT err"
+ ?itt 1+ to ?itt
+  BEGIN
+    PARSE-NAME DUP
+  WHILE
+    SFIND ?DUP
+    IF
+         STATE @ =
+         IF T_COMPILE, ELSE T_EXECUTE THEN
+    ELSE
+         S" NOTFOUND" SFIND 
+         IF EXECUTE
+         ELSE 2DROP ?SLITERAL THEN
+    THEN  \ #user-t @ $1A8 4 + >  ABORT" INTERPRET_TT err"
+\	current-device-t $1A38AE0 = ABORT" INTERPRET_TT err"
+\ current-properties $1A00480 = ABORT" INTERPRET_TT err"
+\   t-my-self
+\ if
+\  t-my-self  $55 + c@  $29   =  ABORT" INTERPRET_TT err"
+\ then
+
+\ $375B9 fw-pa + C@ $29  =  ABORT" INTERPRET_TT err"
+\ fw-pa $58 + @ $10C4 = ABORT" INTERPRET_TT err"
+\ user???? drop
+    ?STACK
+  REPEAT 2DROP
+ ?itt 1- to ?itt
+;
+
+0 value hhhhh
+
+: ?leave S" (?leave)" EVALUATE ; IMMEDIATE
+
+: leave  S" (leave)" EVALUATE ; IMMEDIATE
+
+: does>  S" (does>)" EVALUATE  place-does ; IMMEDIATE
+
+: set-config-string-default  ( new-default$ xt -- )
+   >body-t cell+ >r             ( new-default$ r: ptr-adr )
+   ,cstr r> rel!             ( )
+;
+create next-reg  $84 ,
+: alloc-reg  ( size -- offset )   next-reg @  swap next-reg +!  ;
+
+: nodefault  ( -- )  last-t @ >BODY-T  dup  @  $80000000 or  swap !  ;
+
+: create-option  ( "name" -- )
+   also options definitions  create  previous definitions
+;
+
+: config-create  ( "name" -- ua-offset )
+   create-option
+   0 4 ualloc dup $C0000000 or  , fw-pa userarea-t +  +  !
+;
+
+: nodefault-int  ( "name" -- )  0 config-int nodefault  ;
+
+: text-alerts  ( -- )
+ S"   ' type        to progress " EVALUATE
+ S"   ' cr          to progress-done" EVALUATE
+ S"   ' type        to alert" EVALUATE
+ S"   ' confirmed?  to confirm" EVALUATE
+ S"  ' (.error)    to .error" EVALUATE
+;
+
+0 value dovolume:
+: volume:
+	THEADER
+   dovolume: 0= if  action-adr-t to dovolume: then
+	dovolume: ,
+  user???? dup , 
+ 8 +  #user-t !
+;
+
+: C: ;
+: recurse last-t @  name> ,
+; IMMEDIATE
+
+: +i  ( adr len n -- adr' len' )  encode-int encode+  ;
+: 0+i  ( adr len -- adr' len' )  0 +i  ;
+: int+  ( adr len n -- adr' len' )  encode-int encode+  ;
+
+: def-memops  ( -- )
+S"    ' l! to meml! " EVALUATE
+S"    ' l@ to meml@" EVALUATE
+S"    ' w! to memw!" EVALUATE
+S"    ' c! to memc!" EVALUATE
+;
+
+: \tagvoc ; IMMEDIATE
+
+: \nottagvoc POSTPONE \ ; IMMEDIATE
+
+\ Create the master copy of the token table array
+: init-tables  ( -- )
+ $50 allot
+\   ttbl-align  here  /token-tables allot  set-tables   erase-tables
+\   tables-new #token-tables note-string 2drop
+;
+

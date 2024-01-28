@@ -1,0 +1,1025 @@
+support-package: 16550
+1A39E08 	E0 B6 A0  1 A0  B  0  0 
+1A39E10 	C8 50 A2  1 E0 B6 A0  1 
+1A39E18 	C0  B  0  0 31 36 35 35 
+1A39E20 	30  0  0 6E 61 6D 65 84 
+1A39E28 	 0  0 A0  1 BC 13 A2  1 
+1A39E30 	14  0  0  0  6  0  0  0 
+
+: clock-frequency  ( -- n )
+1A39E38 	63 6C 6F 63 6B 2D 66 72 
+1A39E40 	65 71 75 65 6E 63 79 8F 
+1A39E48 	 0  0 A0  1 20 40 A0  1 
+   " clock-frequency"  my-parent ihandle>phandle  get-package-property  if
+1A39E50 	9C 53 A0  1  F 63 6C 6F 
+1A39E58 	63 6B 2D 66 72 65 71 75 
+1A39E60 	65 6E 63 79  0  0  0  0 
+1A39E68 	28  4 A2  1  0 32 A2  1 
+1A39E70 	98 33 A2  1 DC 41 A0  1 
+1A39E78 	14  0  0  0 
+      d# 1843200
+1A39E7C 	58 41 A0  1 
+1A39E80 	 0 20 1C  0 
+   else                ( adr len )
+1A39E84 	C8 41 A0  1 
+1A39E88 	 8  0  0  0 
+      get-encoded-int
+1A39E8C 	A0 F7 A1  1 
+   then
+;
+1A39E90 	58 46 A0  1 
+
+0 instance value uart-base	\ Virtual address of UART; set later
+1A39E94 	 0  0 75 61 
+1A39E98 	72 74 2D 62 61 73 65 89 
+1A39EA0 	4C 9E A3  1 C0 FE A1  1 
+1A39EA8 	18  0  0  0 
+
+: uart-base-adr  ( -- adr )
+1A39EAC 	 0  0 75 61 
+1A39EB0 	72 74 2D 62 61 73 65 2D 
+1A39EB8 	61 64 72 8D A4 9E A3  1 
+1A39EC0 	20 40 A0  1 
+   uart-base
+1A39EC4 	A4 9E A3  1 
+\ The following code is a PowerPC-specific hack that 
+\ handles the case where memory mapping is turned off
+\ (in which case the 0x30 bit in MSR is 0).  Note that
+\ the PowerPC msr@ is not compatible with the x86 msr@.
+\ [ifdef] msr@
+\   msr@ h# 30 and 0=  if  h# fff and io-base +  then
+\ [then]
+;
+1A39EC8 	58 46 A0  1 
+: uart@  ( reg# -- byte )  uart-base-adr +  rb@  ; \ Read from a UART register
+1A39ECC 	 0  0 75 61 
+1A39ED0 	72 74 40 85 C0 9E A3  1 
+1A39ED8 	20 40 A0  1 C0 9E A3  1 
+1A39EE0 	 4 45 A0  1 A8 B1 A2  1 
+1A39EE8 	58 46 A0  1 
+: uart!  ( byte reg# -- )  uart-base-adr +  rb!  ; \ Write to a UART register
+1A39EEC 	 0  0 75 61 
+1A39EF0 	72 74 21 85 D8 9E A3  1 
+1A39EF8 	20 40 A0  1 C0 9E A3  1 
+1A39F00 	 4 45 A0  1 1C B2 A2  1 
+1A39F08 	58 46 A0  1 
+
+\ Integer division which rounds to nearest instead of truncating
+: rounded-/  ( dividend divisor -- rounded-result )
+1A39F0C 	 0  0 72 6F 
+1A39F10 	75 6E 64 65 64 2D 2F 89 
+1A39F18 	F8 9E A3  1 20 40 A0  1 
+   swap 2*  swap /  ( result*2 )
+1A39F20 	68 49 A0  1 A0 4B A0  1 
+1A39F28 	68 49 A0  1 98 5F A0  1 
+   dup 1 and +      \ add 1 to the result if it is odd
+1A39F30 	40 49 A0  1 80 6F A0  1 
+1A39F38 	5C 44 A0  1  4 45 A0  1 
+   2/               ( rounded-result )
+1A39F40 	78 4B A0  1 
+;
+1A39F44 	58 46 A0  1 
+: baud-to-divisor  ( baud-rate -- divisor )
+1A39F48 	62 61 75 64 2D 74 6F 2D 
+1A39F50 	64 69 76 69 73 6F 72 8F 
+1A39F58 	1C 9F A3  1 20 40 A0  1 
+   clock-frequency d# 16 /  swap rounded-/    ( baud-rate-divisor )
+1A39F60 	4C 9E A3  1 58 41 A0  1 
+1A39F68 	10  0  0  0 98 5F A0  1 
+1A39F70 	68 49 A0  1 1C 9F A3  1 
+;
+1A39F78 	58 46 A0  1 
+: divisor-to-baud  ( divisor -- baud-rate )
+1A39F7C 	64 69 76 69 
+1A39F80 	73 6F 72 2D 74 6F 2D 62 
+1A39F88 	61 75 64 8F 5C 9F A3  1 
+1A39F90 	20 40 A0  1 
+   clock-frequency d# 16 /  swap rounded-/    ( baud-rate-divisor )
+1A39F94 	4C 9E A3  1 
+1A39F98 	58 41 A0  1 10  0  0  0 
+1A39FA0 	98 5F A0  1 68 49 A0  1 
+1A39FA8 	1C 9F A3  1 
+;
+1A39FAC 	58 46 A0  1 
+
+\ The break-detect bit in the line status register is cleared when you
+\ read the line status register, not when you read the garbage character
+\ that accompanies the break through the FIFO.  Consequently, we must
+\ check the break detect bit every time that we read the line status
+\ register, using break? to remember that we saw it.
+0 instance value break?
+1A39FB0 	 0 62 72 65 61 6B 3F 86 
+1A39FB8 	90 9F A3  1 C0 FE A1  1 
+1A39FC0 	1C  0  0  0 
+: (line-stat@)  ( -- n )  5 uart@  ;
+1A39FC4 	 0  0  0 28 
+1A39FC8 	6C 69 6E 65 2D 73 74 61 
+1A39FD0 	74 40 29 8C BC 9F A3  1 
+1A39FD8 	20 40 A0  1 C0 6F A0  1 
+1A39FE0 	D8 9E A3  1 58 46 A0  1 
+: line-stat@  ( -- n )
+1A39FE8 	 0 6C 69 6E 65 2D 73 74 
+1A39FF0 	61 74 40 8A D8 9F A3  1 
+1A39FF8 	20 40 A0  1 
+   (line-stat@)  dup h# 10 and  if  " set-break" $call-parent  then
+1A39FFC 	D8 9F A3  1 
+1A3A000 	40 49 A0  1 58 41 A0  1 
+1A3A008 	10  0  0  0 5C 44 A0  1 
+1A3A010 	DC 41 A0  1 18  0  0  0 
+1A3A018 	9C 53 A0  1  9 73 65 74 
+1A3A020 	2D 62 72 65 61 6B  0  0 
+1A3A028 	DC 31 A2  1 
+;
+1A3A02C 	58 46 A0  1 
+
+: get-divisor  ( -- divisor )
+1A3A030 	67 65 74 2D 64 69 76 69 
+1A3A038 	73 6F 72 8B F8 9F A3  1 
+1A3A040 	20 40 A0  1 
+   3 uart@  dup >r  h# 80 or  3 uart!		\ divisor latch access bit on
+1A3A044 	A0 6F A0  1 
+1A3A048 	D8 9E A3  1 40 49 A0  1 
+1A3A050 	BC 45 A0  1 58 41 A0  1 
+1A3A058 	80  0  0  0 70 44 A0  1 
+1A3A060 	A0 6F A0  1 F8 9E A3  1 
+   0 uart@  1 uart@  bwjoin	( divisor )	\ Read lsb and msb
+1A3A068 	70 6F A0  1 D8 9E A3  1 
+1A3A070 	80 6F A0  1 D8 9E A3  1 
+1A3A078 	84 FB A0  1 
+   r> 3 uart!					\ Restore old state
+1A3A07C 	D0 45 A0  1 
+1A3A080 	A0 6F A0  1 F8 9E A3  1 
+;
+1A3A088 	58 46 A0  1 
+: set-divisor  ( divisor -- )
+1A3A08C 	73 65 74 2D 
+1A3A090 	64 69 76 69 73 6F 72 8B 
+1A3A098 	40 A0 A3  1 20 40 A0  1 
+   \ If the divisor is 0, then this is first access after power on.  We
+   \ can safely plow on with out checking the transmitter status
+   get-divisor  if
+1A3A0A0 	40 A0 A3  1 DC 41 A0  1 
+1A3A0A8 	1C  0  0  0 
+      begin  line-stat@ h# 40 and  until	\ Wait until transmit done
+1A3A0AC 	F8 9F A3  1 
+1A3A0B0 	58 41 A0  1 40  0  0  0 
+1A3A0B8 	5C 44 A0  1 DC 41 A0  1 
+1A3A0C0 	EC FF FF FF 
+   then
+
+   3 uart@  dup >r  h# 80 or  3 uart!		\ divisor latch access bit on
+1A3A0C4 	A0 6F A0  1 
+1A3A0C8 	D8 9E A3  1 40 49 A0  1 
+1A3A0D0 	BC 45 A0  1 58 41 A0  1 
+1A3A0D8 	80  0  0  0 70 44 A0  1 
+1A3A0E0 	A0 6F A0  1 F8 9E A3  1 
+   wbsplit swap  0 uart!  1 uart!		\ Write lsb and msb
+1A3A0E8 	54 FB A0  1 68 49 A0  1 
+1A3A0F0 	70 6F A0  1 F8 9E A3  1 
+1A3A0F8 	80 6F A0  1 F8 9E A3  1 
+   r> 3 uart!					\ Restore old state
+1A3A100 	D0 45 A0  1 A0 6F A0  1 
+1A3A108 	F8 9E A3  1 
+;
+1A3A10C 	58 46 A0  1 
+: baud  ( baud-rate -- )  baud-to-divisor set-divisor  ;
+1A3A110 	 0  0  0 62 61 75 64 84 
+1A3A118 	9C A0 A3  1 20 40 A0  1 
+1A3A120 	5C 9F A3  1 9C A0 A3  1 
+1A3A128 	58 46 A0  1 
+
+\ Parses the arguments to the serial port driver, which are in the
+\ form, e.g. 9600,8,n,1 , and sets the UART parameters (baudrate,
+\ # data bits, parity, #stop bits, handshake) accordingly.
+\
+\ Fields are (in order, left to right):
+\         <baud rate>, <data bits>, <parity>, <stop bits>, <handshake>
+\ Fields with empty values are not changed.
+\ Values for fields are whatever the hardware will support:
+\ baud rates: various,including  110, 300, 1200, 2400, 4800, 9600, 19200, 38400
+\ character bits: 5,6,7,8
+\
+\ parity:
+\         char   means
+\         --------------------
+\         n       none
+\         e       even
+\         o       odd
+\         m       mark
+\         s       space
+\
+\ stop bits:
+\         char    means
+\         --------------------
+\         1       1 stop bit
+\         .       1.5 stop bits
+\         2       2 stop bits
+\
+\ handshake:
+\         char    means
+\         --------------------
+\         -       none
+\         h       hardware (rts/cts)	\ Not supported
+\         s       software (xon/xoff)   \ Not supported
+\
+\ The default mode is 9600,8,n,1,-
+\
+
+hex
+headerless
+
+0 instance value divisor
+1A3A12C 	64 69 76 69 
+1A3A130 	73 6F 72 87 1C A1 A3  1 
+1A3A138 	C0 FE A1  1 20  0  0  0 
+0 instance value mode
+1A3A140 	 0  0  0 6D 6F 64 65 84 
+1A3A148 	38 A1 A3  1 C0 FE A1  1 
+1A3A150 	24  0  0  0 
+
+: .uart-error  ( -- )
+1A3A154 	2E 75 61 72 
+1A3A158 	74 2D 65 72 72 6F 72 8B 
+1A3A160 	4C A1 A3  1 20 40 A0  1 
+   ."  error in tty mode."  cr
+1A3A168 	20 7C A0  1 13 20 65 72 
+1A3A170 	72 6F 72 20 69 6E 20 74 
+1A3A178 	74 79 20 6D 6F 64 65 2E 
+1A3A180 	 0  0  0  0 80 6D A0  1 
+   -1 throw
+1A3A188 	58 41 A0  1 FF FF FF FF 
+1A3A190 	74 7F A0  1 
+;
+1A3A194 	58 46 A0  1 
+
+0 instance value current-baudrate
+1A3A198 	 0  0  0 63 75 72 72 65 
+1A3A1A0 	6E 74 2D 62 61 75 64 72 
+1A3A1A8 	61 74 65 90 64 A1 A3  1 
+1A3A1B0 	C0 FE A1  1 28  0  0  0 
+: set-baudrate  ( adr len -- )
+1A3A1B8 	 0  0  0 73 65 74 2D 62 
+1A3A1C0 	61 75 64 72 61 74 65 8C 
+1A3A1C8 	B0 A1 A3  1 20 40 A0  1 
+   dup  if
+1A3A1D0 	40 49 A0  1 DC 41 A0  1 
+1A3A1D8 	48  0  0  0 
+      base @ >r  decimal  $number  r> base !  if
+1A3A1DC 	B8 75 A0  1 
+1A3A1E0 	5C 4C A0  1 BC 45 A0  1 
+1A3A1E8 	E4 8D A0  1 40 FE A0  1 
+1A3A1F0 	D0 45 A0  1 B8 75 A0  1 
+1A3A1F8 	54 4D A0  1 DC 41 A0  1 
+1A3A200 	18  0  0  0 
+         ." Baud rate" .uart-error
+1A3A204 	20 7C A0  1 
+1A3A208 	 9 42 61 75 64 20 72 61 
+1A3A210 	74 65  0  0 64 A1 A3  1 
+      then
+   else
+1A3A218 	C8 41 A0  1  C  0  0  0 
+      2drop  current-baudrate
+1A3A220 	AC 49 A0  1 B0 A1 A3  1 
+   then
+   baud-to-divisor to divisor
+1A3A228 	5C 9F A3  1 48 B8 A1  1 
+1A3A230 	38 A1 A3  1 
+;
+1A3A234 	58 46 A0  1 
+
+
+[ifndef] c@+
+: c@+  ( adr -- adr+ char )  dup 1+ swap c@  ;  \ In the kernel
+[then]
+
+: do-table  ( adr len table-adr -- )
+1A3A238 	 0  0  0 64 6F 2D 74 61 
+1A3A240 	62 6C 65 88 CC A1 A3  1 
+1A3A248 	20 40 A0  1 
+   over 0=  if  3drop exit  then          ( adr len table-adr )
+1A3A24C 	54 49 A0  1 
+1A3A250 	24 47 A0  1 DC 41 A0  1 
+1A3A258 	 C  0  0  0 90 52 A0  1 
+1A3A260 	40 46 A0  1 
+   over 1 u>  if                          ( adr len table-adr )
+1A3A264 	54 49 A0  1 
+1A3A268 	80 6F A0  1 64 48 A0  1 
+1A3A270 	DC 41 A0  1 38  0  0  0 
+      drop
+1A3A278 	30 49 A0  1 
+      ascii " emit  type  ascii " emit
+1A3A27C 	58 41 A0  1 
+1A3A280 	22  0  0  0 2C 6C A0  1 
+1A3A288 	 4 6C A0  1 58 41 A0  1 
+1A3A290 	22  0  0  0 2C 6C A0  1 
+      ." : syntax" .uart-error
+1A3A298 	20 7C A0  1  8 3A 20 73 
+1A3A2A0 	79 6E 74 61 78  0  0  0 
+1A3A2A8 	64 A1 A3  1 
+   then                                   ( adr len table-adr )
+   nip                                    ( adr table-adr )
+1A3A2AC 	FC 46 A0  1 
+   c@+ invert                             ( adr table-adr' mask )
+1A3A2B0 	 8 52 A0  1 30 45 A0  1 
+   mode  and  to mode                     ( adr table-adr' )
+1A3A2B8 	4C A1 A3  1 5C 44 A0  1 
+1A3A2C0 	48 B8 A1  1 4C A1 A3  1 
+   swap c@  swap c@+                      ( char entries-adr #entries )
+1A3A2C8 	68 49 A0  1 C4 4C A0  1 
+1A3A2D0 	68 49 A0  1  8 52 A0  1 
+   true -rot                              ( char true entries-adr #ent )
+1A3A2D8 	 4 70 A0  1 94 49 A0  1 
+   2* bounds  ?do                         ( char true )
+1A3A2E0 	A0 4B A0  1 F0 6D A0  1 
+1A3A2E8 	50 42 A0  1 4C  0  0  0 
+      over i c@ =  if                     ( char true )
+1A3A2F0 	54 49 A0  1 B4 42 A0  1 
+1A3A2F8 	C4 4C A0  1 24 48 A0  1 
+1A3A300 	DC 41 A0  1 28  0  0  0 
+         i 1+ c@  mode  or  to mode       ( char true )
+1A3A308 	B4 42 A0  1 30 4B A0  1 
+1A3A310 	C4 4C A0  1 4C A1 A3  1 
+1A3A318 	70 44 A0  1 48 B8 A1  1 
+1A3A320 	4C A1 A3  1 
+         0= leave                         ( char false )
+1A3A324 	24 47 A0  1 
+1A3A328 	18 43 A0  1 
+      then                                ( char true )
+   2 +loop                                ( char not-found? )
+1A3A32C 	90 6F A0  1 
+1A3A330 	1C 42 A0  1 BC FF FF FF 
+   if  ." '" emit ." ': "  ." syntax" .uart-error  then   ( char )
+1A3A338 	DC 41 A0  1 2C  0  0  0 
+1A3A340 	20 7C A0  1  1 27  0  0 
+1A3A348 	2C 6C A0  1 20 7C A0  1 
+1A3A350 	 3 27 3A 20  0  0  0  0 
+1A3A358 	20 7C A0  1  6 73 79 6E 
+1A3A360 	74 61 78  0 64 A1 A3  1 
+   drop
+1A3A368 	30 49 A0  1 
+;
+1A3A36C 	58 46 A0  1 
+: table:  \ name  values c, ..  ( -- )
+1A3A370 	 0 74 61 62 6C 65 3A 86 
+1A3A378 	48 A2 A3  1 20 40 A0  1 
+   create  does> do-table
+1A3A380 	A8 A2 A0  1 50 A3 A0  1 
+1A3A388 	90 90 90 E8 EC 9C FC FF 
+1A3A390 	48 A2 A3  1 
+;
+1A3A394 	58 46 A0  1 
+
+
+\  character   value     mask  #entries
+
+table: set-handshake     00 c,   1 c,
+1A3A398 	 0  0 73 65 74 2D 68 61 
+1A3A3A0 	6E 64 73 68 61 6B 65 8D 
+1A3A3A8 	7C A3 A3  1 88 A3 A3  1 
+1A3A3B0 	 0  1 
+   ascii - c,  00 c,
+1A3A3B2 	2D  0 
+
+table: set-stop-bits     04 c,   2 c,
+1A3A3B4 	 0  0 73 65 
+1A3A3B8 	74 2D 73 74 6F 70 2D 62 
+1A3A3C0 	69 74 73 8D AC A3 A3  1 
+1A3A3C8 	88 A3 A3  1  4  2 
+   ascii 1 c,  00 c,
+1A3A3CE 	31  0 
+   ascii 2 c,  04 c,
+1A3A3D0 	32  4 
+
+table: set-parity        38 c,   5 c,
+1A3A3D2 	 0  0  0 73 65 74 
+1A3A3D8 	2D 70 61 72 69 74 79 8A 
+1A3A3E0 	C8 A3 A3  1 88 A3 A3  1 
+1A3A3E8 	38  5 
+   ascii n c,  00 c,
+1A3A3EA 	6E  0 
+   ascii o c,  08 c,
+1A3A3EC 	6F  8 
+   ascii e c,  18 c,
+1A3A3EE 	65 18 
+   ascii m c,  28 c,
+1A3A3F0 	6D 28 
+   ascii s c,  38 c,
+1A3A3F2 	73 38 
+
+table: set-data-bits     03 c,   4 c,
+1A3A3F4 	 0  0 73 65 
+1A3A3F8 	74 2D 64 61 74 61 2D 62 
+1A3A400 	69 74 73 8D E4 A3 A3  1 
+1A3A408 	88 A3 A3  1  3  4 
+   ascii 5 c,  00 c,
+1A3A40E 	35  0 
+   ascii 6 c,  01 c,
+1A3A410 	36  1 
+   ascii 7 c,  02 c,
+1A3A412 	37  2 
+   ascii 8 c,  03 c,
+1A3A414 	38  3 
+
+: get-field  ( adr len -- rem-adr,len field-adr,len )
+1A3A416 	67 65 
+1A3A418 	74 2D 66 69 65 6C 64 89 
+1A3A420 	 8 A4 A3  1 20 40 A0  1 
+   ascii , left-parse-string
+1A3A428 	58 41 A0  1 2C  0  0  0 
+1A3A430 	44 D7 A0  1 
+;
+1A3A434 	58 46 A0  1 
+: (set-mode)  ( adr len -- )
+1A3A438 	 0 28 73 65 74 2D 6D 6F 
+1A3A440 	64 65 29 8A 24 A4 A3  1 
+1A3A448 	20 40 A0  1 
+   get-field set-baudrate    ( adr len )
+1A3A44C 	24 A4 A3  1 
+1A3A450 	CC A1 A3  1 
+
+   3 uart@ to mode
+1A3A454 	A0 6F A0  1 
+1A3A458 	D8 9E A3  1 48 B8 A1  1 
+1A3A460 	4C A1 A3  1 
+   get-field set-data-bits   ( adr len )
+1A3A464 	24 A4 A3  1 
+1A3A468 	 8 A4 A3  1 
+   get-field set-parity      ( adr len )
+1A3A46C 	24 A4 A3  1 
+1A3A470 	E4 A3 A3  1 
+   get-field set-stop-bits   ( adr len )
+1A3A474 	24 A4 A3  1 
+1A3A478 	C8 A3 A3  1 
+             set-handshake   ( )
+1A3A47C 	AC A3 A3  1 
+
+   \ Commit the changes
+   divisor set-divisor       ( )
+1A3A480 	38 A1 A3  1 9C A0 A3  1 
+   mode 3 uart!              ( )
+1A3A488 	4C A1 A3  1 A0 6F A0  1 
+1A3A490 	F8 9E A3  1 
+;
+1A3A494 	58 46 A0  1 
+headers
+: set-mode  ( adr len -- )
+1A3A498 	 0  0  0 73 65 74 2D 6D 
+1A3A4A0 	6F 64 65 88 48 A4 A3  1 
+1A3A4A8 	20 40 A0  1 
+   get-divisor divisor-to-baud to current-baudrate (set-mode)
+1A3A4AC 	40 A0 A3  1 
+1A3A4B0 	90 9F A3  1 48 B8 A1  1 
+1A3A4B8 	B0 A1 A3  1 48 A4 A3  1 
+;
+1A3A4C0 	58 46 A0  1 
+: set-modem-control  ( mask -- )  4 uart!  ;
+1A3A4C4 	 0  0 73 65 
+1A3A4C8 	74 2D 6D 6F 64 65 6D 2D 
+1A3A4D0 	63 6F 6E 74 72 6F 6C 91 
+1A3A4D8 	A8 A4 A3  1 20 40 A0  1 
+1A3A4E0 	B0 6F A0  1 F8 9E A3  1 
+1A3A4E8 	58 46 A0  1 
+
+: consume  ( -- )  0 uart@ drop  ;
+1A3A4EC 	63 6F 6E 73 
+1A3A4F0 	75 6D 65 87 DC A4 A3  1 
+1A3A4F8 	20 40 A0  1 70 6F A0  1 
+1A3A500 	D8 9E A3  1 30 49 A0  1 
+1A3A508 	58 46 A0  1 
+\ Test for rcv character.  While consuming (discarding) break characters.
+: ukey?    ( -- flag )
+1A3A50C 	 0  0 75 6B 
+1A3A510 	65 79 3F 85 F8 A4 A3  1 
+1A3A518 	20 40 A0  1 
+   line-stat@  dup h# 10 and  if  drop consume false exit  then   ( lstat )
+1A3A51C 	F8 9F A3  1 
+1A3A520 	40 49 A0  1 58 41 A0  1 
+1A3A528 	10  0  0  0 5C 44 A0  1 
+1A3A530 	DC 41 A0  1 14  0  0  0 
+1A3A538 	30 49 A0  1 F8 A4 A3  1 
+1A3A540 	18 70 A0  1 40 46 A0  1 
+   1 and  0<>
+1A3A548 	80 6F A0  1 5C 44 A0  1 
+1A3A550 	44 47 A0  1 
+;
+1A3A554 	58 46 A0  1 
+: uemit?   ( -- flag )  line-stat@  h# 20 and  0<>  ;  \ Test for xmit ready
+1A3A558 	 0 75 65 6D 69 74 3F 86 
+1A3A560 	18 A5 A3  1 20 40 A0  1 
+1A3A568 	F8 9F A3  1 58 41 A0  1 
+1A3A570 	20  0  0  0 5C 44 A0  1 
+1A3A578 	44 47 A0  1 58 46 A0  1 
+
+: ubreak?  ( -- flag )                  \ Test for received break
+1A3A580 	75 62 72 65 61 6B 3F 87 
+1A3A588 	64 A5 A3  1 20 40 A0  1 
+   \ Previously-detected break
+   " get-break" $call-parent  if  true exit  then
+1A3A590 	9C 53 A0  1  9 67 65 74 
+1A3A598 	2D 62 72 65 61 6B  0  0 
+1A3A5A0 	DC 31 A2  1 DC 41 A0  1 
+1A3A5A8 	 C  0  0  0  4 70 A0  1 
+1A3A5B0 	40 46 A0  1 
+
+   \ Checked for a break in the FIFO
+   \ If the FIFO error summary bit (h#80) indicates that there is an
+   \ error (break, framing error, or parity error) somewhere in the
+   \ FIFO, we unload the FIFO until we have either seen the break or
+   \ have discarded the character in error.  This can cause loss of
+   \ good characters that are already in the FIFO, but it is necessary
+   \ in order to be able to interrupt runaway programs that are not
+   \ polling the serial port.  We don't want previously-queued
+   \ characters to "block" the appearance of the break.  The general
+   \ solution would be to put the good characters in a software queue,
+   \ but that is probably not worth the effort, especially since you
+   \ usually want to flush the queue when you get a break anyway.
+
+   begin
+      (line-stat@)  dup h# 10  and  if	     ( lstat )		\ New break?
+1A3A5B4 	D8 9F A3  1 
+1A3A5B8 	40 49 A0  1 58 41 A0  1 
+1A3A5C0 	10  0  0  0 5C 44 A0  1 
+1A3A5C8 	DC 41 A0  1 14  0  0  0 
+         drop                                ( )
+1A3A5D0 	30 49 A0  1 
+         consume			     ( )	\ Consume the break
+1A3A5D4 	F8 A4 A3  1 
+         true  exit                          ( true )
+1A3A5D8 	 4 70 A0  1 40 46 A0  1 
+      then                                   ( lstat )
+      h# 80 and
+1A3A5E0 	58 41 A0  1 80  0  0  0 
+1A3A5E8 	5C 44 A0  1 
+   while						\ Break in FIFO?
+1A3A5EC 	DC 41 A0  1 
+1A3A5F0 	10  0  0  0 
+      consume						\ Consume a character
+1A3A5F4 	F8 A4 A3  1 
+   repeat
+1A3A5F8 	C8 41 A0  1 B8 FF FF FF 
+   false
+1A3A600 	18 70 A0  1 
+;
+1A3A604 	58 46 A0  1 
+
+: ukey   ( -- char )  begin  ukey?   until  0 uart@  ;  \ Receive a character
+1A3A608 	 0  0  0 75 6B 65 79 84 
+1A3A610 	8C A5 A3  1 20 40 A0  1 
+1A3A618 	18 A5 A3  1 DC 41 A0  1 
+1A3A620 	F8 FF FF FF 70 6F A0  1 
+1A3A628 	D8 9E A3  1 58 46 A0  1 
+: uemit  ( char -- )  begin  uemit?  until  0 uart!  ;  \ Transmit a character
+1A3A630 	 0  0 75 65 6D 69 74 85 
+1A3A638 	14 A6 A3  1 20 40 A0  1 
+1A3A640 	64 A5 A3  1 DC 41 A0  1 
+1A3A648 	F8 FF FF FF 70 6F A0  1 
+1A3A650 	F8 9E A3  1 58 46 A0  1 
+
+\ poll-tty is called periodically to see if the user has tried to
+\ interrupt us by sending a "break" character.
+
+: poll-tty  ( -- )  ubreak?  if  user-abort  then  ;
+1A3A658 	 0  0  0 70 6F 6C 6C 2D 
+1A3A660 	74 74 79 88 3C A6 A3  1 
+1A3A668 	20 40 A0  1 8C A5 A3  1 
+1A3A670 	DC 41 A0  1  8  0  0  0 
+1A3A678 	 C E3 A1  1 58 46 A0  1 
+
+external	\ The following routines are visible as package methods
+d# 9600 value default-baudrate
+1A3A680 	 0  0  0 64 65 66 61 75 
+1A3A688 	6C 74 2D 62 61 75 64 72 
+1A3A690 	61 74 65 90 68 A6 A3  1 
+1A3A698 	50 40 A0  1 C4  B  0  0 
+
+\ Queues for collecting received bytes
+d# 1024 constant /q
+1A3A6A0 	 0 2F 71 82 98 A6 A3  1 
+1A3A6A8 	68 40 A0  1  0  4  0  0 
+
+struct
+/n field >head
+1A3A6B0 	 0  0 3E 68 65 61 64 85 
+1A3A6B8 	A8 A6 A3  1 50 EE A0  1 
+1A3A6C0 	 0  0  0  0 
+/n field >tail
+1A3A6C4 	 0  0 3E 74 
+1A3A6C8 	61 69 6C 85 BC A6 A3  1 
+1A3A6D0 	50 EE A0  1  4  0  0  0 
+/q field >qdata
+1A3A6D8 	 0 3E 71 64 61 74 61 86 
+1A3A6E0 	D0 A6 A3  1 50 EE A0  1 
+1A3A6E8 	 8  0  0  0 
+constant /qstruct
+1A3A6EC 	 0  0  0 2F 
+1A3A6F0 	71 73 74 72 75 63 74 88 
+1A3A6F8 	E4 A6 A3  1 68 40 A0  1 
+1A3A700 	 8  4  0  0 
+
+/qstruct instance buffer: read-q
+1A3A704 	 0 72 65 61 
+1A3A708 	64 2D 71 86 FC A6 A3  1 
+1A3A710 	4C  0 A2  1 D8 FB FF FF 
+\ /qstruct buffer: write-q
+
+: init-q  ( q -- )  0 over >head !  0 swap >tail !   ;
+1A3A718 	 0 69 6E 69 74 2D 71 86 
+1A3A720 	10 A7 A3  1 20 40 A0  1 
+1A3A728 	70 6F A0  1 54 49 A0  1 
+1A3A730 	BC A6 A3  1 54 4D A0  1 
+1A3A738 	70 6F A0  1 68 49 A0  1 
+1A3A740 	D0 A6 A3  1 54 4D A0  1 
+1A3A748 	58 46 A0  1 
+: inc-q-ptr  ( pointer-addr -- )
+1A3A74C 	 0  0 69 6E 
+1A3A750 	63 2D 71 2D 70 74 72 89 
+1A3A758 	24 A7 A3  1 20 40 A0  1 
+   dup @  ca1+  dup /q  =  if  drop 0  then  swap !
+1A3A760 	40 49 A0  1 5C 4C A0  1 
+1A3A768 	78 50 A0  1 40 49 A0  1 
+1A3A770 	A8 A6 A3  1 24 48 A0  1 
+1A3A778 	DC 41 A0  1  C  0  0  0 
+1A3A780 	30 49 A0  1 70 6F A0  1 
+1A3A788 	68 49 A0  1 54 4D A0  1 
+;
+1A3A790 	58 46 A0  1 
+
+: enque  ( new-entry q -- )
+1A3A794 	 0  0 65 6E 
+1A3A798 	71 75 65 85 5C A7 A3  1 
+1A3A7A0 	20 40 A0  1 
+   >r
+1A3A7A4 	BC 45 A0  1 
+   r@ >tail @  r@ >head @  2dup >  if  - /q  then  1-     ( entry tail head )
+1A3A7A8 	E4 45 A0  1 D0 A6 A3  1 
+1A3A7B0 	5C 4C A0  1 E4 45 A0  1 
+1A3A7B8 	BC A6 A3  1 5C 4C A0  1 
+1A3A7C0 	C0 49 A0  1  4 48 A0  1 
+1A3A7C8 	DC 41 A0  1  C  0  0  0 
+1A3A7D0 	18 45 A0  1 A8 A6 A3  1 
+1A3A7D8 	54 4B A0  1 
+   <>  if  r@ >qdata  r@ >tail @ ca+ c!  r@ >tail inc-q-ptr  else  drop  then
+1A3A7DC 	44 48 A0  1 
+1A3A7E0 	DC 41 A0  1 34  0  0  0 
+1A3A7E8 	E4 45 A0  1 E4 A6 A3  1 
+1A3A7F0 	E4 45 A0  1 D0 A6 A3  1 
+1A3A7F8 	5C 4C A0  1  4 50 A0  1 
+1A3A800 	B8 4D A0  1 E4 45 A0  1 
+1A3A808 	D0 A6 A3  1 5C A7 A3  1 
+1A3A810 	C8 41 A0  1  8  0  0  0 
+1A3A818 	30 49 A0  1 
+   r> drop
+1A3A81C 	D0 45 A0  1 
+1A3A820 	30 49 A0  1 
+;
+1A3A824 	58 46 A0  1 
+
+\ This is only called for the queue for "port"
+: deque?  ( q -- false | entry true )
+1A3A828 	 0 64 65 71 75 65 3F 86 
+1A3A830 	A0 A7 A3  1 20 40 A0  1 
+   >r
+1A3A838 	BC 45 A0  1 
+   r@ >head @  r@ >tail @  <>  if
+1A3A83C 	E4 45 A0  1 
+1A3A840 	BC A6 A3  1 5C 4C A0  1 
+1A3A848 	E4 45 A0  1 D0 A6 A3  1 
+1A3A850 	5C 4C A0  1 44 48 A0  1 
+1A3A858 	DC 41 A0  1 38  0  0  0 
+      r@ >qdata  r@ >head @  ca+ c@  r@ >head inc-q-ptr  true
+1A3A860 	E4 45 A0  1 E4 A6 A3  1 
+1A3A868 	E4 45 A0  1 BC A6 A3  1 
+1A3A870 	5C 4C A0  1  4 50 A0  1 
+1A3A878 	C4 4C A0  1 E4 45 A0  1 
+1A3A880 	BC A6 A3  1 5C A7 A3  1 
+1A3A888 	 4 70 A0  1 
+   else
+1A3A88C 	C8 41 A0  1 
+1A3A890 	 8  0  0  0 
+      false
+1A3A894 	18 70 A0  1 
+   then
+   r> drop
+1A3A898 	D0 45 A0  1 30 49 A0  1 
+;
+1A3A8A0 	58 46 A0  1 
+
+\ false instance value q-lock
+: read-all  ( -- )
+1A3A8A4 	 0  0  0 72 
+1A3A8A8 	65 61 64 2D 61 6C 6C 88 
+1A3A8B0 	34 A8 A3  1 20 40 A0  1 
+   \ Upon entry, we believe that there is at least one character to read
+   \ I have seen conditions where a UART will report, via an interrupt,
+   \ that a character is available, but the line status register won't
+   \ report it.
+   begin  0 uart@ read-q enque  ukey? 0=  until
+1A3A8B8 	70 6F A0  1 D8 9E A3  1 
+1A3A8C0 	10 A7 A3  1 A0 A7 A3  1 
+1A3A8C8 	18 A5 A3  1 24 47 A0  1 
+1A3A8D0 	DC 41 A0  1 E4 FF FF FF 
+;
+1A3A8D8 	58 46 A0  1 
+: try-read  ( -- )  ukey?  if  read-all  then  ;
+1A3A8DC 	 0  0  0 74 
+1A3A8E0 	72 79 2D 72 65 61 64 88 
+1A3A8E8 	B4 A8 A3  1 20 40 A0  1 
+1A3A8F0 	18 A5 A3  1 DC 41 A0  1 
+1A3A8F8 	 8  0  0  0 B4 A8 A3  1 
+1A3A900 	58 46 A0  1 
+
+\ : (wpoll)  ( -- )  true to q-lock  try-read false to q-lock  ;
+: (rpoll)  ( -- )  ( q-lock 0=  if )  try-read  ( then )  ;
+1A3A904 	28 72 70 6F 
+1A3A908 	6C 6C 29 87 EC A8 A3  1 
+1A3A910 	20 40 A0  1 EC A8 A3  1 
+1A3A918 	58 46 A0  1 
+
+instance defer rpoll  ' (rpoll) to rpoll
+1A3A91C 	 0  0 72 70 
+1A3A920 	6F 6C 6C 85 10 A9 A3  1 
+1A3A928 	F0  1 A2  1 2C  0  0  0 
+\ instance defer wpoll  ' (wpoll) to wpoll
+
+0 instance value rx-error
+1A3A930 	 0  0  0 72 78 2D 65 72 
+1A3A938 	72 6F 72 88 28 A9 A3  1 
+1A3A940 	C0 FE A1  1 30  0  0  0 
+false instance value lost-carrier?
+1A3A948 	 0  0 6C 6F 73 74 2D 63 
+1A3A950 	61 72 72 69 65 72 3F 8D 
+1A3A958 	40 A9 A3  1 C0 FE A1  1 
+1A3A960 	34  0  0  0 
+\ : rx-irq  ( -- )  ( q-lock 0=  if )  read-all  ( then )  ;
+: rx-status-irq  ( -- )  5 uart@  h# 1f and  to rx-error  ;
+1A3A964 	 0  0 72 78 
+1A3A968 	2D 73 74 61 74 75 73 2D 
+1A3A970 	69 72 71 8D 5C A9 A3  1 
+1A3A978 	20 40 A0  1 C0 6F A0  1 
+1A3A980 	D8 9E A3  1 58 41 A0  1 
+1A3A988 	1F  0  0  0 5C 44 A0  1 
+1A3A990 	48 B8 A1  1 40 A9 A3  1 
+1A3A998 	58 46 A0  1 
+: modem-status-irq  ( -- )
+1A3A99C 	 0  0  0 6D 
+1A3A9A0 	6F 64 65 6D 2D 73 74 61 
+1A3A9A8 	74 75 73 2D 69 72 71 90 
+1A3A9B0 	78 A9 A3  1 20 40 A0  1 
+   6 uart@  dup  8 and  if
+1A3A9B8 	D0 6F A0  1 D8 9E A3  1 
+1A3A9C0 	40 49 A0  1 F0 6F A0  1 
+1A3A9C8 	5C 44 A0  1 DC 41 A0  1 
+1A3A9D0 	20  0  0  0 
+      dup h# 80 and 0=  to lost-carrier?
+1A3A9D4 	40 49 A0  1 
+1A3A9D8 	58 41 A0  1 80  0  0  0 
+1A3A9E0 	5C 44 A0  1 24 47 A0  1 
+1A3A9E8 	48 B8 A1  1 5C A9 A3  1 
+   then
+   drop
+1A3A9F0 	30 49 A0  1 
+;
+1A3A9F4 	58 46 A0  1 
+
+: decode-irq  ( -- )
+1A3A9F8 	 0 64 65 63 6F 64 65 2D 
+1A3AA00 	69 72 71 8A B4 A9 A3  1 
+1A3AA08 	20 40 A0  1 
+   2 uart@        ( iir )
+1A3AA0C 	90 6F A0  1 
+1A3AA10 	D8 9E A3  1 
+   dup 1 and  if  ( ." Spurious UART IRQ" cr )  drop exit  then
+1A3AA14 	40 49 A0  1 
+1A3AA18 	80 6F A0  1 5C 44 A0  1 
+1A3AA20 	DC 41 A0  1  C  0  0  0 
+1A3AA28 	30 49 A0  1 40 46 A0  1 
+\ XXX we could probably make use of this bit to help with PPP framing
+\  dup 8 and  if  ( ." UART FIFO timeout" cr )  drop exit  then
+   1 rshift 3 and  case
+1A3AA30 	80 6F A0  1 B4 44 A0  1 
+1A3AA38 	A0 6F A0  1 5C 44 A0  1 
+      0 of  modem-status-irq       endof
+1A3AA40 	70 6F A0  1 48 43 A0  1 
+1A3AA48 	10  0  0  0 B4 A9 A3  1 
+1A3AA50 	6C 43 A0  1 64  0  0  0 
+      1 of  ." UART Tx IRQ" cr     endof
+1A3AA58 	80 6F A0  1 48 43 A0  1 
+1A3AA60 	24  0  0  0 20 7C A0  1 
+1A3AA68 	 B 55 41 52 54 20 54 78 
+1A3AA70 	20 49 52 51  0  0  0  0 
+1A3AA78 	80 6D A0  1 6C 43 A0  1 
+1A3AA80 	38  0  0  0 
+      2 of  ( rx-irq ) read-all    endof
+1A3AA84 	90 6F A0  1 
+1A3AA88 	48 43 A0  1 10  0  0  0 
+1A3AA90 	B4 A8 A3  1 6C 43 A0  1 
+1A3AA98 	20  0  0  0 
+      3 of  rx-status-irq          endof
+1A3AA9C 	A0 6F A0  1 
+1A3AAA0 	48 43 A0  1 10  0  0  0 
+1A3AAA8 	78 A9 A3  1 6C 43 A0  1 
+1A3AAB0 	 8  0  0  0 
+   endcase
+1A3AAB4 	84 43 A0  1 
+;
+1A3AAB8 	58 46 A0  1 
+
+-1 instance value irq#
+1A3AABC 	 0  0  0 69 
+1A3AAC0 	72 71 23 84  8 AA A3  1 
+1A3AAC8 	C0 FE A1  1 38  0  0  0 
+0 instance value saved-handler
+1A3AAD0 	 0  0 73 61 76 65 64 2D 
+1A3AAD8 	68 61 6E 64 6C 65 72 8D 
+1A3AAE0 	C8 AA A3  1 C0 FE A1  1 
+1A3AAE8 	3C  0  0  0 
+: use-polling  ( -- )
+1A3AAEC 	75 73 65 2D 
+1A3AAF0 	70 6F 6C 6C 69 6E 67 8B 
+1A3AAF8 	E4 AA A3  1 20 40 A0  1 
+   ['] (rpoll) to rpoll
+1A3AB00 	60 53 A0  1 10 A9 A3  1 
+1A3AB08 	48 B8 A1  1 28 A9 A3  1 
+;
+1A3AB10 	58 46 A0  1 
+
+: install-abort  ( -- )  ['] poll-tty d# 100 alarm  ;	\ Check for break
+1A3AB14 	 0  0 69 6E 
+1A3AB18 	73 74 61 6C 6C 2D 61 62 
+1A3AB20 	6F 72 74 8D FC AA A3  1 
+1A3AB28 	20 40 A0  1 60 53 A0  1 
+1A3AB30 	68 A6 A3  1 58 41 A0  1 
+1A3AB38 	64  0  0  0 48 73 A2  1 
+1A3AB40 	58 46 A0  1 
+: remove-abort  ( -- )  ['] poll-tty 0 alarm  ;
+1A3AB44 	 0  0  0 72 
+1A3AB48 	65 6D 6F 76 65 2D 61 62 
+1A3AB50 	6F 72 74 8C 28 AB A3  1 
+1A3AB58 	20 40 A0  1 60 53 A0  1 
+1A3AB60 	68 A6 A3  1 70 6F A0  1 
+1A3AB68 	48 73 A2  1 58 46 A0  1 
+
+\ Read at most "len" characters into the buffer at adr, stopping when
+\ no more characters are immediately available.
+: read  ( adr len -- #read )   \ -2 for none available right now
+1A3AB70 	 0  0  0 72 65 61 64 84 
+1A3AB78 	58 AB A3  1 20 40 A0  1 
+   rpoll
+1A3AB80 	28 A9 A3  1 
+   dup  0=  if  nip exit  then                   ( adr len )
+1A3AB84 	40 49 A0  1 
+1A3AB88 	24 47 A0  1 DC 41 A0  1 
+1A3AB90 	 C  0  0  0 FC 46 A0  1 
+1A3AB98 	40 46 A0  1 
+   read-q deque?  0=  if                         ( adr len )
+1A3AB9C 	10 A7 A3  1 
+1A3ABA0 	34 A8 A3  1 24 47 A0  1 
+1A3ABA8 	DC 41 A0  1 3C  0  0  0 
+      2drop                                      ( )
+1A3ABB0 	AC 49 A0  1 
+      lost-carrier?  if  -1  false to lost-carrier?  else  -2  then
+1A3ABB4 	5C A9 A3  1 
+1A3ABB8 	DC 41 A0  1 20  0  0  0 
+1A3ABC0 	58 41 A0  1 FF FF FF FF 
+1A3ABC8 	18 70 A0  1 48 B8 A1  1 
+1A3ABD0 	5C A9 A3  1 C8 41 A0  1 
+1A3ABD8 	 C  0  0  0 58 41 A0  1 
+1A3ABE0 	FE FF FF FF 
+                                                 ( -2:none | -1:down )
+      exit
+1A3ABE4 	40 46 A0  1 
+   then                                          ( adr len char )
+   over >r                                       ( adr len char r: len )
+1A3ABE8 	54 49 A0  1 BC 45 A0  1 
+   begin                                         ( adr len char r: len )
+      2 pick c!                                  ( adr len r: len )
+1A3ABF0 	90 6F A0  1  C 4A A0  1 
+1A3ABF8 	B8 4D A0  1 
+      1 /string                                  ( adr' len' )
+1A3ABFC 	80 6F A0  1 
+1A3AC00 	3C 85 A0  1 
+      dup 0=  if  2drop r> exit  then            ( adr' len' )
+1A3AC04 	40 49 A0  1 
+1A3AC08 	24 47 A0  1 DC 41 A0  1 
+1A3AC10 	10  0  0  0 AC 49 A0  1 
+1A3AC18 	D0 45 A0  1 40 46 A0  1 
+   read-q deque? 0=  until                       ( adr len r: len )
+1A3AC20 	10 A7 A3  1 34 A8 A3  1 
+1A3AC28 	24 47 A0  1 DC 41 A0  1 
+1A3AC30 	C0 FF FF FF 
+   nip r> swap -                                 ( actual )
+1A3AC34 	FC 46 A0  1 
+1A3AC38 	D0 45 A0  1 68 49 A0  1 
+1A3AC40 	18 45 A0  1 
+;
+1A3AC44 	58 46 A0  1 
+
+: write  ( adr len -- #written )
+1A3AC48 	 0  0 77 72 69 74 65 85 
+1A3AC50 	7C AB A3  1 20 40 A0  1 
+   tuck  bounds ?do
+1A3AC58 	E8 46 A0  1 F0 6D A0  1 
+1A3AC60 	50 42 A0  1 38  0  0  0 
+\      wpoll
+      uemit?  if  i c@ 0 uart!  1  else  0  then
+1A3AC68 	64 A5 A3  1 DC 41 A0  1 
+1A3AC70 	20  0  0  0 B4 42 A0  1 
+1A3AC78 	C4 4C A0  1 70 6F A0  1 
+1A3AC80 	F8 9E A3  1 80 6F A0  1 
+1A3AC88 	C8 41 A0  1  8  0  0  0 
+1A3AC90 	70 6F A0  1 
+   +loop
+1A3AC94 	1C 42 A0  1 
+1A3AC98 	D0 FF FF FF 
+;
+1A3AC9C 	58 46 A0  1 
+
+: rts-dtr-on   ( -- )  4 uart@  3 or          4 uart!  ;
+1A3ACA0 	 0 72 74 73 2D 64 74 72 
+1A3ACA8 	2D 6F 6E 8A 54 AC A3  1 
+1A3ACB0 	20 40 A0  1 B0 6F A0  1 
+1A3ACB8 	D8 9E A3  1 A0 6F A0  1 
+1A3ACC0 	70 44 A0  1 B0 6F A0  1 
+1A3ACC8 	F8 9E A3  1 58 46 A0  1 
+: rts-dtr-off  ( -- )  4 uart@  3 invert and  4 uart!  ;
+1A3ACD0 	72 74 73 2D 64 74 72 2D 
+1A3ACD8 	6F 66 66 8B B0 AC A3  1 
+1A3ACE0 	20 40 A0  1 B0 6F A0  1 
+1A3ACE8 	D8 9E A3  1 A0 6F A0  1 
+1A3ACF0 	30 45 A0  1 5C 44 A0  1 
+1A3ACF8 	B0 6F A0  1 F8 9E A3  1 
+1A3AD00 	58 46 A0  1 
+
+: inituart  ( -- )
+1A3AD04 	 0  0  0 69 
+1A3AD08 	6E 69 74 75 61 72 74 88 
+1A3AD10 	E0 AC A3  1 20 40 A0  1 
+   3 3 uart!  		\ 8 bits, no parity
+1A3AD18 	A0 6F A0  1 A0 6F A0  1 
+1A3AD20 	F8 9E A3  1 
+   7 2 uart!		\ Clear and enable FIFOs
+1A3AD24 	E0 6F A0  1 
+1A3AD28 	90 6F A0  1 F8 9E A3  1 
+   d# 9600 baud
+1A3AD30 	58 41 A0  1 80 25  0  0 
+1A3AD38 	1C A1 A3  1 
+;
+1A3AD3C 	58 46 A0  1 
+
+: open  ( -- okay? )
+1A3AD40 	 0  0  0 6F 70 65 6E 84 
+1A3AD48 	14 AD A3  1 20 40 A0  1 
+   " base-adr" $call-parent  to uart-base
+1A3AD50 	9C 53 A0  1  8 62 61 73 
+1A3AD58 	65 2D 61 64 72  0  0  0 
+1A3AD60 	DC 31 A2  1 48 B8 A1  1 
+1A3AD68 	A4 9E A3  1 
+   use-polling
+1A3AD6C 	FC AA A3  1 
+   inituart
+1A3AD70 	14 AD A3  1 
+   default-baudrate to current-baudrate
+1A3AD74 	98 A6 A3  1 
+1A3AD78 	48 B8 A1  1 B0 A1 A3  1 
+   read-q init-q
+1A3AD80 	10 A7 A3  1 24 A7 A3  1 
+
+   my-args  ['] (set-mode)  catch  if  2drop false exit  then
+1A3AD88 	10  7 A2  1 60 53 A0  1 
+1A3AD90 	48 A4 A3  1 14 7F A0  1 
+1A3AD98 	DC 41 A0  1 10  0  0  0 
+1A3ADA0 	AC 49 A0  1 18 70 A0  1 
+1A3ADA8 	40 46 A0  1 
+
+   rts-dtr-on
+1A3ADAC 	B0 AC A3  1 
+   true
+1A3ADB0 	 4 70 A0  1 
+;
+1A3ADB4 	58 46 A0  1 
+
+: close  ( -- )  use-polling  rts-dtr-off  ;
+1A3ADB8 	 0  0 63 6C 6F 73 65 85 
+1A3ADC0 	4C AD A3  1 20 40 A0  1 
+1A3ADC8 	FC AA A3  1 E0 AC A3  1 
+1A3ADD0 	58 46 A0  1 
+
+: selftest  ( -- )  h# 7f  bl  ?do  i uemit  loop  ;
+1A3ADD4 	 0  0  0 73 
+1A3ADD8 	65 6C 66 74 65 73 74 88 
+1A3ADE0 	C4 AD A3  1 20 40 A0  1 
+1A3ADE8 	58 41 A0  1 7F  0  0  0 
+1A3ADF0 	28 70 A0  1 50 42 A0  1 
+1A3ADF8 	14  0  0  0 B4 42 A0  1 
+1A3AE00 	3C A6 A3  1 F8 41 A0  1 
+1A3AE08 	F4 FF FF FF 58 46 A0  1 
+
+end-support-package
+1A3AE10 	 0  0  0  0  0  0  0  0 
+1A3AE18 	 0  0  0  0  0  0  0  0 
+1A3AE20 	 0  0  0  0  0  0  0  0 
+1A3AE28 	 0  0  0  0  0  0  0  0 
+1A3AE30 	 0  0  0  0  0  0  0  0 
+1A3AE38 	 0  0  0  0 FC 25 78 55 
+1A3AE40 	 0  0  0  0  0  0  0  0 
+1A3AE48 	FF FF FF FF  0  0  0  0 

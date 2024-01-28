@@ -1,0 +1,1182 @@
+\ Debugger.  Thanks, Mike Perry, Henry Laxen, Mark Smeder.
+\
+\ The debugger lets you single step the execution of a high level
+\ definition.  To invoke the debugger, type debug xxx where xxx is
+\ the name of the word you wish to trace.  When xxx executes, you will
+\ get a single step trace showing you the word within xxx that
+\ is about to execute, and the contents of the parameter stack.
+\ Debugging makes everything run slightly slower, even outside
+\ the word being debugged.  see debug-off
+\
+\ debug name	Mark that word for debugging
+\ stepping	Debug in single step mode
+\ tracing	Debug in trace mode
+\ debug-off	Turn off the debugger (makes the system run fast again)
+\ resume	Exit from a pushed interpreter (see the f keystroke)
+\
+\ Keystroke commands while you're single-stepping:
+\   d		go down a level
+\   u		go up a level
+\   c		continue; trace without single stepping
+\   g		go; turn off stepping and continue execution
+\   f		push a Forth interpreter;  execute "resume" to get back
+\   q		abort back to the top level
+
+only forth also definitions
+
+false value scrolling-debug?
+1A1C86C 	 0  0  0 73 
+1A1C870 	63 72 6F 6C 6C 69 6E 67 
+1A1C878 	2D 64 65 62 75 67 3F 90 
+1A1C880 	E0 C6 A1  1 50 40 A0  1 
+1A1C888 	 0  5  0  0 
+
+hex
+headerless
+variable slow-next?  slow-next? off
+1A1C88C 	 0 73 6C 6F 
+1A1C890 	77 2D 6E 65 78 74 3F 8A 
+1A1C898 	84 C8 A1  1 48 40 A0  1 
+1A1C8A0 	 4  5  0  0 
+
+only forth hidden also forth also definitions
+bug also definitions
+variable step? step? on
+1A1C8A4 	 0  0 73 74 
+1A1C8A8 	65 70 3F 85 58 C8 A1  1 
+1A1C8B0 	48 40 A0  1  8  5  0  0 
+variable res
+1A1C8B8 	72 65 73 83 B0 C8 A1  1 
+1A1C8C0 	48 40 A0  1  C  5  0  0 
+headers
+
+-1 value displayed-xt
+1A1C8C8 	 0  0  0 64 69 73 70 6C 
+1A1C8D0 	61 79 65 64 2D 78 74 8C 
+1A1C8D8 	C0 C8 A1  1 50 40 A0  1 
+1A1C8E0 	10  5  0  0 
+: force-redisplay  ( -- )  -1 to displayed-xt  ;
+1A1C8E4 	66 6F 72 63 
+1A1C8E8 	65 2D 72 65 64 69 73 70 
+1A1C8F0 	6C 61 79 8F DC C8 A1  1 
+1A1C8F8 	20 40 A0  1 58 41 A0  1 
+1A1C900 	FF FF FF FF B8 40 A0  1 
+1A1C908 	DC C8 A1  1 58 46 A0  1 
+
+: (debug)       (s low-adr hi-adr -- )
+1A1C910 	28 64 65 62 75 67 29 87 
+1A1C918 	F8 C8 A1  1 20 40 A0  1 
+   unbug   1 cnt !   ip> !   <ip !   pnext
+1A1C920 	58 C8 A1  1 80 6F A0  1 
+1A1C928 	2C C7 A1  1 54 4D A0  1 
+1A1C930 	1C C7 A1  1 54 4D A0  1 
+1A1C938 	 C C7 A1  1 54 4D A0  1 
+1A1C940 	38 C8 A1  1 
+   slow-next? @ 0=  if
+1A1C944 	9C C8 A1  1 
+1A1C948 	5C 4C A0  1 24 47 A0  1 
+1A1C950 	DC 41 A0  1 18  0  0  0 
+      here  low-dictionary-adr  slow-next
+1A1C958 	70 54 A0  1 A4 C6 A1  1 
+1A1C960 	74 C7 A1  1 
+      slow-next? on
+1A1C964 	9C C8 A1  1 
+1A1C968 	E0 4B A0  1 
+   then
+   step? on
+1A1C96C 	B0 C8 A1  1 
+1A1C970 	E0 4B A0  1 
+   force-redisplay
+1A1C974 	F8 C8 A1  1 
+;
+1A1C978 	58 46 A0  1 
+
+headerless
+: 'unnest   (s pfa -- pfa' )
+1A1C97C 	27 75 6E 6E 
+1A1C980 	65 73 74 87 1C C9 A1  1 
+1A1C988 	20 40 A0  1 
+   begin   dup ta1+  swap  token@ ['] unnest =  until
+1A1C98C 	40 49 A0  1 
+1A1C990 	FC 50 A0  1 68 49 A0  1 
+1A1C998 	 C 54 A0  1 60 53 A0  1 
+1A1C9A0 	58 46 A0  1 24 48 A0  1 
+1A1C9A8 	DC 41 A0  1 E0 FF FF FF 
+;
+1A1C9B0 	58 46 A0  1 
+: set-<ip  (s pfa -- )
+1A1C9B4 	73 65 74 2D 
+1A1C9B8 	3C 69 70 87 88 C9 A1  1 
+1A1C9C0 	20 40 A0  1 
+   <ip !  <ip @  ip> @  u>=  if  <ip @  'unnest  ip> !  then
+1A1C9C4 	 C C7 A1  1 
+1A1C9C8 	54 4D A0  1  C C7 A1  1 
+1A1C9D0 	5C 4C A0  1 1C C7 A1  1 
+1A1C9D8 	5C 4C A0  1 CC 48 A0  1 
+1A1C9E0 	DC 41 A0  1 18  0  0  0 
+1A1C9E8 	 C C7 A1  1 5C 4C A0  1 
+1A1C9F0 	88 C9 A1  1 1C C7 A1  1 
+1A1C9F8 	54 4D A0  1 
+;
+1A1C9FC 	58 46 A0  1 
+
+headers
+\ Enter and leave the debugger
+forth definitions
+: defer?  ( acf -- flag )  word-type  ['] key word-type =  ;
+1A1CA00 	 0 64 65 66 65 72 3F 86 
+1A1CA08 	9C C8 A1  1 20 40 A0  1 
+1A1CA10 	B0 59 A0  1 60 53 A0  1 
+1A1CA18 	50 6C A0  1 B0 59 A0  1 
+1A1CA20 	24 48 A0  1 58 46 A0  1 
+
+defer resolve-defers
+1A1CA28 	 0 72 65 73 6F 6C 76 65 
+1A1CA30 	2D 64 65 66 65 72 73 8E 
+1A1CA38 	 C CA A1  1 5C 40 A0  1 
+1A1CA40 	14  5  0  0 
+: (resolve-defers)  ( xt -- xt' )
+1A1CA44 	 0  0  0 28 
+1A1CA48 	72 65 73 6F 6C 76 65 2D 
+1A1CA50 	64 65 66 65 72 73 29 90 
+1A1CA58 	3C CA A1  1 20 40 A0  1 
+   begin  dup defer?  while  behavior  repeat
+1A1CA60 	40 49 A0  1  C CA A1  1 
+1A1CA68 	DC 41 A0  1 10  0  0  0 
+1A1CA70 	10 C7 A0  1 C8 41 A0  1 
+1A1CA78 	E8 FF FF FF 
+;
+1A1CA7C 	58 46 A0  1 
+' (resolve-defers)  to resolve-defers
+
+: (debug  ( acf -- )
+1A1CA80 	 0 28 64 65 62 75 67 86 
+1A1CA88 	5C CA A1  1 20 40 A0  1 
+   resolve-defers
+1A1CA90 	3C CA A1  1 
+
+   dup colon-cf?  0= abort" Not a colon definition"
+1A1CA94 	40 49 A0  1 
+1A1CA98 	9C 5B A0  1 24 47 A0  1 
+1A1CAA0 	 8 81 A0  1 16 4E 6F 74 
+1A1CAA8 	20 61 20 63 6F 6C 6F 6E 
+1A1CAB0 	20 64 65 66 69 6E 69 74 
+1A1CAB8 	69 6F 6E  0 
+   >body dup 'unnest  (debug)
+1A1CABC 	E4 59 A0  1 
+1A1CAC0 	40 49 A0  1 88 C9 A1  1 
+1A1CAC8 	1C C9 A1  1 
+;
+1A1CACC 	58 46 A0  1 
+\ Debug the caller
+: debug-me  (s -- )  ip@ find-cfa (debug  ;
+1A1CAD0 	 0  0  0 64 65 62 75 67 
+1A1CAD8 	2D 6D 65 88 8C CA A1  1 
+1A1CAE0 	20 40 A0  1 9C 46 A0  1 
+1A1CAE8 	24 20 A1  1 8C CA A1  1 
+1A1CAF0 	58 46 A0  1 
+: debug(  (s -- )  ip@ dup 'unnest (debug)  ;
+1A1CAF4 	 0 64 65 62 
+1A1CAF8 	75 67 28 86 E0 CA A1  1 
+1A1CB00 	20 40 A0  1 9C 46 A0  1 
+1A1CB08 	40 49 A0  1 88 C9 A1  1 
+1A1CB10 	1C C9 A1  1 58 46 A0  1 
+: )debug  (s -- )  ip@ ip> !  ;
+1A1CB18 	 0 29 64 65 62 75 67 86 
+1A1CB20 	 0 CB A1  1 20 40 A0  1 
+1A1CB28 	9C 46 A0  1 84 46 A0  1 
+1A1CB30 	54 4D A0  1 58 46 A0  1 
+: debug-off (s -- )
+1A1CB38 	 0  0 64 65 62 75 67 2D 
+1A1CB40 	6F 66 66 89 24 CB A1  1 
+1A1CB48 	20 40 A0  1 
+   unbug  here  low-dictionary-adr  fast-next slow-next? off
+1A1CB4C 	58 C8 A1  1 
+1A1CB50 	70 54 A0  1 A4 C6 A1  1 
+1A1CB58 	A4 C7 A1  1 9C C8 A1  1 
+1A1CB60 	F8 4B A0  1 
+;
+1A1CB64 	58 46 A0  1 
+bug definitions
+headerless
+\ Go up the return stack until we find an interesting caller
+: up1  ( rp -- )
+1A1CB68 	75 70 31 83 C0 C9 A1  1 
+1A1CB70 	20 40 A0  1 
+   begin  na1+  dup rp0 @ <>  while             ( rs-adr )
+1A1CB74 	CC 50 A0  1 
+1A1CB78 	40 49 A0  1 9C 66 A0  1 
+1A1CB80 	5C 4C A0  1 44 48 A0  1 
+1A1CB88 	DC 41 A0  1 AC  0  0  0 
+      dup @                                     ( rs-adr ip )
+1A1CB90 	40 49 A0  1 5C 4C A0  1 
+      dup in-dictionary?  if                    ( rs-adr ip )
+1A1CB98 	40 49 A0  1 24 CF A0  1 
+1A1CBA0 	DC 41 A0  1 88  0  0  0 
+	 dup loop-end?  if                      ( rs-adr ip )
+1A1CBA8 	40 49 A0  1 D0 C1 A1  1 
+1A1CBB0 	DC 41 A0  1 10  0  0  0 
+	    drop                                ( rs-adr )
+1A1CBB8 	30 49 A0  1 
+         else                                   ( rs-adr ip )
+1A1CBBC 	C8 41 A0  1 
+1A1CBC0 	64  0  0  0 
+            find-cfa  dup indirect-call?  if    ( rs-adr xt )
+1A1CBC4 	24 20 A1  1 
+1A1CBC8 	40 49 A0  1 40 C5 A1  1 
+1A1CBD0 	DC 41 A0  1 10  0  0  0 
+ 	       drop                             ( rs-adr )
+1A1CBD8 	30 49 A0  1 
+            else                                ( rs-adr xt )
+1A1CBDC 	C8 41 A0  1 
+1A1CBE0 	44  0  0  0 
+               nip                              ( rs-adr )
+1A1CBE4 	FC 46 A0  1 
+               scrolling-debug?  if             ( xt )
+1A1CBE8 	84 C8 A1  1 DC 41 A0  1 
+1A1CBF0 	2C  0  0  0 
+                  cr ." [ Up to " dup .name ." ]" cr
+1A1CBF4 	80 6D A0  1 
+1A1CBF8 	20 7C A0  1  8 5B 20 55 
+1A1CC00 	70 20 74 6F 20  0  0  0 
+1A1CC08 	40 49 A0  1 C8 9A A0  1 
+1A1CC10 	20 7C A0  1  1 5D  0  0 
+1A1CC18 	80 6D A0  1 
+               then                             ( xt )
+               (debug                           ( )
+1A1CC1C 	8C CA A1  1 
+               exit                             ( -- )
+1A1CC20 	40 46 A0  1 
+            then                                ( rs-adr )
+         then                                   ( rs-adr )
+      else                                      ( rs-adr )
+1A1CC24 	C8 41 A0  1 
+1A1CC28 	 8  0  0  0 
+         drop                                   ( rs-adr )
+1A1CC2C 	30 49 A0  1 
+      then                                      ( rs-adr )
+   repeat                                       ( rs-adr )
+1A1CC30 	C8 41 A0  1 40 FF FF FF 
+   drop                                         ( )
+1A1CC38 	30 49 A0  1 
+;
+1A1CC3C 	58 46 A0  1 
+
+defer to-debug-window  ' noop is to-debug-window
+1A1CC40 	74 6F 2D 64 65 62 75 67 
+1A1CC48 	2D 77 69 6E 64 6F 77 8F 
+1A1CC50 	70 CB A1  1 5C 40 A0  1 
+1A1CC58 	18  5  0  0 
+defer restore-window   ' noop is restore-window
+1A1CC5C 	 0 72 65 73 
+1A1CC60 	74 6F 72 65 2D 77 69 6E 
+1A1CC68 	64 6F 77 8E 54 CC A1  1 
+1A1CC70 	5C 40 A0  1 1C  5  0  0 
+: .debug-short-help  ( -- )
+1A1CC78 	 0  0 2E 64 65 62 75 67 
+1A1CC80 	2D 73 68 6F 72 74 2D 68 
+1A1CC88 	65 6C 70 91 70 CC A1  1 
+1A1CC90 	20 40 A0  1 
+  ." Stepper keys: <space> Down Up Continue Forth Go Help ? See $tring Quit" cr
+1A1CC94 	20 7C A0  1 
+1A1CC98 	46 53 74 65 70 70 65 72 
+1A1CCA0 	20 6B 65 79 73 3A 20 3C 
+1A1CCA8 	73 70 61 63 65 3E 20 44 
+1A1CCB0 	6F 77 6E 20 55 70 20 43 
+1A1CCB8 	6F 6E 74 69 6E 75 65 20 
+1A1CCC0 	46 6F 72 74 68 20 47 6F 
+1A1CCC8 	20 48 65 6C 70 20 3F 20 
+1A1CCD0 	53 65 65 20 24 74 72 69 
+1A1CCD8 	6E 67 20 51 75 69 74  0 
+1A1CCE0 	80 6D A0  1 
+;
+1A1CCE4 	58 46 A0  1 
+: .debug-long-help  ( -- )
+1A1CCE8 	 0  0  0 2E 64 65 62 75 
+1A1CCF0 	67 2D 6C 6F 6E 67 2D 68 
+1A1CCF8 	65 6C 70 90 90 CC A1  1 
+1A1CD00 	20 40 A0  1 
+   ." Key     Action" cr
+1A1CD04 	20 7C A0  1 
+1A1CD08 	 E 4B 65 79 20 20 20 20 
+1A1CD10 	20 41 63 74 69 6F 6E  0 
+1A1CD18 	80 6D A0  1 
+   ." <space> Execute displayed word" cr
+1A1CD1C 	20 7C A0  1 
+1A1CD20 	1E 3C 73 70 61 63 65 3E 
+1A1CD28 	20 45 78 65 63 75 74 65 
+1A1CD30 	20 64 69 73 70 6C 61 79 
+1A1CD38 	65 64 20 77 6F 72 64  0 
+1A1CD40 	80 6D A0  1 
+   ." D       Down: Step down into displayed word" cr
+1A1CD44 	20 7C A0  1 
+1A1CD48 	2B 44 20 20 20 20 20 20 
+1A1CD50 	20 44 6F 77 6E 3A 20 53 
+1A1CD58 	74 65 70 20 64 6F 77 6E 
+1A1CD60 	20 69 6E 74 6F 20 64 69 
+1A1CD68 	73 70 6C 61 79 65 64 20 
+1A1CD70 	77 6F 72 64  0  0  0  0 
+1A1CD78 	80 6D A0  1 
+   ." U       Up: Finish current definition and step in its caller" cr
+1A1CD7C 	20 7C A0  1 
+1A1CD80 	3C 55 20 20 20 20 20 20 
+1A1CD88 	20 55 70 3A 20 46 69 6E 
+1A1CD90 	69 73 68 20 63 75 72 72 
+1A1CD98 	65 6E 74 20 64 65 66 69 
+1A1CDA0 	6E 69 74 69 6F 6E 20 61 
+1A1CDA8 	6E 64 20 73 74 65 70 20 
+1A1CDB0 	69 6E 20 69 74 73 20 63 
+1A1CDB8 	61 6C 6C 65 72  0  0  0 
+1A1CDC0 	80 6D A0  1 
+   ." C       Continue: trace current definition without stopping" cr
+1A1CDC4 	20 7C A0  1 
+1A1CDC8 	3B 43 20 20 20 20 20 20 
+1A1CDD0 	20 43 6F 6E 74 69 6E 75 
+1A1CDD8 	65 3A 20 74 72 61 63 65 
+1A1CDE0 	20 63 75 72 72 65 6E 74 
+1A1CDE8 	20 64 65 66 69 6E 69 74 
+1A1CDF0 	69 6F 6E 20 77 69 74 68 
+1A1CDF8 	6F 75 74 20 73 74 6F 70 
+1A1CE00 	70 69 6E 67  0  0  0  0 
+1A1CE08 	80 6D A0  1 
+   ." F       Forth: enter a subordinate Forth interpreter" cr
+1A1CE0C 	20 7C A0  1 
+1A1CE10 	34 46 20 20 20 20 20 20 
+1A1CE18 	20 46 6F 72 74 68 3A 20 
+1A1CE20 	65 6E 74 65 72 20 61 20 
+1A1CE28 	73 75 62 6F 72 64 69 6E 
+1A1CE30 	61 74 65 20 46 6F 72 74 
+1A1CE38 	68 20 69 6E 74 65 72 70 
+1A1CE40 	72 65 74 65 72  0  0  0 
+1A1CE48 	80 6D A0  1 
+   ." G       Go: resume normal execution (stop debugging)" cr
+1A1CE4C 	20 7C A0  1 
+1A1CE50 	34 47 20 20 20 20 20 20 
+1A1CE58 	20 47 6F 3A 20 72 65 73 
+1A1CE60 	75 6D 65 20 6E 6F 72 6D 
+1A1CE68 	61 6C 20 65 78 65 63 75 
+1A1CE70 	74 69 6F 6E 20 28 73 74 
+1A1CE78 	6F 70 20 64 65 62 75 67 
+1A1CE80 	67 69 6E 67 29  0  0  0 
+1A1CE88 	80 6D A0  1 
+   ." H       Help: display this message" cr
+1A1CE8C 	20 7C A0  1 
+1A1CE90 	22 48 20 20 20 20 20 20 
+1A1CE98 	20 48 65 6C 70 3A 20 64 
+1A1CEA0 	69 73 70 6C 61 79 20 74 
+1A1CEA8 	68 69 73 20 6D 65 73 73 
+1A1CEB0 	61 67 65  0 80 6D A0  1 
+   ." ?       Display short list of debug commands" cr
+1A1CEB8 	20 7C A0  1 2C 3F 20 20 
+1A1CEC0 	20 20 20 20 20 44 69 73 
+1A1CEC8 	70 6C 61 79 20 73 68 6F 
+1A1CED0 	72 74 20 6C 69 73 74 20 
+1A1CED8 	6F 66 20 64 65 62 75 67 
+1A1CEE0 	20 63 6F 6D 6D 61 6E 64 
+1A1CEE8 	73  0  0  0 80 6D A0  1 
+   ." R       RSTrace: Show contents of Forth return stack" cr
+1A1CEF0 	20 7C A0  1 34 52 20 20 
+1A1CEF8 	20 20 20 20 20 52 53 54 
+1A1CF00 	72 61 63 65 3A 20 53 68 
+1A1CF08 	6F 77 20 63 6F 6E 74 65 
+1A1CF10 	6E 74 73 20 6F 66 20 46 
+1A1CF18 	6F 72 74 68 20 72 65 74 
+1A1CF20 	75 72 6E 20 73 74 61 63 
+1A1CF28 	6B  0  0  0 80 6D A0  1 
+   ." S       See: Decompile definition being debugged" cr
+1A1CF30 	20 7C A0  1 30 53 20 20 
+1A1CF38 	20 20 20 20 20 53 65 65 
+1A1CF40 	3A 20 44 65 63 6F 6D 70 
+1A1CF48 	69 6C 65 20 64 65 66 69 
+1A1CF50 	6E 69 74 69 6F 6E 20 62 
+1A1CF58 	65 69 6E 67 20 64 65 62 
+1A1CF60 	75 67 67 65 64  0  0  0 
+1A1CF68 	80 6D A0  1 
+   ." $       Display top of stack as adr,len text string" cr
+1A1CF6C 	20 7C A0  1 
+1A1CF70 	33 24 20 20 20 20 20 20 
+1A1CF78 	20 44 69 73 70 6C 61 79 
+1A1CF80 	20 74 6F 70 20 6F 66 20 
+1A1CF88 	73 74 61 63 6B 20 61 73 
+1A1CF90 	20 61 64 72 2C 6C 65 6E 
+1A1CF98 	20 74 65 78 74 20 73 74 
+1A1CFA0 	72 69 6E 67  0  0  0  0 
+1A1CFA8 	80 6D A0  1 
+   ." \       Display Forth return stack as numbers (like the data stack)" cr
+1A1CFAC 	20 7C A0  1 
+1A1CFB0 	43 5C 20 20 20 20 20 20 
+1A1CFB8 	20 44 69 73 70 6C 61 79 
+1A1CFC0 	20 46 6F 72 74 68 20 72 
+1A1CFC8 	65 74 75 72 6E 20 73 74 
+1A1CFD0 	61 63 6B 20 61 73 20 6E 
+1A1CFD8 	75 6D 62 65 72 73 20 28 
+1A1CFE0 	6C 69 6B 65 20 74 68 65 
+1A1CFE8 	20 64 61 74 61 20 73 74 
+1A1CFF0 	61 63 6B 29  0  0  0  0 
+1A1CFF8 	80 6D A0  1 
+   ." Q       Quit: abandon execution of the debugged word" cr
+1A1CFFC 	20 7C A0  1 
+1A1D000 	34 51 20 20 20 20 20 20 
+1A1D008 	20 51 75 69 74 3A 20 61 
+1A1D010 	62 61 6E 64 6F 6E 20 65 
+1A1D018 	78 65 63 75 74 69 6F 6E 
+1A1D020 	20 6F 66 20 74 68 65 20 
+1A1D028 	64 65 62 75 67 67 65 64 
+1A1D030 	20 77 6F 72 64  0  0  0 
+1A1D038 	80 6D A0  1 
+   ." V       Visual: toggle between 2-D and scrolling" cr
+1A1D03C 	20 7C A0  1 
+1A1D040 	30 56 20 20 20 20 20 20 
+1A1D048 	20 56 69 73 75 61 6C 3A 
+1A1D050 	20 74 6F 67 67 6C 65 20 
+1A1D058 	62 65 74 77 65 65 6E 20 
+1A1D060 	32 2D 44 20 61 6E 64 20 
+1A1D068 	73 63 72 6F 6C 6C 69 6E 
+1A1D070 	67  0  0  0 80 6D A0  1 
+   ." L       Visual: redisplay" cr
+1A1D078 	20 7C A0  1 19 4C 20 20 
+1A1D080 	20 20 20 20 20 56 69 73 
+1A1D088 	75 61 6C 3A 20 72 65 64 
+1A1D090 	69 73 70 6C 61 79  0  0 
+1A1D098 	80 6D A0  1 
+;
+1A1D09C 	58 46 A0  1 
+d# 24 constant cmd-column
+1A1D0A0 	 0 63 6D 64 2D 63 6F 6C 
+1A1D0A8 	75 6D 6E 8A  0 CD A1  1 
+1A1D0B0 	68 40 A0  1 18  0  0  0 
+: to-cmd-column  ( -- )  cmd-column to-column  ;
+1A1D0B8 	 0  0 74 6F 2D 63 6D 64 
+1A1D0C0 	2D 63 6F 6C 75 6D 6E 8D 
+1A1D0C8 	B0 D0 A1  1 20 40 A0  1 
+1A1D0D0 	B0 D0 A1  1  8 14 A1  1 
+1A1D0D8 	58 46 A0  1 
+
+0 value stack-line
+1A1D0DC 	 0 73 74 61 
+1A1D0E0 	63 6B 2D 6C 69 6E 65 8A 
+1A1D0E8 	CC D0 A1  1 50 40 A0  1 
+1A1D0F0 	20  5  0  0 
+d# 45 constant stack-column
+1A1D0F4 	 0  0  0 73 
+1A1D0F8 	74 61 63 6B 2D 63 6F 6C 
+1A1D100 	75 6D 6E 8C EC D0 A1  1 
+1A1D108 	68 40 A0  1 2D  0  0  0 
+\ 0 0 2value result-loc
+0 0 2value full-stack-xy
+1A1D110 	 0  0 66 75 6C 6C 2D 73 
+1A1D118 	74 61 63 6B 2D 78 79 8D 
+1A1D120 	 8 D1 A1  1 24 BA A1  1 
+1A1D128 	24  5  0  0 
+0 value result-line
+1A1D12C 	72 65 73 75 
+1A1D130 	6C 74 2D 6C 69 6E 65 8B 
+1A1D138 	24 D1 A1  1 50 40 A0  1 
+1A1D140 	2C  5  0  0 
+0 value result-col
+1A1D144 	 0 72 65 73 
+1A1D148 	75 6C 74 2D 63 6F 6C 8A 
+1A1D150 	3C D1 A1  1 50 40 A0  1 
+1A1D158 	30  5  0  0 
+: to-stack-location  ( -- )  stack-column stack-line at-xy  kill-line  ;
+1A1D15C 	 0  0 74 6F 
+1A1D160 	2D 73 74 61 63 6B 2D 6C 
+1A1D168 	6F 63 61 74 69 6F 6E 91 
+1A1D170 	54 D1 A1  1 20 40 A0  1 
+1A1D178 	 8 D1 A1  1 EC D0 A1  1 
+1A1D180 	40 F8 A0  1 58 F6 A0  1 
+1A1D188 	58 46 A0  1 
+: show-full-stack  ( -- )
+1A1D18C 	73 68 6F 77 
+1A1D190 	2D 66 75 6C 6C 2D 73 74 
+1A1D198 	61 63 6B 8F 74 D1 A1  1 
+1A1D1A0 	20 40 A0  1 
+   full-stack-xy at-xy kill-line
+1A1D1A4 	24 D1 A1  1 
+1A1D1A8 	40 F8 A0  1 58 F6 A0  1 
+   depth 0<  if  ." Stack Underflow"   exit  then  \ Don't clear stack here
+1A1D1B0 	28 73 A0  1 64 47 A0  1 
+1A1D1B8 	DC 41 A0  1 20  0  0  0 
+1A1D1C0 	20 7C A0  1  F 53 74 61 
+1A1D1C8 	63 6B 20 55 6E 64 65 72 
+1A1D1D0 	66 6C 6F 77  0  0  0  0 
+1A1D1D8 	40 46 A0  1 
+   depth 0=  if  ." Empty"  exit  then
+1A1D1DC 	28 73 A0  1 
+1A1D1E0 	24 47 A0  1 DC 41 A0  1 
+1A1D1E8 	14  0  0  0 20 7C A0  1 
+1A1D1F0 	 5 45 6D 70 74 79  0  0 
+1A1D1F8 	40 46 A0  1 
+   depth 7 >  if  ." .. "  then
+1A1D1FC 	28 73 A0  1 
+1A1D200 	E0 6F A0  1  4 48 A0  1 
+1A1D208 	DC 41 A0  1 10  0  0  0 
+1A1D210 	20 7C A0  1  3 2E 2E 20 
+1A1D218 	 0  0  0  0 
+   depth  depth 7 - 0 max  ?do  depth i - 1- pick n.  loop
+1A1D21C 	28 73 A0  1 
+1A1D220 	28 73 A0  1 E0 6F A0  1 
+1A1D228 	18 45 A0  1 70 6F A0  1 
+1A1D230 	9C 4A A0  1 50 42 A0  1 
+1A1D238 	24  0  0  0 28 73 A0  1 
+1A1D240 	B4 42 A0  1 18 45 A0  1 
+1A1D248 	54 4B A0  1  C 4A A0  1 
+1A1D250 	D0 7A A0  1 F8 41 A0  1 
+1A1D258 	E4 FF FF FF 
+;
+1A1D25C 	58 46 A0  1 
+: show-partial-stack  ( -- )
+1A1D260 	 0 73 68 6F 77 2D 70 61 
+1A1D268 	72 74 69 61 6C 2D 73 74 
+1A1D270 	61 63 6B 92 A0 D1 A1  1 
+1A1D278 	20 40 A0  1 
+   show-full-stack
+1A1D27C 	A0 D1 A1  1 
+
+   to-stack-location
+1A1D280 	74 D1 A1  1 
+
+   ." \ "
+1A1D284 	20 7C A0  1 
+1A1D288 	 2 5C 20  0 
+   depth 0<  if  ." Stack Underflow" sp0 @ sp!  exit  then
+1A1D28C 	28 73 A0  1 
+1A1D290 	64 47 A0  1 DC 41 A0  1 
+1A1D298 	2C  0  0  0 20 7C A0  1 
+1A1D2A0 	 F 53 74 61 63 6B 20 55 
+1A1D2A8 	6E 64 65 72 66 6C 6F 77 
+1A1D2B0 	 0  0  0  0 8C 66 A0  1 
+1A1D2B8 	5C 4C A0  1 9C 45 A0  1 
+1A1D2C0 	40 46 A0  1 
+   depth 0=  if  ." Empty"  exit  then
+1A1D2C4 	28 73 A0  1 
+1A1D2C8 	24 47 A0  1 DC 41 A0  1 
+1A1D2D0 	14  0  0  0 20 7C A0  1 
+1A1D2D8 	 5 45 6D 70 74 79  0  0 
+1A1D2E0 	40 46 A0  1 
+   depth 3 >  if  ." .. "  then
+1A1D2E4 	28 73 A0  1 
+1A1D2E8 	A0 6F A0  1  4 48 A0  1 
+1A1D2F0 	DC 41 A0  1 10  0  0  0 
+1A1D2F8 	20 7C A0  1  3 2E 2E 20 
+1A1D300 	 0  0  0  0 
+   depth  depth 4 - 0 max  ?do  depth i - 1- pick n.  loop
+1A1D304 	28 73 A0  1 
+1A1D308 	28 73 A0  1 B0 6F A0  1 
+1A1D310 	18 45 A0  1 70 6F A0  1 
+1A1D318 	9C 4A A0  1 50 42 A0  1 
+1A1D320 	24  0  0  0 28 73 A0  1 
+1A1D328 	B4 42 A0  1 18 45 A0  1 
+1A1D330 	54 4B A0  1  C 4A A0  1 
+1A1D338 	D0 7A A0  1 F8 41 A0  1 
+1A1D340 	E4 FF FF FF 
+;
+1A1D344 	58 46 A0  1 
+
+\ : save-result-loc  ( -- )  #out @ #line @ to result-loc  ;
+\ : to-result-loc  ( -- )  result-loc at-xy  ;
+: save-result-loc  ( -- )  #out @ to result-col   #line @ to result-line  ;
+1A1D348 	73 61 76 65 2D 72 65 73 
+1A1D350 	75 6C 74 2D 6C 6F 63 8F 
+1A1D358 	78 D2 A1  1 20 40 A0  1 
+1A1D360 	5C 6D A0  1 5C 4C A0  1 
+1A1D368 	B8 40 A0  1 54 D1 A1  1 
+1A1D370 	70 6D A0  1 5C 4C A0  1 
+1A1D378 	B8 40 A0  1 3C D1 A1  1 
+1A1D380 	58 46 A0  1 
+: to-result-loc  ( -- )  result-col result-line 2dup at-xy  #line !  #out !  ;
+1A1D384 	 0  0 74 6F 
+1A1D388 	2D 72 65 73 75 6C 74 2D 
+1A1D390 	6C 6F 63 8D 5C D3 A1  1 
+1A1D398 	20 40 A0  1 54 D1 A1  1 
+1A1D3A0 	3C D1 A1  1 C0 49 A0  1 
+1A1D3A8 	40 F8 A0  1 70 6D A0  1 
+1A1D3B0 	54 4D A0  1 5C 6D A0  1 
+1A1D3B8 	54 4D A0  1 58 46 A0  1 
+
+\ set-package is a hook for Open Firmware.  When Open Firmware is loaded,
+\ set-package should be set to a word that sets the active package to the
+\ package corresponding to the current instance.  set-package is called
+\ by the "F" key, so the user will see the methods of the current instance.
+headers
+defer   set-package  ' noop is   set-package
+1A1D3C0 	73 65 74 2D 70 61 63 6B 
+1A1D3C8 	61 67 65 8B 98 D3 A1  1 
+1A1D3D0 	5C 40 A0  1 34  5  0  0 
+defer unset-package  ' noop is unset-package
+1A1D3D8 	 0  0 75 6E 73 65 74 2D 
+1A1D3E0 	70 61 63 6B 61 67 65 8D 
+1A1D3E8 	D0 D3 A1  1 5C 40 A0  1 
+1A1D3F0 	38  5  0  0 
+headerless
+
+: try  ( n acf -- okay? )
+1A1D3F4 	74 72 79 83 
+1A1D3F8 	EC D3 A1  1 20 40 A0  1 
+   catch  ?dup if  .error drop false  else  true  then
+1A1D400 	14 7F A0  1 B4 70 A0  1 
+1A1D408 	DC 41 A0  1 18  0  0  0 
+1A1D410 	70 CF A0  1 30 49 A0  1 
+1A1D418 	18 70 A0  1 C8 41 A0  1 
+1A1D420 	 8  0  0  0  4 70 A0  1 
+;
+1A1D428 	58 46 A0  1 
+defer resolve-method
+1A1D42C 	 0 72 65 73 
+1A1D430 	6F 6C 76 65 2D 6D 65 74 
+1A1D438 	68 6F 64 8E FC D3 A1  1 
+1A1D440 	5C 40 A0  1 3C  5  0  0 
+' noop to resolve-method
+: executer  ( xt -- xt' )
+1A1D448 	 0  0  0 65 78 65 63 75 
+1A1D450 	74 65 72 88 40 D4 A1  1 
+1A1D458 	20 40 A0  1 
+   dup ['] execute =  over ['] catch =  or  if  drop dup  then
+1A1D45C 	40 49 A0  1 
+1A1D460 	60 53 A0  1 98 41 A0  1 
+1A1D468 	24 48 A0  1 54 49 A0  1 
+1A1D470 	60 53 A0  1 14 7F A0  1 
+1A1D478 	24 48 A0  1 70 44 A0  1 
+1A1D480 	DC 41 A0  1  C  0  0  0 
+1A1D488 	30 49 A0  1 40 49 A0  1 
+   resolve-method
+1A1D490 	40 D4 A1  1 
+;
+1A1D494 	58 46 A0  1 
+d# 72 constant /#buf
+1A1D498 	 0  0 2F 23 62 75 66 85 
+1A1D4A0 	58 D4 A1  1 68 40 A0  1 
+1A1D4A8 	48  0  0  0 
+/#buf buffer: #buf-save
+1A1D4AC 	 0  0 23 62 
+1A1D4B0 	75 66 2D 73 61 76 65 89 
+1A1D4B8 	A4 D4 A1  1 B4 A9 A0  1 
+1A1D4C0 	40  5  0  0 48  0  0  0 
+1A1D4C8 	34 BB A1  1 
+variable hld-save
+1A1D4CC 	 0  0  0 68 
+1A1D4D0 	6C 64 2D 73 61 76 65 88 
+1A1D4D8 	BC D4 A1  1 48 40 A0  1 
+1A1D4E0 	44  5  0  0 
+variable show-rstack  \ Show the return stack along with the data stack?
+1A1D4E4 	73 68 6F 77 
+1A1D4E8 	2D 72 73 74 61 63 6B 8B 
+1A1D4F0 	DC D4 A1  1 48 40 A0  1 
+1A1D4F8 	48  5  0  0 
+variable hex-stack    \ Show the data stack in hex?
+1A1D4FC 	 0  0 68 65 
+1A1D500 	78 2D 73 74 61 63 6B 89 
+1A1D508 	F4 D4 A1  1 48 40 A0  1 
+1A1D510 	4C  5  0  0 
+: save#     ( -- )  #-buf /#buf -  #buf-save  d# 72 move    hld @  hld-save !  ;
+1A1D514 	 0  0 73 61 
+1A1D518 	76 65 23 85  C D5 A1  1 
+1A1D520 	20 40 A0  1 18 75 A0  1 
+1A1D528 	A4 D4 A1  1 18 45 A0  1 
+1A1D530 	BC D4 A1  1 58 41 A0  1 
+1A1D538 	48  0  0  0 F4 4A A0  1 
+1A1D540 	C8 75 A0  1 5C 4C A0  1 
+1A1D548 	DC D4 A1  1 54 4D A0  1 
+1A1D550 	58 46 A0  1 
+: restore#  ( -- )  #buf-save  #-buf /#buf -  d# 72 move    hld-save @  hld !  ;
+1A1D554 	 0  0  0 72 
+1A1D558 	65 73 74 6F 72 65 23 88 
+1A1D560 	20 D5 A1  1 20 40 A0  1 
+1A1D568 	BC D4 A1  1 18 75 A0  1 
+1A1D570 	A4 D4 A1  1 18 45 A0  1 
+1A1D578 	58 41 A0  1 48  0  0  0 
+1A1D580 	F4 4A A0  1 DC D4 A1  1 
+1A1D588 	5C 4C A0  1 C8 75 A0  1 
+1A1D590 	54 4D A0  1 58 46 A0  1 
+0 value the-ip
+1A1D598 	 0 74 68 65 2D 69 70 86 
+1A1D5A0 	64 D5 A1  1 50 40 A0  1 
+1A1D5A8 	50  5  0  0 
+0 value the-rp
+1A1D5AC 	 0 74 68 65 
+1A1D5B0 	2D 72 70 86 A4 D5 A1  1 
+1A1D5B8 	50 40 A0  1 54  5  0  0 
+: redisplay?  ( -- flag )  displayed-xt  the-ip find-cfa <>  ;
+1A1D5C0 	 0 72 65 64 69 73 70 6C 
+1A1D5C8 	61 79 3F 8A B8 D5 A1  1 
+1A1D5D0 	20 40 A0  1 DC C8 A1  1 
+1A1D5D8 	A4 D5 A1  1 24 20 A1  1 
+1A1D5E0 	44 48 A0  1 58 46 A0  1 
+
+: (.rs  ( -- )
+1A1D5E8 	 0  0  0 28 2E 72 73 84 
+1A1D5F0 	D0 D5 A1  1 20 40 A0  1 
+   show-rstack @ 0=  if  exit  then
+1A1D5F8 	F4 D4 A1  1 5C 4C A0  1 
+1A1D600 	24 47 A0  1 DC 41 A0  1 
+1A1D608 	 8  0  0  0 40 46 A0  1 
+   ." return-stack: "
+1A1D610 	20 7C A0  1  E 72 65 74 
+1A1D618 	75 72 6E 2D 73 74 61 63 
+1A1D620 	6B 3A 20  0 
+   push-hex
+1A1D624 	5C F4 A0  1 
+   \ Skip the debugger's footprint on the return stack
+   rp0 @  the-rp 5 na+  ?do  i @ .  /n +loop
+1A1D628 	9C 66 A0  1 5C 4C A0  1 
+1A1D630 	B8 D5 A1  1 C0 6F A0  1 
+1A1D638 	48 50 A0  1 50 42 A0  1 
+1A1D640 	1C  0  0  0 B4 42 A0  1 
+1A1D648 	5C 4C A0  1 94 7A A0  1 
+1A1D650 	40 51 A0  1 1C 42 A0  1 
+1A1D658 	EC FF FF FF 
+   pop-base
+1A1D65C 	9C F4 A0  1 
+;
+1A1D660 	58 46 A0  1 
+: setup-scrolling-display  ( -- )
+1A1D664 	73 65 74 75 
+1A1D668 	70 2D 73 63 72 6F 6C 6C 
+1A1D670 	69 6E 67 2D 64 69 73 70 
+1A1D678 	6C 61 79 97 F4 D5 A1  1 
+1A1D680 	20 40 A0  1 
+   ??cr
+1A1D684 	 0 A1 A0  1 
+   the-ip  <ip @ =  if  ." : "  else  ." Inside "  then
+1A1D688 	A4 D5 A1  1  C C7 A1  1 
+1A1D690 	5C 4C A0  1 24 48 A0  1 
+1A1D698 	DC 41 A0  1 14  0  0  0 
+1A1D6A0 	20 7C A0  1  2 3A 20  0 
+1A1D6A8 	C8 41 A0  1 14  0  0  0 
+1A1D6B0 	20 7C A0  1  7 49 6E 73 
+1A1D6B8 	69 64 65 20  0  0  0  0 
+   <ip @ find-cfa .name
+1A1D6C0 	 C C7 A1  1 5C 4C A0  1 
+1A1D6C8 	24 20 A1  1 C8 9A A0  1 
+;
+1A1D6D0 	58 46 A0  1 
+: setup-2d-display  ( -- )
+1A1D6D4 	 0  0  0 73 
+1A1D6D8 	65 74 75 70 2D 32 64 2D 
+1A1D6E0 	64 69 73 70 6C 61 79 90 
+1A1D6E8 	80 D6 A1  1 20 40 A0  1 
+   page
+1A1D6F0 	94 F8 A0  1 
+   d# 78 rmargin !
+1A1D6F4 	58 41 A0  1 
+1A1D6F8 	4E  0  0  0 94 13 A1  1 
+1A1D700 	54 4D A0  1 
+   .debug-short-help
+1A1D704 	90 CC A1  1 
+   d# 70 rmargin !
+1A1D708 	58 41 A0  1 46  0  0  0 
+1A1D710 	94 13 A1  1 54 4D A0  1 
+   ." Callers: "  rp0 @ the-rp na1+ rslist kill-line cr
+1A1D718 	20 7C A0  1  9 43 61 6C 
+1A1D720 	6C 65 72 73 3A 20  0  0 
+1A1D728 	9C 66 A0  1 5C 4C A0  1 
+1A1D730 	B8 D5 A1  1 CC 50 A0  1 
+1A1D738 	64 C6 A1  1 58 F6 A0  1 
+1A1D740 	80 6D A0  1 
+   d# 40 rmargin !
+1A1D744 	58 41 A0  1 
+1A1D748 	28  0  0  0 94 13 A1  1 
+1A1D750 	54 4D A0  1 
+   ." Stack: " #out @ #line @ to full-stack-xy  cr  \ For stack
+1A1D754 	20 7C A0  1 
+1A1D758 	 7 53 74 61 63 6B 3A 20 
+1A1D760 	 0  0  0  0 5C 6D A0  1 
+1A1D768 	5C 4C A0  1 70 6D A0  1 
+1A1D770 	5C 4C A0  1 48 B8 A1  1 
+1A1D778 	24 D1 A1  1 80 6D A0  1 
+   the-ip debug-see
+1A1D780 	A4 D5 A1  1 14 3A A1  1 
+   the-ip find-cfa to displayed-xt
+1A1D788 	A4 D5 A1  1 24 20 A1  1 
+1A1D790 	B8 40 A0  1 DC C8 A1  1 
+   cr
+1A1D798 	80 6D A0  1 
+   \ Display the initial stack on the cursor line
+   the-ip ip>position  0=  if   ( col row )
+1A1D79C 	A4 D5 A1  1 
+1A1D7A0 	5C 22 A1  1 24 47 A0  1 
+1A1D7A8 	DC 41 A0  1 10  0  0  0 
+      is stack-line   drop      ( )
+1A1D7B0 	B8 40 A0  1 EC D0 A1  1 
+1A1D7B8 	30 49 A0  1 
+   then
+;
+1A1D7BC 	58 46 A0  1 
+: setup-debug-display  ( -- )
+1A1D7C0 	73 65 74 75 70 2D 64 65 
+1A1D7C8 	62 75 67 2D 64 69 73 70 
+1A1D7D0 	6C 61 79 93 EC D6 A1  1 
+1A1D7D8 	20 40 A0  1 
+   redisplay?  if
+1A1D7DC 	D0 D5 A1  1 
+1A1D7E0 	DC 41 A0  1 2C  0  0  0 
+      scrolling-debug?  if
+1A1D7E8 	84 C8 A1  1 DC 41 A0  1 
+1A1D7F0 	10  0  0  0 
+         setup-scrolling-display
+1A1D7F4 	80 D6 A1  1 
+      else
+1A1D7F8 	C8 41 A0  1  8  0  0  0 
+         setup-2d-display
+1A1D800 	EC D6 A1  1 
+      then
+      0 show-rstack !
+1A1D804 	70 6F A0  1 
+1A1D808 	F4 D4 A1  1 54 4D A0  1 
+   then
+;
+1A1D810 	58 46 A0  1 
+: show-debug-stack  ( -- )
+1A1D814 	 0  0  0 73 
+1A1D818 	68 6F 77 2D 64 65 62 75 
+1A1D820 	67 2D 73 74 61 63 6B 90 
+1A1D828 	D8 D7 A1  1 20 40 A0  1 
+   scrolling-debug?  if
+1A1D830 	84 C8 A1  1 DC 41 A0  1 
+1A1D838 	A4  0  0  0 
+      save#
+1A1D83C 	20 D5 A1  1 
+      cmd-column 2+ to-column
+1A1D840 	B0 D0 A1  1 40 4B A0  1 
+1A1D848 	 8 14 A1  1 
+
+      hex-stack @  if  push-hex  then
+1A1D84C 	 C D5 A1  1 
+1A1D850 	5C 4C A0  1 DC 41 A0  1 
+1A1D858 	 8  0  0  0 5C F4 A0  1 
+      ." ( " .s    \ Show data stack
+1A1D860 	20 7C A0  1  2 28 20  0 
+1A1D868 	38 7C A0  1 
+      hex-stack @  if  pop-base  then
+1A1D86C 	 C D5 A1  1 
+1A1D870 	5C 4C A0  1 DC 41 A0  1 
+1A1D878 	 8  0  0  0 9C F4 A0  1 
+      show-rstack @  if  (.rs  then   \ Show return stack
+1A1D880 	F4 D4 A1  1 5C 4C A0  1 
+1A1D888 	DC 41 A0  1  8  0  0  0 
+1A1D890 	F4 D5 A1  1 
+      ." )"
+1A1D894 	20 7C A0  1 
+1A1D898 	 1 29  0  0 
+      restore#
+1A1D89C 	64 D5 A1  1 
+
+      cr
+1A1D8A0 	80 6D A0  1 
+      ['] noop is indent
+1A1D8A4 	60 53 A0  1 
+1A1D8A8 	64 4F A0  1 98 40 A0  1 
+1A1D8B0 	C8 22 A1  1 
+      the-ip .token drop		  \ Show word name
+1A1D8B4 	A4 D5 A1  1 
+1A1D8B8 	74 38 A1  1 30 49 A0  1 
+      ['] (indent) is indent
+1A1D8C0 	60 53 A0  1 E0 22 A1  1 
+1A1D8C8 	98 40 A0  1 C8 22 A1  1 
+      to-cmd-column
+1A1D8D0 	CC D0 A1  1 
+   else
+1A1D8D4 	C8 41 A0  1 
+1A1D8D8 	24  0  0  0 
+      save-result-loc
+1A1D8DC 	5C D3 A1  1 
+      show-partial-stack
+1A1D8E0 	78 D2 A1  1 
+        
+      the-ip ip-set-cursor
+1A1D8E4 	A4 D5 A1  1 
+1A1D8E8 	A0 22 A1  1 
+      #line @ to stack-line
+1A1D8EC 	70 6D A0  1 
+1A1D8F0 	5C 4C A0  1 B8 40 A0  1 
+1A1D8F8 	EC D0 A1  1 
+   then
+;
+1A1D8FC 	58 46 A0  1 
+: debug-interact  ( -- )
+1A1D900 	 0 64 65 62 75 67 2D 69 
+1A1D908 	6E 74 65 72 61 63 74 8E 
+1A1D910 	2C D8 A1  1 20 40 A0  1 
+   save#
+1A1D918 	20 D5 A1  1 
+   begin
+      setup-debug-display
+1A1D91C 	D8 D7 A1  1 
+      step? @  if  to-debug-window  then
+1A1D920 	B0 C8 A1  1 5C 4C A0  1 
+1A1D928 	DC 41 A0  1  8  0  0  0 
+1A1D930 	54 CC A1  1 
+      show-debug-stack
+1A1D934 	2C D8 A1  1 
+      step? @  key? or  if
+1A1D938 	B0 C8 A1  1 5C 4C A0  1 
+1A1D940 	64 6C A0  1 70 44 A0  1 
+1A1D948 	DC 41 A0  1 40  4  0  0 
+         step? on  res off
+1A1D950 	B0 C8 A1  1 E0 4B A0  1 
+1A1D958 	C0 C8 A1  1 F8 4B A0  1 
+         key dup bl <  if  drop bl  then
+1A1D960 	50 6C A0  1 40 49 A0  1 
+1A1D968 	28 70 A0  1 E4 47 A0  1 
+1A1D970 	DC 41 A0  1  C  0  0  0 
+1A1D978 	30 49 A0  1 28 70 A0  1 
+         scrolling-debug?  if  dup emit  else  to-result-loc  then  upc
+1A1D980 	84 C8 A1  1 DC 41 A0  1 
+1A1D988 	14  0  0  0 40 49 A0  1 
+1A1D990 	2C 6C A0  1 C8 41 A0  1 
+1A1D998 	 8  0  0  0 98 D3 A1  1 
+1A1D9A0 	D0 51 A0  1 
+         restore-window
+1A1D9A4 	70 CC A1  1 
+         scrolling-debug?  if  reset-page  then
+1A1D9A8 	84 C8 A1  1 DC 41 A0  1 
+1A1D9B0 	 8  0  0  0 9C A1 A0  1 
+         case
+            ascii D  of  the-ip token@ executer  ['] (debug try endof \ Down
+1A1D9B8 	58 41 A0  1 44  0  0  0 
+1A1D9C0 	48 43 A0  1 24  0  0  0 
+1A1D9C8 	A4 D5 A1  1  C 54 A0  1 
+1A1D9D0 	58 D4 A1  1 60 53 A0  1 
+1A1D9D8 	8C CA A1  1 FC D3 A1  1 
+1A1D9E0 	6C 43 A0  1 A0  3  0  0 
+	    ascii U  of  the-rp ['] up1 try                     endof \ Up
+1A1D9E8 	58 41 A0  1 55  0  0  0 
+1A1D9F0 	48 43 A0  1 1C  0  0  0 
+1A1D9F8 	B8 D5 A1  1 60 53 A0  1 
+1A1DA00 	70 CB A1  1 FC D3 A1  1 
+1A1DA08 	6C 43 A0  1 78  3  0  0 
+            ascii C  of                                               \ Continue
+1A1DA10 	58 41 A0  1 43  0  0  0 
+1A1DA18 	48 43 A0  1 48  0  0  0 
+               step? @ 0= step? !              
+1A1DA20 	B0 C8 A1  1 5C 4C A0  1 
+1A1DA28 	24 47 A0  1 B0 C8 A1  1 
+1A1DA30 	54 4D A0  1 
+               step? @ 0=  if  true to scrolling-debug?  force-redisplay  then
+1A1DA34 	B0 C8 A1  1 
+1A1DA38 	5C 4C A0  1 24 47 A0  1 
+1A1DA40 	DC 41 A0  1 14  0  0  0 
+1A1DA48 	 4 70 A0  1 B8 40 A0  1 
+1A1DA50 	84 C8 A1  1 F8 C8 A1  1 
+               true
+1A1DA58 	 4 70 A0  1 
+            endof
+1A1DA5C 	6C 43 A0  1 
+1A1DA60 	24  3  0  0 
+
+            ascii F  of						      \ Forth
+1A1DA64 	58 41 A0  1 
+1A1DA68 	46  0  0  0 48 43 A0  1 
+1A1DA70 	50  0  0  0 
+               cr ." Type 'resume' to return to debugger" cr
+1A1DA74 	80 6D A0  1 
+1A1DA78 	20 7C A0  1 23 54 79 70 
+1A1DA80 	65 20 27 72 65 73 75 6D 
+1A1DA88 	65 27 20 74 6F 20 72 65 
+1A1DA90 	74 75 72 6E 20 74 6F 20 
+1A1DA98 	64 65 62 75 67 67 65 72 
+1A1DAA0 	 0  0  0  0 80 6D A0  1 
+               set-package  interact  unset-package   false
+1A1DAA8 	D0 D3 A1  1 E0 E4 A0  1 
+1A1DAB0 	EC D3 A1  1 18 70 A0  1 
+            endof
+1A1DAB8 	6C 43 A0  1 C8  2  0  0 
+            ascii G  of  debug-off  cr                 true   endof \ Go
+1A1DAC0 	58 41 A0  1 47  0  0  0 
+1A1DAC8 	48 43 A0  1 18  0  0  0 
+1A1DAD0 	48 CB A1  1 80 6D A0  1 
+1A1DAD8 	 4 70 A0  1 6C 43 A0  1 
+1A1DAE0 	A4  2  0  0 
+            ascii H  of  cr .debug-long-help           false  endof \ Help
+1A1DAE4 	58 41 A0  1 
+1A1DAE8 	48  0  0  0 48 43 A0  1 
+1A1DAF0 	18  0  0  0 80 6D A0  1 
+1A1DAF8 	 0 CD A1  1 18 70 A0  1 
+1A1DB00 	6C 43 A0  1 80  2  0  0 
+            ascii R  of  cr rp0 @ the-rp na1+ (rstrace false  endof \ RSTrace
+1A1DB08 	58 41 A0  1 52  0  0  0 
+1A1DB10 	48 43 A0  1 28  0  0  0 
+1A1DB18 	80 6D A0  1 9C 66 A0  1 
+1A1DB20 	5C 4C A0  1 B8 D5 A1  1 
+1A1DB28 	CC 50 A0  1 FC C3 A1  1 
+1A1DB30 	18 70 A0  1 6C 43 A0  1 
+1A1DB38 	4C  2  0  0 
+            ascii S  of  cr <ip @ body> (see)          false  endof \ See
+1A1DB3C 	58 41 A0  1 
+1A1DB40 	53  0  0  0 48 43 A0  1 
+1A1DB48 	24  0  0  0 80 6D A0  1 
+1A1DB50 	 C C7 A1  1 5C 4C A0  1 
+1A1DB58 	C8 59 A0  1 98 20 A1  1 
+1A1DB60 	18 70 A0  1 6C 43 A0  1 
+1A1DB68 	1C  2  0  0 
+            ascii ?  of  cr .debug-short-help	       false  endof \ Short Help
+1A1DB6C 	58 41 A0  1 
+1A1DB70 	3F  0  0  0 48 43 A0  1 
+1A1DB78 	18  0  0  0 80 6D A0  1 
+1A1DB80 	90 CC A1  1 18 70 A0  1 
+1A1DB88 	6C 43 A0  1 F8  1  0  0 
+            ascii $  of  space 2dup type cr to-cmd-column false endof \ String
+1A1DB90 	58 41 A0  1 24  0  0  0 
+1A1DB98 	48 43 A0  1 24  0  0  0 
+1A1DBA0 	CC 71 A0  1 C0 49 A0  1 
+1A1DBA8 	 4 6C A0  1 80 6D A0  1 
+1A1DBB0 	CC D0 A1  1 18 70 A0  1 
+1A1DBB8 	6C 43 A0  1 C8  1  0  0 
+            ascii Q  of  cr ." unbug" abort           true   endof \ Quit
+1A1DBC0 	58 41 A0  1 51  0  0  0 
+1A1DBC8 	48 43 A0  1 24  0  0  0 
+1A1DBD0 	80 6D A0  1 20 7C A0  1 
+1A1DBD8 	 5 75 6E 62 75 67  0  0 
+1A1DBE0 	28 91 A0  1  4 70 A0  1 
+1A1DBE8 	6C 43 A0  1 98  1  0  0 
+            ascii (  of  the-ip set-<ip                  false  endof
+1A1DBF0 	58 41 A0  1 28  0  0  0 
+1A1DBF8 	48 43 A0  1 18  0  0  0 
+1A1DC00 	A4 D5 A1  1 C0 C9 A1  1 
+1A1DC08 	18 70 A0  1 6C 43 A0  1 
+1A1DC10 	74  1  0  0 
+            ascii <  of  the-ip ta1+ set-<ip  1 cnt !    false  endof
+1A1DC14 	58 41 A0  1 
+1A1DC18 	3C  0  0  0 48 43 A0  1 
+1A1DC20 	28  0  0  0 A4 D5 A1  1 
+1A1DC28 	FC 50 A0  1 C0 C9 A1  1 
+1A1DC30 	80 6F A0  1 2C C7 A1  1 
+1A1DC38 	54 4D A0  1 18 70 A0  1 
+1A1DC40 	6C 43 A0  1 40  1  0  0 
+            ascii )  of  the-ip ip> !  1 cnt !           false  endof
+1A1DC48 	58 41 A0  1 29  0  0  0 
+1A1DC50 	48 43 A0  1 28  0  0  0 
+1A1DC58 	A4 D5 A1  1 1C C7 A1  1 
+1A1DC60 	54 4D A0  1 80 6F A0  1 
+1A1DC68 	2C C7 A1  1 54 4D A0  1 
+1A1DC70 	18 70 A0  1 6C 43 A0  1 
+1A1DC78 	 C  1  0  0 
+            ascii *  of  the-ip find-cfa dup <ip !  'unnest ip> !  false  endof
+1A1DC7C 	58 41 A0  1 
+1A1DC80 	2A  0  0  0 48 43 A0  1 
+1A1DC88 	30  0  0  0 A4 D5 A1  1 
+1A1DC90 	24 20 A1  1 40 49 A0  1 
+1A1DC98 	 C C7 A1  1 54 4D A0  1 
+1A1DCA0 	88 C9 A1  1 1C C7 A1  1 
+1A1DCA8 	54 4D A0  1 18 70 A0  1 
+1A1DCB0 	6C 43 A0  1 D0  0  0  0 
+            ascii \  of  show-rstack @ 0= show-rstack !  false  endof  \ toggle return stack display
+1A1DCB8 	58 41 A0  1 5C  0  0  0 
+1A1DCC0 	48 43 A0  1 24  0  0  0 
+1A1DCC8 	F4 D4 A1  1 5C 4C A0  1 
+1A1DCD0 	24 47 A0  1 F4 D4 A1  1 
+1A1DCD8 	54 4D A0  1 18 70 A0  1 
+1A1DCE0 	6C 43 A0  1 A0  0  0  0 
+            ascii X  of  hex-stack @ 0= hex-stack !      false  endof  \ toggle heX stack display
+1A1DCE8 	58 41 A0  1 58  0  0  0 
+1A1DCF0 	48 43 A0  1 24  0  0  0 
+1A1DCF8 	 C D5 A1  1 5C 4C A0  1 
+1A1DD00 	24 47 A0  1  C D5 A1  1 
+1A1DD08 	54 4D A0  1 18 70 A0  1 
+1A1DD10 	6C 43 A0  1 70  0  0  0 
+            ascii L  of  force-redisplay                 false  endof  \ Redisplay
+1A1DD18 	58 41 A0  1 4C  0  0  0 
+1A1DD20 	48 43 A0  1 14  0  0  0 
+1A1DD28 	F8 C8 A1  1 18 70 A0  1 
+1A1DD30 	6C 43 A0  1 50  0  0  0 
+            ascii V  of						\ toggle Visual (2D) mode
+1A1DD38 	58 41 A0  1 56  0  0  0 
+1A1DD40 	48 43 A0  1 34  0  0  0 
+               scrolling-debug? 0= to scrolling-debug?      
+1A1DD48 	84 C8 A1  1 24 47 A0  1 
+1A1DD50 	B8 40 A0  1 84 C8 A1  1 
+               scrolling-debug? 0=  if  force-redisplay  then  false
+1A1DD58 	84 C8 A1  1 24 47 A0  1 
+1A1DD60 	DC 41 A0  1  8  0  0  0 
+1A1DD68 	F8 C8 A1  1 18 70 A0  1 
+            endof
+1A1DD70 	6C 43 A0  1 10  0  0  0 
+            ( default )  true swap
+1A1DD78 	 4 70 A0  1 68 49 A0  1 
+         endcase
+1A1DD80 	84 43 A0  1 
+      else
+1A1DD84 	C8 41 A0  1 
+1A1DD88 	 8  0  0  0 
+         true
+1A1DD8C 	 4 70 A0  1 
+      then
+   until
+1A1DD90 	DC 41 A0  1 88 FB FF FF 
+   restore#
+1A1DD98 	64 D5 A1  1 
+;
+1A1DD9C 	58 46 A0  1 
+: (trace  ( -- )
+1A1DDA0 	 0 28 74 72 61 63 65 86 
+1A1DDA8 	14 D9 A1  1 20 40 A0  1 
+   ip@ to the-ip
+1A1DDB0 	9C 46 A0  1 B8 40 A0  1 
+1A1DDB8 	A4 D5 A1  1 
+   rp@ to the-rp
+1A1DDBC 	7C 45 A0  1 
+1A1DDC0 	B8 40 A0  1 B8 D5 A1  1 
+   debug-interact
+1A1DDC8 	14 D9 A1  1 
+\   scrolling-debug? 0=  if  to-result-loc  then
+   the-ip token@  dup ['] unnest =  swap ['] exit =  or  if
+1A1DDCC 	A4 D5 A1  1 
+1A1DDD0 	 C 54 A0  1 40 49 A0  1 
+1A1DDD8 	60 53 A0  1 58 46 A0  1 
+1A1DDE0 	24 48 A0  1 68 49 A0  1 
+1A1DDE8 	60 53 A0  1 40 46 A0  1 
+1A1DDF0 	24 48 A0  1 70 44 A0  1 
+1A1DDF8 	DC 41 A0  1  C  0  0  0 
+      cr  force-redisplay
+1A1DE00 	80 6D A0  1 F8 C8 A1  1 
+   then
+   slow-next? @  if  pnext  then
+1A1DE08 	9C C8 A1  1 5C 4C A0  1 
+1A1DE10 	DC 41 A0  1  8  0  0  0 
+1A1DE18 	38 C8 A1  1 
+;
+1A1DE1C 	58 46 A0  1 
+' (trace  'debug token!
+
+headers
+
+only forth bug also forth definitions
+
+: debug  \ name (s -- )
+1A1DE20 	 0  0 64 65 62 75 67 85 
+1A1DE28 	48 CB A1  1 20 40 A0  1 
+   '
+1A1DE30 	F8 95 A0  1 
+   .debug-short-help
+1A1DE34 	90 CC A1  1 
+   (debug
+1A1DE38 	8C CA A1  1 
+;
+1A1DE3C 	58 46 A0  1 
+: debugging  ( -- )  ' .debug-short-help  dup (debug  execute  ;
+1A1DE40 	 0  0 64 65 62 75 67 67 
+1A1DE48 	69 6E 67 89 2C DE A1  1 
+1A1DE50 	20 40 A0  1 F8 95 A0  1 
+1A1DE58 	90 CC A1  1 40 49 A0  1 
+1A1DE60 	8C CA A1  1 98 41 A0  1 
+1A1DE68 	58 46 A0  1 
+: resume    (s -- )  true is exit-interact?  force-redisplay  pnext  ;
+1A1DE6C 	 0 72 65 73 
+1A1DE70 	75 6D 65 86 50 DE A1  1 
+1A1DE78 	20 40 A0  1  4 70 A0  1 
+1A1DE80 	B8 40 A0  1 90 E0 A0  1 
+1A1DE88 	F8 C8 A1  1 38 C8 A1  1 
+1A1DE90 	58 46 A0  1 
+: stepping  (s -- )  step? on  ;
+1A1DE94 	 0  0  0 73 
+1A1DE98 	74 65 70 70 69 6E 67 88 
+1A1DEA0 	78 DE A1  1 20 40 A0  1 
+1A1DEA8 	B0 C8 A1  1 E0 4B A0  1 
+1A1DEB0 	58 46 A0  1 
+: tracing   (s -- )  step? off ;
+1A1DEB4 	74 72 61 63 
+1A1DEB8 	69 6E 67 87 A4 DE A1  1 
+1A1DEC0 	20 40 A0  1 B0 C8 A1  1 
+1A1DEC8 	F8 4B A0  1 58 46 A0  1 
+
+only forth also definitions

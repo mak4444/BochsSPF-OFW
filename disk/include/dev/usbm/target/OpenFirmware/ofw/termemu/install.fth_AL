@@ -1,0 +1,249 @@
+
+headers
+\ Compatibility package to present a package-style interface for
+\ old-style display drivers.
+
+: $makealias  ( xt adr len -- )
+1A29F54 	 0 24 6D 61 
+1A29F58 	6B 65 61 6C 69 61 73 8A 
+1A29F60 	F4 9D A2  1 20 40 A0  1 
+   2dup my-voc find-method  if  ( xt adr len acf' )
+1A29F68 	C0 49 A0  1 10  4 A2  1 
+1A29F70 	A0 2F A2  1 DC 41 A0  1 
+1A29F78 	14  0  0  0 
+      2drop 2drop
+1A29F7C 	AC 49 A0  1 
+1A29F80 	AC 49 A0  1 
+   else                         ( xt adr len )
+1A29F84 	C8 41 A0  1 
+1A29F88 	14  0  0  0 
+      $create -1 setalias
+1A29F8C 	8C A2 A0  1 
+1A29F90 	58 41 A0  1 FF FF FF FF 
+1A29F98 	CC DF A0  1 
+   then
+;
+1A29F9C 	58 46 A0  1 
+
+headerless
+: disp-selftest ( -- failed? )
+1A29FA0 	 0  0 64 69 73 70 2D 73 
+1A29FA8 	65 6C 66 74 65 73 74 8D 
+1A29FB0 	64 9F A2  1 20 40 A0  1 
+   my-self >r
+1A29FB8 	EC 7E A0  1 BC 45 A0  1 
+   initial-addr my-termemu @  ( first-ihandle )
+1A29FC0 	5C B8 A1  1 E4  3 A2  1 
+1A29FC8 	A4  7 A2  1 5C 4C A0  1 
+   ?dup  if  is  my-self  then (  )
+1A29FD0 	B4 70 A0  1 DC 41 A0  1 
+1A29FD8 	 C  0  0  0 B8 40 A0  1 
+1A29FE0 	EC 7E A0  1 
+   " disp-test" $call-self     ( failed? )
+1A29FE4 	9C 53 A0  1 
+1A29FE8 	 9 64 69 73 70 2D 74 65 
+1A29FF0 	73 74  0  0 B4 30 A2  1 
+   r> is my-self               ( failed? )
+1A29FF8 	D0 45 A0  1 B8 40 A0  1 
+1A2A000 	EC 7E A0  1 
+;
+1A2A004 	58 46 A0  1 
+
+: disp-close  ( -- )
+1A2A008 	 0 64 69 73 70 2D 63 6C 
+1A2A010 	6F 73 65 8A B4 9F A2  1 
+1A2A018 	20 40 A0  1 
+   current-device >r  my-voc push-device
+1A2A01C 	40 F9 A1  1 
+1A2A020 	BC 45 A0  1 10  4 A2  1 
+1A2A028 	F8 FB A1  1 
+   \ Reset the my-termemu value in the instance record
+   my-termemu  if
+1A2A02C 	E4  3 A2  1 
+1A2A030 	DC 41 A0  1 3C  0  0  0 
+      initial-addr my-termemu       off
+1A2A038 	5C B8 A1  1 E4  3 A2  1 
+1A2A040 	A4  7 A2  1 F8 4B A0  1 
+      initial-addr frame-buffer-adr off
+1A2A048 	5C B8 A1  1 CC  3 A2  1 
+1A2A050 	A4  7 A2  1 F8 4B A0  1 
+      my-termemu " remove" $call-self    close-package
+1A2A058 	E4  3 A2  1 9C 53 A0  1 
+1A2A060 	 6 72 65 6D 6F 76 65  0 
+1A2A068 	B4 30 A2  1 A4 36 A2  1 
+   then
+   r> push-device
+1A2A070 	D0 45 A0  1 F8 FB A1  1 
+;
+1A2A078 	58 46 A0  1 
+: disp-open   ( -- flag )
+1A2A07C 	 0  0 64 69 
+1A2A080 	73 70 2D 6F 70 65 6E 89 
+1A2A088 	18 A0 A2  1 20 40 A0  1 
+   \ If this device is already open
+   \ then my-termemu will be initialized
+   \ with the ihandle from the prev. open
+   my-termemu ?dup  if  ( first-ihandle )
+1A2A090 	E4  3 A2  1 B4 70 A0  1 
+1A2A098 	DC 41 A0  1 18  0  0  0 
+      close-chain    is my-self
+1A2A0A0 	3C 37 A2  1 B8 40 A0  1 
+1A2A0A8 	EC 7E A0  1 
+   else
+1A2A0AC 	C8 41 A0  1 
+1A2A0B0 	70  0  0  0 
+      \ Open an instance of the terminal emulator
+      0 0  " terminal-emulator" $open-package  to my-termemu
+1A2A0B4 	70 6F A0  1 
+1A2A0B8 	70 6F A0  1 9C 53 A0  1 
+1A2A0C0 	11 74 65 72 6D 69 6E 61 
+1A2A0C8 	6C 2D 65 6D 75 6C 61 74 
+1A2A0D0 	6F 72  0  0 80 3A A2  1 
+1A2A0D8 	48 B8 A1  1 E4  3 A2  1 
+
+      " install" $call-self
+1A2A0E0 	9C 53 A0  1  7 69 6E 73 
+1A2A0E8 	74 61 6C 6C  0  0  0  0 
+1A2A0F0 	B4 30 A2  1 
+      install-terminal-emulator
+1A2A0F4 	F4 9D A2  1 
+      \ Save the ihandle in the instance record
+      my-self           initial-addr my-termemu       !
+1A2A0F8 	EC 7E A0  1 5C B8 A1  1 
+1A2A100 	E4  3 A2  1 A4  7 A2  1 
+1A2A108 	54 4D A0  1 
+      frame-buffer-adr  initial-addr frame-buffer-adr !
+1A2A10C 	CC  3 A2  1 
+1A2A110 	5C B8 A1  1 CC  3 A2  1 
+1A2A118 	A4  7 A2  1 54 4D A0  1 
+   then  true
+1A2A120 	 4 70 A0  1 
+;
+1A2A124 	58 46 A0  1 
+: disp-write  ( adr len -- len )  tuck ansi-type  ;
+1A2A128 	 0 64 69 73 70 2D 77 72 
+1A2A130 	69 74 65 8A 8C A0 A2  1 
+1A2A138 	20 40 A0  1 E8 46 A0  1 
+1A2A140 	70 9D A2  1 58 46 A0  1 
+
+: stdout-execute  ( xt -- )  stdout @ package( execute )package  ;
+1A2A148 	 0 73 74 64 6F 75 74 2D 
+1A2A150 	65 78 65 63 75 74 65 8E 
+1A2A158 	38 A1 A2  1 20 40 A0  1 
+1A2A160 	68 55 A2  1 5C 4C A0  1 
+1A2A168 	2C 31 A2  1 98 41 A0  1 
+1A2A170 	5C 31 A2  1 58 46 A0  1 
+: stdout-termemu   ( -- flag )  ['] my-termemu stdout-execute   ;
+1A2A178 	 0 73 74 64 6F 75 74 2D 
+1A2A180 	74 65 72 6D 65 6D 75 8E 
+1A2A188 	5C A1 A2  1 20 40 A0  1 
+1A2A190 	60 53 A0  1 E4  3 A2  1 
+1A2A198 	5C A1 A2  1 58 46 A0  1 
+: stdout-value  ( xt -- n )
+1A2A1A0 	 0  0  0 73 74 64 6F 75 
+1A2A1A8 	74 2D 76 61 6C 75 65 8C 
+1A2A1B0 	8C A1 A2  1 20 40 A0  1 
+   stdout-termemu  if  stdout-execute  else  drop 0  then
+1A2A1B8 	8C A1 A2  1 DC 41 A0  1 
+1A2A1C0 	10  0  0  0 5C A1 A2  1 
+1A2A1C8 	C8 41 A0  1  C  0  0  0 
+1A2A1D0 	30 49 A0  1 70 6F A0  1 
+;
+1A2A1D8 	58 46 A0  1 
+
+: stdout-line#      ( -- line# )    ['] line#      stdout-value  ;
+1A2A1DC 	 0  0  0 73 
+1A2A1E0 	74 64 6F 75 74 2D 6C 69 
+1A2A1E8 	6E 65 23 8C B4 A1 A2  1 
+1A2A1F0 	20 40 A0  1 60 53 A0  1 
+1A2A1F8 	54 86 A2  1 B4 A1 A2  1 
+1A2A200 	58 46 A0  1 
+: stdout-column#    ( -- column# )  ['] column#    stdout-value  ;
+1A2A204 	 0 73 74 64 
+1A2A208 	6F 75 74 2D 63 6F 6C 75 
+1A2A210 	6D 6E 23 8E F0 A1 A2  1 
+1A2A218 	20 40 A0  1 60 53 A0  1 
+1A2A220 	40 86 A2  1 B4 A1 A2  1 
+1A2A228 	58 46 A0  1 
+: stdout-char-width ( -- pixels )   ['] char-width stdout-value  ;
+1A2A22C 	 0  0 73 74 
+1A2A230 	64 6F 75 74 2D 63 68 61 
+1A2A238 	72 2D 77 69 64 74 68 91 
+1A2A240 	18 A2 A2  1 20 40 A0  1 
+1A2A248 	60 53 A0  1 44 8A A2  1 
+1A2A250 	B4 A1 A2  1 58 46 A0  1 
+: stdout-draw-logo  ( -- )
+1A2A258 	 0  0  0 73 74 64 6F 75 
+1A2A260 	74 2D 64 72 61 77 2D 6C 
+1A2A268 	6F 67 6F 90 44 A2 A2  1 
+1A2A270 	20 40 A0  1 
+   stdout-termemu  if  ['] draw-logo  stdout-execute  else  2drop  then
+1A2A274 	8C A1 A2  1 
+1A2A278 	DC 41 A0  1 18  0  0  0 
+1A2A280 	60 53 A0  1 DC 88 A2  1 
+1A2A288 	5C A1 A2  1 C8 41 A0  1 
+1A2A290 	 8  0  0  0 AC 49 A0  1 
+;
+1A2A298 	58 46 A0  1 
+
+headers
+: is-install   ( xt -- )
+1A2A29C 	 0 69 73 2D 
+1A2A2A0 	69 6E 73 74 61 6C 6C 8A 
+1A2A2A8 	70 A2 A2  1 20 40 A0  1 
+   ( xt )            " install"   $makealias
+1A2A2B0 	9C 53 A0  1  7 69 6E 73 
+1A2A2B8 	74 61 6C 6C  0  0  0  0 
+1A2A2C0 	64 9F A2  1 
+   ['] disp-open     " open"      $makealias
+1A2A2C4 	60 53 A0  1 
+1A2A2C8 	8C A0 A2  1 9C 53 A0  1 
+1A2A2D0 	 4 6F 70 65 6E  0  0  0 
+1A2A2D8 	64 9F A2  1 
+   ['] disp-write    " write"     $makealias
+1A2A2DC 	60 53 A0  1 
+1A2A2E0 	38 A1 A2  1 9C 53 A0  1 
+1A2A2E8 	 5 77 72 69 74 65  0  0 
+1A2A2F0 	64 9F A2  1 
+   ['] draw-logo     " draw-logo" $makealias
+1A2A2F4 	60 53 A0  1 
+1A2A2F8 	DC 88 A2  1 9C 53 A0  1 
+1A2A300 	 9 64 72 61 77 2D 6C 6F 
+1A2A308 	67 6F  0  0 64 9F A2  1 
+   ['] reset-screen  " restore"   $makealias
+1A2A310 	60 53 A0  1 8C 88 A2  1 
+1A2A318 	9C 53 A0  1  7 72 65 73 
+1A2A320 	74 6F 72 65  0  0  0  0 
+1A2A328 	64 9F A2  1 
+;
+1A2A32C 	58 46 A0  1 
+: is-remove    ( xt -- )
+1A2A330 	 0  0 69 73 2D 72 65 6D 
+1A2A338 	6F 76 65 89 AC A2 A2  1 
+1A2A340 	20 40 A0  1 
+   ( xt )            " remove"    $makealias
+1A2A344 	9C 53 A0  1 
+1A2A348 	 6 72 65 6D 6F 76 65  0 
+1A2A350 	64 9F A2  1 
+   ['] disp-close    " close"     $makealias
+1A2A354 	60 53 A0  1 
+1A2A358 	18 A0 A2  1 9C 53 A0  1 
+1A2A360 	 5 63 6C 6F 73 65  0  0 
+1A2A368 	64 9F A2  1 
+;
+1A2A36C 	58 46 A0  1 
+: is-selftest  ( xt -- )
+1A2A370 	69 73 2D 73 65 6C 66 74 
+1A2A378 	65 73 74 8B 40 A3 A2  1 
+1A2A380 	20 40 A0  1 
+   ( xt )             " disp-test"  $makealias
+1A2A384 	9C 53 A0  1 
+1A2A388 	 9 64 69 73 70 2D 74 65 
+1A2A390 	73 74  0  0 64 9F A2  1 
+   ['] disp-selftest  " selftest"   $makealias
+1A2A398 	60 53 A0  1 B4 9F A2  1 
+1A2A3A0 	9C 53 A0  1  8 73 65 6C 
+1A2A3A8 	66 74 65 73 74  0  0  0 
+1A2A3B0 	64 9F A2  1 
+;
+1A2A3B4 	58 46 A0  1 

@@ -1,0 +1,35 @@
+purpose: structures and fields
+
+: struct  ( -- initial-offset )  0  ;
+1A0EE14 	 0 73 74 72 
+1A0EE18 	75 63 74 86 A4 ED A0  1 
+1A0EE20 	20 40 A0  1 70 6F A0  1 
+1A0EE28 	58 46 A0  1 
+
+: field  		\ name  ( offset size -- offset' )
+1A0EE2C 	 0  0 66 69 
+1A0EE30 	65 6C 64 85 20 EE A0  1 
+1A0EE38 	20 40 A0  1 
+   create  over  ,  +
+1A0EE3C 	A8 A2 A0  1 
+1A0EE40 	54 49 A0  1 98 55 A0  1 
+1A0EE48 	 4 45 A0  1 
+   does> @ +	 	( base -- addr )
+1A0EE4C 	50 A3 A0  1 
+1A0EE50 	90 90 90 E8 24 52 FF FF 
+1A0EE58 	5C 4C A0  1  4 45 A0  1 
+;
+1A0EE60 	58 46 A0  1 
+
+\ Create two name fields with the same offset and size
+: 2field 		\ name  name  ( offset size -- offset' )
+1A0EE64 	 0 32 66 69 
+1A0EE68 	65 6C 64 86 38 EE A0  1 
+1A0EE70 	20 40 A0  1 
+   2dup field drop
+1A0EE74 	C0 49 A0  1 
+1A0EE78 	38 EE A0  1 30 49 A0  1 
+   field
+1A0EE80 	38 EE A0  1 
+;
+1A0EE84 	58 46 A0  1 

@@ -1,0 +1,120 @@
+
+\ Adapted from the version published in the ANS Forth spec.
+\ That version was originally developed by Mitch Bradley.
+
+defer headerless
+1A0F03C 	 0 68 65 61 
+1A0F040 	64 65 72 6C 65 73 73 8A 
+1A0F048 	38 F0 A0  1 5C 40 A0  1 
+1A0F050 	 4  3  0  0 
+defer headers
+1A0F054 	68 65 61 64 
+1A0F058 	65 72 73 87 4C F0 A0  1 
+1A0F060 	5C 40 A0  1  8  3  0  0 
+
+
+: [else]  ( -- )
+1A0F068 	 0 5B 65 6C 73 65 5D C6 
+1A0F070 	60 F0 A0  1 20 40 A0  1 
+   1  begin						( level )
+1A0F078 	80 6F A0  1 
+      begin  parse-word dup  while			( level adr len )
+1A0F07C 	34 93 A0  1 
+1A0F080 	40 49 A0  1 DC 41 A0  1 
+1A0F088 	F0  0  0  0 
+         $canonical               			( level adr len )
+1A0F08C 	FC B9 A0  1 
+         2dup s" [if]"     $=        >r			( level adr len )
+1A0F090 	C0 49 A0  1 9C 53 A0  1 
+1A0F098 	 4 5B 69 66 5D  0  0  0 
+1A0F0A0 	88 8D A0  1 BC 45 A0  1 
+         2dup s" [ifdef]"  $=  r> or >r			( level adr len )
+1A0F0A8 	C0 49 A0  1 9C 53 A0  1 
+1A0F0B0 	 7 5B 69 66 64 65 66 5D 
+1A0F0B8 	 0  0  0  0 88 8D A0  1 
+1A0F0C0 	D0 45 A0  1 70 44 A0  1 
+1A0F0C8 	BC 45 A0  1 
+         2dup s" [ifndef]" $=  r> or     if		( level adr len )
+1A0F0CC 	C0 49 A0  1 
+1A0F0D0 	9C 53 A0  1  8 5B 69 66 
+1A0F0D8 	6E 64 65 66 5D  0  0  0 
+1A0F0E0 	88 8D A0  1 D0 45 A0  1 
+1A0F0E8 	70 44 A0  1 DC 41 A0  1 
+1A0F0F0 	14  0  0  0 
+	    2drop 1+					( level' )
+1A0F0F4 	AC 49 A0  1 
+1A0F0F8 	30 4B A0  1 
+         else						( level adr len )
+1A0F0FC 	C8 41 A0  1 
+1A0F100 	70  0  0  0 
+	    2dup  s" [else]"  $=  if			( level adr len )
+1A0F104 	C0 49 A0  1 
+1A0F108 	9C 53 A0  1  6 5B 65 6C 
+1A0F110 	73 65 5D  0 88 8D A0  1 
+1A0F118 	DC 41 A0  1 24  0  0  0 
+	       2drop 1- dup  if  1+  then		( level' )
+1A0F120 	AC 49 A0  1 54 4B A0  1 
+1A0F128 	40 49 A0  1 DC 41 A0  1 
+1A0F130 	 8  0  0  0 30 4B A0  1 
+	    else					( level adr len )
+1A0F138 	C8 41 A0  1 20  0  0  0 
+	       s" [then]"  $=  if  1-  then		( level')
+1A0F140 	9C 53 A0  1  6 5B 74 68 
+1A0F148 	65 6E 5D  0 88 8D A0  1 
+1A0F150 	DC 41 A0  1  8  0  0  0 
+1A0F158 	54 4B A0  1 
+            then					( level' )
+	    ?dup 0=  if  exit  then			( level' )
+1A0F15C 	B4 70 A0  1 
+1A0F160 	24 47 A0  1 DC 41 A0  1 
+1A0F168 	 8  0  0  0 40 46 A0  1 
+         then						( level' )
+      repeat						( level adr len )
+1A0F170 	C8 41 A0  1  8 FF FF FF 
+      2drop						( level' )
+1A0F178 	AC 49 A0  1 
+   refill 0= until					( level' )
+1A0F17C 	38 E2 A0  1 
+1A0F180 	24 47 A0  1 DC 41 A0  1 
+1A0F188 	F4 FE FF FF 
+   drop
+1A0F18C 	30 49 A0  1 
+; immediate
+1A0F190 	58 46 A0  1 
+
+: [if]  ( flag -- )  0=  if  postpone [else]  then  ; immediate
+1A0F194 	 0  0  0 5B 
+1A0F198 	69 66 5D C4 74 F0 A0  1 
+1A0F1A0 	20 40 A0  1 24 47 A0  1 
+1A0F1A8 	DC 41 A0  1  8  0  0  0 
+1A0F1B0 	74 F0 A0  1 58 46 A0  1 
+
+: [then]  ( -- )  ;  immediate
+1A0F1B8 	 0 5B 74 68 65 6E 5D C6 
+1A0F1C0 	A0 F1 A0  1 20 40 A0  1 
+1A0F1C8 	58 46 A0  1 
+
+: [ifdef]   ( "name" -- )  defined?      postpone [if]  ; immediate
+1A0F1CC 	5B 69 66 64 
+1A0F1D0 	65 66 5D C7 C4 F1 A0  1 
+1A0F1D8 	20 40 A0  1 DC 93 A0  1 
+1A0F1E0 	A0 F1 A0  1 58 46 A0  1 
+: [ifndef]  ( "name" -- )  defined?  0=  postpone [if]  ; immediate
+1A0F1E8 	 0  0  0 5B 69 66 6E 64 
+1A0F1F0 	65 66 5D C8 D8 F1 A0  1 
+1A0F1F8 	20 40 A0  1 DC 93 A0  1 
+1A0F200 	24 47 A0  1 A0 F1 A0  1 
+1A0F208 	58 46 A0  1 
+
+: \+  ( "name" "rest of line" -- )  defined?  0=  if   postpone \  then  ; immediate
+1A0F20C 	 0 5C 2B C2 
+1A0F210 	F8 F1 A0  1 20 40 A0  1 
+1A0F218 	DC 93 A0  1 24 47 A0  1 
+1A0F220 	DC 41 A0  1  8  0  0  0 
+1A0F228 	74 8A A0  1 58 46 A0  1 
+: \-  ( "name" "rest of line" -- )  defined?  if  postpone \  then  ; immediate
+1A0F230 	 0 5C 2D C2 14 F2 A0  1 
+1A0F238 	20 40 A0  1 DC 93 A0  1 
+1A0F240 	DC 41 A0  1  8  0  0  0 
+1A0F248 	74 8A A0  1 58 46 A0  1 
+

@@ -1,0 +1,17 @@
+
+forth definitions
+headerless
+: array  \ name  ( #elements -- )
+1A17114 	 0  0 61 72 
+1A17118 	72 61 79 85  4 71 A1  1 
+1A17120 	20 40 A0  1 
+\   create /n* allot   does>  swap na+	\ not ROMable
+   /n* buffer:  does> do-buffer  swap na+    \ buffer: action plus  "swap na+"
+1A17124 	98 51 A0  1 
+1A17128 	D0 A9 A0  1 50 A3 A0  1 
+1A17130 	90 90 90 E8 44 CF FE FF 
+1A17138 	34 A9 A0  1 68 49 A0  1 
+1A17140 	48 50 A0  1 
+;
+1A17144 	58 46 A0  1 
+headers

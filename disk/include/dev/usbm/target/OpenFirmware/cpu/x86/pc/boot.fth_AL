@@ -1,0 +1,295 @@
+purpose: Stand-alone boot code for running ix86 version Forth
+
+\ create debug-startup
+
+\ Boot code (cold and warm start).  The cold start code is executed
+\ when Forth is initially started.  Its job is to initialize the Forth
+\ virtual machine registers.  The warm start code is executed when Forth
+\ is re-entered, perhaps as a result of an exception.
+
+[ifdef] debug-startup
+: ascii-chars " 0123456789abcdef" drop ;
+1A42190 	61 73 63 69 69 2D 63 68 
+1A42198 	61 72 73 8B 30 21 A4  1 
+1A421A0 	20 40 A0  1 9C 53 A0  1 
+1A421A8 	10 30 31 32 33 34 35 36 
+1A421B0 	37 38 39 61 62 63 64 65 
+1A421B8 	66  0  0  0 30 49 A0  1 
+1A421C0 	58 46 A0  1 
+: hdot  ( n -- )
+1A421C4 	 0  0  0 68 
+1A421C8 	64 6F 74 84 A0 21 A4  1 
+1A421D0 	20 40 A0  1 
+   7 0 do  0 h# 10 um/mod  loop  8 0 do  ascii-chars + c@ emit  loop  space
+1A421D4 	E0 6F A0  1 
+1A421D8 	70 6F A0  1 88 42 A0  1 
+1A421E0 	1C  0  0  0 70 6F A0  1 
+1A421E8 	58 41 A0  1 10  0  0  0 
+1A421F0 	7C 5D A0  1 F8 41 A0  1 
+1A421F8 	EC FF FF FF F0 6F A0  1 
+1A42200 	70 6F A0  1 88 42 A0  1 
+1A42208 	1C  0  0  0 A0 21 A4  1 
+1A42210 	 4 45 A0  1 C4 4C A0  1 
+1A42218 	2C 6C A0  1 F8 41 A0  1 
+1A42220 	EC FF FF FF CC 71 A0  1 
+;
+1A42228 	58 46 A0  1 
+[then]
+
+hex
+warning @  warning off 
+: stand-init-io  ( -- )
+1A4222C 	 0  0 73 74 
+1A42230 	61 6E 64 2D 69 6E 69 74 
+1A42238 	2D 69 6F 8D D0 21 A4  1 
+1A42240 	20 40 A0  1 
+   stand-init-io
+1A42244 	18 6F A2  1 
+   dict-limit to limit
+1A42248 	 C 26 A3  1 B8 40 A0  1 
+1A42250 	5C 54 A0  1 
+   inituarts install-uart-io
+1A42254 	58 14 A4  1 
+1A42258 	8C 15 A4  1 
+   ['] noop          ['] bye    (is
+1A4225C 	60 53 A0  1 
+1A42260 	64 4F A0  1 60 53 A0  1 
+1A42268 	74 6C A0  1 A4 65 A0  1 
+   ['] RAMbase       is lo-segment-base
+1A42270 	60 53 A0  1 A0 25 A3  1 
+1A42278 	98 40 A0  1 70  E A1  1 
+   ['] here          is lo-segment-limit
+1A42280 	60 53 A0  1 70 54 A0  1 
+1A42288 	98 40 A0  1 90  E A1  1 
+   ['] here          is hi-segment-base
+1A42290 	60 53 A0  1 70 54 A0  1 
+1A42298 	98 40 A0  1 AC  E A1  1 
+   ['] here          is hi-segment-limit
+1A422A0 	60 53 A0  1 70 54 A0  1 
+1A422A8 	98 40 A0  1 CC  E A1  1 
+
+   ['] reset-all     is bye
+1A422B0 	60 53 A0  1 38 E2 A1  1 
+1A422B8 	98 40 A0  1 74 6C A0  1 
+   true is flat?
+1A422C0 	 4 70 A0  1 B8 40 A0  1 
+1A422C8 	44 EF A0  1 
+   ['] 2drop         is sync-cache
+1A422CC 	60 53 A0  1 
+1A422D0 	AC 49 A0  1 98 40 A0  1 
+1A422D8 	34 6D A0  1 
+;
+1A422DC 	58 46 A0  1 
+warning !
+
+[ifdef] debug-startup
+\ diagnostic macros
+\ Assembler macro to assemble code to send the character "char" to COM1
+: wait-tx-ready  ( -- )
+1A422E0 	 0  0 77 61 69 74 2D 74 
+1A422E8 	78 2D 72 65 61 64 79 8D 
+1A422F0 	40 22 A4  1 20 40 A0  1 
+[ifdef] mem-uart-base   
+   " begin   h# 20 #  mem-uart-base 5 + #) byte test  0<> until" evaluate
+[else]
+   " begin   h# 3fd # dx mov   dx al in  h# 20 # al and   0<> until" evaluate
+1A422F8 	9C 53 A0  1 3E 62 65 67 
+1A42300 	69 6E 20 20 20 68 23 20 
+1A42308 	33 66 64 20 23 20 64 78 
+1A42310 	20 6D 6F 76 20 20 20 64 
+1A42318 	78 20 61 6C 20 69 6E 20 
+1A42320 	20 68 23 20 32 30 20 23 
+1A42328 	20 61 6C 20 61 6E 64 20 
+1A42330 	20 20 30 3C 3E 20 75 6E 
+1A42338 	74 69 6C  0 D8 E5 A0  1 
+[then]
+;
+1A42340 	58 46 A0  1 
+: report  ( char -- )
+1A42344 	 0 72 65 70 
+1A42348 	6F 72 74 86 F4 22 A4  1 
+1A42350 	20 40 A0  1 
+   wait-tx-ready
+1A42354 	F4 22 A4  1 
+[ifdef] mem-uart-base
+   ( char )  " # mem-uart-base #) byte mov" evaluate
+[else]
+   ( char )  " # al mov  h# 3f8 # dx mov  al dx out" evaluate
+1A42358 	9C 53 A0  1 24 23 20 61 
+1A42360 	6C 20 6D 6F 76 20 20 68 
+1A42368 	23 20 33 66 38 20 23 20 
+1A42370 	64 78 20 6D 6F 76 20 20 
+1A42378 	61 6C 20 64 78 20 6F 75 
+1A42380 	74  0  0  0 D8 E5 A0  1 
+[then]
+   wait-tx-ready
+1A42388 	F4 22 A4  1 
+;
+1A4238C 	58 46 A0  1 
+: nreport  ( -- )  \ print 4-bit value in bl
+1A42390 	6E 72 65 70 6F 72 74 87 
+1A42398 	50 23 A4  1 20 40 A0  1 
+   wait-tx-ready
+1A423A0 	F4 22 A4  1 
+[ifdef] mem-uart-base
+   " bl al mov  h# 0f # ax and  h# 30 # ax add  al mem-uart-base #) mov" evaluate
+[else]
+   " bl al mov  h# 0f # ax and  h# 30 # ax add  h# 3f8 # dx mov  al dx out" evaluate
+1A423A4 	9C 53 A0  1 
+1A423A8 	45 62 6C 20 61 6C 20 6D 
+1A423B0 	6F 76 20 20 68 23 20 30 
+1A423B8 	66 20 23 20 61 78 20 61 
+1A423C0 	6E 64 20 20 68 23 20 33 
+1A423C8 	30 20 23 20 61 78 20 61 
+1A423D0 	64 64 20 20 68 23 20 33 
+1A423D8 	66 38 20 23 20 64 78 20 
+1A423E0 	6D 6F 76 20 20 61 6C 20 
+1A423E8 	64 78 20 6F 75 74  0  0 
+1A423F0 	D8 E5 A0  1 
+[then]
+;
+1A423F4 	58 46 A0  1 
+: dotbyte   ( - )     \ print byte in bl
+1A423F8 	64 6F 74 62 79 74 65 87 
+1A42400 	9C 23 A4  1 20 40 A0  1 
+   "  bx 4 # ror " eval  nreport
+1A42408 	9C 53 A0  1  C 20 62 78 
+1A42410 	20 34 20 23 20 72 6F 72 
+1A42418 	20  0  0  0 D8 E5 A0  1 
+1A42420 	9C 23 A4  1 
+   "  bx 4 # rol " eval  nreport
+1A42424 	9C 53 A0  1 
+1A42428 	 C 20 62 78 20 34 20 23 
+1A42430 	20 72 6F 6C 20  0  0  0 
+1A42438 	D8 E5 A0  1 9C 23 A4  1 
+   h# 20 nreport
+1A42440 	58 41 A0  1 20  0  0  0 
+1A42448 	9C 23 A4  1 
+;
+1A4244C 	58 46 A0  1 
+
+label putchar  ( al:char -- )
+1A42450 	70 75 74 63 68 61 72 87 
+1A42458 	 4 24 A4  1 30 40 A0  1 
+   dx push  bx push
+1A42460 	52 53 
+[ifdef] mem-uart-base
+   wait-tx-ready
+   al  mem-uart-base #) mov
+[else]
+   al bl mov
+1A42462 	8A D8 
+   wait-tx-ready
+1A42464 	BA FD  3  0 
+1A42468 	 0 EC 24 20 74 F6 
+   bl al mov  h# 3f8 # dx mov  al dx out
+1A4246E 	8A C3 
+1A42470 	BA F8  3  0  0 EE 
+[then]
+   wait-tx-ready
+1A42476 	BA FD 
+1A42478 	 3  0  0 EC 24 20 74 F6 
+
+   bx pop  dx pop
+1A42480 	5B 5A 
+   ret
+1A42482 	C3 
+end-code
+
+label puthexit  ( ax:nibble -- )
+1A42483 	70 75 74 68 65 
+1A42488 	78 69 74 88 5C 24 A4  1 
+1A42490 	30 40 A0  1 
+   h# f #  ax  and
+1A42494 	25  F  0  0 
+1A42498 	 0 
+   9 # ax cmp  > if
+1A42499 	3D  9  0  0  0 7E  7 
+      char a d# 10 - #  ax  add
+1A424A0 	 5 57  0  0  0 
+   else
+1A424A5 	EB  5 
+      char 0 #  ax  add
+1A424A7 	 5 
+1A424A8 	30  0  0  0 
+   then
+   putchar #) call
+1A424AC 	E8 AF FF FF 
+1A424B0 	FF 
+   ret
+1A424B1 	C3 
+end-code
+
+label dot  ( ax:value -- )
+1A424B2 	 0  0 64 6F 74 83 
+1A424B8 	90 24 A4  1 30 40 A0  1 
+   bx push  cx push
+1A424C0 	53 51 
+   ax bx mov
+1A424C2 	8B D8 
+   8 # cx mov
+1A424C4 	B9  8  0  0 
+1A424C8 	 0 
+   begin
+      bx 4 # rol
+1A424C9 	C1 C3  4 
+      bx ax mov
+1A424CC 	8B C3 
+      puthexit #) call
+1A424CE 	E8 C1 
+1A424D0 	FF FF FF 
+      cx dec
+1A424D3 	49 
+   0= until
+1A424D4 	75 F3 
+   h# 20 # ax mov
+1A424D6 	B8 20 
+1A424D8 	 0  0  0 
+   putchar #) call
+1A424DB 	E8 80 FF FF FF 
+   cx pop bx pop
+1A424E0 	59 5B 
+   ret
+1A424E2 	C3 
+end-code
+
+\ *** NOTE: dot is too big to be put inside a control structure ***
+: mdot   ( reg - )     \ print 32-bit value in reg
+1A424E3 	6D 64 6F 74 84 
+1A424E8 	BC 24 A4  1 20 40 A0  1 
+   " ax push   bx push   cx push   dx push" eval
+1A424F0 	9C 53 A0  1 25 61 78 20 
+1A424F8 	70 75 73 68 20 20 20 62 
+1A42500 	78 20 70 75 73 68 20 20 
+1A42508 	20 63 78 20 70 75 73 68 
+1A42510 	20 20 20 64 78 20 70 75 
+1A42518 	73 68  0  0 D8 E5 A0  1 
+   " bx mov" eval	\ trashes ax,bx,cx,dx
+1A42520 	9C 53 A0  1  6 62 78 20 
+1A42528 	6D 6F 76  0 D8 E5 A0  1 
+\   " 0 # cx mov begin" eval
+   8 0 do
+1A42530 	F0 6F A0  1 70 6F A0  1 
+1A42538 	88 42 A0  1 28  0  0  0 
+      "  bx 4 # rol " eval  nreport
+1A42540 	9C 53 A0  1  C 20 62 78 
+1A42548 	20 34 20 23 20 72 6F 6C 
+1A42550 	20  0  0  0 D8 E5 A0  1 
+1A42558 	9C 23 A4  1 
+   loop
+1A4255C 	F8 41 A0  1 
+1A42560 	E0 FF FF FF 
+\ XXX doesn't cx need to be decremented?
+\   " d# 8 # cx cmp >= until" eval
+   h# 20 report
+1A42564 	58 41 A0  1 
+1A42568 	20  0  0  0 50 23 A4  1 
+   " dx pop   cx pop   bx pop   ax pop" eval
+1A42570 	9C 53 A0  1 21 64 78 20 
+1A42578 	70 6F 70 20 20 20 63 78 
+1A42580 	20 70 6F 70 20 20 20 62 
+1A42588 	78 20 70 6F 70 20 20 20 
+1A42590 	61 78 20 70 6F 70  0  0 
+1A42598 	D8 E5 A0  1 
+;
+1A4259C 	58 46 A0  1 

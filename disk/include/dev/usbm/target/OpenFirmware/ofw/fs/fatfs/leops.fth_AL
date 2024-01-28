@@ -1,0 +1,61 @@
+\ "Little-endian" memory operations.  The least-significant byte is
+\ stored at the lowest address.  "Intel byte order".
+
+\ mmo private
+
+: lew@  ( adr -- w )  dup c@  swap 1+ c@  bwjoin  ;
+1A2B470 	 0  0  0 6C 65 77 40 84 
+1A2B478 	6C B4 A2  1 20 40 A0  1 
+1A2B480 	40 49 A0  1 C4 4C A0  1 
+1A2B488 	68 49 A0  1 30 4B A0  1 
+1A2B490 	C4 4C A0  1 84 FB A0  1 
+1A2B498 	58 46 A0  1 
+: lew!  ( w adr -- )  2dup c!  swap 8 >> swap 1+ c!  ;
+1A2B49C 	 0  0  0 6C 
+1A2B4A0 	65 77 21 84 7C B4 A2  1 
+1A2B4A8 	20 40 A0  1 C0 49 A0  1 
+1A2B4B0 	B8 4D A0  1 68 49 A0  1 
+1A2B4B8 	F0 6F A0  1 DC 44 A0  1 
+1A2B4C0 	68 49 A0  1 30 4B A0  1 
+1A2B4C8 	B8 4D A0  1 58 46 A0  1 
+: lel@  ( adr -- l )  dup lew@ swap 2+ lew@ wljoin  ;
+1A2B4D0 	 0  0  0 6C 65 6C 40 84 
+1A2B4D8 	A8 B4 A2  1 20 40 A0  1 
+1A2B4E0 	40 49 A0  1 7C B4 A2  1 
+1A2B4E8 	68 49 A0  1 40 4B A0  1 
+1A2B4F0 	7C B4 A2  1 D4 4F A0  1 
+1A2B4F8 	58 46 A0  1 
+: lel!  ( l adr -- )  >r lwsplit r@ 2+ lew! r> lew!  ;
+1A2B4FC 	 0  0  0 6C 
+1A2B500 	65 6C 21 84 DC B4 A2  1 
+1A2B508 	20 40 A0  1 BC 45 A0  1 
+1A2B510 	A0 4F A0  1 E4 45 A0  1 
+1A2B518 	40 4B A0  1 A8 B4 A2  1 
+1A2B520 	D0 45 A0  1 A8 B4 A2  1 
+1A2B528 	58 46 A0  1 
+
+\ Fetches 3 consecutive bytes in Intel byte order - least significant
+\ at the lowest address
+: le24@  ( adr -- l )  >r  r@ c@  r@ 1+ c@  r> 2+ c@  0 bljoin  ;
+1A2B52C 	 0  0 6C 65 
+1A2B530 	32 34 40 85  8 B5 A2  1 
+1A2B538 	20 40 A0  1 BC 45 A0  1 
+1A2B540 	E4 45 A0  1 C4 4C A0  1 
+1A2B548 	E4 45 A0  1 30 4B A0  1 
+1A2B550 	C4 4C A0  1 D0 45 A0  1 
+1A2B558 	40 4B A0  1 C4 4C A0  1 
+1A2B560 	70 6F A0  1 DC FB A0  1 
+1A2B568 	58 46 A0  1 
+
+\ Stores 3 consecutive bytes in Intel byte order - least significant
+\ at the lowest address
+: le24!  ( l adr -- )  >r lbsplit drop  r@ 2+ c!  r@ 1+ c!  r> c!  ;
+1A2B56C 	 0  0 6C 65 
+1A2B570 	32 34 21 85 38 B5 A2  1 
+1A2B578 	20 40 A0  1 BC 45 A0  1 
+1A2B580 	B4 FB A0  1 30 49 A0  1 
+1A2B588 	E4 45 A0  1 40 4B A0  1 
+1A2B590 	B8 4D A0  1 E4 45 A0  1 
+1A2B598 	30 4B A0  1 B8 4D A0  1 
+1A2B5A0 	D0 45 A0  1 B8 4D A0  1 
+1A2B5A8 	58 46 A0  1 

@@ -1,0 +1,380 @@
+purpose: Allocator for physical memory - 1-cell version
+
+\ Methods:
+
+\ claim  ( [ phys ] size alignment -- base )
+\       If "alignment" is non-zero, allocates at least "size" bytes of
+\	physical memory aligned on the indicated boundary, returning
+\	its address "base".  This implementation rounds
+\	"alignment" up to a multiple of the page size.
+\
+\	If "alignment" is zero, removes the range of physical memory
+\	denoted by phys and size from the list of available
+\	physical memory, returning "base" equal to "phys"
+\
+\ release  ( phys size -- )
+\	Frees the physical memory range denoted by phys and size.
+
+\ clear-mem is a deferred word so that a system-dependent implementation,
+\ perhaps using bzero hardware, can be installed in the system-dependent
+\ part of the load sequence.
+
+headerless
+defer clear-mem  ( phys size -- )  ' 2drop is clear-mem
+1A32D0C 	 0  0 63 6C 
+1A32D10 	65 61 72 2D 6D 65 6D 89 
+1A32D18 	C8 2B A3  1 5C 40 A0  1 
+1A32D20 	18  A  0  0 
+defer initial-memory  ( -- adr len )  ' no-memory to initial-memory
+1A32D24 	 0 69 6E 69 
+1A32D28 	74 69 61 6C 2D 6D 65 6D 
+1A32D30 	6F 72 79 8E 1C 2D A3  1 
+1A32D38 	5C 40 A0  1 1C  A  0  0 
+
+headers
+root-device
+new-device  current-device-t to memory-device \ mmo
+1A32D40 	E0 B6 A0  1 20  A  0  0 
+1A32D48 	B8 10 A2  1 E0 B6 A0  1 
+1A32D50 	40  A  0  0 
+
+" memory" device-name
+1A32D54 	6D 65 6D 6F 
+1A32D58 	72 79  0 6E 61 6D 65 84 
+1A32D60 	 0  0 A0  1 BC 13 A2  1 
+1A32D68 	14  0  0  0  7  0  0  0 
+
+list: physavail   0 physavail !
+1A32D70 	 0  0 70 68 79 73 61 76 
+1A32D78 	61 69 6C 89  0  0 A0  1 
+1A32D80 	48 40 A0  1 44  A  0  0 
+
+headers
+: first-phys-avail  ( -- phys size )
+1A32D88 	 0  0  0 66 69 72 73 74 
+1A32D90 	2D 70 68 79 73 2D 61 76 
+1A32D98 	61 69 6C 90 80 2D A3  1 
+1A32DA0 	20 40 A0  1 
+   physavail last-node node-range  ( phys size )
+1A32DA4 	80 2D A3  1 
+1A32DA8 	6C 73 A1  1 64 27 A3  1 
+;
+1A32DB0 	58 46 A0  1 
+headerless
+
+: accum-size  ( total node -- total' false )  >size @ +  false  ;
+1A32DB4 	 0 61 63 63 
+1A32DB8 	75 6D 2D 73 69 7A 65 8A 
+1A32DC0 	A0 2D A3  1 20 40 A0  1 
+1A32DC8 	DC 26 A3  1 5C 4C A0  1 
+1A32DD0 	 4 45 A0  1 18 70 A0  1 
+1A32DD8 	58 46 A0  1 
+: total-size  ( list -- size )
+1A32DDC 	 0 74 6F 74 
+1A32DE0 	61 6C 2D 73 69 7A 65 8A 
+1A32DE8 	C4 2D A3  1 20 40 A0  1 
+   0 swap ['] accum-size find-node  2drop
+1A32DF0 	70 6F A0  1 68 49 A0  1 
+1A32DF8 	60 53 A0  1 C4 2D A3  1 
+1A32E00 	88 72 A1  1 AC 49 A0  1 
+;
+1A32E08 	58 46 A0  1 
+
+: (claim-phys-callback)
+1A32E0C 	 0  0 28 63 
+1A32E10 	6C 61 69 6D 2D 70 68 79 
+1A32E18 	73 2D 63 61 6C 6C 62 61 
+1A32E20 	63 6B 29 95 EC 2D A3  1 
+1A32E28 	20 40 A0  1 
+   ( aln|adr size  aln size max min -- aln|adr size false | phys true )
+   4 " claim-phys"  ($callback)  if                 ( adr size )
+1A32E2C 	B0 6F A0  1 
+1A32E30 	9C 53 A0  1  A 63 6C 61 
+1A32E38 	69 6D 2D 70 68 79 73  0 
+1A32E40 	9C A4 A2  1 DC 41 A0  1 
+1A32E48 	10  0  0  0 
+      \ There was no "claim-phys" callback, so we return false to
+      \ indicate that the firmware should proceed.
+      false                                       ( adr size false )
+1A32E4C 	18 70 A0  1 
+   else                                           ( adr size  [ phys ] err? n )
+1A32E50 	C8 41 A0  1 18  0  0  0 
+      \ There was a "claim-phys" callback.  If it succeeded, we return
+      \ the result under true to indicate that the operation has
+      \ been performed.  If it failed, we throw the error because we
+      \ are no longer in charge of allocation services.
+      drop throw                                  ( aln size phys )
+1A32E58 	30 49 A0  1 74 7F A0  1 
+      nip nip true
+1A32E60 	FC 46 A0  1 FC 46 A0  1 
+1A32E68 	 4 70 A0  1 
+   then      
+;
+1A32E6C 	58 46 A0  1 
+: alloc-phys-callback?  ( aln size -- aln size false | phys true )
+1A32E70 	 0  0  0 61 6C 6C 6F 63 
+1A32E78 	2D 70 68 79 73 2D 63 61 
+1A32E80 	6C 6C 62 61 63 6B 3F 94 
+1A32E88 	28 2E A3  1 20 40 A0  1 
+   2dup  -1 0  (claim-phys-callback)
+1A32E90 	C0 49 A0  1 58 41 A0  1 
+1A32E98 	FF FF FF FF 70 6F A0  1 
+1A32EA0 	28 2E A3  1 
+;
+1A32EA4 	58 46 A0  1 
+: claim-phys-callback?  ( adr size -- adr size false | phys true )
+1A32EA8 	 0  0  0 63 6C 61 69 6D 
+1A32EB0 	2D 70 68 79 73 2D 63 61 
+1A32EB8 	6C 6C 62 61 63 6B 3F 94 
+1A32EC0 	8C 2E A3  1 20 40 A0  1 
+   2dup  pagesize -rot swap dup  (claim-phys-callback)
+1A32EC8 	C0 49 A0  1 50 7F A2  1 
+1A32ED0 	94 49 A0  1 68 49 A0  1 
+1A32ED8 	40 49 A0  1 28 2E A3  1 
+;
+1A32EE0 	58 46 A0  1 
+: release-phys-callback?  ( adr size -- true | adr size false )
+1A32EE4 	 0 72 65 6C 
+1A32EE8 	65 61 73 65 2D 70 68 79 
+1A32EF0 	73 2D 63 61 6C 6C 62 61 
+1A32EF8 	63 6B 3F 96 C4 2E A3  1 
+1A32F00 	20 40 A0  1 
+   2dup 2  " release-phys"  ($callback)  if       ( adr size )
+1A32F04 	C0 49 A0  1 
+1A32F08 	90 6F A0  1 9C 53 A0  1 
+1A32F10 	 C 72 65 6C 65 61 73 65 
+1A32F18 	2D 70 68 79 73  0  0  0 
+1A32F20 	9C A4 A2  1 DC 41 A0  1 
+1A32F28 	10  0  0  0 
+      \ There was no "release-phys" callback, so we return false to
+      \ indicate that the firmware should proceed.
+      false                                       ( adr size false )
+1A32F2C 	18 70 A0  1 
+   else                                           ( adr size  err? n )
+1A32F30 	C8 41 A0  1 10  0  0  0 
+      \ There was a "release-phys" callback.  If it failed, oh well.
+      \ Discard the arguments and return true to indicate that the
+      \ operation has been done.
+      2drop 2drop true
+1A32F38 	AC 49 A0  1 AC 49 A0  1 
+1A32F40 	 4 70 A0  1 
+   then      
+;
+1A32F44 	58 46 A0  1 
+
+: allocate-aligned-physical  ( alignment size -- phys )
+1A32F48 	 0  0 61 6C 6C 6F 63 61 
+1A32F50 	74 65 2D 61 6C 69 67 6E 
+1A32F58 	65 64 2D 70 68 79 73 69 
+1A32F60 	63 61 6C 99  0 2F A3  1 
+1A32F68 	20 40 A0  1 
+   \ Minumum granularity of memory chunks is 1 page
+   swap pagesize round-up
+1A32F6C 	68 49 A0  1 
+1A32F70 	50 7F A2  1 A4 91 A0  1 
+   swap pagesize round-up			( aln+ size+ )
+1A32F78 	68 49 A0  1 50 7F A2  1 
+1A32F80 	A4 91 A0  1 
+
+   alloc-phys-callback?  if  exit  then         ( aln+ size+ )
+1A32F84 	8C 2E A3  1 
+1A32F88 	DC 41 A0  1  8  0  0  0 
+1A32F90 	40 46 A0  1 
+
+   tuck physavail				( size alignment size list )
+1A32F94 	E8 46 A0  1 
+1A32F98 	80 2D A3  1 
+   allocate-memrange				( size [ adr ] error? )
+1A32F9C 	C8 2B A3  1 
+   abort" Insufficient physical memory"		( size adr )
+1A32FA0 	 8 81 A0  1 1C 49 6E 73 
+1A32FA8 	75 66 66 69 63 69 65 6E 
+1A32FB0 	74 20 70 68 79 73 69 63 
+1A32FB8 	61 6C 20 6D 65 6D 6F 72 
+1A32FC0 	79  0  0  0 
+   dup rot clear-mem				( phys )
+1A32FC4 	40 49 A0  1 
+1A32FC8 	7C 49 A0  1 1C 2D A3  1 
+;
+1A32FD0 	58 46 A0  1 
+
+variable allow-reclaim  true allow-reclaim !
+1A32FD4 	 0  0 61 6C 
+1A32FD8 	6C 6F 77 2D 72 65 63 6C 
+1A32FE0 	61 69 6D 8D 68 2F A3  1 
+1A32FE8 	48 40 A0  1 48  A  0  0 
+: claim-physical  ( adr len -- )
+1A32FF0 	 0 63 6C 61 69 6D 2D 70 
+1A32FF8 	68 79 73 69 63 61 6C 8E 
+1A33000 	E8 2F A3  1 20 40 A0  1 
+   >page-boundaries                               ( adr' len' )
+1A33008 	1C 28 A3  1 
+
+   claim-phys-callback?  if  drop exit  then      ( adr' len' )
+1A3300C 	C4 2E A3  1 
+1A33010 	DC 41 A0  1  C  0  0  0 
+1A33018 	30 49 A0  1 40 46 A0  1 
+
+   \ Look first in the monitor's piece list
+   physavail  ['] contained?  find-node           ( adr len prev next|0 )
+1A33020 	80 2D A3  1 60 53 A0  1 
+1A33028 	30 29 A3  1 88 72 A1  1 
+   is next-node  is prev-node                     ( adr len )
+1A33030 	B8 40 A0  1 24 27 A3  1 
+1A33038 	B8 40 A0  1  C 27 A3  1 
+
+   next-node 0=  if
+1A33040 	24 27 A3  1 24 47 A0  1 
+1A33048 	DC 41 A0  1 3C  0  0  0 
+      allow-reclaim @  0=
+1A33050 	E8 2F A3  1 5C 4C A0  1 
+1A33058 	24 47 A0  1 
+      abort" physical address already used"       ( adr len )
+1A3305C 	 8 81 A0  1 
+1A33060 	1D 70 68 79 73 69 63 61 
+1A33068 	6C 20 61 64 64 72 65 73 
+1A33070 	73 20 61 6C 72 65 61 64 
+1A33078 	79 20 75 73 65 64  0  0 
+      2drop  exit
+1A33080 	AC 49 A0  1 40 46 A0  1 
+   then
+
+   \ There are 4 cases to consider in removing the requested physical
+   \ address range from the list:
+   \ (1) The requested range exactly matches the list node range
+   \ (2) The requested range is at the beginning of the list node range
+   \ (3) The requested range is at the end of the list node range
+   \ (4) The requested range is in the middle of the list node range
+
+   \ Remember the range of the node to be deleted
+   next-node node-range                            ( adr len node-a,l )
+1A33088 	24 27 A3  1 64 27 A3  1 
+
+   \ Remove the node from the list
+   prev-node delete-after  memrange free-node      ( adr len node-a,l )
+1A33090 	 C 27 A3  1 58 72 A1  1 
+1A33098 	F4 26 A3  1 88 74 A1  1 
+
+   \ Give back any left-over portion at the beginning
+   over 4 pick over -  dup  if            ( adr len node-a,l begin-a,l )
+1A330A0 	54 49 A0  1 B0 6F A0  1 
+1A330A8 	 C 4A A0  1 54 49 A0  1 
+1A330B0 	18 45 A0  1 40 49 A0  1 
+1A330B8 	DC 41 A0  1 14  0  0  0 
+      physavail free-memrange
+1A330C0 	80 2D A3  1 54 29 A3  1 
+   else
+1A330C8 	C8 41 A0  1  8  0  0  0 
+      2drop
+1A330D0 	AC 49 A0  1 
+   then                                            ( adr len node-a,l )
+
+   \ Give back any left-over portion at the end
+   2swap +  -rot  +   over -                            ( end-a,l )
+1A330D4 	F4 49 A0  1 
+1A330D8 	 4 45 A0  1 94 49 A0  1 
+1A330E0 	 4 45 A0  1 54 49 A0  1 
+1A330E8 	18 45 A0  1 
+   ?dup  if  physavail free-memrange  else  drop  then  (  )
+1A330EC 	B4 70 A0  1 
+1A330F0 	DC 41 A0  1 14  0  0  0 
+1A330F8 	80 2D A3  1 54 29 A3  1 
+1A33100 	C8 41 A0  1  8  0  0  0 
+1A33108 	30 49 A0  1 
+;
+1A3310C 	58 46 A0  1 
+headers
+: claim ( [ phys ] size align -- base )
+1A33110 	 0  0 63 6C 61 69 6D 85 
+1A33118 	 4 30 A3  1 20 40 A0  1 
+   ?dup  if                          ( size align )
+1A33120 	B4 70 A0  1 DC 41 A0  1 
+1A33128 	14  0  0  0 
+      \ Alignment should be next power of two
+      swap allocate-aligned-physical ( base )
+1A3312C 	68 49 A0  1 
+1A33130 	68 2F A3  1 
+   else                              ( phys size )
+1A33134 	C8 41 A0  1 
+1A33138 	14  0  0  0 
+      >r dup r> claim-physical       ( base )
+1A3313C 	BC 45 A0  1 
+1A33140 	40 49 A0  1 D0 45 A0  1 
+1A33148 	 4 30 A3  1 
+   then                              ( base )
+;
+1A3314C 	58 46 A0  1 
+: release  ( phys size -- )
+1A33150 	72 65 6C 65 61 73 65 87 
+1A33158 	1C 31 A3  1 20 40 A0  1 
+   >page-boundaries                         ( adr' size' )
+1A33160 	1C 28 A3  1 
+   release-phys-callback?  if  exit  then   ( adr' size' )
+1A33164 	 0 2F A3  1 
+1A33168 	DC 41 A0  1  8  0  0  0 
+1A33170 	40 46 A0  1 
+   ['] 2drop  is ?splice                    ( adr' size' )
+1A33174 	60 53 A0  1 
+1A33178 	AC 49 A0  1 98 40 A0  1 
+1A33180 	4C 27 A3  1 
+   physavail free-memrange
+1A33184 	80 2D A3  1 
+1A33188 	54 29 A3  1 
+;
+1A3318C 	58 46 A0  1 
+: close  ( -- )  ;
+1A33190 	 0  0 63 6C 6F 73 65 85 
+1A33198 	5C 31 A3  1 20 40 A0  1 
+1A331A0 	58 46 A0  1 
+: open  ( -- ok? )
+1A331A4 	 0  0  0 6F 
+1A331A8 	70 65 6E 84 9C 31 A3  1 
+1A331B0 	20 40 A0  1 
+   physavail @  if  true exit  then
+1A331B4 	80 2D A3  1 
+1A331B8 	5C 4C A0  1 DC 41 A0  1 
+1A331C0 	 C  0  0  0  4 70 A0  1 
+1A331C8 	40 46 A0  1 
+   initial-memory  dup  if   ( phys size )
+1A331CC 	38 2D A3  1 
+1A331D0 	40 49 A0  1 DC 41 A0  1 
+1A331D8 	10  0  0  0 
+      release
+1A331DC 	5C 31 A3  1 
+   else
+1A331E0 	C8 41 A0  1  8  0  0  0 
+      2drop
+1A331E8 	AC 49 A0  1 
+   then
+   true
+1A331EC 	 4 70 A0  1 
+;
+1A331F0 	58 46 A0  1 
+
+-2 constant mode
+1A331F4 	 0  0  0 6D 
+1A331F8 	6F 64 65 84 B0 31 A3  1 
+1A33200 	68 40 A0  1 FE FF FF FF 
+
+finish-device
+1A33208 	 0  0  0  0  0  0  0  0 
+1A33210 	 0  0  0  0  0  0  0  0 
+1A33218 	 0  0  0  0  0  0  0  0 
+device-end
+
+headers
+stand-init: memory node
+1A33220 	 0 73 74 61 6E 64 2D 69 
+1A33228 	6E 69 74 8A 38 2D A3  1 
+1A33230 	20 40 A0  1 2C 7E A2  1 
+1A33238 	9C 53 A0  1  B 6D 65 6D 
+1A33240 	6F 72 79 20 6E 6F 64 65 
+1A33248 	 0  0  0  0 80 6D A0  1 
+1A33250 	 4 6C A0  1 
+   " /memory" open-dev  memory-node !
+1A33254 	9C 53 A0  1 
+1A33258 	 7 2F 6D 65 6D 6F 72 79 
+1A33260 	 0  0  0  0 FC 3E A2  1 
+1A33268 	58 7E A2  1 54 4D A0  1 
+;
+1A33270 	58 46 A0  1 

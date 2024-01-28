@@ -1,0 +1,62 @@
+purpose: Create COM port nodes
+
+[ifndef] no-com1-node
+0 0  " i3f8"  " /isa"  begin-package
+1A3AE50 	E0 B6 A0  1 C8  B  0  0 
+1A3AE58 	D8 91 A3  1 E0 B6 A0  1 
+1A3AE60 	E8  B  0  0 
+[ifdef] PREP
+   4 encode-int                          " interrupts" property
+[else]
+   4 encode-int  3 encode-int encode+    " interrupts" property
+1A3AE64 	 0  0  0  4 
+1A3AE68 	 0  0  0  3  0 69 6E 74 
+1A3AE70 	65 72 72 75 70 74 73 8A 
+1A3AE78 	 0  0 A0  1 BC 13 A2  1 
+1A3AE80 	1C  0  0  0  8  0  0  0 
+[then]
+
+   \ XXX The SuperIO data sheet implies that the clock rate is 24MHz/13, which
+   \ is 1,846,153, while the ARC config data says 1,843,200.  The difference
+   \ accounts for the 0.2% (actually .16%) error mentioned in the data sheet.
+   \ Until we can determine whether or not NT can handle the truth, we will
+   \ fudge the data and say it's 1,843,200
+   \ d# 1846153 encode-int " clock-frequency" property
+   d# 1843200 encode-int " clock-frequency" property
+1A3AE88 	 0 1C 20  0 63 6C 6F 63 
+1A3AE90 	6B 2D 66 72 65 71 75 65 
+1A3AE98 	6E 63 79 8F 7C AE A3  1 
+1A3AEA0 	BC 13 A2  1 1C  0  0  0 
+1A3AEA8 	 4  0  0  0 
+\eof
+\   fload ${BP}/dev/ns16550a.fth
+S" OpenFirmware/dev/16550pkg/ns16550p.fth"  INCLUDED
+S" OpenFirmware/dev/16550pkg/isa-int.fth"  INCLUDED
+end-package
+
+: com1  ( -- adr len )  " com1"  ;  ' com1 to fallback-device
+
+: use-com1  ( -- )
+   " com1" " input-device" $setenv
+   " com1" " output-device" $setenv
+;
+[then]
+
+[ifndef] no-com2-node
+0 0  " i2f8"  " /isa"  begin-packagez
+[ifdef] PREP
+   3 encode-int                          " interrupts" property
+[else]
+   3 encode-int  3 encode-int encode+    " interrupts" property
+[then]
+
+   d# 1843200 encode-int " clock-frequency" property
+\   fload ${BP}/dev/ns16550a.fth
+
+S" OpenFirmware/dev/16550pkg/ns16550p.fth"  INCLUDED
+S" OpenFirmware/dev/16550pkg/isa-int.fth"  INCLUDED
+
+end-package
+
+: com2  ( -- adr len )  " com2"  ;
+[then]

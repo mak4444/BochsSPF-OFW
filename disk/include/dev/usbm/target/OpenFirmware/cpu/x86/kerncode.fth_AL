@@ -1,0 +1,3552 @@
+
+code-field: docolon 
+   \ ??? perhaps we can use "4 [w] ip lea"
+   rp adec   ip  0 [rp] mov   w ainc   w ip mov
+1A04020 	83 ED  4 89 75  0  5  4 
+1A04028 	 0  0  0 8B F0 
+c;
+1A0402D 	FF E7 
+
+code-field: docreate
+1A0402F 	 0 
+   w ainc   w push
+1A04030 	 5  4  0  0  0 50 
+c;
+1A04036 	FF E7 
+
+code-field: dovariable
+   w ainc   w push
+1A04038 	 5  4  0  0  0 50 
+c;
+1A0403E 	FF E7 
+
+code-field: dolabel
+   w ainc   w push
+1A04040 	 5  4  0  0  0 50 
+c;
+1A04046 	FF E7 
+
+code-field: douser
+   [apf] ax mov  ?bswap-ax   up ax add   1push
+1A04048 	8B 40  4  1 F8 50 
+c;
+1A0404E 	FF E7 
+
+code-field: dovalue
+   [apf] ax mov  ?bswap-ax   up ax add   0 [ax] ax mov  ?bswap-ax
+1A04050 	8B 40  4  1 F8 8B  0 
+   1push
+1A04057 	50 
+c;
+1A04058 	FF E7 
+
+code-field: dodefer
+1A0405A 	 0  0 
+   [apf] ax mov  ?bswap-ax   up ax add   0 [ax] w mov   
+1A0405C 	8B 40  4  1 
+1A04060 	F8 8B  0 
+\ Tail of "next"
+\+ rel-t  up ax add   0 [ax] bx mov  up bx add   bx jmp
+\- rel-t  0 [w] jmp
+1A04063 	FF 20 
+end-code
+
+code-field: doconstant
+1A04065 	 0  0  0 
+   [apf] ax mov  ?bswap-ax   1push
+1A04068 	8B 40  4 50 
+c;
+1A0406C 	FF E7 
+
+code-field: do2constant
+1A0406E 	 0  0 
+   [apf] dx mov
+1A04070 	8B 50  4 
+[ifdef] big-endian-t
+   dx ax mov  ?bswap-ax  ax dx mov
+[then]
+   /cf /n + [w] ax mov  ?bswap-ax
+1A04073 	8B 40  8 
+   2push
+1A04076 	52 50 
+c;
+1A04078 	FF E7 
+
+code-field: dodoes
+1A0407A 	 0  0 
+   rp adec   ip  0 [rp] mov   ip pop
+1A0407C 	83 ED  4 89 
+1A04080 	75  0 5E 
+   w ainc   w push
+1A04083 	 5  4  0  0  0 
+1A04088 	50 
+c;
+1A04089 	FF E7 
+
+:-h place-cf-t  ( action-apf -- )  acf-align-t token,-t  ;-h
+
+:-h code-cf       ( -- )  acf-align-t here-t /token-t + token,-t  ;-h
+:-h label-cf      ( -- )  dolabel       place-cf-t  align-t  ;-h
+:-h colon-cf      ( -- )  docolon       place-cf-t  ;-h
+:-h constant-cf   ( -- )  doconstant    place-cf-t  ;-h
+:-h create-cf     ( -- )  docreate      place-cf-t  ;-h
+:-h variable-cf   ( -- )  dovariable    place-cf-t  ;-h
+:-h user-cf       ( -- )  douser        place-cf-t  ;-h
+:-h value-cf      ( -- )  dovalue       place-cf-t  ;-h
+:-h defer-cf      ( -- )  dodefer       place-cf-t  ;-h
+:-h startdoes     ( -- )  
+   meta-asm[  ax ax xchg  ax ax xchg  ax ax xchg  dodoes fw-pa + #) call
+   ]meta-asm  ;-h	\ need to pad to 8 bytes for decompiler
+\ The forward reference will be resolved later by fix-vocabularies
+:-h vocabulary-cf ( -- )  compile-t <vocabulary>  ;-h
+
+
+\ ---- Run-time words compiled by compiling words.
+code isdefer  ( xt -- )
+1A0408B 	 0 69 73 64 65 
+1A04090 	66 65 72 87  0  0 A0  1 
+1A04098 	9C 40 A0  1 
+   0 [ip]  ax  mov   ip ainc
+1A0409C 	8B  6 83 C6 
+1A040A0 	 4 
+\+ rel-t  up ax add
+   /cf [ax] ax mov  ?bswap-ax  up ax add  \ data address in ax
+1A040A1 	8B 40  4  1 F8 
+[ifdef] big-endian-t
+   ax bx mov  ax pop  ?bswap-ax  ax 0 [bx] mov
+[else]
+   bx pop
+1A040A6 	5B 
+\+ rel-t  up bx sub
+   bx  0 [ax] mov
+1A040A7 	89 
+1A040A8 	18 
+[then]
+c;   
+1A040A9 	FF E7 
+
+code isvalue  ( n -- )
+1A040AB 	 0 69 73 76 61 
+1A040B0 	6C 75 65 87 98 40 A0  1 
+1A040B8 	BC 40 A0  1 
+   0 [ip]  ax  mov   ip ainc
+1A040BC 	8B  6 83 C6 
+1A040C0 	 4 
+\+ rel-t  up ax add
+  /cf [ax] ax mov  ?bswap-ax  up ax add  \ data address in ax
+1A040C1 	8B 40  4  1 F8 
+[ifdef] big-endian-t
+   ax bx mov  ax pop  ?bswap-ax  ax 0 [bx] mov
+[else]
+   bx pop  bx  0 [ax] mov
+1A040C6 	5B 89 
+1A040C8 	18 
+[then]
+c;   
+1A040C9 	FF E7 
+code isuser  ( n -- )
+1A040CB 	 0  0 69 73 75 
+1A040D0 	73 65 72 86 B8 40 A0  1 
+1A040D8 	DC 40 A0  1 
+   0 [ip]  ax  mov   ip ainc
+1A040DC 	8B  6 83 C6 
+1A040E0 	 4 
+\+ rel-t  up ax add
+   /cf [ax] ax mov  ?bswap-ax  up ax add  \ data address in ax
+1A040E1 	8B 40  4  1 F8 
+[ifdef] big-endian-t
+   ax bx mov  ax pop  ?bswap-ax  ax 0 [bx] mov
+[else]
+   bx pop  bx  0 [ax] mov
+1A040E6 	5B 89 
+1A040E8 	18 
+[then]
+c;   
+1A040E9 	FF E7 
+code isconstant  ( n -- )
+1A040EB 	 0  0 69 73 63 
+1A040F0 	6F 6E 73 74 61 6E 74 8A 
+1A040F8 	D8 40 A0  1  0 41 A0  1 
+   0 [ip]  bx  mov   ip ainc
+1A04100 	8B 1E 83 C6  4 
+   ax pop  ?bswap-ax
+1A04105 	58 
+\+ rel-t up bx add
+   ax /cf [bx] mov
+1A04106 	89 43 
+1A04108 	 4 
+c;   
+1A04109 	FF E7 
+code isvariable  ( n -- )
+1A0410B 	 0  0 69 73 76 
+1A04110 	61 72 69 61 62 6C 65 8A 
+1A04118 	FC 40 A0  1 20 41 A0  1 
+   0 [ip]  bx  mov   ip ainc
+1A04120 	8B 1E 83 C6  4 
+   ax pop  ?bswap-ax  
+1A04125 	58 
+\+ rel-t up bx add
+   ax /cf [bx] mov
+1A04126 	89 43 
+1A04128 	 4 
+c;   
+1A04129 	FF E7 
+
+code bswap  (s n1 -- n2 )
+1A0412B 	 0  0  0 62 73 
+1A04130 	77 61 70 85 1C 41 A0  1 
+1A04138 	3C 41 A0  1 
+   ax pop
+1A0413C 	58 
+
+   \ The 486 can do this in 1 instruction (BSWAP), which the 386 doesn't have
+   ax bx mov
+1A0413D 	8B D8 
+   d# 16 # cl mov	\ shift count
+1A0413F 	B1 
+1A04140 	10 
+   bh bl xchg		\ swap low bytes
+1A04141 	86 DF 
+   bx cl shl		\ move to high word
+1A04143 	D3 E3 
+   ax cl shr		\ move high bytes to low word
+1A04145 	D3 E8 
+   ah al xchg		\ swap them
+1A04147 	86 
+1A04148 	C4 
+   bx ax add		\ merge words
+1A04149 	 1 D8 
+
+   1push
+1A0414B 	50 
+c;
+1A0414C 	FF E7 
+
+code (lit)   (s -- n )  ax lods  ?bswap-ax  1push  c;
+1A0414E 	28 6C 
+1A04150 	69 74 29 85 38 41 A0  1 
+1A04158 	5C 41 A0  1 AD 50 FF E7 
+code (llit)  (s -- l )  ax lods  ?bswap-ax  1push  c;
+1A04160 	 0 28 6C 6C 69 74 29 86 
+1A04168 	58 41 A0  1 70 41 A0  1 
+1A04170 	AD 50 FF E7 
+[ifdef] big-endian-t
+code (dlit)  (s -- d )  ax lods  ?bswap-ax  ax  bx mov
+			ax lods  ?bswap-ax  1push  bx push  c;
+[else]
+code (dlit)  (s -- d )  ax lods  ?bswap-ax  1push
+1A04174 	 0 28 64 6C 
+1A04178 	69 74 29 86 6C 41 A0  1 
+1A04180 	84 41 A0  1 AD 50 
+			ax lods  ?bswap-ax  1push  c;
+1A04186 	AD 50 
+1A04188 	FF E7 
+[then]
+
+\ Execute a Forth word given a code field address
+code execute   (s acf -- )
+1A0418A 	 0  0 65 78 65 63 
+1A04190 	75 74 65 87 80 41 A0  1 
+1A04198 	9C 41 A0  1 
+   w pop
+1A0419C 	58 
+\ Partial tail of "next"
+\+ rel-t  0 [ax] bx mov  up bx add  bx jmp
+\- rel-t  0 [w] jmp
+1A0419D 	FF 20 
+end-code
+
+\ execute-ip  This word will call a block of Forth words given the address
+\ of the first word.  It's used, for example, in try blocks where the
+\ a word calls 'try' and then the words that follow it are called repeatedly.
+\ This word, execute-ip, is used to transfer control back to the caller of
+\ try and execute the words that follow the call to try.
+
+\ see forth/lib/try.fth for more details.
+
+code execute-ip  (s word-list-ip -- )
+1A0419F 	 0 
+1A041A0 	 0 65 78 65 63 75 74 65 
+1A041A8 	2D 69 70 8A 98 41 A0  1 
+1A041B0 	B4 41 A0  1 
+   rp  adec
+1A041B4 	83 ED  4 
+   ip  0 [rp] mov
+1A041B7 	89 
+1A041B8 	75  0 
+   ip  pop
+1A041BA 	5E 
+c;
+1A041BB 	FF E7 
+
+\ High level branch.  The branch offset is compiled in-line.
+code branch (s -- )
+1A041BD 	62 72 61 
+1A041C0 	6E 63 68 86 B0 41 A0  1 
+1A041C8 	CC 41 A0  1 
+mloclabel bran1
+[ifdef] big-endian-t
+   0 [ip] ax mov  ?bswap-ax  ax ip add
+[else]
+   0 [ip] ip add
+1A041CC 	 3 36 
+[then]
+c;
+1A041CE 	FF E7 
+
+\ May need to change for 16-bit branch offsets
+:-h skipbranch  ( -- )  [ assembler ]-h  ip ainc  ;-h
+
+\ High level conditional branch.
+code ?branch (s f -- )  \ Takes the branch if the flag is false
+1A041D0 	3F 62 72 61 6E 63 68 87 
+1A041D8 	C8 41 A0  1 E0 41 A0  1 
+   ax pop   ax ax or   bran1 je   skipbranch
+1A041E0 	58  9 C0 74 E7 83 C6  4 
+c;
+1A041E8 	FF E7 
+
+\ Run time word for loop
+code (loop)  (s -- )
+1A041EA 	 0  0  0 28 6C 6F 
+1A041F0 	6F 70 29 86 DC 41 A0  1 
+1A041F8 	FC 41 A0  1 
+   1 # ax mov
+1A041FC 	B8  1  0  0 
+1A04200 	 0 
+   ax 0 [rp] add   bran1 jno  3 /n* # rp add   skipbranch
+1A04201 	 1 45  0 71 C6 83 C5 
+1A04208 	 C 83 C6  4 
+c;
+1A0420C 	FF E7 
+
+\ Run time word for +loop
+code (+loop) (s increment -- )
+1A0420E 	 0  0 
+1A04210 	28 2B 6C 6F 6F 70 29 87 
+1A04218 	F8 41 A0  1 20 42 A0  1 
+   ax pop
+1A04220 	58 
+   ax 0 [rp] add   bran1 jno  3 /n* # rp add   skipbranch
+1A04221 	 1 45  0 71 A6 83 C5 
+1A04228 	 C 83 C6  4 
+c;
+1A0422C 	FF E7 
+
+code unloop  (s -- )  3 /n* # rp add   c;
+1A0422E 	 0  0 
+1A04230 	 0 75 6E 6C 6F 6F 70 86 
+1A04238 	1C 42 A0  1 40 42 A0  1 
+1A04240 	83 C5  C FF E7 
+
+\ Run time word for ?do
+code (?do)  (s l i -- )
+1A04245 	 0 28 3F 
+1A04248 	64 6F 29 85 3C 42 A0  1 
+1A04250 	54 42 A0  1 
+   ax pop   bx pop   ax bx cmp  = if  bran1 #) jmp  then
+1A04254 	58 5B 39 C3 
+1A04258 	75  5 E9 6D FF FF FF 
+   rp adec   ip 0 [rp] mov
+1A0425F 	83 
+1A04260 	ED  4 89 75  0 
+   ip ainc  80000000 # bx add   rp adec   bx 0 [rp] mov
+1A04265 	83 C6  4 
+1A04268 	81 C3  0  0  0 80 83 ED 
+1A04270 	 4 89 5D  0 
+   bx ax sub                    rp adec   ax 0 [rp] mov
+1A04274 	29 D8 83 ED 
+1A04278 	 4 89 45  0 
+\ ??? how about sp rp xchg  ... dx push bx push ax push  sp rp xchg
+c;
+1A0427C 	FF E7 
+
+\ Run time word for do
+code (do)  (s l i -- )
+1A0427E 	 0 28 
+1A04280 	64 6F 29 84 50 42 A0  1 
+1A04288 	8C 42 A0  1 
+   ax pop   bx pop      \ i in ax  l in bx
+1A0428C 	58 5B 
+   rp adec   ip 0 [rp] mov
+1A0428E 	83 ED 
+1A04290 	 4 89 75  0 
+
+   ip ainc  80000000 # bx add   rp adec   bx 0 [rp] mov
+1A04294 	83 C6  4 81 
+1A04298 	C3  0  0  0 80 83 ED  4 
+1A042A0 	89 5D  0 
+   bx ax sub                    rp adec   ax 0 [rp] mov
+1A042A3 	29 D8 83 ED  4 
+1A042A8 	89 45  0 
+\ ??? how about sp rp xchg  ... dx push bx push ax push  sp rp xchg
+c;
+1A042AB 	FF E7 
+meta
+
+\ Loop index for current do loop
+code i  (s -- n )   0 [rp] ax mov   /n [rp] ax add   1push  c;
+1A042AD 	 0 69 81 
+1A042B0 	88 42 A0  1 B8 42 A0  1 
+1A042B8 	8B 45  0  3 45  4 50 FF 
+1A042C0 	E7 
+
+\ Loop limit for current do loop
+code ilimit  ( -- n )  1 /n* [rp] ax mov  80000000 # ax sub  1push  c;
+1A042C1 	69 6C 69 6D 69 74 86 
+1A042C8 	B4 42 A0  1 D0 42 A0  1 
+1A042D0 	8B 45  4 2D  0  0  0 80 
+1A042D8 	50 FF E7 
+
+\ Loop index for next enclosing do loop
+code j   (s -- n )  3 /n* [rp] ax mov   4 /n* [rp] ax add   1push  c;
+1A042DB 	 0  0  0 6A 81 
+1A042E0 	CC 42 A0  1 E8 42 A0  1 
+1A042E8 	8B 45  C  3 45 10 50 FF 
+1A042F0 	E7 
+
+\ Loop limit for next enclosing do loop
+code jlimit  ( -- n )  4 /n* [rp] ax mov  80000000 # ax sub  1push  c;
+1A042F1 	6A 6C 69 6D 69 74 86 
+1A042F8 	E4 42 A0  1  0 43 A0  1 
+1A04300 	8B 45 10 2D  0  0  0 80 
+1A04308 	50 FF E7 
+
+code (leave)  (s -- )
+1A0430B 	 0 28 6C 65 61 
+1A04310 	76 65 29 87 FC 42 A0  1 
+1A04318 	1C 43 A0  1 
+mloclabel pleave
+   2 /n* [rp] ip mov
+1A0431C 	8B 75  8 
+[ifdef] big-endian-t
+   0 [ip] ax mov  ?bswap-ax  ax ip add   
+[else]
+   0 [ip] ip add  
+1A0431F 	 3 
+1A04320 	36 
+[then]
+   3 /n* # rp add
+1A04321 	83 C5  C 
+c;
+1A04324 	FF E7 
+
+code (?leave)  (s f -- )   ax pop   ax ax or   pleave jne   c;
+1A04326 	 0 28 
+1A04328 	3F 6C 65 61 76 65 29 88 
+1A04330 	18 43 A0  1 38 43 A0  1 
+1A04338 	58  9 C0 75 DF FF E7 
+
+code (of)  ( selector test -- [ selector ] )
+1A0433F 	28 
+1A04340 	6F 66 29 84 34 43 A0  1 
+1A04348 	4C 43 A0  1 
+   bx pop  ax pop   \ Test in bx, Selector in ax
+1A0434C 	5B 58 
+   ax bx cmp  0= if  skipbranch next  then         \ Skip branch; execute code
+1A0434E 	39 C3 
+1A04350 	75  5 83 C6  4 FF E7 
+   ax push  bran1 #) jmp                           \ Jump to next test
+1A04357 	50 
+1A04358 	E9 6F FE FF FF 
+end-code
+
+\ (endof) is the same as branch, and (endcase) is the same as drop,
+\ but redefining them this way makes the decompiler much easier.
+code (endof)    (s -- )    bran1 #) jmp  end-code
+1A0435D 	 0  0  0 
+1A04360 	28 65 6E 64 6F 66 29 87 
+1A04368 	48 43 A0  1 70 43 A0  1 
+1A04370 	E9 57 FE FF FF 
+code (endcase)  (s n -- )  ax pop  c;
+1A04375 	 0 28 65 
+1A04378 	6E 64 63 61 73 65 29 89 
+1A04380 	6C 43 A0  1 88 43 A0  1 
+1A04388 	58 FF E7 
+
+\ ($endof) is the same as branch, and ($endcase) is a noop,
+\ but redefining them this way makes the decompiler much easier.
+\ code ($case)  ( $ -- $ )  c;
+
+code ($endof)    (s -- )    bran1 #) jmp  end-code
+1A0438B 	28 24 65 6E 64 
+1A04390 	6F 66 29 88 84 43 A0  1 
+1A04398 	9C 43 A0  1 E9 2B FE FF 
+1A043A0 	FF 
+code ($endcase)  (s n -- )  c;
+1A043A1 	28 24 65 6E 64 63 61 
+1A043A8 	73 65 29 8A 98 43 A0  1 
+1A043B0 	B4 43 A0  1 FF E7 
+
+mloclabel yes also assembler   true # ax mov   1push   c;
+1A043B6 	B8 FF 
+1A043B8 	FF FF FF 50 FF E7 
+mloclabel no  also assembler  false # ax mov   1push   c;
+1A043BE 	B8  0 
+1A043C0 	 0  0  0 50 FF E7 
+
+\ Convert a character to a digit according to the current base
+mloclabel fail also assembler  ax ax sub   1push  c;
+1A043C6 	29 C0 
+1A043C8 	50 FF E7 
+
+code digit  (s char base -- digit true | char false )
+1A043CB 	 0  0  0 64 69 
+1A043D0 	67 69 74 85 B0 43 A0  1 
+1A043D8 	DC 43 A0  1 
+  dx pop   ax pop   ax push   ascii 0 # al sub   fail jb
+1A043DC 	5A 58 50 2C 
+1A043E0 	30 72 E3 
+  9 # al cmp   > if
+1A043E3 	3C  9 7E  E 
+     11 # al cmp   fail jb    \ Bad if > '9' and < 'A'
+1A043E7 	3C 
+1A043E8 	11 72 DB 
+     \ if > 'A', subtract 'A'-'0'-10, otherwise subtract 'a'-'0'-10
+     30 # al cmp  > if  27 # al sub  else  7 # al sub  then
+1A043EB 	3C 30 7E  4 2C 
+1A043F0 	27 EB  2 2C  7 
+  then
+  dl al cmp   fail jae   al dl mov
+1A043F5 	38 D0 73 
+1A043F8 	CD 8A D0 
+  ax pop   true # ax mov   2push
+1A043FB 	58 B8 FF FF FF 
+1A04400 	FF 52 50 
+c;
+1A04403 	FF E7 
+
+\ Copy cnt characters starting at from-addr to to-addr.  Copying is done
+\ strictly from low to high addresses, so be careful of overlap between the
+\ two buffers.
+
+code cmove  ( src dst cnt -- )  \ Copy from bottom to top
+1A04405 	 0 63 6D 
+1A04408 	6F 76 65 85 D8 43 A0  1 
+1A04410 	14 44 A0  1 
+  di dx mov
+1A04414 	8B D7 
+  cld   ip bx mov   ds ax mov   ax es mov
+1A04416 	FC 8B 
+1A04418 	DE 8C D8 8E C0 
+  cx pop   di pop   ip pop
+1A0441D 	59 5F 5E 
+  rep   byte movs   bx ip mov
+1A04420 	F2 A4 8B F3 
+  dx di mov
+1A04424 	8B FA 
+c;
+1A04426 	FF E7 
+
+code cmove>  ( src dst cnt -- )  \ Copy from top to bottom
+1A04428 	 0 63 6D 6F 76 65 3E 86 
+1A04430 	10 44 A0  1 38 44 A0  1 
+  di dx mov
+1A04438 	8B D7 
+  std   ip bx mov   ds ax mov   ax es mov   cx pop
+1A0443A 	FD 8B DE 8C D8 8E 
+1A04440 	C0 59 
+  cx dec   di pop   ip pop   cx di add   cx ip add   cx inc
+1A04442 	49 5F 5E  1 CF  1 
+1A04448 	CE 41 
+  rep   byte movs   bx ip mov   cld
+1A0444A 	F2 A4 8B F3 FC 
+  dx di mov
+1A0444F 	8B 
+1A04450 	FA 
+c;
+1A04451 	FF E7 
+
+
+code and  (s n1 n2 -- n3 )   bx pop   ax pop   bx ax and   1push c;
+1A04453 	 0 61 6E 64 83 
+1A04458 	34 44 A0  1 60 44 A0  1 
+1A04460 	5B 58 21 D8 50 FF E7 
+code or   (s n1 n2 -- n3 )   bx pop   ax pop   bx ax or    1push c;
+1A04467 	 0 
+1A04468 	 0 6F 72 82 5C 44 A0  1 
+1A04470 	74 44 A0  1 5B 58  9 D8 
+1A04478 	50 FF E7 
+code xor  (s n1 n2 -- n3 )   bx pop   ax pop   bx ax xor   1push c;
+1A0447B 	 0 78 6F 72 83 
+1A04480 	70 44 A0  1 88 44 A0  1 
+1A04488 	5B 58 31 D8 50 FF E7 
+
+code lshift  (s n1 cnt -- n2 )  cx pop   ax pop   ax cl shl   1push c;
+1A0448F 	 0 
+1A04490 	 0 6C 73 68 69 66 74 86 
+1A04498 	84 44 A0  1 A0 44 A0  1 
+1A044A0 	59 58 D3 E0 50 FF E7 
+code rshift  (s n1 cnt -- n2 )  cx pop   ax pop   ax cl shr   1push c;
+1A044A7 	 0 
+1A044A8 	 0 72 73 68 69 66 74 86 
+1A044B0 	9C 44 A0  1 B8 44 A0  1 
+1A044B8 	59 58 D3 E8 50 FF E7 
+
+code <<   (s n1 cnt -- n2 )  cx pop   ax pop   ax cl shl   1push c;
+1A044BF 	 0 
+1A044C0 	 0 3C 3C 82 B4 44 A0  1 
+1A044C8 	CC 44 A0  1 59 58 D3 E0 
+1A044D0 	50 FF E7 
+code >>   (s n1 cnt -- n2 )  cx pop   ax pop   ax cl shr   1push c;
+1A044D3 	 0  0 3E 3E 82 
+1A044D8 	C8 44 A0  1 E0 44 A0  1 
+1A044E0 	59 58 D3 E8 50 FF E7 
+code >>a  (s n1 cnt -- n2 )  cx pop   ax pop   ax cl sar   1push c;
+1A044E7 	 0 
+1A044E8 	3E 3E 61 83 DC 44 A0  1 
+1A044F0 	F4 44 A0  1 59 58 D3 F8 
+1A044F8 	50 FF E7 
+
+code +    (s n1 n2 -- n3 )   bx pop   ax pop   bx ax add   1push c;
+1A044FB 	 0  0  0 2B 81 
+1A04500 	F0 44 A0  1  8 45 A0  1 
+1A04508 	5B 58  1 D8 50 FF E7 
+code -    (s n1 n2 -- n3 )   bx pop   ax pop   bx ax sub   1push c;
+1A0450F 	 0 
+1A04510 	 0  0 2D 81  4 45 A0  1 
+1A04518 	1C 45 A0  1 5B 58 29 D8 
+1A04520 	50 FF E7 
+
+code invert  (s n1 -- n2 )   ax pop   ax not   1push c;
+1A04523 	 0  0 69 6E 76 
+1A04528 	65 72 74 86 18 45 A0  1 
+1A04530 	34 45 A0  1 58 F7 D0 50 
+1A04538 	FF E7 
+code negate  (s n1 -- n2 )   ax pop   ax neg   1push c;
+1A0453A 	 0  0  0 6E 65 67 
+1A04540 	61 74 65 86 30 45 A0  1 
+1A04548 	4C 45 A0  1 58 F7 D8 50 
+1A04550 	FF E7 
+
+code up@  (s -- addr )  up push  c;
+1A04552 	 0  0 75 70 40 83 
+1A04558 	48 45 A0  1 60 45 A0  1 
+1A04560 	57 FF E7 
+code sp@  (s -- addr )  sp push  c;
+1A04563 	 0 73 70 40 83 
+1A04568 	5C 45 A0  1 70 45 A0  1 
+1A04570 	54 FF E7 
+code rp@  (s -- addr )  rp push  c;
+1A04573 	 0 72 70 40 83 
+1A04578 	6C 45 A0  1 80 45 A0  1 
+1A04580 	55 FF E7 
+code up!  (s addr -- )  up pop   c;
+1A04583 	 0 75 70 21 83 
+1A04588 	7C 45 A0  1 90 45 A0  1 
+1A04590 	5F FF E7 
+code sp!  (s addr -- )  sp pop   c;
+1A04593 	 0 73 70 21 83 
+1A04598 	8C 45 A0  1 A0 45 A0  1 
+1A045A0 	5C FF E7 
+code rp!  (s addr -- )  rp pop   c;
+1A045A3 	 0 72 70 21 83 
+1A045A8 	9C 45 A0  1 B0 45 A0  1 
+1A045B0 	5D FF E7 
+code >r   (s n -- )     ax pop   rp adec   ax 0 [rp] mov   c;
+1A045B3 	 0  0 3E 72 82 
+1A045B8 	AC 45 A0  1 C0 45 A0  1 
+1A045C0 	58 83 ED  4 89 45  0 FF 
+1A045C8 	E7 
+code r>   (s -- n )     0 [rp] ax mov   rp ainc   1push c;
+1A045C9 	72 3E 82 BC 45 A0  1 
+1A045D0 	D4 45 A0  1 8B 45  0 83 
+1A045D8 	C5  4 50 FF E7 
+code r@   (s -- n )     0 [rp] ax mov             1push c;
+1A045DD 	72 40 82 
+1A045E0 	D0 45 A0  1 E8 45 A0  1 
+1A045E8 	8B 45  0 50 FF E7 
+code 2>r  (s n1 n2 -- )  8 #  rp  sub   0 [rp] pop   4 [rp] pop  c;
+1A045EE 	 0  0 
+1A045F0 	32 3E 72 83 E4 45 A0  1 
+1A045F8 	FC 45 A0  1 83 ED  8 8F 
+1A04600 	45  0 8F 45  4 FF E7 
+code 2r>  (s -- n1 n2 )  4 [rp] push  0 [rp] push   8 #  rp  add  c;
+1A04607 	 0 
+1A04608 	32 72 3E 83 F8 45 A0  1 
+1A04610 	14 46 A0  1 FF 75  4 FF 
+1A04618 	75  0 83 C5  8 FF E7 
+code 2r@  (s -- n1 n2 )  4 [rp] push  0 [rp] push   c;
+1A0461F 	 0 
+1A04620 	32 72 40 83 10 46 A0  1 
+1A04628 	2C 46 A0  1 FF 75  4 FF 
+1A04630 	75  0 FF E7 
+
+code exit (s -- )       0 [rp] ip mov   rp ainc  c;
+1A04634 	 0  0  0 65 
+1A04638 	78 69 74 84 28 46 A0  1 
+1A04640 	44 46 A0  1 8B 75  0 83 
+1A04648 	C5  4 FF E7 
+code unnest (s -- )     0 [rp] ip mov   rp ainc  c;
+1A0464C 	 0 75 6E 6E 
+1A04650 	65 73 74 86 40 46 A0  1 
+1A04658 	5C 46 A0  1 8B 75  0 83 
+1A04660 	C5  4 FF E7 
+
+code >ip  (s n -- )     ax pop   rp adec   ax 0 [rp] mov   c;
+1A04664 	3E 69 70 83 
+1A04668 	58 46 A0  1 70 46 A0  1 
+1A04670 	58 83 ED  4 89 45  0 FF 
+1A04678 	E7 
+code ip>  (s -- n )     0 [rp] ax mov   rp ainc   1push c;
+1A04679 	 0  0  0 69 70 3E 83 
+1A04680 	6C 46 A0  1 88 46 A0  1 
+1A04688 	8B 45  0 83 C5  4 50 FF 
+1A04690 	E7 
+code ip@  (s -- n )     0 [rp] ax mov             1push c;
+1A04691 	 0  0  0 69 70 40 83 
+1A04698 	84 46 A0  1 A0 46 A0  1 
+1A046A0 	8B 45  0 50 FF E7 
+
+/token constant /token
+1A046A6 	 0  0 
+1A046A8 	 0 2F 74 6F 6B 65 6E 86 
+1A046B0 	9C 46 A0  1 68 40 A0  1 
+1A046B8 	 4  0  0  0 
+
+: ip>token  ( ip -- token-adr )  /token -  ;
+1A046BC 	 0  0  0 69 
+1A046C0 	70 3E 74 6F 6B 65 6E 88 
+1A046C8 	B4 46 A0  1 20 40 A0  1 
+1A046D0 	B4 46 A0  1 18 45 A0  1 
+1A046D8 	58 46 A0  1 
+
+code tuck  (s n1 n2 -- n2 n1 n2 )
+1A046DC 	 0  0  0 74 
+1A046E0 	75 63 6B 84 CC 46 A0  1 
+1A046E8 	EC 46 A0  1 
+   ax pop   dx pop   ax push   2push
+1A046EC 	58 5A 50 52 
+1A046F0 	50 
+c;
+1A046F1 	FF E7 
+code nip   (s n1 n2 -- n2 )   ax pop   dx pop   1push c;
+1A046F3 	 0 6E 69 70 83 
+1A046F8 	E8 46 A0  1  0 47 A0  1 
+1A04700 	58 5A 50 FF E7 
+code flip  (s w1 -- w2 )   ax pop   ah al xchg   1push c;
+1A04705 	 0  0 66 
+1A04708 	6C 69 70 84 FC 46 A0  1 
+1A04710 	14 47 A0  1 58 86 C4 50 
+1A04718 	FF E7 
+
+assembler definitions
+:-h leaveflag  (s condition -- )
+\ macro to assemble code to leave a flag on the stack
+   if
+      true  # ax mov
+   else
+      false # ax mov
+   then
+   1push
+;-h
+:-h unary-test  (s condition -- )  ax pop  ax ax or   ( cond ) leaveflag   ;-h
+meta definitions
+
+
+code 0=  (s n -- f )  0=  unary-test  c;
+1A0471A 	 0  0  0 30 3D 82 
+1A04720 	10 47 A0  1 28 47 A0  1 
+1A04728 	58  9 C0 75  7 B8 FF FF 
+1A04730 	FF FF EB  5 B8  0  0  0 
+1A04738 	 0 50 FF E7 
+code 0<> (s n -- f )  0<> unary-test  c;
+1A0473C 	30 3C 3E 83 
+1A04740 	24 47 A0  1 48 47 A0  1 
+1A04748 	58  9 C0 74  7 B8 FF FF 
+1A04750 	FF FF EB  5 B8  0  0  0 
+1A04758 	 0 50 FF E7 
+code 0<  (s n -- f )  0<  unary-test  c;
+1A0475C 	 0 30 3C 82 
+1A04760 	44 47 A0  1 68 47 A0  1 
+1A04768 	58  9 C0 79  7 B8 FF FF 
+1A04770 	FF FF EB  5 B8  0  0  0 
+1A04778 	 0 50 FF E7 
+code 0<= (s n -- f )  <=  unary-test  c;
+1A0477C 	30 3C 3D 83 
+1A04780 	64 47 A0  1 88 47 A0  1 
+1A04788 	58  9 C0 7F  7 B8 FF FF 
+1A04790 	FF FF EB  5 B8  0  0  0 
+1A04798 	 0 50 FF E7 
+code 0>  (s n -- f )  >   unary-test  c;
+1A0479C 	 0 30 3E 82 
+1A047A0 	84 47 A0  1 A8 47 A0  1 
+1A047A8 	58  9 C0 7E  7 B8 FF FF 
+1A047B0 	FF FF EB  5 B8  0  0  0 
+1A047B8 	 0 50 FF E7 
+code 0>= (s n -- f )  0>= unary-test  c;
+1A047BC 	30 3E 3D 83 
+1A047C0 	A4 47 A0  1 C8 47 A0  1 
+1A047C8 	58  9 C0 78  7 B8 FF FF 
+1A047D0 	FF FF EB  5 B8  0  0  0 
+1A047D8 	 0 50 FF E7 
+
+assembler definitions
+:-h compare
+   ax pop  bx pop  ax bx cmp
+   leaveflag
+;-h
+meta definitions
+
+code <   (s n1 n2 -- f )  <   compare c;
+1A047DC 	 0  0 3C 81 
+1A047E0 	C4 47 A0  1 E8 47 A0  1 
+1A047E8 	58 5B 39 C3 7D  7 B8 FF 
+1A047F0 	FF FF FF EB  5 B8  0  0 
+1A047F8 	 0  0 50 FF E7 
+code >   (s n1 n2 -- f )  >   compare c;
+1A047FD 	 0 3E 81 
+1A04800 	E4 47 A0  1  8 48 A0  1 
+1A04808 	58 5B 39 C3 7E  7 B8 FF 
+1A04810 	FF FF FF EB  5 B8  0  0 
+1A04818 	 0  0 50 FF E7 
+code =   (s n1 n2 -- f )  0=  compare c;
+1A0481D 	 0 3D 81 
+1A04820 	 4 48 A0  1 28 48 A0  1 
+1A04828 	58 5B 39 C3 75  7 B8 FF 
+1A04830 	FF FF FF EB  5 B8  0  0 
+1A04838 	 0  0 50 FF E7 
+code <>  (s n1 n2 -- f )  <>  compare c;
+1A0483D 	3C 3E 82 
+1A04840 	24 48 A0  1 48 48 A0  1 
+1A04848 	58 5B 39 C3 74  7 B8 FF 
+1A04850 	FF FF FF EB  5 B8  0  0 
+1A04858 	 0  0 50 FF E7 
+code u>  (s n1 n2 -- f )  u>  compare c;
+1A0485D 	75 3E 82 
+1A04860 	44 48 A0  1 68 48 A0  1 
+1A04868 	58 5B 39 C3 76  7 B8 FF 
+1A04870 	FF FF FF EB  5 B8  0  0 
+1A04878 	 0  0 50 FF E7 
+code u<= (s n1 n2 -- f )  u<= compare c;
+1A0487D 	 0  0  0 
+1A04880 	75 3C 3D 83 64 48 A0  1 
+1A04888 	8C 48 A0  1 58 5B 39 C3 
+1A04890 	77  7 B8 FF FF FF FF EB 
+1A04898 	 5 B8  0  0  0  0 50 FF 
+1A048A0 	E7 
+code u<  (s n1 n2 -- f )  u<  compare c;
+1A048A1 	75 3C 82 88 48 A0  1 
+1A048A8 	AC 48 A0  1 58 5B 39 C3 
+1A048B0 	73  7 B8 FF FF FF FF EB 
+1A048B8 	 5 B8  0  0  0  0 50 FF 
+1A048C0 	E7 
+code u>= (s n1 n2 -- f )  u>= compare c;
+1A048C1 	 0  0  0 75 3E 3D 83 
+1A048C8 	A8 48 A0  1 D0 48 A0  1 
+1A048D0 	58 5B 39 C3 72  7 B8 FF 
+1A048D8 	FF FF FF EB  5 B8  0  0 
+1A048E0 	 0  0 50 FF E7 
+code >=  (s n1 n2 -- f )  >=  compare c;
+1A048E5 	3E 3D 82 
+1A048E8 	CC 48 A0  1 F0 48 A0  1 
+1A048F0 	58 5B 39 C3 7C  7 B8 FF 
+1A048F8 	FF FF FF EB  5 B8  0  0 
+1A04900 	 0  0 50 FF E7 
+code <=  (s n1 n2 -- f )  <=  compare c;
+1A04905 	3C 3D 82 
+1A04908 	EC 48 A0  1 10 49 A0  1 
+1A04910 	58 5B 39 C3 7F  7 B8 FF 
+1A04918 	FF FF FF EB  5 B8  0  0 
+1A04920 	 0  0 50 FF E7 
+
+
+code drop (s n -- )      ax pop    c;
+1A04925 	 0  0 64 
+1A04928 	72 6F 70 84  C 49 A0  1 
+1A04930 	34 49 A0  1 58 FF E7 
+code dup  (s n -- n n )  ax pop   ax push  1push c;
+1A04937 	 0 
+1A04938 	64 75 70 83 30 49 A0  1 
+1A04940 	44 49 A0  1 58 50 50 FF 
+1A04948 	E7 
+code over (s n1 n2 -- n1 n2 n1 )  dx pop   ax pop   ax push  2push c;
+1A04949 	 0  0 6F 76 65 72 84 
+1A04950 	40 49 A0  1 58 49 A0  1 
+1A04958 	5A 58 50 52 50 FF E7 
+code swap (s n1 n2 -- n2 n1 )     dx pop   ax pop   2push c;
+1A0495F 	73 
+1A04960 	77 61 70 84 54 49 A0  1 
+1A04968 	6C 49 A0  1 5A 58 52 50 
+1A04970 	FF E7 
+code rot  (s n1 n2 n3 -- n2 n3 n1 )  dx pop  bx pop  ax pop  bx push  2push c;
+1A04972 	 0  0 72 6F 74 83 
+1A04978 	68 49 A0  1 80 49 A0  1 
+1A04980 	5A 5B 58 53 52 50 FF E7 
+code -rot (s n1 n2 n3 -- n3 n1 n2 )  bx pop  ax pop  dx pop  bx push  2push c;
+1A04988 	 0  0  0 2D 72 6F 74 84 
+1A04990 	7C 49 A0  1 98 49 A0  1 
+1A04998 	5B 58 5A 53 52 50 FF E7 
+code 2drop  (s d -- )  ax pop  ax pop  c;
+1A049A0 	 0  0 32 64 72 6F 70 85 
+1A049A8 	94 49 A0  1 B0 49 A0  1 
+1A049B0 	58 58 FF E7 
+code 2dup   (s d -- d d )    ax pop   dx pop   dx push   ax push   2push c;
+1A049B4 	 0  0  0 32 
+1A049B8 	64 75 70 84 AC 49 A0  1 
+1A049C0 	C4 49 A0  1 58 5A 52 50 
+1A049C8 	52 50 FF E7 
+code 2over  (s d1 d2 -- d1 d2 d1 )
+1A049CC 	 0  0 32 6F 
+1A049D0 	76 65 72 85 C0 49 A0  1 
+1A049D8 	DC 49 A0  1 
+   cx pop   bx pop   ax pop   dx pop   dx push   ax push
+1A049DC 	59 5B 58 5A 
+1A049E0 	52 50 
+   bx push  cx push  2push
+1A049E2 	53 51 52 50 
+c;
+1A049E6 	FF E7 
+code 2swap  (s d1 d2 -- d2 d1 )
+1A049E8 	 0  0 32 73 77 61 70 85 
+1A049F0 	D8 49 A0  1 F8 49 A0  1 
+   cx pop   bx pop   ax pop   dx pop
+1A049F8 	59 5B 58 5A 
+   bx push  cx push  2push
+1A049FC 	53 51 52 50 
+c;
+1A04A00 	FF E7 
+\ ??? Here is one of the few places where we could use the scaled indexing mode
+code pick   (s nm ... n1 n0 k -- nm ... n2 n0 nk )
+1A04A02 	 0 70 69 63 6B 84 
+1A04A08 	F4 49 A0  1 10 4A A0  1 
+   bx pop   bx shl  bx shl  sp bx add   0 [bx] ax mov   1push
+1A04A10 	5B D1 E3 D1 E3  1 E3 8B 
+1A04A18 	 3 50 
+c;  
+1A04A1A 	FF E7 
+ 
+
+: abs   (s n1 -- n2 )  dup 0<  if  negate  then   ;
+1A04A1C 	61 62 73 83 
+1A04A20 	 C 4A A0  1 20 40 A0  1 
+1A04A28 	40 49 A0  1 64 47 A0  1 
+1A04A30 	DC 41 A0  1  8  0  0  0 
+1A04A38 	48 45 A0  1 58 46 A0  1 
+
+: umin (s u1 u2 -- u3 )  2dup u>  if  swap  then  drop  ;
+1A04A40 	 0  0  0 75 6D 69 6E 84 
+1A04A48 	24 4A A0  1 20 40 A0  1 
+1A04A50 	C0 49 A0  1 64 48 A0  1 
+1A04A58 	DC 41 A0  1  8  0  0  0 
+1A04A60 	68 49 A0  1 30 49 A0  1 
+1A04A68 	58 46 A0  1 
+: min  (s n1 n2 -- n3 )  2dup  >  if  swap  then  drop  ;
+1A04A6C 	6D 69 6E 83 
+1A04A70 	4C 4A A0  1 20 40 A0  1 
+1A04A78 	C0 49 A0  1  4 48 A0  1 
+1A04A80 	DC 41 A0  1  8  0  0  0 
+1A04A88 	68 49 A0  1 30 49 A0  1 
+1A04A90 	58 46 A0  1 
+: max  (s n1 n2 -- n3 )  2dup  <  if  swap  then  drop  ;
+1A04A94 	6D 61 78 83 
+1A04A98 	74 4A A0  1 20 40 A0  1 
+1A04AA0 	C0 49 A0  1 E4 47 A0  1 
+1A04AA8 	DC 41 A0  1  8  0  0  0 
+1A04AB0 	68 49 A0  1 30 49 A0  1 
+1A04AB8 	58 46 A0  1 
+: umax (s u1 u2 -- u3 )  2dup u<  if  swap  then  drop  ;
+1A04ABC 	 0  0  0 75 
+1A04AC0 	6D 61 78 84 9C 4A A0  1 
+1A04AC8 	20 40 A0  1 C0 49 A0  1 
+1A04AD0 	A8 48 A0  1 DC 41 A0  1 
+1A04AD8 	 8  0  0  0 68 49 A0  1 
+1A04AE0 	30 49 A0  1 58 46 A0  1 
+
+: move   ( from to len -- )
+1A04AE8 	 0  0  0 6D 6F 76 65 84 
+1A04AF0 	C8 4A A0  1 20 40 A0  1 
+   -rot   2dup u< if   rot cmove>   else   rot cmove   then
+1A04AF8 	94 49 A0  1 C0 49 A0  1 
+1A04B00 	A8 48 A0  1 DC 41 A0  1 
+1A04B08 	14  0  0  0 7C 49 A0  1 
+1A04B10 	34 44 A0  1 C8 41 A0  1 
+1A04B18 	 C  0  0  0 7C 49 A0  1 
+1A04B20 	10 44 A0  1 
+;
+1A04B24 	58 46 A0  1 
+
+code 1+  (s n1 -- n2 )  ax pop   ax inc            1push c;
+1A04B28 	 0 31 2B 82 F4 4A A0  1 
+1A04B30 	34 4B A0  1 58 40 50 FF 
+1A04B38 	E7 
+code 2+  (s n1 -- n2 )  ax pop   ax inc   ax inc   1push c;
+1A04B39 	32 2B 82 30 4B A0  1 
+1A04B40 	44 4B A0  1 58 40 40 50 
+1A04B48 	FF E7 
+code 1-  (s n1 -- n2 )  ax pop   ax dec            1push c;
+1A04B4A 	 0  0  0 31 2D 82 
+1A04B50 	40 4B A0  1 58 4B A0  1 
+1A04B58 	58 48 50 FF E7 
+code 2-  (s n1 -- n2 )  ax pop   ax dec   ax dec   1push c;
+1A04B5D 	32 2D 82 
+1A04B60 	54 4B A0  1 68 4B A0  1 
+1A04B68 	58 48 48 50 FF E7 
+
+code 2/  (s n1 -- n2 )  ax pop   ax sar            1push c;
+1A04B6E 	 0  0 
+1A04B70 	 0 32 2F 82 64 4B A0  1 
+1A04B78 	7C 4B A0  1 58 D1 F8 50 
+1A04B80 	FF E7 
+code u2/ (s n1 -- n2 )  ax pop   ax shr            1push c;
+1A04B82 	 0  0 75 32 2F 83 
+1A04B88 	78 4B A0  1 90 4B A0  1 
+1A04B90 	58 D1 E8 50 FF E7 
+code 2*  (s n1 -- n2 )  ax pop   ax shl            1push c;
+1A04B96 	 0  0 
+1A04B98 	 0 32 2A 82 8C 4B A0  1 
+1A04BA0 	A4 4B A0  1 58 D1 E0 50 
+1A04BA8 	FF E7 
+code 4*  (s n1 -- n2 )  ax pop   ax shl   ax shl   1push c;
+1A04BAA 	 0  0  0 34 2A 82 
+1A04BB0 	A0 4B A0  1 B8 4B A0  1 
+1A04BB8 	58 D1 E0 D1 E0 50 FF E7 
+code 8*  (s n1 -- n2 )  ax pop   ax shl   ax shl   ax shl   1push c;
+1A04BC0 	 0 38 2A 82 B4 4B A0  1 
+1A04BC8 	CC 4B A0  1 58 D1 E0 D1 
+1A04BD0 	E0 D1 E0 50 FF E7 
+
+code on  (s addr -- )   bx pop   true # 0 [bx] mov   c;
+1A04BD6 	 0  0 
+1A04BD8 	 0 6F 6E 82 C8 4B A0  1 
+1A04BE0 	E4 4B A0  1 5B C7  3 FF 
+1A04BE8 	FF FF FF FF E7 
+code off (s addr -- )   bx pop  false # 0 [bx] mov   c;
+1A04BED 	 0  0  0 
+1A04BF0 	6F 66 66 83 E0 4B A0  1 
+1A04BF8 	FC 4B A0  1 5B C7  3  0 
+1A04C00 	 0  0  0 FF E7 
+
+[ifdef] big-endian-t
+: +! (s n addr -- )  tuck @ + swap !  ;
+
+\ requires alignment on a word boundary
+
+code d@     (s addr -- n )   bx pop   0 [bx] push   4 [bx] push  c;
+code le-@   (s addr -- n )   bx pop   0 [bx] push   c;
+code le-l@  (s addr -- l )   bx pop   0 [bx] push   c;
+code @      (s addr -- n )   bx pop   0 [bx] ax mov  ?bswap-ax  1push   c;
+code l@     (s addr -- n )   bx pop   0 [bx] ax mov  ?bswap-ax  1push   c;
+code le-w@  (s addr -- w )  bx pop   ax ax sub   op: 0 [bx] ax mov   1push  c;
+code w@  (s addr -- w )
+   bx pop   ax ax sub   op: 0 [bx] ax mov   ah al xchg  1push
+c;
+code <w@  (s addr -- sw )
+   bx pop   ax ax sub   op: 0 [bx] ax mov   ah al xchg  cwde  1push
+c;
+code c@  (s addr -- c )   bx pop   ax ax sub   0 [bx] al mov  1push c;
+
+: unaligned-@   (s addr -- n )  @  ;
+: unaligned-l@  (s addr -- l )  l@ ;
+: unaligned-w@  (s addr -- w )  w@  ;
+
+\ 16-bit token version doesn't require alignment on a word boundary
+code le-!   (s n addr -- )   bx pop   0 [bx] pop  c;
+code le-l!  (s l addr -- )   bx pop   0 [bx] pop  c;
+
+code !      (s n addr -- )   dx pop   ax pop  ?bswap-ax  ax 0 [dx] mov  c;
+code d!     (s low high addr -- )  
+   dx pop   ax pop  ?bswap-ax  ax 4 [dx] mov  ax pop  ?bswap-ax  ax 0 [dx] mov
+c;
+code l!     (s n addr -- )   dx pop   ax pop  ?bswap-ax  ax 0 [dx] mov  c;
+code le-w!  (s w addr -- )  bx pop   ax pop  op: ax 0 [bx] mov  c;
+code w!  (s w addr -- )
+   bx pop   ax pop  ah al xchg  op: ax 0 [bx] mov
+c;
+
+
+code c!  (s c addr -- )   bx pop   ax pop       al 0 [bx] mov   c;
+code le-2@  (s addr -- d )   bx pop   4 [bx] dx mov  0 [bx] ax mov  2push c;
+: 2@  (s addr -- d )  le-2@  swap bswap swap bswap  ;
+code le-2!  (s d addr -- )   bx pop   0 [bx] pop   4 [bx] pop   c;
+: 2!  (s addr -- d )  >r  swap bswap swap bswap  r> le-2!  ;
+
+: unaligned-!   (s n addr -- )   !  ;
+: unaligned-l!  (s n addr -- )   !  ;
+: unaligned-w!  (s w addr -- )   w!  ;
+
+[else]
+code +! (s n addr -- )  bx pop   ax pop   ax 0 [bx] add   c;
+1A04C05 	2B 21 82 
+1A04C08 	F8 4B A0  1 10 4C A0  1 
+1A04C10 	5B 58  1  3 FF E7 
+
+\ requires alignment on a word boundary
+code d@     (s addr -- n )   bx pop   0 [bx] push   4 [bx] push  c;
+1A04C16 	 0  0 
+1A04C18 	 0 64 40 82  C 4C A0  1 
+1A04C20 	24 4C A0  1 5B FF 33 FF 
+1A04C28 	73  4 FF E7 
+code le-@   (s addr -- n )   bx pop   0 [bx] push   c;
+1A04C2C 	 0  0  0 6C 
+1A04C30 	65 2D 40 84 20 4C A0  1 
+1A04C38 	3C 4C A0  1 5B FF 33 FF 
+1A04C40 	E7 
+code le-l@  (s addr -- l )   bx pop   0 [bx] push   c;
+1A04C41 	 0 6C 65 2D 6C 40 85 
+1A04C48 	38 4C A0  1 50 4C A0  1 
+1A04C50 	5B FF 33 FF E7 
+code @   (s addr -- n )  bx pop   0 [bx] push   c;
+1A04C55 	 0 40 81 
+1A04C58 	4C 4C A0  1 60 4C A0  1 
+1A04C60 	5B FF 33 FF E7 
+code l@  (s addr -- l )  bx pop   0 [bx] push   c;
+1A04C65 	6C 40 82 
+1A04C68 	5C 4C A0  1 70 4C A0  1 
+1A04C70 	5B FF 33 FF E7 
+code le-w@  (s addr -- w )  bx pop   ax ax sub   op: 0 [bx] ax mov   1push  c;
+1A04C75 	 0 6C 65 
+1A04C78 	2D 77 40 85 6C 4C A0  1 
+1A04C80 	84 4C A0  1 5B 29 C0 66 
+1A04C88 	8B  3 50 FF E7 
+code w@  (s addr -- w )  bx pop   ax ax sub   op: 0 [bx] ax mov   1push c;
+1A04C8D 	77 40 82 
+1A04C90 	80 4C A0  1 98 4C A0  1 
+1A04C98 	5B 29 C0 66 8B  3 50 FF 
+1A04CA0 	E7 
+code <w@ (s addr -- w )  bx pop   ax ax sub   op: 0 [bx] ax mov  cwde  1push c;
+1A04CA1 	 0  0  0 3C 77 40 83 
+1A04CA8 	94 4C A0  1 B0 4C A0  1 
+1A04CB0 	5B 29 C0 66 8B  3 98 50 
+1A04CB8 	FF E7 
+code c@  (s addr -- c )  bx pop   ax ax sub   0 [bx] al mov  1push c;
+1A04CBA 	 0  0  0 63 40 82 
+1A04CC0 	AC 4C A0  1 C8 4C A0  1 
+1A04CC8 	5B 29 C0 8A  3 50 FF E7 
+
+code unaligned-@   (s addr -- n )   bx pop   0 [bx] push   c;
+1A04CD0 	75 6E 61 6C 69 67 6E 65 
+1A04CD8 	64 2D 40 8B C4 4C A0  1 
+1A04CE0 	E4 4C A0  1 5B FF 33 FF 
+1A04CE8 	E7 
+code unaligned-l@  (s addr -- l )   bx pop   0 [bx] push   c;
+1A04CE9 	 0  0 75 6E 61 6C 69 
+1A04CF0 	67 6E 65 64 2D 6C 40 8C 
+1A04CF8 	E0 4C A0  1  0 4D A0  1 
+1A04D00 	5B FF 33 FF E7 
+code unaligned-w@  (s addr -- w )   bx pop   ax ax sub   op: 0 [bx] ax mov   1push c;
+1A04D05 	 0  0 75 
+1A04D08 	6E 61 6C 69 67 6E 65 64 
+1A04D10 	2D 77 40 8C FC 4C A0  1 
+1A04D18 	1C 4D A0  1 5B 29 C0 66 
+1A04D20 	8B  3 50 FF E7 
+
+\ 16-bit token version doesn't require alignment on a word boundary
+code le-!   (s n addr -- )   bx pop   0 [bx] pop  c;
+1A04D25 	 0  0 6C 
+1A04D28 	65 2D 21 84 18 4D A0  1 
+1A04D30 	34 4D A0  1 5B 8F  3 FF 
+1A04D38 	E7 
+code le-l!  (s l addr -- )   bx pop   0 [bx] pop  c;
+1A04D39 	 0 6C 65 2D 6C 21 85 
+1A04D40 	30 4D A0  1 48 4D A0  1 
+1A04D48 	5B 8F  3 FF E7 
+code !   (s n addr -- )   bx pop   0 [bx] pop   c;
+1A04D4D 	 0 21 81 
+1A04D50 	44 4D A0  1 58 4D A0  1 
+1A04D58 	5B 8F  3 FF E7 
+code d!     (s low high addr -- )
+1A04D5D 	64 21 82 
+1A04D60 	54 4D A0  1 68 4D A0  1 
+   dx pop   ax pop  ax 4 [dx] mov  ax pop  ax 0 [dx] mov
+1A04D68 	5A 58 89 42  4 58 89  2 
+c;
+1A04D70 	FF E7 
+code l!  (s l addr -- )   bx pop   0 [bx] pop   c;
+1A04D72 	 0  0  0 6C 21 82 
+1A04D78 	64 4D A0  1 80 4D A0  1 
+1A04D80 	5B 8F  3 FF E7 
+code le-w!  (s w addr -- )  bx pop   ax pop  op: ax 0 [bx] mov  c;
+1A04D85 	 0 6C 65 
+1A04D88 	2D 77 21 85 7C 4D A0  1 
+1A04D90 	94 4D A0  1 5B 58 66 89 
+1A04D98 	 3 FF E7 
+code w!  (s w addr -- )   bx pop   ax pop   op: ax 0 [bx] mov   c;
+1A04D9B 	 0  0 77 21 82 
+1A04DA0 	90 4D A0  1 A8 4D A0  1 
+1A04DA8 	5B 58 66 89  3 FF E7 
+code c!  (s c addr -- )   bx pop   ax pop       al 0 [bx] mov   c;
+1A04DAF 	 0 
+1A04DB0 	 0 63 21 82 A4 4D A0  1 
+1A04DB8 	BC 4D A0  1 5B 58 88  3 
+1A04DC0 	FF E7 
+code 2@  (s addr -- d )   bx pop   4 [bx] dx mov  0 [bx] ax mov  2push c;
+1A04DC2 	 0  0  0 32 40 82 
+1A04DC8 	B8 4D A0  1 D0 4D A0  1 
+1A04DD0 	5B 8B 53  4 8B  3 52 50 
+1A04DD8 	FF E7 
+code 2!  (s d addr -- )   bx pop   0 [bx] pop   4 [bx] pop   c;
+1A04DDA 	 0  0  0 32 21 82 
+1A04DE0 	CC 4D A0  1 E8 4D A0  1 
+1A04DE8 	5B 8F  3 8F 43  4 FF E7 
+
+code unaligned-d!  (s d addr -- )   bx pop   4 [bx] pop   0 [bx] pop   c;
+1A04DF0 	 0  0  0 75 6E 61 6C 69 
+1A04DF8 	67 6E 65 64 2D 64 21 8C 
+1A04E00 	E4 4D A0  1  8 4E A0  1 
+1A04E08 	5B 8F 43  4 8F  3 FF E7 
+code unaligned-!   (s n addr -- )   bx pop   0 [bx] pop   c;
+1A04E10 	75 6E 61 6C 69 67 6E 65 
+1A04E18 	64 2D 21 8B  4 4E A0  1 
+1A04E20 	24 4E A0  1 5B 8F  3 FF 
+1A04E28 	E7 
+code unaligned-l!  (s n addr -- )   bx pop   0 [bx] pop   c;
+1A04E29 	 0  0 75 6E 61 6C 69 
+1A04E30 	67 6E 65 64 2D 6C 21 8C 
+1A04E38 	20 4E A0  1 40 4E A0  1 
+1A04E40 	5B 8F  3 FF E7 
+code unaligned-w!  (s w addr -- )   bx pop   ax pop   op: ax 0 [bx] mov   c;
+1A04E45 	 0  0 75 
+1A04E48 	6E 61 6C 69 67 6E 65 64 
+1A04E50 	2D 77 21 8C 3C 4E A0  1 
+1A04E58 	5C 4E A0  1 5B 58 66 89 
+1A04E60 	 3 FF E7 
+[then]
+
+: instruction!  (s n adr -- )  !  ;
+1A04E63 	69 6E 73 74 72 
+1A04E68 	75 63 74 69 6F 6E 21 8C 
+1A04E70 	58 4E A0  1 20 40 A0  1 
+1A04E78 	54 4D A0  1 58 46 A0  1 
+
+code fill  (s start-addr count char -- )
+1A04E80 	 0  0  0 66 69 6C 6C 84 
+1A04E88 	74 4E A0  1 90 4E A0  1 
+   di dx mov
+1A04E90 	8B D7 
+   cld   ds ax mov   ax es mov   ax pop   cx pop   di pop
+1A04E92 	FC 8C D8 8E C0 58 
+1A04E98 	59 5F 
+   rep   al stos
+1A04E9A 	F2 AA 
+   dx di mov
+1A04E9C 	8B FA 
+c;
+1A04E9E 	FF E7 
+
+code wfill  (s start-addr count char -- )
+1A04EA0 	 0  0 77 66 69 6C 6C 85 
+1A04EA8 	8C 4E A0  1 B0 4E A0  1 
+   di dx mov
+1A04EB0 	8B D7 
+   cld   ds ax mov   ax es mov   ax pop   cx pop  1 # cx shr  di pop
+1A04EB2 	FC 8C D8 8E C0 58 
+1A04EB8 	59 C1 E9  1 5F 
+   rep   ax op: stos
+1A04EBD 	F2 66 AB 
+   dx di mov
+1A04EC0 	8B FA 
+c;
+1A04EC2 	FF E7 
+
+code lfill  (s start-addr count char -- )
+1A04EC4 	 0  0 6C 66 
+1A04EC8 	69 6C 6C 85 AC 4E A0  1 
+1A04ED0 	D4 4E A0  1 
+   di dx mov
+1A04ED4 	8B D7 
+   cld   ds ax mov   ax es mov   ax pop   cx pop  2 # cx shr  di pop
+1A04ED6 	FC 8C 
+1A04ED8 	D8 8E C0 58 59 C1 E9  2 
+1A04EE0 	5F 
+   rep   ax stos
+1A04EE1 	F2 AB 
+   dx di mov
+1A04EE3 	8B FA 
+c;
+1A04EE5 	FF E7 
+
+\ Skip initial occurrences of bvalue, returning the residual length
+code bskip  ( adr len bvalue -- residue )
+1A04EE7 	 0 
+1A04EE8 	 0  0 62 73 6B 69 70 85 
+1A04EF0 	D0 4E A0  1 F8 4E A0  1 
+   di dx mov
+1A04EF8 	8B D7 
+   ax pop         \ BX: compare value
+1A04EFA 	58 
+   cx pop         \ CX: Length
+1A04EFB 	59 
+   di pop         \ SI: address
+1A04EFC 	5F 
+   cld  repz byte scas
+1A04EFD 	FC F3 AE 
+   <>  if  cx inc  then
+1A04F00 	74  1 41 
+   dx di mov
+1A04F03 	8B FA 
+   cx push
+1A04F05 	51 
+c;
+1A04F06 	FF E7 
+
+\ Skip initial occurrences of lvalue, returning the residual length
+code lskip  ( adr len lvalue -- residue )
+1A04F08 	 0  0 6C 73 6B 69 70 85 
+1A04F10 	F4 4E A0  1 18 4F A0  1 
+   di dx mov
+1A04F18 	8B D7 
+   ax pop         \ BX: compare value
+1A04F1A 	58 
+   cx pop         \ CX: Length
+1A04F1B 	59 
+   2 # cx shr     \ Convert CX to longword count
+1A04F1C 	C1 E9  2 
+   di pop         \ SI: address
+1A04F1F 	5F 
+   cld  repz scas
+1A04F20 	FC F3 AF 
+   <>  if  cx inc  then
+1A04F23 	74  1 41 
+   dx di mov
+1A04F26 	8B FA 
+   2 # cx shl  cx push
+1A04F28 	C1 E1  2 51 
+c;
+1A04F2C 	FF E7 
+
+\ Find the first occurence of bvalue, returning the residual string
+code bscan  ( adr1 len1 char -- adr' len' )
+1A04F2E 	62 73 
+1A04F30 	63 61 6E 85 14 4F A0  1 
+1A04F38 	3C 4F A0  1 
+   si dx mov
+1A04F3C 	8B D6 
+   cld
+1A04F3E 	FC 
+   bx pop                  \ bx: char
+1A04F3F 	5B 
+   cx pop                  \ cx: count
+1A04F40 	59 
+   si pop                  \ si: adr
+1A04F41 	5E 
+   cx cx or  0<>  if
+1A04F42 	 9 C9 74  F 
+      begin
+         al lods
+1A04F46 	AC 
+         bl al cmp
+1A04F47 	38 
+1A04F48 	D8 
+      loopne
+1A04F49 	E0 FB 
+      =  if                
+1A04F4B 	75  8 
+         si dec si push    ( adr' )
+1A04F4D 	4E 56 
+         cx inc cx push    ( adr' len' )
+1A04F4F 	41 
+1A04F50 	51 
+         dx si mov
+1A04F51 	8B F2 
+         next
+1A04F53 	FF E7 
+      then
+   then
+   si push                 ( adr' )
+1A04F55 	56 
+   cx push                 ( adr' len' )
+1A04F56 	51 
+   dx si mov
+1A04F57 	8B 
+1A04F58 	F2 
+c;
+1A04F59 	FF E7 
+
+code noop (s -- )  c;
+1A04F5B 	6E 6F 6F 70 84 
+1A04F60 	38 4F A0  1 68 4F A0  1 
+1A04F68 	FF E7 
+
+code n->l (s n.unsigned -- l ) c;
+1A04F6A 	 0 6E 2D 3E 6C 84 
+1A04F70 	64 4F A0  1 78 4F A0  1 
+1A04F78 	FF E7 
+: s>d  (s n -- d )  dup 0<  ;  \ Depends on  true=-1, false=0
+1A04F7A 	 0  0 73 3E 64 83 
+1A04F80 	74 4F A0  1 20 40 A0  1 
+1A04F88 	40 49 A0  1 64 47 A0  1 
+1A04F90 	58 46 A0  1 
+
+: lwsplit (s l -- w.low w.high )  \ split a long into two words
+1A04F94 	6C 77 73 70 
+1A04F98 	6C 69 74 87 84 4F A0  1 
+1A04FA0 	20 40 A0  1 
+   dup  ffff and  swap 10 >>  
+1A04FA4 	40 49 A0  1 
+1A04FA8 	58 41 A0  1 FF FF  0  0 
+1A04FB0 	5C 44 A0  1 68 49 A0  1 
+1A04FB8 	58 41 A0  1 10  0  0  0 
+1A04FC0 	DC 44 A0  1 
+;
+1A04FC4 	58 46 A0  1 
+: wljoin (s w.low w.high -- l )  10 <<  swap  ffff and  or  ;
+1A04FC8 	 0 77 6C 6A 6F 69 6E 86 
+1A04FD0 	A0 4F A0  1 20 40 A0  1 
+1A04FD8 	58 41 A0  1 10  0  0  0 
+1A04FE0 	C8 44 A0  1 68 49 A0  1 
+1A04FE8 	58 41 A0  1 FF FF  0  0 
+1A04FF0 	5C 44 A0  1 70 44 A0  1 
+1A04FF8 	58 46 A0  1 
+
+code ca+  (s addr index -- addr+index*/c )
+1A04FFC 	63 61 2B 83 
+1A05000 	D4 4F A0  1  8 50 A0  1 
+   bx pop   ax pop   bx ax add   1push
+1A05008 	5B 58  1 D8 50 
+c;
+1A0500D 	FF E7 
+code wa+  (s addr index -- addr+index*/w )
+1A0500F 	 0 
+1A05010 	77 61 2B 83  4 50 A0  1 
+1A05018 	1C 50 A0  1 
+   bx pop  bx shl  ax pop   bx ax add   1push
+1A0501C 	5B D1 E3 58 
+1A05020 	 1 D8 50 
+c;
+1A05023 	FF E7 
+code la+  (s addr index -- addr+index*/l )
+1A05025 	 0  0  0 
+1A05028 	6C 61 2B 83 18 50 A0  1 
+1A05030 	34 50 A0  1 
+   bx pop  bx shl  bx shl  ax pop   bx ax add   1push
+1A05034 	5B D1 E3 D1 
+1A05038 	E3 58  1 D8 50 
+c;
+1A0503D 	FF E7 
+code na+  (s addr index -- addr+index*/n )
+1A0503F 	 0 
+1A05040 	6E 61 2B 83 30 50 A0  1 
+1A05048 	4C 50 A0  1 
+   bx pop  bx shl  bx shl  ax pop   bx ax add   1push
+1A0504C 	5B D1 E3 D1 
+1A05050 	E3 58  1 D8 50 
+c;
+1A05055 	FF E7 
+code ta+  (s addr index -- addr+index*/t )
+1A05057 	 0 
+1A05058 	74 61 2B 83 48 50 A0  1 
+1A05060 	64 50 A0  1 
+   bx pop  bx shl  bx shl  ax pop   bx ax add   1push
+1A05064 	5B D1 E3 D1 
+1A05068 	E3 58  1 D8 50 
+c;
+1A0506D 	FF E7 
+
+code ca1+  (s addr -- addr+/c )       ax pop   ax inc            1push c;
+1A0506F 	63 
+1A05070 	61 31 2B 84 60 50 A0  1 
+1A05078 	7C 50 A0  1 58 40 50 FF 
+1A05080 	E7 
+code char+ (s addr -- addr+/c )       ax pop   ax inc            1push c;
+1A05081 	 0 63 68 61 72 2B 85 
+1A05088 	78 50 A0  1 90 50 A0  1 
+1A05090 	58 40 50 FF E7 
+code wa1+  (s addr -- addr+/w )       ax pop   ax inc   ax inc   1push c;
+1A05095 	 0  0 77 
+1A05098 	61 31 2B 84 8C 50 A0  1 
+1A050A0 	A4 50 A0  1 58 40 40 50 
+1A050A8 	FF E7 
+code la1+  (s addr -- addr+/l )       ax pop   ax ainc           1push c;
+1A050AA 	 0 6C 61 31 2B 84 
+1A050B0 	A0 50 A0  1 B8 50 A0  1 
+1A050B8 	58  5  4  0  0  0 50 FF 
+1A050C0 	E7 
+code na1+  (s addr -- addr+/n )       ax pop   ax ainc           1push c;
+1A050C1 	 0  0 6E 61 31 2B 84 
+1A050C8 	B4 50 A0  1 D0 50 A0  1 
+1A050D0 	58  5  4  0  0  0 50 FF 
+1A050D8 	E7 
+code cell+ (s addr -- addr+/n )       ax pop   ax ainc           1push c;
+1A050D9 	 0 63 65 6C 6C 2B 85 
+1A050E0 	CC 50 A0  1 E8 50 A0  1 
+1A050E8 	58  5  4  0  0  0 50 FF 
+1A050F0 	E7 
+code ta1+  (s addr -- addr+/token )   ax pop   ax ainc           1push c;
+1A050F1 	 0  0 74 61 31 2B 84 
+1A050F8 	E4 50 A0  1  0 51 A0  1 
+1A05100 	58  5  4  0  0  0 50 FF 
+1A05108 	E7 
+
+1 constant /c
+1A05109 	2F 63 82 FC 50 A0  1 
+1A05110 	68 40 A0  1  1  0  0  0 
+2 constant /w
+1A05118 	 0 2F 77 82 10 51 A0  1 
+1A05120 	68 40 A0  1  2  0  0  0 
+4 constant /l
+1A05128 	 0 2F 6C 82 20 51 A0  1 
+1A05130 	68 40 A0  1  4  0  0  0 
+/l constant /n
+1A05138 	 0 2F 6E 82 30 51 A0  1 
+1A05140 	68 40 A0  1  4  0  0  0 
+
+code /c*   (s n -- n*/c )   c;
+1A05148 	2F 63 2A 83 40 51 A0  1 
+1A05150 	54 51 A0  1 FF E7 
+code chars (s n -- n*/c )   c;
+1A05156 	63 68 
+1A05158 	61 72 73 85 50 51 A0  1 
+1A05160 	64 51 A0  1 FF E7 
+code /w*   (s n -- n*/w )   ax pop   ax shl   1push c;
+1A05166 	 0  0 
+1A05168 	2F 77 2A 83 60 51 A0  1 
+1A05170 	74 51 A0  1 58 D1 E0 50 
+1A05178 	FF E7 
+code /l*   (s n -- n*/l )   ax pop   ax shl   ax shl   1push c;
+1A0517A 	 0  0 2F 6C 2A 83 
+1A05180 	70 51 A0  1 88 51 A0  1 
+1A05188 	58 D1 E0 D1 E0 50 FF E7 
+code /n*   (s n -- n*/n )   ax pop   ax shl   ax shl   1push c;
+1A05190 	2F 6E 2A 83 84 51 A0  1 
+1A05198 	9C 51 A0  1 58 D1 E0 D1 
+1A051A0 	E0 50 FF E7 
+code cells (s n -- n*/n )   ax pop   ax shl   ax shl   1push c;
+1A051A4 	 0  0 63 65 
+1A051A8 	6C 6C 73 85 98 51 A0  1 
+1A051B0 	B4 51 A0  1 58 D1 E0 D1 
+1A051B8 	E0 50 FF E7 
+
+mloclabel >upper also assembler
+   ascii a # al cmp  0>=  if
+1A051BC 	3C 61 78  6 
+      ascii z 1+ # al cmp   0< if   ascii a ascii A - # al sub   then
+1A051C0 	3C 7B 79  2 2C 20 
+   then
+   ret
+1A051C6 	C3 
+end-code
+
+code upc (s char -- upper-case-char )   ax pop   >upper #) call   1push c;
+1A051C7 	 0 
+1A051C8 	75 70 63 83 B0 51 A0  1 
+1A051D0 	D4 51 A0  1 58 E8 E2 FF 
+1A051D8 	FF FF 50 FF E7 
+
+mloclabel >lower  also assembler
+   ascii A # al cmp  0>=  if
+1A051DD 	3C 41 78 
+1A051E0 	 6 
+      ascii Z 1+ # al cmp   0< if   ascii a ascii A - # al add   then
+1A051E1 	3C 5B 79  2  4 20 
+   then
+   ret
+1A051E7 	C3 
+end-code
+
+code lcc  (s char -- lower-case-char )  ax pop  >lower #) call  1push c;
+1A051E8 	6C 63 63 83 D0 51 A0  1 
+1A051F0 	F4 51 A0  1 58 E8 E3 FF 
+1A051F8 	FF FF 50 FF E7 
+
+code c@+  (s addr -- addr+1 len )
+1A051FD 	 0  0  0 
+1A05200 	63 40 2B 83 F0 51 A0  1 
+1A05208 	 C 52 A0  1 
+   bx pop   ax ax sub   0 [bx] al mov   bx inc   bx push  1push
+1A0520C 	5B 29 C0 8A 
+1A05210 	 3 43 53 50 
+c;
+1A05214 	FF E7 
+
+mloclabel nomore   also assembler   dx si mov   bx di mov   cx push   next end-code
+1A05216 	8B F2 
+1A05218 	8B FB 51 FF E7 
+
+mloclabel mismatch  also assembler
+   0< if  -1 # cx mov  else  1 # cx mov  then  nomore #) jmp
+1A0521D 	79  7 B9 
+1A05220 	FF FF FF FF EB  5 B9  1 
+1A05228 	 0  0  0 EB E9 
+end-code
+
+\ string compare - case sensitive
+code comp      (s addr1 addr2 len -- -1 | 0 | 1 )
+1A0522D 	 0  0 63 
+1A05230 	6F 6D 70 84  8 52 A0  1 
+1A05238 	3C 52 A0  1 
+   si dx mov   di bx mov   cx pop   di pop   si pop   nomore jcxz
+1A0523C 	8B D6 8B DF 
+1A05240 	59 5F 5E E3 D1 
+   ds ax mov  ax es mov   repz   byte cmps   nomore je  mismatch jne
+1A05245 	8C D8 8E 
+1A05248 	C0 F3 A6 74 C9 75 CE 
+   \ We don't put "mismatch" in-line here because mlabel aligns
+   \ the dictionary pointer
+end-code
+
+\ string compare - case insensitive
+code caps-comp  (s addr1 addr2 len -- -1 | 0 | 1 )
+1A0524F 	 0 
+1A05250 	 0  0 63 61 70 73 2D 63 
+1A05258 	6F 6D 70 89 38 52 A0  1 
+1A05260 	64 52 A0  1 
+   si dx mov   di bx mov   cx pop   di pop   si pop
+1A05264 	8B D6 8B DF 
+1A05268 	59 5F 5E 
+   begin
+      nomore jcxz   0 [si] al mov  >upper #) call  si inc
+1A0526B 	E3 A9 8A  6 E8 
+1A05270 	48 FF FF FF 46 
+        al ah mov   0 [di] al mov  >upper #) call  di inc
+1A05275 	8A E0 8A 
+1A05278 	 7 E8 3E FF FF FF 47 
+      al ah cmp  mismatch jne   cx dec
+1A0527F 	38 
+1A05280 	C4 75 9A 49 
+   again
+1A05284 	EB E5 
+end-code
+
+code 3drop  ( n1 n2 n3 -- )  ax pop  ax pop  ax pop  c;
+1A05286 	33 64 
+1A05288 	72 6F 70 85 60 52 A0  1 
+1A05290 	94 52 A0  1 58 58 58 FF 
+1A05298 	E7 
+: 3dup   ( a b c -- a b c a b c )  2 pick  2 pick  2 pick  ;
+1A05299 	 0  0 33 64 75 70 84 
+1A052A0 	90 52 A0  1 20 40 A0  1 
+1A052A8 	58 41 A0  1  2  0  0  0 
+1A052B0 	 C 4A A0  1 58 41 A0  1 
+1A052B8 	 2  0  0  0  C 4A A0  1 
+1A052C0 	58 41 A0  1  2  0  0  0 
+1A052C8 	 C 4A A0  1 58 46 A0  1 
+: pack  (s str-addr len to -- to )
+1A052D0 	 0  0  0 70 61 63 6B 84 
+1A052D8 	A4 52 A0  1 20 40 A0  1 
+   2dup >r >r
+1A052E0 	C0 49 A0  1 BC 45 A0  1 
+1A052E8 	BC 45 A0  1 
+   3dup  1+ swap move  c! drop
+1A052EC 	A4 52 A0  1 
+1A052F0 	30 4B A0  1 68 49 A0  1 
+1A052F8 	F4 4A A0  1 B8 4D A0  1 
+1A05300 	30 49 A0  1 
+   r> r>  tuck + 1+ 0 swap c!
+1A05304 	D0 45 A0  1 
+1A05308 	D0 45 A0  1 E8 46 A0  1 
+1A05310 	 4 45 A0  1 30 4B A0  1 
+1A05318 	58 41 A0  1  0  0  0  0 
+1A05320 	68 49 A0  1 B8 4D A0  1 
+;
+1A05328 	58 46 A0  1 
+code 4drop  (s n1 n2 n3 n4 -- )
+1A0532C 	 0  0 34 64 
+1A05330 	72 6F 70 85 DC 52 A0  1 
+1A05338 	3C 53 A0  1 
+   ax pop  ax pop  ax pop  ax pop
+1A0533C 	58 58 58 58 
+c;
+1A05340 	FF E7 
+code 5drop  (s n1 n2 n3 n4 n5 -- )
+1A05342 	35 64 72 6F 70 85 
+1A05348 	38 53 A0  1 50 53 A0  1 
+   ax pop  ax pop  ax pop  ax pop  ax pop
+1A05350 	58 58 58 58 58 
+c;
+1A05355 	FF E7 
+
+code (')  (s -- acf )
+1A05357 	 0 
+1A05358 	28 27 29 83 4C 53 A0  1 
+1A05360 	64 53 A0  1 
+   ax lods   
+1A05364 	AD 
+\+ rel-t  up ax add   
+   1push
+1A05365 	50 
+c;
+1A05366 	FF E7 
+
+\ Modifies caller's ip to skip over an in-line string
+code skipstr (s -- addr len)
+1A05368 	73 6B 69 70 73 74 72 87 
+1A05370 	60 53 A0  1 78 53 A0  1 
+   0 [rp] bx mov       \ Get string address in bx
+1A05378 	8B 5D  0 
+   ax ax sub
+1A0537B 	29 C0 
+   0 [bx] al mov       \ Get length byte in ax
+1A0537D 	8A  3 
+
+   bx inc              \ Address of data bytes
+1A0537F 	43 
+   bx push             \ Put addr on stack
+1A05380 	53 
+
+   ax push             \ Put len on stack
+1A05381 	50 
+
+   bx ax add           \ Skip the string
+1A05382 	 1 D8 
+   #talign-t #  ax add   \ Round up to token boundary + null byte
+1A05384 	 5  4  0  0 
+1A05388 	 0 
+   #talign-t negate #  ax  and	\ Align
+1A05389 	25 FC FF FF FF 
+   ax 0 [rp] mov       \ Put the modified ip back
+1A0538E 	89 45 
+1A05390 	 0 
+c;
+1A05391 	FF E7 
+code (")  (s -- addr len)
+1A05393 	 0 28 22 29 83 
+1A05398 	74 53 A0  1 A0 53 A0  1 
+   ax ax xor	       \ Clear high bytes
+1A053A0 	31 C0 
+   al lodsb            \ Get length byte in al
+1A053A2 	AC 
+   ip push             \ Push address of data bytes
+1A053A3 	56 
+   ax push             \ Push length
+1A053A4 	50 
+   ax ip add           \ Skip the string
+1A053A5 	 1 C6 
+   #talign-t #  ip add   \ Round up to token boundary + null byte
+1A053A7 	83 
+1A053A8 	C6  4 
+   #talign-t negate #  ip and	\ Align
+1A053AA 	83 E6 FC 
+c;
+1A053AD 	FF E7 
+code count  (s addr -- addr+1 len )
+1A053AF 	 0 
+1A053B0 	 0  0 63 6F 75 6E 74 85 
+1A053B8 	9C 53 A0  1 C0 53 A0  1 
+   bx pop   ax ax xor   0 [bx] al mov   bx inc   bx push  1push
+1A053C0 	5B 31 C0 8A  3 43 53 50 
+c;
+1A053C8 	FF E7 
+code (n")  (s -- addr len)
+1A053CA 	 0 28 6E 22 29 84 
+1A053D0 	BC 53 A0  1 D8 53 A0  1 
+   ax lods             \ Get length in ax
+1A053D8 	AD 
+   ip push             \ Push address of data bytes
+1A053D9 	56 
+   ax push             \ Push length
+1A053DA 	50 
+   ax ip add           \ Skip the string
+1A053DB 	 1 C6 
+   #talign-t #  ip add   \ Round up to token boundary + null byte
+1A053DD 	83 C6  4 
+   #talign-t negate #  ip and	\ Align
+1A053E0 	83 E6 FC 
+c;
+1A053E3 	FF E7 
+code ncount  (s addr -- addr+/n len )
+1A053E5 	6E 63 6F 
+1A053E8 	75 6E 74 86 D4 53 A0  1 
+1A053F0 	F4 53 A0  1 
+   bx pop   0 [bx] ax mov   /n [bx] bx lea   bx push  1push
+1A053F4 	5B 8B  3 8D 
+1A053F8 	5B  4 53 50 
+c;
+1A053FC 	FF E7 
+
+code token@ (s addr -- cfa )
+1A053FE 	 0  0 
+1A05400 	 0 74 6F 6B 65 6E 40 86 
+1A05408 	F0 53 A0  1 10 54 A0  1 
+   ax pop
+1A05410 	58 
+\+ rel-t   0 [ax] ax mov  up ax add  ax push
+\- rel-t   0 [ax] push
+1A05411 	FF 30 
+c;
+1A05413 	FF E7 
+\ [ifdef] big-endian-t
+\+ rel-t code token!  ( xt adr -- )  bx pop  ax pop  up ax sub  ax 0 [bx] mov  c;
+\- rel-t : token!  ( adr1 adr2 -- ) ( set-relocation-bit )  le-!  ;
+1A05415 	74 6F 6B 
+1A05418 	65 6E 21 86  C 54 A0  1 
+1A05420 	20 40 A0  1 30 4D A0  1 
+1A05428 	58 46 A0  1 
+\ [else]
+\ code token! (s cfa addr -- )   bx pop   0 [bx] pop    c;
+\ [then]
+
+
+nuser state        \ compilation or interpretation
+1A0542C 	 0  0 73 74 
+1A05430 	61 74 65 85 20 54 A0  1 
+1A05438 	48 40 A0  1 20  0  0  0 
+nuser dp           \ dictionary pointer
+1A05440 	 0 64 70 82 38 54 A0  1 
+1A05448 	48 40 A0  1 24  0  0  0 
+h# fffffffc value limit
+1A05450 	 0  0 6C 69 6D 69 74 85 
+1A05458 	48 54 A0  1 50 40 A0  1 
+1A05460 	28  0  0  0 
+
+\ This can't use token@ and token! because the dictionary pointer
+\ needs to temporarily contain odd byte offset because of c,
+: here  (s -- addr )  dp @  ;
+1A05464 	 0  0  0 68 
+1A05468 	65 72 65 84 5C 54 A0  1 
+1A05470 	20 40 A0  1 48 54 A0  1 
+1A05478 	5C 4C A0  1 58 46 A0  1 
+: pad        (s -- adr )       here 300 +   ;
+1A05480 	70 61 64 83 70 54 A0  1 
+1A05488 	20 40 A0  1 70 54 A0  1 
+1A05490 	58 41 A0  1  0  3  0  0 
+1A05498 	 4 45 A0  1 58 46 A0  1 
+
+: unused  ( -- #bytes )  limit here -  ;
+1A054A0 	 0 75 6E 75 73 65 64 86 
+1A054A8 	88 54 A0  1 20 40 A0  1 
+1A054B0 	5C 54 A0  1 70 54 A0  1 
+1A054B8 	18 45 A0  1 58 46 A0  1 
+
+defer allot-error
+1A054C0 	61 6C 6C 6F 74 2D 65 72 
+1A054C8 	72 6F 72 8B AC 54 A0  1 
+1A054D0 	5C 40 A0  1 2C  0  0  0 
+: allot  (s n -- )
+1A054D8 	 0  0 61 6C 6C 6F 74 85 
+1A054E0 	D0 54 A0  1 20 40 A0  1 
+   dup pad + d# 100 + limit  u>  if  allot-error  then
+1A054E8 	40 49 A0  1 88 54 A0  1 
+1A054F0 	 4 45 A0  1 58 41 A0  1 
+1A054F8 	64  0  0  0  4 45 A0  1 
+1A05500 	5C 54 A0  1 64 48 A0  1 
+1A05508 	DC 41 A0  1  8  0  0  0 
+1A05510 	D0 54 A0  1 
+   dp +!   ( n )
+1A05514 	48 54 A0  1 
+1A05518 	 C 4C A0  1 
+;
+1A0551C 	58 46 A0  1 
+
+: token,  (s cfa -- )  here  /token allot  token!  ;
+1A05520 	 0 74 6F 6B 65 6E 2C 86 
+1A05528 	E4 54 A0  1 20 40 A0  1 
+1A05530 	70 54 A0  1 B4 46 A0  1 
+1A05538 	E4 54 A0  1 20 54 A0  1 
+1A05540 	58 46 A0  1 
+
+\+ rel-t code origin  (s -- addr )  up push  c;
+\- rel-t origin-t constant origin
+1A05544 	 0 6F 72 69 
+1A05548 	67 69 6E 86 2C 55 A0  1 
+1A05550 	68 40 A0  1  0  0 A0  1 
+\- rel-t    /n negate allot-t  origin-t token,-t  ( make origin relocatable )
+
+\ code origin  (s -- addr )   ax ax sub   1push c;
+\ origin is defined later as a constant
+\ code origin+  (s offset -- addr )   c;
+\ code origin-  (s offset -- addr )   c;
+\ for now, use high-level...
+: origin+  (s offset -- addr )   origin +  ;
+1A05558 	6F 72 69 67 69 6E 2B 87 
+1A05560 	50 55 A0  1 20 40 A0  1 
+1A05568 	50 55 A0  1  4 45 A0  1 
+1A05570 	58 46 A0  1 
+: origin-  (s offset -- addr )   origin -  ;
+1A05574 	6F 72 69 67 
+1A05578 	69 6E 2D 87 64 55 A0  1 
+1A05580 	20 40 A0  1 50 55 A0  1 
+1A05588 	18 45 A0  1 58 46 A0  1 
+
+\ ---- Support words for the incremental compiler
+
+
+: ,      (s n -- )       here   /n allot   unaligned-!   ;
+1A05590 	 0  0 2C 81 80 55 A0  1 
+1A05598 	20 40 A0  1 70 54 A0  1 
+1A055A0 	40 51 A0  1 E4 54 A0  1 
+1A055A8 	20 4E A0  1 58 46 A0  1 
+: c,     (s char -- )    here   /c allot   c!   ;
+1A055B0 	 0 63 2C 82 98 55 A0  1 
+1A055B8 	20 40 A0  1 70 54 A0  1 
+1A055C0 	10 51 A0  1 E4 54 A0  1 
+1A055C8 	B8 4D A0  1 58 46 A0  1 
+: w,     (s w -- )       here   /w allot   w!   ;
+1A055D0 	 0 77 2C 82 B8 55 A0  1 
+1A055D8 	20 40 A0  1 70 54 A0  1 
+1A055E0 	20 51 A0  1 E4 54 A0  1 
+1A055E8 	A4 4D A0  1 58 46 A0  1 
+: l,     (s l -- )       here   /l allot   unaligned-l!   ;
+1A055F0 	 0 6C 2C 82 D8 55 A0  1 
+1A055F8 	20 40 A0  1 70 54 A0  1 
+1A05600 	30 51 A0  1 E4 54 A0  1 
+1A05608 	3C 4E A0  1 58 46 A0  1 
+
+: next  ( -- )  h# ff c,  h# e7 c,  ;	\ up jmp
+1A05610 	 0  0  0 6E 65 78 74 84 
+1A05618 	F8 55 A0  1 20 40 A0  1 
+1A05620 	58 41 A0  1 FF  0  0  0 
+1A05628 	B8 55 A0  1 58 41 A0  1 
+1A05630 	E7  0  0  0 B8 55 A0  1 
+1A05638 	58 46 A0  1 
+
+
+\ place-does compiles a "dodoes #) call" instruction
+[ifdef] big-endian-t
+: place-does   (s -- )
+   \ Three noops, so the following call instruction will end 4-byte-aligned
+   90 c,  90 c,  90 c,
+   e8 c,  dodoes  here 4 allot  swap here - swap  le-!
+;
+[else]               \ 1 noop for word-alignment (for relocation)
+: place-does   (s -- )
+1A0563C 	 0 70 6C 61 
+1A05640 	63 65 2D 64 6F 65 73 8A 
+1A05648 	1C 56 A0  1 20 40 A0  1 
+   \ Add enough noops to force the following 5-byte call instruction
+   \ to end at a token alignment boundary
+\   #talign-t 1  ?do  90 c,  loop
+   90 c,  90 c,  90 c,
+1A05650 	58 41 A0  1 90  0  0  0 
+1A05658 	B8 55 A0  1 58 41 A0  1 
+1A05660 	90  0  0  0 B8 55 A0  1 
+1A05668 	58 41 A0  1 90  0  0  0 
+1A05670 	B8 55 A0  1 
+   e8 c,  dodoes  origin+  here 4 + - ,
+1A05674 	58 41 A0  1 
+1A05678 	E8  0  0  0 B8 55 A0  1 
+1A05680 	58 41 A0  1 7C 40  0  0 
+1A05688 	64 55 A0  1 70 54 A0  1 
+1A05690 	58 41 A0  1  4  0  0  0 
+1A05698 	 4 45 A0  1 18 45 A0  1 
+1A056A0 	98 55 A0  1 
+;
+1A056A4 	58 46 A0  1 
+[then]
+
+: place-;code  (s -- )  ;
+1A056A8 	70 6C 61 63 65 2D 3B 63 
+1A056B0 	6F 64 65 8B 4C 56 A0  1 
+1A056B8 	20 40 A0  1 58 46 A0  1 
+
+-1 constant true  0 constant false
+1A056C0 	 0  0  0 74 72 75 65 84 
+1A056C8 	B8 56 A0  1 68 40 A0  1 
+1A056D0 	FF FF FF FF  0  0 66 61 
+1A056D8 	6C 73 65 85 CC 56 A0  1 
+1A056E0 	68 40 A0  1  0  0  0  0 
+
+\ Ip is assumed to point to (;code .  flag is true if
+\ the code at ip is a does> clause as opposed to a ;code clause.
+: does-ip?   (s ip -- ip' flag )
+1A056E8 	 0  0  0 64 6F 65 73 2D 
+1A056F0 	69 70 3F 88 E0 56 A0  1 
+1A056F8 	20 40 A0  1 
+   ta1+     \ Skip past the (;code token
+1A056FC 	FC 50 A0  1 
+   dup c@  h# e8  =  if    \ is a DOES> clause
+1A05700 	40 49 A0  1 C4 4C A0  1 
+1A05708 	58 41 A0  1 E8  0  0  0 
+1A05710 	24 48 A0  1 DC 41 A0  1 
+1A05718 	1C  0  0  0 
+      5 +   true           \ Skip the   DODOES #) CALL  instruction
+1A0571C 	58 41 A0  1 
+1A05720 	 5  0  0  0  4 45 A0  1 
+1A05728 	CC 56 A0  1 
+   else
+1A0572C 	C8 41 A0  1 
+1A05730 	3C  0  0  0 
+      dup  c@  h# 90  =  if   \ is an aligned DOES> clause
+1A05734 	40 49 A0  1 
+1A05738 	C4 4C A0  1 58 41 A0  1 
+1A05740 	90  0  0  0 24 48 A0  1 
+1A05748 	DC 41 A0  1 1C  0  0  0 
+         8 +  true
+1A05750 	58 41 A0  1  8  0  0  0 
+1A05758 	 4 45 A0  1 CC 56 A0  1 
+      else                 \ is a ;CODE clause
+1A05760 	C8 41 A0  1  8  0  0  0 
+         false
+1A05768 	E0 56 A0  1 
+      then
+   then
+;
+1A0576C 	58 46 A0  1 
+
+: put-cf  (s action-clause-addr where -- )  token!  ;
+1A05770 	 0 70 75 74 2D 63 66 86 
+1A05778 	F8 56 A0  1 20 40 A0  1 
+1A05780 	20 54 A0  1 58 46 A0  1 
+
+nuser 'lastacf
+1A05788 	 0  0  0 27 6C 61 73 74 
+1A05790 	61 63 66 88 7C 57 A0  1 
+1A05798 	48 40 A0  1 30  0  0  0 
+: lastacf  ( -- acf )  'lastacf token@  ;
+1A057A0 	6C 61 73 74 61 63 66 87 
+1A057A8 	98 57 A0  1 20 40 A0  1 
+1A057B0 	98 57 A0  1  C 54 A0  1 
+1A057B8 	58 46 A0  1 
+
+\ uses  sets the code field of the indicated word so that
+\ it will execute the code at action-clause-adr
+: uses  ( action-clause-adr xt -- )  put-cf  ;
+1A057BC 	 0  0  0 75 
+1A057C0 	73 65 73 84 AC 57 A0  1 
+1A057C8 	20 40 A0  1 7C 57 A0  1 
+1A057D0 	58 46 A0  1 
+
+
+\ used  sets the code field of the most-recently-defined word so that
+\ it executes the code at action-clause-adr
+: used  ( action-clause-adr -- )  lastacf  uses  ;
+1A057D4 	 0  0  0 75 
+1A057D8 	73 65 64 84 C8 57 A0  1 
+1A057E0 	20 40 A0  1 AC 57 A0  1 
+1A057E8 	C8 57 A0  1 58 46 A0  1 
+
+\t16 2 constant /branch
+\t32 4 constant /branch
+1A057F0 	2F 62 72 61 6E 63 68 87 
+1A057F8 	E0 57 A0  1 68 40 A0  1 
+1A05800 	 4  0  0  0 
+: branch, ( offset -- )
+1A05804 	62 72 61 6E 
+1A05808 	63 68 2C 87 FC 57 A0  1 
+1A05810 	20 40 A0  1 
+\t32 ,
+1A05814 	98 55 A0  1 
+\t16 w,
+;
+1A05818 	58 46 A0  1 
+: branch@  ( -- offset )
+1A0581C 	62 72 61 6E 
+1A05820 	63 68 40 87 10 58 A0  1 
+1A05828 	20 40 A0  1 
+\t16 w@
+\t32 @
+1A0582C 	5C 4C A0  1 
+;
+1A05830 	58 46 A0  1 
+: branch! ( offset where -- )
+1A05834 	62 72 61 6E 
+1A05838 	63 68 21 87 28 58 A0  1 
+1A05840 	20 40 A0  1 
+\t16 w!
+\t32 !
+1A05844 	54 4D A0  1 
+;
+1A05848 	58 46 A0  1 
+\ >target depends on the way that branches are compiled
+: >target  ( ip-of-branch-instruction -- target )  ta1+ dup branch@ +  ;
+1A0584C 	3E 74 61 72 
+1A05850 	67 65 74 87 40 58 A0  1 
+1A05858 	20 40 A0  1 FC 50 A0  1 
+1A05860 	40 49 A0  1 28 58 A0  1 
+1A05868 	 4 45 A0  1 58 46 A0  1 
+
+\+ rel-t create rel
+
+headerless
+/a constant /a
+1A05870 	 0 2F 61 82 58 58 A0  1 
+1A05878 	68 40 A0  1  4  0  0  0 
+code a@ (s addr -- cfa )
+1A05880 	 0 61 40 82 78 58 A0  1 
+1A05888 	8C 58 A0  1 
+   ax pop
+1A0588C 	58 
+\+ rel-t   0 [ax] ax mov   up ax add  ax push
+\- rel-t   0 [ax] push
+1A0588D 	FF 30 
+c;
+1A0588F 	FF 
+1A05890 	E7 
+\ [ifdef] big-endian-t
+\+ rel-t code a!  ( xt adr -- )  bx pop  ax pop  up ax sub  ax 0 [bx] mov  c;
+\- rel-t : a!  ( adr1 adr2 -- ) ( set-relocation-bit )  le-!  ;
+1A05891 	61 21 82 88 58 A0  1 
+1A05898 	20 40 A0  1 30 4D A0  1 
+1A058A0 	58 46 A0  1 
+\ [else]
+\ code a!  ( adr1 adr2 -- )   bx pop   0 [bx] pop    c;
+\ [then]
+: a,  ( adr -- )  here  /a allot  a!  ;
+1A058A4 	 0 61 2C 82 
+1A058A8 	98 58 A0  1 20 40 A0  1 
+1A058B0 	70 54 A0  1 78 58 A0  1 
+1A058B8 	E4 54 A0  1 98 58 A0  1 
+1A058C0 	58 46 A0  1 
+
+: null  ( -- link )  origin  ;
+1A058C4 	 0  0  0 6E 
+1A058C8 	75 6C 6C 84 AC 58 A0  1 
+1A058D0 	20 40 A0  1 50 55 A0  1 
+1A058D8 	58 46 A0  1 
+: !null-link   ( adr -- )  origin swap a!  ;
+1A058DC 	 0 21 6E 75 
+1A058E0 	6C 6C 2D 6C 69 6E 6B 8A 
+1A058E8 	D0 58 A0  1 20 40 A0  1 
+1A058F0 	50 55 A0  1 68 49 A0  1 
+1A058F8 	98 58 A0  1 58 46 A0  1 
+: !null-token  ( adr -- )  origin swap token!  ;
+1A05900 	21 6E 75 6C 6C 2D 74 6F 
+1A05908 	6B 65 6E 8B EC 58 A0  1 
+1A05910 	20 40 A0  1 50 55 A0  1 
+1A05918 	68 49 A0  1 20 54 A0  1 
+1A05920 	58 46 A0  1 
+: non-null?  ( link -- false | link true )
+1A05924 	 0  0 6E 6F 
+1A05928 	6E 2D 6E 75 6C 6C 3F 89 
+1A05930 	10 59 A0  1 20 40 A0  1 
+   dup origin <>  dup  0=  if  nip  then
+1A05938 	40 49 A0  1 50 55 A0  1 
+1A05940 	44 48 A0  1 40 49 A0  1 
+1A05948 	24 47 A0  1 DC 41 A0  1 
+1A05950 	 8  0  0  0 FC 46 A0  1 
+;
+1A05958 	58 46 A0  1 
+
+: get-token?     ( adr -- false | acf  true )  token@ non-null?  ;
+1A0595C 	 0 67 65 74 
+1A05960 	2D 74 6F 6B 65 6E 3F 8A 
+1A05968 	34 59 A0  1 20 40 A0  1 
+1A05970 	 C 54 A0  1 34 59 A0  1 
+1A05978 	58 46 A0  1 
+: another-link?  ( adr -- false | link true )  a@  non-null?  ;
+1A0597C 	 0  0 61 6E 
+1A05980 	6F 74 68 65 72 2D 6C 69 
+1A05988 	6E 6B 3F 8D 6C 59 A0  1 
+1A05990 	20 40 A0  1 88 58 A0  1 
+1A05998 	34 59 A0  1 58 46 A0  1 
+
+\ The "word type" is a number which distinguishes one type of word
+\ from another.  This is highly implementation-dependent.
+
+\ For the i386 implementation, the magic number returned by word-type
+\ is the absolute address of the action code.
+
+: word-type  (s acf -- word-type )  token@  ;
+1A059A0 	 0  0 77 6F 72 64 2D 74 
+1A059A8 	79 70 65 89 90 59 A0  1 
+1A059B0 	20 40 A0  1  C 54 A0  1 
+1A059B8 	58 46 A0  1 
+
+: body>  (s pfa -- cfa )   /token -  ;
+1A059BC 	 0  0 62 6F 
+1A059C0 	64 79 3E 85 B0 59 A0  1 
+1A059C8 	20 40 A0  1 B4 46 A0  1 
+1A059D0 	18 45 A0  1 58 46 A0  1 
+: >body  (s cfa -- pfa )   /token +  ;
+1A059D8 	 0  0 3E 62 6F 64 79 85 
+1A059E0 	C8 59 A0  1 20 40 A0  1 
+1A059E8 	B4 46 A0  1  4 45 A0  1 
+1A059F0 	58 46 A0  1 
+
+: >code  ( acf-of-code-word -- address-of-start-of-machine-code )  >body  ;
+1A059F4 	 0  0 3E 63 
+1A059F8 	6F 64 65 85 E4 59 A0  1 
+1A05A00 	20 40 A0  1 E4 59 A0  1 
+1A05A08 	58 46 A0  1 
+: code?  ( acf -- f )  \ True if the acf is for a code word
+1A05A0C 	 0  0 63 6F 
+1A05A10 	64 65 3F 85  0 5A A0  1 
+1A05A18 	20 40 A0  1 
+   dup token@  swap >body  =
+1A05A1C 	40 49 A0  1 
+1A05A20 	 C 54 A0  1 68 49 A0  1 
+1A05A28 	E4 59 A0  1 24 48 A0  1 
+;
+1A05A30 	58 46 A0  1 
+
+
+\t16 2 constant /user#
+\t32 4 constant /user#
+1A05A34 	 0 2F 75 73 
+1A05A38 	65 72 23 86 18 5A A0  1 
+1A05A40 	68 40 A0  1  4  0  0  0 
+
+\ Move to a machine alignment boundary.
+\ i386 allows arbitrary alignment
+
+[ifdef] big-endian-t
+create big-endian
+[then]
+
+#align-t     constant #align
+1A05A48 	 0 23 61 6C 69 67 6E 86 
+1A05A50 	40 5A A0  1 68 40 A0  1 
+1A05A58 	 4  0  0  0 
+#talign-t    constant #talign
+1A05A5C 	23 74 61 6C 
+1A05A60 	69 67 6E 87 54 5A A0  1 
+1A05A68 	68 40 A0  1  4  0  0  0 
+#acf-align-t constant #acf-align
+1A05A70 	 0 23 61 63 66 2D 61 6C 
+1A05A78 	69 67 6E 8A 68 5A A0  1 
+1A05A80 	68 40 A0  1  4  0  0  0 
+
+: acf-align  (s -- )
+1A05A88 	 0  0 61 63 66 2D 61 6C 
+1A05A90 	69 67 6E 89 80 5A A0  1 
+1A05A98 	20 40 A0  1 
+   begin  here #acf-align 1- and  while  0 c,  repeat
+1A05A9C 	70 54 A0  1 
+1A05AA0 	80 5A A0  1 54 4B A0  1 
+1A05AA8 	5C 44 A0  1 DC 41 A0  1 
+1A05AB0 	18  0  0  0 58 41 A0  1 
+1A05AB8 	 0  0  0  0 B8 55 A0  1 
+1A05AC0 	C8 41 A0  1 D8 FF FF FF 
+   here 'lastacf token!
+1A05AC8 	70 54 A0  1 98 57 A0  1 
+1A05AD0 	20 54 A0  1 
+;
+1A05AD4 	58 46 A0  1 
+
+\ Place the code field
+: place-cf  (s action-adr -- )  origin+ acf-align  token,  ;
+1A05AD8 	 0  0  0 70 6C 61 63 65 
+1A05AE0 	2D 63 66 88 98 5A A0  1 
+1A05AE8 	20 40 A0  1 64 55 A0  1 
+1A05AF0 	98 5A A0  1 2C 55 A0  1 
+1A05AF8 	58 46 A0  1 
+
+: code-cf  (s -- )   acf-align  here ta1+ token,  ;
+1A05AFC 	63 6F 64 65 
+1A05B00 	2D 63 66 87 E8 5A A0  1 
+1A05B08 	20 40 A0  1 98 5A A0  1 
+1A05B10 	70 54 A0  1 FC 50 A0  1 
+1A05B18 	2C 55 A0  1 58 46 A0  1 
+
+: create-cf    (s -- )  docreate   place-cf  ;
+1A05B20 	 0  0 63 72 65 61 74 65 
+1A05B28 	2D 63 66 89  8 5B A0  1 
+1A05B30 	20 40 A0  1 58 41 A0  1 
+1A05B38 	30 40  0  0 E8 5A A0  1 
+1A05B40 	58 46 A0  1 
+: variable-cf  (s -- )  dovariable place-cf  ;
+1A05B44 	76 61 72 69 
+1A05B48 	61 62 6C 65 2D 63 66 8B 
+1A05B50 	30 5B A0  1 20 40 A0  1 
+1A05B58 	58 41 A0  1 38 40  0  0 
+1A05B60 	E8 5A A0  1 58 46 A0  1 
+
+: colon-cf      (s -- )  docolon    place-cf  ;
+1A05B68 	 0  0  0 63 6F 6C 6F 6E 
+1A05B70 	2D 63 66 88 54 5B A0  1 
+1A05B78 	20 40 A0  1 58 41 A0  1 
+1A05B80 	20 40  0  0 E8 5A A0  1 
+1A05B88 	58 46 A0  1 
+: colon-cf?     (s possible-acf -- flag )
+1A05B8C 	 0  0 63 6F 
+1A05B90 	6C 6F 6E 2D 63 66 3F 89 
+1A05B98 	78 5B A0  1 20 40 A0  1 
+   word-type  ['] colon-cf  word-type =
+1A05BA0 	B0 59 A0  1 60 53 A0  1 
+1A05BA8 	78 5B A0  1 B0 59 A0  1 
+1A05BB0 	24 48 A0  1 
+;
+1A05BB4 	58 46 A0  1 
+
+: user-cf       (s -- )  douser      place-cf  ;
+1A05BB8 	75 73 65 72 2D 63 66 87 
+1A05BC0 	9C 5B A0  1 20 40 A0  1 
+1A05BC8 	58 41 A0  1 48 40  0  0 
+1A05BD0 	E8 5A A0  1 58 46 A0  1 
+: value-cf      (s -- )  dovalue     place-cf  ;
+1A05BD8 	 0  0  0 76 61 6C 75 65 
+1A05BE0 	2D 63 66 88 C4 5B A0  1 
+1A05BE8 	20 40 A0  1 58 41 A0  1 
+1A05BF0 	50 40  0  0 E8 5A A0  1 
+1A05BF8 	58 46 A0  1 
+: constant-cf   (s -- )  doconstant  place-cf  ;
+1A05BFC 	63 6F 6E 73 
+1A05C00 	74 61 6E 74 2D 63 66 8B 
+1A05C08 	E8 5B A0  1 20 40 A0  1 
+1A05C10 	58 41 A0  1 68 40  0  0 
+1A05C18 	E8 5A A0  1 58 46 A0  1 
+: defer-cf      (s -- )  dodefer     place-cf  ;
+1A05C20 	 0  0  0 64 65 66 65 72 
+1A05C28 	2D 63 66 88  C 5C A0  1 
+1A05C30 	20 40 A0  1 58 41 A0  1 
+1A05C38 	5C 40  0  0 E8 5A A0  1 
+1A05C40 	58 46 A0  1 
+: 2constant-cf  (s -- )  do2constant place-cf  ;
+1A05C44 	 0  0  0 32 
+1A05C48 	63 6F 6E 73 74 61 6E 74 
+1A05C50 	2D 63 66 8C 30 5C A0  1 
+1A05C58 	20 40 A0  1 58 41 A0  1 
+1A05C60 	70 40  0  0 E8 5A A0  1 
+1A05C68 	58 46 A0  1 
+
+: round-up  ( adr granularity -- adr' )  1-  tuck +  swap invert and  ;
+1A05C6C 	 0  0  0 72 
+1A05C70 	6F 75 6E 64 2D 75 70 88 
+1A05C78 	58 5C A0  1 20 40 A0  1 
+1A05C80 	54 4B A0  1 E8 46 A0  1 
+1A05C88 	 4 45 A0  1 68 49 A0  1 
+1A05C90 	30 45 A0  1 5C 44 A0  1 
+1A05C98 	58 46 A0  1 
+: (align)  ( size granularity -- )
+1A05C9C 	28 61 6C 69 
+1A05CA0 	67 6E 29 87 7C 5C A0  1 
+1A05CA8 	20 40 A0  1 
+   1-  begin  dup here and  while  0 c,  repeat  drop
+1A05CAC 	54 4B A0  1 
+1A05CB0 	40 49 A0  1 70 54 A0  1 
+1A05CB8 	5C 44 A0  1 DC 41 A0  1 
+1A05CC0 	18  0  0  0 58 41 A0  1 
+1A05CC8 	 0  0  0  0 B8 55 A0  1 
+1A05CD0 	C8 41 A0  1 DC FF FF FF 
+1A05CD8 	30 49 A0  1 
+;
+1A05CDC 	58 46 A0  1 
+
+
+: aligned  (s adr -- adr' )  #align round-up  ;
+1A05CE0 	61 6C 69 67 6E 65 64 87 
+1A05CE8 	A8 5C A0  1 20 40 A0  1 
+1A05CF0 	54 5A A0  1 7C 5C A0  1 
+1A05CF8 	58 46 A0  1 
+: acf-aligned  (s adr -- adr' )  #acf-align round-up  ;
+1A05CFC 	61 63 66 2D 
+1A05D00 	61 6C 69 67 6E 65 64 8B 
+1A05D08 	EC 5C A0  1 20 40 A0  1 
+1A05D10 	80 5A A0  1 7C 5C A0  1 
+1A05D18 	58 46 A0  1 
+: acf-align  (s -- )  #acf-align (align)   here 'lastacf token!  ;
+1A05D1C 	 0  0 61 63 
+1A05D20 	66 2D 61 6C 69 67 6E 89 
+1A05D28 	 C 5D A0  1 20 40 A0  1 
+1A05D30 	80 5A A0  1 A8 5C A0  1 
+1A05D38 	70 54 A0  1 98 57 A0  1 
+1A05D40 	20 54 A0  1 58 46 A0  1 
+
+code um*  (s n1 n2 -- d )  ax pop   bx pop   bx  mul   dx ax xchg   2push c;
+1A05D48 	75 6D 2A 83 2C 5D A0  1 
+1A05D50 	54 5D A0  1 58 5B F7 E3 
+1A05D58 	92 52 50 FF E7 
+code m*   (s n1 n2 -- d )  ax pop   bx pop   bx imul   dx ax xchg   2push c;
+1A05D5D 	6D 2A 82 
+1A05D60 	50 5D A0  1 68 5D A0  1 
+1A05D68 	58 5B F7 EB 92 52 50 FF 
+1A05D70 	E7 
+
+code um/mod  (s d1 n1 -- rem quot )
+1A05D71 	75 6D 2F 6D 6F 64 86 
+1A05D78 	64 5D A0  1 80 5D A0  1 
+   bx pop   dx pop   ax pop   bx  div   2push
+1A05D80 	5B 5A 58 F7 F3 52 50 
+c;
+1A05D87 	FF 
+1A05D88 	E7 
+code sm/rem  (s d1 n1 -- rem quot )
+1A05D89 	73 6D 2F 72 65 6D 86 
+1A05D90 	7C 5D A0  1 98 5D A0  1 
+   bx pop   dx pop   ax pop   bx idiv   2push
+1A05D98 	5B 5A 58 F7 FB 52 50 
+c;
+1A05D9F 	FF 
+1A05DA0 	E7 
+
+code dnegate  (s d# -- d#' )
+1A05DA1 	 0  0  0 64 6E 65 67 
+1A05DA8 	61 74 65 87 94 5D A0  1 
+1A05DB0 	B4 5D A0  1 
+   bx pop   cx pop   ax ax sub   ax dx mov
+1A05DB4 	5B 59 29 C0 
+1A05DB8 	8B D0 
+   cx dx sub   bx ax sbb   2push
+1A05DBA 	29 CA 19 D8 52 50 
+c;
+1A05DC0 	FF E7 
+
+code 2nip  ( d1 d2 -- d2 )  ax pop  bx pop  dx pop  dx pop  bx push  1push c;
+1A05DC2 	 0 32 6E 69 70 84 
+1A05DC8 	B0 5D A0  1 D0 5D A0  1 
+1A05DD0 	58 5B 5A 5A 53 50 FF E7 
+
+code d+  ( x1 x2 -- x3 )
+1A05DD8 	 0 64 2B 82 CC 5D A0  1 
+1A05DE0 	E4 5D A0  1 
+   ax pop  bx pop  cx pop  dx pop
+1A05DE4 	58 5B 59 5A 
+   bx dx add
+1A05DE8 	 1 DA 
+   cx ax adc
+1A05DEA 	11 C8 
+   dx push
+1A05DEC 	52 
+   ax push
+1A05DED 	50 
+c;
+1A05DEE 	FF E7 
+code d-  ( x1 x2 -- x3 )
+1A05DF0 	 0 64 2D 82 E0 5D A0  1 
+1A05DF8 	FC 5D A0  1 
+   bx pop  cx pop  ax pop  dx pop
+1A05DFC 	5B 59 58 5A 
+   cx dx sub
+1A05E00 	29 CA 
+   bx ax sbb
+1A05E02 	19 D8 
+   dx push
+1A05E04 	52 
+   ax push
+1A05E05 	50 
+c;
+1A05E06 	FF E7 
+
+: dabs  ( d# -- d# )  dup 0<  if  dnegate  then  ;
+1A05E08 	 0  0  0 64 61 62 73 84 
+1A05E10 	F8 5D A0  1 20 40 A0  1 
+1A05E18 	40 49 A0  1 64 47 A0  1 
+1A05E20 	DC 41 A0  1  8  0  0  0 
+1A05E28 	B0 5D A0  1 58 46 A0  1 
+: dmax  ( d1 d2 -- d3 )  2over 2over  d-  nip 0<  if  2swap  then  2drop  ;
+1A05E30 	 0  0  0 64 6D 61 78 84 
+1A05E38 	14 5E A0  1 20 40 A0  1 
+1A05E40 	D8 49 A0  1 D8 49 A0  1 
+1A05E48 	F8 5D A0  1 FC 46 A0  1 
+1A05E50 	64 47 A0  1 DC 41 A0  1 
+1A05E58 	 8  0  0  0 F4 49 A0  1 
+1A05E60 	AC 49 A0  1 58 46 A0  1 
+
+: m/mod  (s d# n1 -- rem quot )
+1A05E68 	 0  0 6D 2F 6D 6F 64 85 
+1A05E70 	3C 5E A0  1 20 40 A0  1 
+   dup >r  2dup xor >r  >r dabs r@ abs  um/mod
+1A05E78 	40 49 A0  1 BC 45 A0  1 
+1A05E80 	C0 49 A0  1 84 44 A0  1 
+1A05E88 	BC 45 A0  1 BC 45 A0  1 
+1A05E90 	14 5E A0  1 E4 45 A0  1 
+1A05E98 	24 4A A0  1 7C 5D A0  1 
+   swap r>  0< if  negate  then
+1A05EA0 	68 49 A0  1 D0 45 A0  1 
+1A05EA8 	64 47 A0  1 DC 41 A0  1 
+1A05EB0 	 8  0  0  0 48 45 A0  1 
+   swap r> 0< if
+1A05EB8 	68 49 A0  1 D0 45 A0  1 
+1A05EC0 	64 47 A0  1 DC 41 A0  1 
+1A05EC8 	28  0  0  0 
+      negate over if  1- r@ rot - swap  then
+1A05ECC 	48 45 A0  1 
+1A05ED0 	54 49 A0  1 DC 41 A0  1 
+1A05ED8 	18  0  0  0 54 4B A0  1 
+1A05EE0 	E4 45 A0  1 7C 49 A0  1 
+1A05EE8 	18 45 A0  1 68 49 A0  1 
+   then
+   r> drop
+1A05EF0 	D0 45 A0  1 30 49 A0  1 
+;
+1A05EF8 	58 46 A0  1 
+: fm/mod  ( d# n1 -- rem quot )  m/mod  ;
+1A05EFC 	 0 66 6D 2F 
+1A05F00 	6D 6F 64 86 74 5E A0  1 
+1A05F08 	20 40 A0  1 74 5E A0  1 
+1A05F10 	58 46 A0  1 
+: *      (s n1 n2 -- n3 )   m* drop   ;
+1A05F14 	 0  0 2A 81 
+1A05F18 	 8 5F A0  1 20 40 A0  1 
+1A05F20 	64 5D A0  1 30 49 A0  1 
+1A05F28 	58 46 A0  1 
+: u*     (s n1 n2 -- n3 )  um* drop   ;
+1A05F2C 	 0 75 2A 82 
+1A05F30 	1C 5F A0  1 20 40 A0  1 
+1A05F38 	50 5D A0  1 30 49 A0  1 
+1A05F40 	58 46 A0  1 
+: /mod   (s n1 n2 -- rem quot )   >r  s>d  r>  m/mod  ;
+1A05F44 	 0  0  0 2F 
+1A05F48 	6D 6F 64 84 34 5F A0  1 
+1A05F50 	20 40 A0  1 BC 45 A0  1 
+1A05F58 	84 4F A0  1 D0 45 A0  1 
+1A05F60 	74 5E A0  1 58 46 A0  1 
+: u/mod  (s n1 n2 -- rem quot )   >r    0  r>  m/mod  ;
+1A05F68 	 0  0 75 2F 6D 6F 64 85 
+1A05F70 	50 5F A0  1 20 40 A0  1 
+1A05F78 	BC 45 A0  1 58 41 A0  1 
+1A05F80 	 0  0  0  0 D0 45 A0  1 
+1A05F88 	74 5E A0  1 58 46 A0  1 
+: /      (s n1 n2 -- quot )   /mod  nip   ;
+1A05F90 	 0  0 2F 81 74 5F A0  1 
+1A05F98 	20 40 A0  1 50 5F A0  1 
+1A05FA0 	FC 46 A0  1 58 46 A0  1 
+: mod    (s n1 n2 -- rem )    /mod  drop  ;
+1A05FA8 	6D 6F 64 83 98 5F A0  1 
+1A05FB0 	20 40 A0  1 50 5F A0  1 
+1A05FB8 	30 49 A0  1 58 46 A0  1 
+: */mod  (s n1 n2 n3 -- rem quot )  >r  m*  r>  m/mod  ;
+1A05FC0 	 0  0 2A 2F 6D 6F 64 85 
+1A05FC8 	B0 5F A0  1 20 40 A0  1 
+1A05FD0 	BC 45 A0  1 64 5D A0  1 
+1A05FD8 	D0 45 A0  1 74 5E A0  1 
+1A05FE0 	58 46 A0  1 
+: */     (s n1 n2 n3 -- n1*n2/n3 )   */mod  nip  ;
+1A05FE4 	 0 2A 2F 82 
+1A05FE8 	CC 5F A0  1 20 40 A0  1 
+1A05FF0 	CC 5F A0  1 FC 46 A0  1 
+1A05FF8 	58 46 A0  1 
+
+: ul*    (s ul u  -- ul.prod )  *  ;
+1A05FFC 	75 6C 2A 83 
+1A06000 	EC 5F A0  1 20 40 A0  1 
+1A06008 	1C 5F A0  1 58 46 A0  1 
+
+\ : /mod  (s dividend divisor -- remainder quotient )
+\   \ Check if either factor is negative
+\     2dup               ( n1 n2 n1 n2)
+\     or 0< if           ( n1 n2)
+\     
+\         \ Both factors not non-negative do division by:
+\         \ Take absolute value and do unsigned division
+\         \ Convert to truncated signed divide by:
+\         \  if dividend is negative then negate the remainder
+\         \  if dividend and divisor have opposite signs then negate the quotient
+\         \ Then convert to floored signed divide by:
+\         \  if quotient is negative and remainder is non-zero
+\         \    add divisor to remainder and decrement quotient
+\ 
+\         2dup swap abs swap abs  ( n1 n2 u1 u2)     \ Absolute values
+\ 
+\         u/mod              ( n1 n2 urem uqout)     \ Unsigned divide
+\         >r >r              ( n1 n2) ( uquot urem)
+\ 
+\         over 0< if         ( n1 n2) ( uquot urem)  
+\             r> negate >r                   \ Negative dividend; negate remainder
+\         then               ( n1 n2) ( uquot trem)
+\    
+\         swap over          ( n2 n1 n2) ( uquot trem)
+\         xor 0< if          ( n2) ( uquot trem)
+\             r> r>
+\             negate         ( n2 trem tquot)  \ Opposite signs; negate quotient
+\            -rot            ( tquot n2 trem)
+\             dup 0<> if 
+\                 +          ( tquot rem) \ Negative quotient & non-zero remainder
+\                 swap 1-    ( rem quot)  \ add divisor to rem. & decrement  quot.
+\             else
+\                 nip swap   ( rem quot)
+\             then
+\         else
+\             drop r> r>     ( rem quot)
+\         then
+\ 
+\     else   \ Both factors non-negative
+\ 
+\         u/mod          ( rem quot)
+\     then
+\ ;
+
+userarea-t constant init-user-area
+1A06010 	 0 69 6E 69 74 2D 75 73 
+1A06018 	65 72 2D 61 72 65 61 8E 
+1A06020 	 4 60 A0  1 68 40 A0  1 
+1A06028 	20  0  0  0 
+
+\ Execute a Forth word given a pointer to a code field address
+: perform   (s addr-of-acf -- )  token@ execute  ;
+1A0602C 	70 65 72 66 
+1A06030 	6F 72 6D 87 24 60 A0  1 
+1A06038 	20 40 A0  1  C 54 A0  1 
+1A06040 	98 41 A0  1 58 46 A0  1 
+
+\ Select a vocabulary thread by hashing the lookup name.
+code hash  (s str-addr voc-ptr -- thread )
+1A06048 	 0  0  0 68 61 73 68 84 
+1A06050 	38 60 A0  1 58 60 A0  1 
+   ax pop
+1A06058 	58 
+   \ The next line is equivalent to ">threads", which in this
+   \ implementation happens to be the same as ">body >user"
+   /cf [ax] ax mov   ?bswap-ax   up ax add
+1A06059 	8B 40  4  1 F8 
+
+   dx pop
+1A0605E 	5A 
+[ifdef] big-endian-t
+   bx bx xor
+   1 [dx] bl mov		\ Get count byte
+   #threads-t 1- #  bx  and	\ Modulo number of threads
+   bx shl  bx shl		\ Convert to longword index
+   bx ax add
+[then]
+   1push
+1A0605F 	50 
+c;
+1A06060 	FF E7 
+
+\ Search a vocabulary thread (link) for a name matching string.
+\ If found, return its code field address and -1 if immediate, 1 if not
+\ immediate.  If not found, return the string and 0.
+
+\ Name field:
+\     name: forth-style packed string, no tag bits
+\     flag: 40 bit is immediate bit
+\ Padding is optionally inserted between the name and the flags
+\ so that the byte after the flag byte is on an even boundary.
+
+code ($find-next)  (s adr len link -- adr len alf true  |  adr len false )
+1A06062 	 0 28 24 66 69 6E 
+1A06068 	64 2D 6E 65 78 74 29 8C 
+1A06070 	54 60 A0  1 78 60 A0  1 
+\ Registers:
+\ ax     alf of word being tested
+\ bx     string
+\ si     anf of word being tested
+\ dx     scratch
+\ cx	 used as count for rep instruction
+
+   ds ax mov  ax es mov	\ Ensure es is correct
+1A06078 	8C D8 8E C0 
+
+   ax		pop	\ link
+1A0607C 	58 
+   0 [sp]  dx	mov	\ string length (not consumed)
+1A0607D 	8B 14 24 
+   4 [sp]  bx	mov	\ string address (not consumed)
+1A06080 	8B 5C 24  4 
+   bp           push	\ Save RP
+1A06084 	55 
+   si		push	\ Save IP
+1A06085 	56 
+   di		push	\ Save UP
+1A06086 	57 
+   cx      cx   xor	\ Clear high bytes
+1A06087 	31 
+1A06088 	C9 
+
+\+ rel-t   up bp mov            \ up (==di) is the origin, but we need to use di for string compare
+
+\- rel-t   here-t 5 + #)  call	\ Figure out the origin address
+1A06089 	E8  0  0  0  0 
+\- rel-t   here-t
+\- rel-t   bp pop
+1A0608E 	5D 
+\- rel-t   origin-t - #  bp  sub
+1A0608F 	81 
+1A06090 	ED 8E 60  0  0 
+
+   ahead
+1A06095 	EB 2A 
+   begin
+
+      /link #  ax  sub	\ >link
+1A06097 	2D 
+1A06098 	 4  0  0  0 
+      ax       si  mov	\ Link address of word to test
+1A0609C 	8B F0 
+
+      si           dec  \ >length-byte
+1A0609E 	4E 
+      0 [si]   cl  mov	\ Get count/tag byte
+1A0609F 	8A 
+1A060A0 	 E 
+      h# 1f #  cl  and	\ remove tag bits, leaving the word length in cl
+1A060A1 	80 E1 1F 
+      cx       si  sub	\ Skip back to beginning of name field
+1A060A4 	29 CE 
+
+      bx       di  mov	\ Get string address into compare register
+1A060A6 	8B FB 
+      repz byte cmps	\ Compare strings
+1A060A8 	F3 A6 
+      0= if		\ If the strings match, the Z bit will be set
+1A060AA 	75 15 
+                        \ Are the strings are the same length?
+         0 [si]  cl  mov	\ Count/tag byte
+1A060AC 	8A  E 
+	 h# 1f # cl  and	\ remove tag bits
+1A060AE 	80 E1 
+1A060B0 	1F 
+         dl      cl  cmp         
+1A060B1 	38 D1 
+         =  if			\ We found it ...
+1A060B3 	75  C 
+	    di       pop	\ Restore UP
+1A060B5 	5F 
+	    si	     pop	\ Restore IP
+1A060B6 	5E 
+	    bp       pop	\ Restore RP
+1A060B7 	5D 
+
+            ax       push	\ Push alf above pstr
+1A060B8 	50 
+            true #   ax  mov
+1A060B9 	B8 FF FF FF FF 
+	    1push  		\ True on top of stack means "found"
+1A060BE 	50 
+	    next
+1A060BF 	FF 
+1A060C0 	E7 
+         then
+      then
+
+   but then
+      \ The names did not match, so check the next name in the list
+      0 [ax]  ax  mov	\ Fetch next link
+1A060C1 	8B  0 
+\+ rel-t bp ax add
+   ax  bp  cmp	\ Test for end of list
+1A060C3 	39 C5 
+   0= until
+1A060C5 	75 D0 
+
+   \ If we get here, we've checked all the names with no luck
+   di           pop     \ Restore UP
+1A060C7 	5F 
+   si		pop	\ Restore IP
+1A060C8 	5E 
+   bp           pop	\ Restore RP
+1A060C9 	5D 
+   ax       ax  xor
+1A060CA 	31 C0 
+   1push        	\ Return 0 for "not found"
+1A060CC 	50 
+c;
+1A060CD 	FF E7 
+
+: ?negate  (s n1 n2 -- n3 )  if  negate  then  ;
+1A060CF 	 0 
+1A060D0 	3F 6E 65 67 61 74 65 87 
+1A060D8 	74 60 A0  1 20 40 A0  1 
+1A060E0 	DC 41 A0  1  8  0  0  0 
+1A060E8 	48 45 A0  1 58 46 A0  1 
+: wflip  (s l1 -- l2 )  lwsplit swap wljoin  ;  \ word swap
+1A060F0 	 0  0 77 66 6C 69 70 85 
+1A060F8 	DC 60 A0  1 20 40 A0  1 
+1A06100 	A0 4F A0  1 68 49 A0  1 
+1A06108 	D4 4F A0  1 58 46 A0  1 
+
+code cset    (s byte-mask addr -- )  bx pop  ax pop           al 0 [bx] or   c;
+1A06110 	 0  0  0 63 73 65 74 84 
+1A06118 	FC 60 A0  1 20 61 A0  1 
+1A06120 	5B 58  8  3 FF E7 
+code creset  (s byte-mask addr -- )  bx pop  ax pop  ax not   al 0 [bx] and  c;
+1A06126 	 0  0 
+1A06128 	 0 63 72 65 73 65 74 86 
+1A06130 	1C 61 A0  1 38 61 A0  1 
+1A06138 	5B 58 F7 D0 20  3 FF E7 
+code ctoggle (s b addr -- )          bx pop  ax pop           al 0 [bx] xor  c;
+1A06140 	63 74 6F 67 67 6C 65 87 
+1A06148 	34 61 A0  1 50 61 A0  1 
+1A06150 	5B 58 30  3 FF E7 
+code toggle  (s addr byte-mask -- )  ax pop  bx pop           al 0 [bx] xor  c;
+1A06156 	 0  0 
+1A06158 	 0 74 6F 67 67 6C 65 86 
+1A06160 	4C 61 A0  1 68 61 A0  1 
+1A06168 	58 5B 30  3 FF E7 
+
+code s->l (s n.signed -- l )   c;
+1A0616E 	 0 73 
+1A06170 	2D 3E 6C 84 64 61 A0  1 
+1A06178 	7C 61 A0  1 FF E7 
+code l->n (s l -- n )  c;
+1A0617E 	 0 6C 
+1A06180 	2D 3E 6E 84 78 61 A0  1 
+1A06188 	8C 61 A0  1 FF E7 
+code n->a (s n -- a )  c;
+1A0618E 	 0 6E 
+1A06190 	2D 3E 61 84 88 61 A0  1 
+1A06198 	9C 61 A0  1 FF E7 
+code l->w (s l -- w )  bx pop  ax ax xor  op: bx ax mov  1push c;
+1A0619E 	 0 6C 
+1A061A0 	2D 3E 77 84 98 61 A0  1 
+1A061A8 	AC 61 A0  1 5B 31 C0 66 
+1A061B0 	8B C3 50 FF E7 
+code n->w (s n -- w )  bx pop  ax ax xor  op: bx ax mov  1push c;
+1A061B5 	 0  0 6E 
+1A061B8 	2D 3E 77 84 A8 61 A0  1 
+1A061C0 	C4 61 A0  1 5B 31 C0 66 
+1A061C8 	8B C3 50 FF E7 
+
+code l>r  (s l -- )   ax pop   rp adec   ax 0 [rp] mov   c;
+1A061CD 	 0  0  0 
+1A061D0 	6C 3E 72 83 C0 61 A0  1 
+1A061D8 	DC 61 A0  1 58 83 ED  4 
+1A061E0 	89 45  0 FF E7 
+code lr>  (s -- l )   0 [rp] ax mov   rp ainc   1push c;
+1A061E5 	 0  0  0 
+1A061E8 	6C 72 3E 83 D8 61 A0  1 
+1A061F0 	F4 61 A0  1 8B 45  0 83 
+1A061F8 	C5  4 50 FF E7 
+code lr@  (s -- l )   0 [rp] ax mov             1push c;  
+1A061FD 	 0  0  0 
+1A06200 	6C 72 40 83 F0 61 A0  1 
+1A06208 	 C 62 A0  1 8B 45  0 50 
+1A06210 	FF E7 
+
+code /t*  (s n -- n*/t )   ax pop   ax shl   ax shl   1push c;
+1A06212 	 0  0 2F 74 2A 83 
+1A06218 	 8 62 A0  1 20 62 A0  1 
+1A06220 	58 D1 E0 D1 E0 50 FF E7 
+
+: align  (s -- )  #align (align)  ;
+1A06228 	 0  0 61 6C 69 67 6E 85 
+1A06230 	1C 62 A0  1 20 40 A0  1 
+1A06238 	54 5A A0  1 A8 5C A0  1 
+1A06240 	58 46 A0  1 
+: taligned  (s adr -- adr' )  #talign round-up  ;
+1A06244 	 0  0  0 74 
+1A06248 	61 6C 69 67 6E 65 64 88 
+1A06250 	34 62 A0  1 20 40 A0  1 
+1A06258 	68 5A A0  1 7C 5C A0  1 
+1A06260 	58 46 A0  1 
+: talign  (s -- )  #talign (align)  ;
+1A06264 	 0 74 61 6C 
+1A06268 	69 67 6E 86 54 62 A0  1 
+1A06270 	20 40 A0  1 68 5A A0  1 
+1A06278 	A8 5C A0  1 58 46 A0  1 
+
+true constant in-little-endian?
+1A06280 	 0  0 69 6E 2D 6C 69 74 
+1A06288 	74 6C 65 2D 65 6E 64 69 
+1A06290 	61 6E 3F 91 70 62 A0  1 
+1A06298 	68 40 A0  1 FF FF FF FF 
+
+\ [ifdef] big-endian-t
+\ : >name   ( acf -- anf )
+\    1- begin  1-  dup c@  bl >  until	\ Find the end of the name
+\    /token 1- invert and		\ Move to token boundary
+\    begin  dup c@  bl >=  while  /token -  repeat
+\ ;
+\ [then]
+
+code lmove  ( src dst len -- )
+1A062A0 	 0  0 6C 6D 6F 76 65 85 
+1A062A8 	98 62 A0  1 B0 62 A0  1 
+   di dx mov
+1A062B0 	8B D7 
+   cld
+1A062B2 	FC 
+   si bx mov
+1A062B3 	8B DE 
+   ds ax mov
+1A062B5 	8C D8 
+   ax es mov
+1A062B7 	8E 
+1A062B8 	C0 
+   cx pop     \ Len
+1A062B9 	59 
+   di pop     \ dst
+1A062BA 	5F 
+   si pop     \ src
+1A062BB 	5E 
+   2 #  cx  shr  \ longword count
+1A062BC 	C1 E9  2 
+   repnz  movs
+1A062BF 	F2 
+1A062C0 	A5 
+   bx si mov
+1A062C1 	8B F3 
+   dx di mov
+1A062C3 	8B FA 
+c;
+1A062C5 	FF E7 
+
+\ Code words to support the file system interface
+
+\ signed mixed mode addition (same as + on 32-bit machines)
+: ln+   (s n1 n2 -- n3 )  +  ;
+1A062C7 	 0 
+1A062C8 	6C 6E 2B 83 AC 62 A0  1 
+1A062D0 	20 40 A0  1  4 45 A0  1 
+1A062D8 	58 46 A0  1 
+
+\ &ptr is the address of a pointer.  fetch the pointed-to
+\ character and post-increment the pointer
+ 
+[ifdef] big-endian-t
+: @c@++  ( &ptr -- char )  dup @ c@  1 rot +!  ;
+[else]
+code @c@++ ( &ptr -- char )
+1A062DC 	 0  0 40 63 
+1A062E0 	40 2B 2B 85 D0 62 A0  1 
+1A062E8 	EC 62 A0  1 
+   bx pop   0 [bx] cx mov   ax ax sub  0 [cx] al mov
+1A062EC 	5B 8B  B 29 
+1A062F0 	C0 8A  1 
+   cx inc   cx 0 [bx] mov   1push
+1A062F3 	41 89  B 50 
+c;
+1A062F7 	FF 
+1A062F8 	E7 
+[then]
+ 
+\ &ptr is the address of a pointer.  store the character into
+\ the pointed-to location and post-increment the pointer
+
+[ifdef] big-endian-t
+: @c!++  ( char &ptr -- )  tuck @ c!  1 swap +!  ;
+[else]
+code @c!++ ( char &ptr -- )
+1A062F9 	 0 40 63 21 2B 2B 85 
+1A06300 	E8 62 A0  1  8 63 A0  1 
+   bx pop   0 [bx] cx mov   ax pop   al 0 [cx] mov
+1A06308 	5B 8B  B 58 88  1 
+   cx inc   cx 0 [bx] mov
+1A0630E 	41 89 
+1A06310 	 B 
+c;
+1A06311 	FF E7 
+[then]
+
+\ Low-level character processing routines:
+\ skipbl   -   skip leading white space     ( interpreter )
+\ scanbl   -   collect non-white characters ( interpreter )
+\ skipto   -   skip to next occurrence of a character ( comments )
+\ scanto   -   collect characters until next occurrence of a character ( word )
+\
+\ These routines, used solely by getword, getcword, and skipcword,
+\ are not intended to be called by the user.  They are written in code
+\ so the compiler will be fast.
+\
+\ These perform roughly the same function as EXPECT in Fig-Forth, except
+\ that they do the "right things":
+\ a) They allow words to span buffer boundaries
+\ b) If the delimiter is not blank, leading delimiters are NOT skipped.
+\ c) If the delimiter is blank, leading delimiters are skipped,
+\    furthermore all control characters are treated as delimiters.
+\    Carriage returns, linefeeds, tabs, form-feeds, etc can thus be
+\    included in files.
+\ d) A separate word (skipcword) is used for skipping comments.
+\    It does not store the characters it scans, so the comment can be
+\    arbitrarily long without worry of overflowing the word buffer.
+
+\ Nonblanks from the buffer starting at addr are appended to the end of str
+code scanbl  ( endaddr addr str -- endaddr [ addr' ] delimiter )
+1A06313 	 0  0 73 63 61 
+1A06318 	6E 62 6C 86  4 63 A0  1 
+1A06320 	24 63 A0  1 
+   \ di - str   si - addr   bx - endaddr   ax - byte   cx - scr   dx - save
+   si      dx   mov		\ Save IP
+1A06324 	8B D6 
+   ds      ax   mov   ax es mov \ Ensure es points to the right place
+1A06326 	8C D8 
+1A06328 	8E C0 
+   ax           pop		\ destination string
+1A0632A 	58 
+   si           pop		\ buffer address (source string)
+1A0632B 	5E 
+   bx           pop		\ buffer end address
+1A0632C 	5B 
+\ cx pop cx push
+   bx           push		\ end address is not consumed   
+1A0632D 	53 
+   di           push		\ Save UP
+1A0632E 	57 
+   ax      di   mov		\ Destination string
+1A0632F 	8B 
+1A06330 	F8 
+   di	        push		\ temporarily store str start address on stack
+1A06331 	57 
+   ax      ax   sub		\ clear high bytes
+1A06332 	29 C0 
+   0 [di]  al   mov		\ Length byte of destination string
+1A06334 	8A  7 
+   di           inc		\ Address of destination string data
+1A06336 	47 
+   ax      di   add		\ End address of destination string
+1A06337 	 1 
+1A06338 	C7 
+   begin
+      bx   si   cmp		\ while not end of buffer
+1A06339 	39 DE 
+   u< while			\ Continue while more buffered bytes
+1A0633B 	73 1A 
+      al        lodsb		\ get the next character
+1A0633D 	AC 
+      \ The next line can't use "bl" because that looks like a register!
+      h# 20 #  al  cmp		\ Look for a terminating white character
+1A0633E 	3C 20 
+      <= if			\ Exit if delimiter found
+1A06340 	7F 12 
+         0 #  0 [di]  movb	\ Null-terminate the string for jollies
+1A06342 	C6  7  0 
+	 cx           pop	\ Start address of destination string
+1A06345 	59 
+	 cx      di   sub	\ Calculate string length
+1A06346 	29 CF 
+	 di           dec	\ Don't count length byte in string length
+1A06348 	4F 
+         di      bx   mov
+1A06349 	8B DF 
+	 bl   0 [cx]  movb	\ Store string length
+1A0634B 	88 19 
+         di	      pop	\ Restore UP
+1A0634D 	5F 
+         si           push	\ Push addr'
+1A0634E 	56 
+         dx      si   mov	\ Restore IP
+1A0634F 	8B 
+1A06350 	F2 
+	 1push			\ Actual delimiter on top of stack
+1A06351 	50 
+	 next
+1A06352 	FF E7 
+      then
+      al        stosb		\ Append non-delimiter to destination string
+1A06354 	AA 
+      \ Haven't found the delimiter yet.
+   repeat
+1A06355 	EB E2 
+
+   \ Ran out of buffer
+   cx           pop	\ Start address of destination string
+1A06357 	59 
+   cx      di   sub	\ Calculate string length
+1A06358 	29 CF 
+   di           dec	\ Don't count length byte in string length
+1A0635A 	4F 
+   di      bx   mov
+1A0635B 	8B DF 
+   bl   0 [cx]  movb	\ Store string length
+1A0635D 	88 19 
+
+   dx      si   mov	\ Restore IP
+1A0635F 	8B 
+1A06360 	F2 
+   -1 #    ax   mov
+1A06361 	B8 FF FF FF FF 
+   di           pop	\ Restore UP
+1A06366 	5F 
+   1push        	\ Return -1 as delimiter
+1A06367 	50 
+c;
+1A06368 	FF E7 
+
+code skipbl ( endaddr addr -- endaddr [ addr' ] delimiter )
+1A0636A 	 0  0  0 73 6B 69 
+1A06370 	70 62 6C 86 20 63 A0  1 
+1A06378 	7C 63 A0  1 
+   \ si - addr   bx - endaddr   ax - byte
+   si      dx   mov     \ Save IP
+1A0637C 	8B D6 
+   si		pop	\ addr
+1A0637E 	5E 
+   bx		pop	\ endaddr
+1A0637F 	5B 
+   bx		push	\ endaddr is not consumed
+1A06380 	53 
+   ax      ax   sub     \ Clear high bits
+1A06381 	29 C0 
+
+   begin
+      bx   si	cmp	\ while not end of buffer
+1A06383 	39 DE 
+   u< while
+1A06385 	73  E 
+      al	lodsb	\ get the next character (Delay slot)
+1A06387 	AC 
+      \ The next line can't use "bl" because that looks like a register!
+      h# 20 #  al  cmp	\ Look for a terminating non-white character
+1A06388 	3C 20 
+      >  if
+1A0638A 	7E  7 
+         si	dec	\ Undo the extra increment (don't consume the char)
+1A0638C 	4E 
+         si	push	\ Push addr'
+1A0638D 	56 
+         dx  si mov     \ Restore IP
+1A0638E 	8B F2 
+	 1push		\ Actual delimiter on top of stack
+1A06390 	50 
+         next
+1A06391 	FF E7 
+      then
+   \ Haven't found the delimiter yet.
+   repeat
+1A06393 	EB EE 
+   \ Ran out of buffer
+   dx       si  mov     \ Restore IP
+1A06395 	8B F2 
+   -1 #	    ax  mov
+1A06397 	B8 
+1A06398 	FF FF FF FF 
+   1push        	\ Return -1 as delimiter
+1A0639C 	50 
+c;
+1A0639D 	FF E7 
+
+code scanto ( char endaddr addr str -- char endaddr [ addr' ] delimiter )
+1A0639F 	 0 
+1A063A0 	 0 73 63 61 6E 74 6F 86 
+1A063A8 	78 63 A0  1 B0 63 A0  1 
+   \ di - str   si - addr   bx - endaddr   ax - byte   cx - char   dx - save
+   si      dx   mov		\ Save IP
+1A063B0 	8B D6 
+   ds      ax   mov   ax es mov \ Ensure es points to the right place
+1A063B2 	8C D8 8E C0 
+   ax           pop		\ destination string
+1A063B6 	58 
+   si           pop		\ buffer address (source string)
+1A063B7 	5E 
+   bx           pop		\ buffer end address
+1A063B8 	5B 
+   cx		pop		\ char
+1A063B9 	59 
+   cx		push		\ char is not consumed
+1A063BA 	51 
+   bx           push		\ end address is not consumed   
+1A063BB 	53 
+   di           push		\ Save UP
+1A063BC 	57 
+   ax      di   mov		\ destination string
+1A063BD 	8B F8 
+   di	        push		\ temporarily store str start address on stack
+1A063BF 	57 
+   ax      ax   sub		\ clear high bytes
+1A063C0 	29 C0 
+   0 [di]  al   mov		\ Length byte of destination string
+1A063C2 	8A  7 
+   di           inc		\ Address of destination string data
+1A063C4 	47 
+   ax      di   add		\ End address of destination string
+1A063C5 	 1 C7 
+   begin
+      bx   si   cmp		\ while not end of buffer
+1A063C7 	39 
+1A063C8 	DE 
+   u< while			\ Continue while more buffered bytes
+1A063C9 	73 1A 
+      al        lodsb		\ get the next character
+1A063CB 	AC 
+      cl    al  cmp		\ Look for a terminating delimiter character
+1A063CC 	38 C8 
+      = if			\ Exit if delimiter found
+1A063CE 	75 12 
+         0 #  0 [di]  movb	\ Null-terminate the string for jollies
+1A063D0 	C6  7  0 
+	 cx           pop	\ Start address of destination string
+1A063D3 	59 
+	 cx      di   sub	\ Calculate string length
+1A063D4 	29 CF 
+	 di           dec	\ Don't count length byte in string length
+1A063D6 	4F 
+         di      ax   mov
+1A063D7 	8B 
+1A063D8 	C7 
+	 al   0 [cx]  movb	\ Store string length
+1A063D9 	88  1 
+         di           pop	\ Restore UP
+1A063DB 	5F 
+         si           push	\ Push addr'
+1A063DC 	56 
+         dx      si   mov	\ Restore IP
+1A063DD 	8B F2 
+	 1push			\ Actual delimiter on top of stack
+1A063DF 	50 
+	 next
+1A063E0 	FF E7 
+      then
+      al        stosb		\ Append non-delimiter to destination string
+1A063E2 	AA 
+      \ Haven't found the delimiter yet.
+   repeat
+1A063E3 	EB E2 
+
+   \ Ran out of buffer
+   cx           pop	\ Start address of destination string
+1A063E5 	59 
+   cx      di   sub	\ Calculate string length
+1A063E6 	29 CF 
+   di           dec	\ Don't count length byte in string length
+1A063E8 	4F 
+   di      ax   mov
+1A063E9 	8B C7 
+   al   0 [cx]  movb	\ Store string length
+1A063EB 	88  1 
+
+   dx      si   mov	\ Restore IP
+1A063ED 	8B F2 
+   di           pop	\ Restore UP
+1A063EF 	5F 
+   -1 #    ax   mov
+1A063F0 	B8 FF FF FF FF 
+   1push        	\ Return -1 as delimiter
+1A063F5 	50 
+c;
+1A063F6 	FF E7 
+
+code skipto ( char endaddr addr -- char endaddr [ addr' ] delimiter )
+1A063F8 	 0 73 6B 69 70 74 6F 86 
+1A06400 	AC 63 A0  1  8 64 A0  1 
+   \ di - addr   cx - endaddr-addr   ax - char
+   ds ax mov  ax es mov \ Ensure es points to the right place
+1A06408 	8C D8 8E C0 
+   di      dx   mov	\ Save UP
+1A0640C 	8B D7 
+   di		pop	\ addr
+1A0640E 	5F 
+   cx		pop	\ endaddr
+1A0640F 	59 
+   ax		pop	\ char
+1A06410 	58 
+   ax		push	\ char is not consumed
+1A06411 	50 
+   cx		push	\ endaddr is not consumed
+1A06412 	51 
+   di      cx	sub	\ max count = endaddr-addr
+1A06413 	29 F9 
+   0<> if		\ Pre-test for max count = 0
+1A06415 	74  A 
+      repnz byte scas	\ Skip non-delimiters
+1A06417 	F2 
+1A06418 	AE 
+      0= if		\ Did repnz terminate by finding a delimiter?
+1A06419 	75  6 
+         di	push	\ Push addr'
+1A0641B 	57 
+         dx  di mov	\ Restore UP
+1A0641C 	8B FA 
+         1push		\ Return actual delimiter (== char !)
+1A0641E 	50 
+         next
+1A0641F 	FF 
+1A06420 	E7 
+      then
+   \ Haven't found the delimiter yet.
+   then
+
+   \ Ran out of buffer
+   dx     di mov	\ Restore UP
+1A06421 	8B FA 
+   -1 #	  ax mov
+1A06423 	B8 FF FF FF FF 
+   1push                \ Return -1 as delimiter
+1A06428 	50 
+c;
+1A06429 	FF E7 
+\ "adr1 len2" is the longest initial substring of the string "adr1 len1"
+\ that does not contain the character "char".  "adr2 len1-len2" is the
+\ trailing substring of "adr1 len1" that is not included in "adr1 len2".
+\ Accordingly, if there are no occurrences of that character in "adr1 len1",
+\ "len2" equals "len1", so the return values are "adr1 len1  adr1+len1 0"
+
+code split-string  ( adr1 len1 char -- adr1 len2  adr1+len2 len1-len2 )
+1A0642B 	73 70 6C 69 74 
+1A06430 	2D 73 74 72 69 6E 67 8C 
+1A06438 	 4 64 A0  1 40 64 A0  1 
+   si dx mov		\ Save
+1A06440 	8B D6 
+   bx pop		\ char
+1A06442 	5B 
+   0 [sp] cx mov	\ len1
+1A06443 	8B  C 24 
+   4 [sp] si mov	\ adr1
+1A06446 	8B 74 
+1A06448 	24  4 
+
+   ahead begin
+1A0644A 	EB 10 
+      al      lodsb	\ Get the next character
+1A0644C 	AC 
+      bl  al  cmp	\ Compare to delimiter
+1A0644D 	38 D8 
+      = if		\ Exit if delimiter found
+1A0644F 	75 
+1A06450 	 B 
+         cx   inc	\ Account for pre-decrement of count
+1A06451 	41 
+	 cx 0 [sp] sub	\ len2
+1A06452 	29  C 24 
+	 si   dec	\ Account for incremented address
+1A06455 	4E 
+	 si   push	\ adr2
+1A06456 	56 
+	 cx   push	\ len1-len2
+1A06457 	51 
+         dx   si  mov	\ Restore
+1A06458 	8B F2 
+	 next
+1A0645A 	FF E7 
+      then
+   but then
+      cx dec
+1A0645C 	49 
+   0< until
+1A0645D 	79 ED 
+
+   \ The test character is not present in the input string
+
+   si   push
+1A0645F 	56 
+   cx   inc		\ Account for pre-decrement of count
+1A06460 	41 
+   cx   push
+1A06461 	51 
+
+   dx si mov		\ Restore
+1A06462 	8B F2 
+c;
+1A06464 	FF E7 
+
+\ Splits a buffer into two parts around the first line delimiter
+\ sequence.  A line delimiter sequence is either CR, LF, CR followed by LF,
+\ or LF followed by CR.
+\ adr1 len2 is the initial substring before, but not including,
+\ the first line delimiter sequence.
+\ adr2 len3 is the trailing substring after, but not including,
+\ the first line delimiter sequence.
+
+code parse-line  ( adr1 len1 -- adr1 len2  adr1+len2 len1-len2 )
+1A06466 	 0  0 
+1A06468 	 0 70 61 72 73 65 2D 6C 
+1A06470 	69 6E 65 8A 3C 64 A0  1 
+1A06478 	7C 64 A0  1 
+   si dx mov		\ Save
+1A0647C 	8B D6 
+   0 [sp] cx mov	\ len1
+1A0647E 	8B  C 
+1A06480 	24 
+   4 [sp] si mov	\ adr1
+1A06481 	8B 74 24  4 
+   h# 0a #  bh  mov	\ Delimiter 1
+1A06485 	B7  A 
+   h# 0d #  bl  mov	\ Delimiter 2
+1A06487 	B3 
+1A06488 	 D 
+
+   ahead begin
+1A06489 	EB 26 
+      al      lodsb	\ Get the next character
+1A0648B 	AC 
+      bh al cmp  <> if  bl al cmp  then  \ Compare to delimiters
+1A0648C 	38 F8 74  2 
+1A06490 	38 D8 
+
+      = if		\ Exit if delimiter found
+1A06492 	75 1D 
+         cx inc			\ len2 doesn't include the delimiter
+1A06494 	41 
+	 cx  0 [sp]  sub	\ len2
+1A06495 	29  C 24 
+         cx dec
+1A06498 	49 
+         \ Check next character too, unless we're at the end of the buffer
+         0<>  if
+1A06499 	74 10 
+            0 [si]  ah  mov	\ Get next character
+1A0649B 	8A 26 
+            bh al cmp  = if	\ Compare it to the other delimiter
+1A0649D 	38 F8 75 
+1A064A0 	 4 
+	       bl ah cmp
+1A064A1 	38 DC 
+            else
+1A064A3 	EB  2 
+	       bh ah cmp
+1A064A5 	38 FC 
+            then
+	    =  if
+1A064A7 	75 
+1A064A8 	 2 
+               cx   dec		\ Consume the second delimiter too
+1A064A9 	49 
+	       si   inc		\ Consume the second delimiter too
+1A064AA 	46 
+            then
+         then
+	 si   push	\ adr2
+1A064AB 	56 
+	 cx   push	\ len1-len2
+1A064AC 	51 
+         dx   si  mov	\ Restore
+1A064AD 	8B F2 
+	 next
+1A064AF 	FF 
+1A064B0 	E7 
+      then
+   but then
+      cx dec
+1A064B1 	49 
+   0< until
+1A064B2 	79 D7 
+
+   \ There is no line delimiter in the input string
+
+   si   push
+1A064B4 	56 
+   cx   inc		\ Account for pre-decrement of count
+1A064B5 	41 
+   cx   push
+1A064B6 	51 
+
+   dx si mov		\ Restore
+1A064B7 	8B 
+1A064B8 	F2 
+c;
+1A064B9 	FF E7 
+
+code skipwhite  ( adr len -- adr' len' )
+1A064BB 	 0  0  0 73 6B 
+1A064C0 	69 70 77 68 69 74 65 89 
+1A064C8 	78 64 A0  1 D0 64 A0  1 
+   si dx mov
+1A064D0 	8B D6 
+   cld
+1A064D2 	FC 
+   cx pop
+1A064D3 	59 
+   cx cx or  0<>  if
+1A064D4 	 9 C9 74 10 
+      si pop
+1A064D8 	5E 
+      begin
+         al lods
+1A064D9 	AC 
+         h# 20 # al cmp  >  if
+1A064DA 	3C 20 7E  7 
+            si dec  si push
+1A064DE 	4E 56 
+            cx push  dx si mov
+1A064E0 	51 8B F2 
+            next
+1A064E3 	FF E7 
+         then
+      loopa
+1A064E5 	E2 F2 
+      si push
+1A064E7 	56 
+   then
+   cx push
+1A064E8 	51 
+   dx si mov
+1A064E9 	8B F2 
+c;
+1A064EB 	FF E7 
+
+\ Adr2 points to the delimiter or to the end of the buffer
+\ Adr3 points to the character after the delimiter or to the end of the buffer
+code scantowhite  ( adr1 len1 -- adr1 adr2 adr3 )
+1A064ED 	 0  0  0 
+1A064F0 	73 63 61 6E 74 6F 77 68 
+1A064F8 	69 74 65 8B CC 64 A0  1 
+1A06500 	 4 65 A0  1 
+   si dx mov
+1A06504 	8B D6 
+   cld
+1A06506 	FC 
+   cx pop
+1A06507 	59 
+   0 [sp] si mov
+1A06508 	8B 34 24 
+   cx cx or  0<>  if
+1A0650B 	 9 C9 74  F 
+      begin
+         al lods
+1A0650F 	AC 
+         h# 20 # al cmp  <=  if
+1A06510 	3C 20 7F  8 
+            si dec si push
+1A06514 	4E 56 
+            si inc si push
+1A06516 	46 56 
+            dx si mov
+1A06518 	8B F2 
+            next
+1A0651A 	FF E7 
+         then
+      loopa
+1A0651C 	E2 F1 
+   then
+   si push
+1A0651E 	56 
+   si push
+1A0651F 	56 
+   dx si mov
+1A06520 	8B F2 
+c;
+1A06522 	FF E7 
+
+code skipchar  ( adr len char -- adr' len' )
+1A06524 	 0  0  0 73 
+1A06528 	6B 69 70 63 68 61 72 88 
+1A06530 	 0 65 A0  1 38 65 A0  1 
+   si dx mov
+1A06538 	8B D6 
+   cld
+1A0653A 	FC 
+   bx pop         \ char in bx
+1A0653B 	5B 
+   cx pop
+1A0653C 	59 
+   cx cx or  0<>  if
+1A0653D 	 9 C9 74 
+1A06540 	 B 
+      si pop
+1A06541 	5E 
+      begin
+         al lods
+1A06542 	AC 
+         bl al cmp
+1A06543 	38 D8 
+      loope
+1A06545 	E1 FB 
+      0<>  if  cx inc  si dec  then
+1A06547 	74 
+1A06548 	 2 41 4E 
+      si push
+1A0654B 	56 
+   then
+   cx push
+1A0654C 	51 
+   dx si mov
+1A0654D 	8B F2 
+c;
+1A0654F 	FF 
+1A06550 	E7 
+
+\ Adr2 points to the delimiter or to the end of the buffer
+\ Adr3 points to the character after the delimiter or to the end of the buffer
+code scantochar  ( adr1 len1 char -- adr1 adr2 adr3 )
+1A06551 	73 63 61 6E 74 6F 63 
+1A06558 	68 61 72 8A 34 65 A0  1 
+1A06560 	64 65 A0  1 
+   si dx mov
+1A06564 	8B D6 
+   cld
+1A06566 	FC 
+   bx pop
+1A06567 	5B 
+   cx pop
+1A06568 	59 
+   0 [sp] si mov
+1A06569 	8B 34 24 
+   cx cx or  0<>  if
+1A0656C 	 9 C9 74  F 
+      begin
+         al lods
+1A06570 	AC 
+         bl al cmp
+1A06571 	38 D8 
+      loopne
+1A06573 	E0 FB 
+      =  if
+1A06575 	75  8 
+         si dec si push
+1A06577 	4E 
+1A06578 	56 
+         si inc si push
+1A06579 	46 56 
+         dx si mov
+1A0657B 	8B F2 
+         next
+1A0657D 	FF E7 
+      then
+   then
+   si push
+1A0657F 	56 
+   si push
+1A06580 	56 
+   dx si mov
+1A06581 	8B F2 
+c;
+1A06583 	FF E7 
+
+/n-t 8 * constant bits/cell
+1A06585 	 0 62 69 
+1A06588 	74 73 2F 63 65 6C 6C 89 
+1A06590 	60 65 A0  1 68 40 A0  1 
+1A06598 	20  0  0  0 
+
+defer (is
+1A0659C 	28 69 73 83 
+1A065A0 	94 65 A0  1 5C 40 A0  1 
+1A065A8 	34  0  0  0 
+
+: (is)  ( acf -- )  ip> dup ta1+ >ip  token@ (is  ;
+1A065AC 	 0  0  0 28 
+1A065B0 	69 73 29 84 A4 65 A0  1 
+1A065B8 	20 40 A0  1 84 46 A0  1 
+1A065C0 	40 49 A0  1 FC 50 A0  1 
+1A065C8 	6C 46 A0  1  C 54 A0  1 
+1A065D0 	A4 65 A0  1 58 46 A0  1 

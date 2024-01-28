@@ -1,0 +1,49 @@
+purpose: Vendor/product table manipulation
+
+headers
+hex
+
+\ Each vendor/product table has two fields (each /w length).
+\ XXX May consider expanding the table to include a name field for each
+\ XXX entry so that we can support drastically different devices without
+\ XXX resorting to a super driver.
+
+/w 2* constant /vendor-product
+1A44FFC 	2F 76 65 6E 
+1A45000 	64 6F 72 2D 70 72 6F 64 
+1A45008 	75 63 74 8F E4 4F A4  1 
+1A45010 	68 40 A0  1  4  0  0  0 
+
+: find-vendor-product?  ( vid pid list /list -- flag )
+1A45018 	 0  0  0 66 69 6E 64 2D 
+1A45020 	76 65 6E 64 6F 72 2D 70 
+1A45028 	72 6F 64 75 63 74 3F 94 
+1A45030 	10 50 A4  1 20 40 A0  1 
+   >r >r 0 -rot r> r>  bounds  ?do
+1A45038 	BC 45 A0  1 BC 45 A0  1 
+1A45040 	70 6F A0  1 94 49 A0  1 
+1A45048 	D0 45 A0  1 D0 45 A0  1 
+1A45050 	F0 6D A0  1 50 42 A0  1 
+1A45058 	54  0  0  0 
+      over i w@ = 		( flag vid pid vid=? )
+1A4505C 	54 49 A0  1 
+1A45060 	B4 42 A0  1 94 4C A0  1 
+1A45068 	24 48 A0  1 
+      over i wa1+ w@ = and	( flag vid pid flag' )
+1A4506C 	54 49 A0  1 
+1A45070 	B4 42 A0  1 A0 50 A0  1 
+1A45078 	94 4C A0  1 24 48 A0  1 
+1A45080 	5C 44 A0  1 
+      if  rot drop true -rot leave  then	( flag vid pid )
+1A45084 	DC 41 A0  1 
+1A45088 	18  0  0  0 7C 49 A0  1 
+1A45090 	30 49 A0  1  4 70 A0  1 
+1A45098 	94 49 A0  1 18 43 A0  1 
+   /vendor-product +loop 	( flag' vid pid )
+1A450A0 	10 50 A4  1 1C 42 A0  1 
+1A450A8 	B4 FF FF FF 
+   2drop
+1A450AC 	AC 49 A0  1 
+;
+1A450B0 	58 46 A0  1 
+

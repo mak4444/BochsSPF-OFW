@@ -1,0 +1,242 @@
+purpose: Create LPT port nodes
+
+[ifdef] PREP
+7 encode-int                          " interrupts" property
+[else]
+7 encode-int  3 encode-int encode+    " interrupts" property
+1A3BBB8 	 0  0  0  7  0  0  0  3 
+1A3BBC0 	 0 69 6E 74 65 72 72 75 
+1A3BBC8 	70 74 73 8A  0  0 A0  1 
+1A3BBD0 	BC 13 A2  1 1C  0  0  0 
+1A3BBD8 	 8  0  0  0 
+[then]
+
+" parallel"	device-name
+1A3BBDC 	70 61 72 61 
+1A3BBE0 	6C 6C 65 6C  0  0  0 6E 
+1A3BBE8 	61 6D 65 84 D0 BB A3  1 
+1A3BBF0 	BC 13 A2  1 18  0  0  0 
+1A3BBF8 	 9  0  0  0 
+" parallel"	device-type
+1A3BBFC 	70 61 72 61 
+1A3BC00 	6C 6C 65 6C  0  0  0  0 
+1A3BC08 	64 65 76 69 63 65 5F 74 
+1A3BC10 	79 70 65 8B F0 BB A3  1 
+1A3BC18 	BC 13 A2  1 20  0  0  0 
+1A3BC20 	 9  0  0  0 
+
+" pnpPNP,401" " compatible" string-property
+1A3BC24 	70 6E 70 50 
+1A3BC28 	4E 50 2C 34 30 31  0  0 
+1A3BC30 	 0 63 6F 6D 70 61 74 69 
+1A3BC38 	62 6C 65 8A 18 BC A3  1 
+1A3BC40 	BC 13 A2  1 20  0  0  0 
+1A3BC48 	 B  0  0  0 
+
+\ Note: Some devices allow you to configure the parallel port to
+\ be at either 3bc (LPT1), 378 (LPT2), or 278 (LPT3).
+
+my-address my-space  4  reg
+1A3BC4C 	 0  0  0  1 
+1A3BC50 	 0  0  0 60  0  0  0  4 
+1A3BC58 	72 65 67 83 40 BC A3  1 
+1A3BC60 	BC 13 A2  1 18  0  0  0 
+1A3BC68 	 C  0  0  0 
+
+headerless
+0 instance value reg-base
+1A3BC6C 	 0  0  0 72 
+1A3BC70 	65 67 2D 62 61 73 65 88 
+1A3BC78 	 0  0 A0  1 C0 FE A1  1 
+1A3BC80 	18  0  0  0 
+h# c instance value mode	\ Printer selected (8), don't init (4)
+1A3BC84 	 0  0  0 6D 
+1A3BC88 	6F 64 65 84 7C BC A3  1 
+1A3BC90 	C0 FE A1  1 1C  0  0  0 
+d# 10 instance value strobe-spins
+1A3BC98 	 0  0  0 73 74 72 6F 62 
+1A3BCA0 	65 2D 73 70 69 6E 73 8C 
+1A3BCA8 	90 BC A3  1 C0 FE A1  1 
+1A3BCB0 	20  0  0  0 
+d# 3000 instance value busy-timeout-ms
+1A3BCB4 	62 75 73 79 
+1A3BCB8 	2D 74 69 6D 65 6F 75 74 
+1A3BCC0 	2D 6D 73 8F AC BC A3  1 
+1A3BCC8 	C0 FE A1  1 24  0  0  0 
+
+: data@  ( -- b )  reg-base rb@  ;
+1A3BCD0 	 0  0 64 61 74 61 40 85 
+1A3BCD8 	C8 BC A3  1 20 40 A0  1 
+1A3BCE0 	7C BC A3  1 A8 B1 A2  1 
+1A3BCE8 	58 46 A0  1 
+: data!  ( b -- )  reg-base rb!  ;
+1A3BCEC 	 0  0 64 61 
+1A3BCF0 	74 61 21 85 DC BC A3  1 
+1A3BCF8 	20 40 A0  1 7C BC A3  1 
+1A3BD00 	1C B2 A2  1 58 46 A0  1 
+: stat@  ( -- b )  reg-base 1+ rb@  ;
+1A3BD08 	 0  0 73 74 61 74 40 85 
+1A3BD10 	F8 BC A3  1 20 40 A0  1 
+1A3BD18 	7C BC A3  1 30 4B A0  1 
+1A3BD20 	A8 B1 A2  1 58 46 A0  1 
+: ctl@   ( -- b )  reg-base 2+ rb@  ;
+1A3BD28 	 0  0  0 63 74 6C 40 84 
+1A3BD30 	14 BD A3  1 20 40 A0  1 
+1A3BD38 	7C BC A3  1 40 4B A0  1 
+1A3BD40 	A8 B1 A2  1 58 46 A0  1 
+: ctl!   ( b -- )  reg-base 2+ rb!  ;
+1A3BD48 	 0  0  0 63 74 6C 21 84 
+1A3BD50 	34 BD A3  1 20 40 A0  1 
+1A3BD58 	7C BC A3  1 40 4B A0  1 
+1A3BD60 	1C B2 A2  1 58 46 A0  1 
+
+headers
+
+: open  ( -- flag )
+1A3BD68 	 0  0  0 6F 70 65 6E 84 
+1A3BD70 	54 BD A3  1 20 40 A0  1 
+   my-address my-space 4  " map-in" $call-parent to reg-base
+1A3BD78 	20 10 A2  1 AC  3 A2  1 
+1A3BD80 	B0 6F A0  1 9C 53 A0  1 
+1A3BD88 	 6 6D 61 70 2D 69 6E  0 
+1A3BD90 	DC 31 A2  1 48 B8 A1  1 
+1A3BD98 	7C BC A3  1 
+   mode ctl!
+1A3BD9C 	90 BC A3  1 
+1A3BDA0 	54 BD A3  1 
+   true
+1A3BDA4 	 4 70 A0  1 
+;
+1A3BDA8 	58 46 A0  1 
+
+: close  ( -- )  reg-base 4 " map-out" $call-parent  ;
+1A3BDAC 	 0  0 63 6C 
+1A3BDB0 	6F 73 65 85 74 BD A3  1 
+1A3BDB8 	20 40 A0  1 7C BC A3  1 
+1A3BDC0 	B0 6F A0  1 9C 53 A0  1 
+1A3BDC8 	 7 6D 61 70 2D 6F 75 74 
+1A3BDD0 	 0  0  0  0 DC 31 A2  1 
+1A3BDD8 	58 46 A0  1 
+
+headerless
+: wait-not-busy  ( -- timeout? )
+1A3BDDC 	 0  0 77 61 
+1A3BDE0 	69 74 2D 6E 6F 74 2D 62 
+1A3BDE8 	75 73 79 8D B8 BD A3  1 
+1A3BDF0 	20 40 A0  1 
+   get-msecs  busy-timeout-ms +        ( timeout-target )
+1A3BDF4 	50 E0 A1  1 
+1A3BDF8 	C8 BC A3  1  4 45 A0  1 
+   begin                               ( timeout-target )
+      stat@  h# 80 and  if             ( timeout-target )
+1A3BE00 	14 BD A3  1 58 41 A0  1 
+1A3BE08 	80  0  0  0 5C 44 A0  1 
+1A3BE10 	DC 41 A0  1 10  0  0  0 
+	 drop false exit               ( false )
+1A3BE18 	30 49 A0  1 18 70 A0  1 
+1A3BE20 	40 46 A0  1 
+      then                             ( timeout-target )
+      dup get-msecs - 0<=              ( timeout-target timeout? )
+1A3BE24 	40 49 A0  1 
+1A3BE28 	50 E0 A1  1 18 45 A0  1 
+1A3BE30 	84 47 A0  1 
+   until                               ( timeout-target )
+1A3BE34 	DC 41 A0  1 
+1A3BE38 	C8 FF FF FF 
+   drop true                           ( true )
+1A3BE3C 	30 49 A0  1 
+1A3BE40 	 4 70 A0  1 
+;
+1A3BE44 	58 46 A0  1 
+
+: wait-ack  ( -- timeout? )
+1A3BE48 	 0  0  0 77 61 69 74 2D 
+1A3BE50 	61 63 6B 88 F0 BD A3  1 
+1A3BE58 	20 40 A0  1 
+   get-msecs 2+                        ( timeout-target )
+1A3BE5C 	50 E0 A1  1 
+1A3BE60 	40 4B A0  1 
+   begin                               ( timeout-target )
+      stat@  h# 40 and  0=  if         ( timeout-target )
+1A3BE64 	14 BD A3  1 
+1A3BE68 	58 41 A0  1 40  0  0  0 
+1A3BE70 	5C 44 A0  1 24 47 A0  1 
+1A3BE78 	DC 41 A0  1 10  0  0  0 
+	 drop false exit               ( false )
+1A3BE80 	30 49 A0  1 18 70 A0  1 
+1A3BE88 	40 46 A0  1 
+      then                             ( timeout-target )
+      dup get-msecs - 0<=              ( timeout-target timeout? )
+1A3BE8C 	40 49 A0  1 
+1A3BE90 	50 E0 A1  1 18 45 A0  1 
+1A3BE98 	84 47 A0  1 
+   until                               ( timeout-target )
+1A3BE9C 	DC 41 A0  1 
+1A3BEA0 	C4 FF FF FF 
+   drop true                           ( true )
+1A3BEA4 	30 49 A0  1 
+1A3BEA8 	 4 70 A0  1 
+;
+1A3BEAC 	58 46 A0  1 
+
+\ Pulse the strobe line
+: strobe  ( -- )  mode 1 or ctl!  strobe-spins 0 do loop   mode ctl!  ;
+1A3BEB0 	 0 73 74 72 6F 62 65 86 
+1A3BEB8 	58 BE A3  1 20 40 A0  1 
+1A3BEC0 	90 BC A3  1 80 6F A0  1 
+1A3BEC8 	70 44 A0  1 54 BD A3  1 
+1A3BED0 	AC BC A3  1 70 6F A0  1 
+1A3BED8 	88 42 A0  1  C  0  0  0 
+1A3BEE0 	F8 41 A0  1 FC FF FF FF 
+1A3BEE8 	90 BC A3  1 54 BD A3  1 
+1A3BEF0 	58 46 A0  1 
+
+: putbyte  ( byte -- error? )
+1A3BEF4 	70 75 74 62 
+1A3BEF8 	79 74 65 87 BC BE A3  1 
+1A3BF00 	20 40 A0  1 
+   wait-not-busy  if  drop true exit  then   ( byte )
+1A3BF04 	F0 BD A3  1 
+1A3BF08 	DC 41 A0  1 10  0  0  0 
+1A3BF10 	30 49 A0  1  4 70 A0  1 
+1A3BF18 	40 46 A0  1 
+   data!
+1A3BF1C 	F8 BC A3  1 
+   strobe
+1A3BF20 	BC BE A3  1 
+   wait-ack
+1A3BF24 	58 BE A3  1 
+;
+1A3BF28 	58 46 A0  1 
+
+headers
+: write  ( adr len -- actual )
+1A3BF2C 	 0  0 77 72 
+1A3BF30 	69 74 65 85  0 BF A3  1 
+1A3BF38 	20 40 A0  1 
+   \ We don't want to miss an ACK, so we mustn't take interrupts
+   \ Timeouts in the wait loops prevent hanging
+
+   lock[  ( adr len )
+1A3BF3C 	84 E0 A1  1 
+
+      tuck  0  ?do                   ( len adr )
+1A3BF40 	E8 46 A0  1 70 6F A0  1 
+1A3BF48 	50 42 A0  1 3C  0  0  0 
+	 dup i + c@  putbyte  if     ( len adr )
+1A3BF50 	40 49 A0  1 B4 42 A0  1 
+1A3BF58 	 4 45 A0  1 C4 4C A0  1 
+1A3BF60 	 0 BF A3  1 DC 41 A0  1 
+1A3BF68 	18  0  0  0 
+	    2drop  i  unloop         ( actual )
+1A3BF6C 	AC 49 A0  1 
+1A3BF70 	B4 42 A0  1 3C 42 A0  1 
+	 ]unlock  exit
+1A3BF78 	98 E0 A1  1 40 46 A0  1 
+      then                        ( len adr )
+   loop                           ( len adr )
+1A3BF80 	F8 41 A0  1 CC FF FF FF 
+   drop ]unlock    ( len )
+1A3BF88 	30 49 A0  1 98 E0 A1  1 
+;
+1A3BF90 	58 46 A0  1 

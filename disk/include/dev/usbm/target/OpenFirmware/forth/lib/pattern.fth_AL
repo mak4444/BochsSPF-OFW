@@ -1,0 +1,146 @@
+purpose: Filename pattern matching
+
+headerless
+\ Pattern matching with wildcards as in Unix filenames.
+
+\ * matches anything, ? matches any individual character
+
+: third   ( n5 n4 n3 n2 n1 -- n5 n4 n3 n2 n1 n3 )  2 pick  ;
+1A31DC0 	 0  0 74 68 69 72 64 85 
+1A31DC8 	 0  9 A3  1 20 40 A0  1 
+1A31DD0 	90 6F A0  1  C 4A A0  1 
+1A31DD8 	58 46 A0  1 
+: fourth  ( n5 n4 n3 n2 n1 -- n5 n4 n3 n2 n1 n4 )  3 pick  ;
+1A31DDC 	 0 66 6F 75 
+1A31DE0 	72 74 68 86 CC 1D A3  1 
+1A31DE8 	20 40 A0  1 A0 6F A0  1 
+1A31DF0 	 C 4A A0  1 58 46 A0  1 
+: fifth   ( n5 n4 n3 n2 n1 -- n5 n4 n3 n2 n1 n4 )  4 pick  ;
+1A31DF8 	 0  0 66 69 66 74 68 85 
+1A31E00 	E8 1D A3  1 20 40 A0  1 
+1A31E08 	B0 6F A0  1  C 4A A0  1 
+1A31E10 	58 46 A0  1 
+\needs 5drop  : 5drop   ( n5 n4 n3 n2 n1 -- )  2drop 3drop  ;
+\needs /string  : /string  ( adr len cnt -- adr' len' )  tuck - -rot + swap  ;
+
+: -initial-match  ( case-insensitive? pat-str test-str -- ... )
+1A31E14 	 0 2D 69 6E 
+1A31E18 	69 74 69 61 6C 2D 6D 61 
+1A31E20 	74 63 68 8E  4 1E A3  1 
+1A31E28 	20 40 A0  1 
+                  ( ... -- case-insensitive? pat-str' test-str' )
+   begin                                ( case pat-str test-str )
+      third 0<>  over 0<>  and          ( case pat-str test-str flag )
+1A31E2C 	CC 1D A3  1 
+1A31E30 	44 47 A0  1 54 49 A0  1 
+1A31E38 	44 47 A0  1 5C 44 A0  1 
+   while                                ( case pat-str test-str )
+1A31E40 	DC 41 A0  1 8C  0  0  0 
+      fourth c@  ascii ?  <>  if        ( case pat-str test-str )
+1A31E48 	E8 1D A3  1 C4 4C A0  1 
+1A31E50 	58 41 A0  1 3F  0  0  0 
+1A31E58 	44 48 A0  1 DC 41 A0  1 
+1A31E60 	50  0  0  0 
+         fifth  if
+1A31E64 	 4 1E A3  1 
+1A31E68 	DC 41 A0  1 24  0  0  0 
+            fourth c@ upc  third c@ upc ( case pat-str test-str char1 char2 )
+1A31E70 	E8 1D A3  1 C4 4C A0  1 
+1A31E78 	D0 51 A0  1 CC 1D A3  1 
+1A31E80 	C4 4C A0  1 D0 51 A0  1 
+         else
+1A31E88 	C8 41 A0  1 14  0  0  0 
+            fourth c@  third c@         ( case pat-str test-str char1 char2 )
+1A31E90 	E8 1D A3  1 C4 4C A0  1 
+1A31E98 	CC 1D A3  1 C4 4C A0  1 
+         then
+         <>  if  exit  then             ( case pat-str test-str )
+1A31EA0 	44 48 A0  1 DC 41 A0  1 
+1A31EA8 	 8  0  0  0 40 46 A0  1 
+      then                              ( case pat-str test-str )
+      2swap 1 /string  2swap 1 /string  ( case pat-str' test-str' )
+1A31EB0 	F4 49 A0  1 80 6F A0  1 
+1A31EB8 	3C 85 A0  1 F4 49 A0  1 
+1A31EC0 	80 6F A0  1 3C 85 A0  1 
+   repeat                               ( case pat-str test-str )
+1A31EC8 	C8 41 A0  1 60 FF FF FF 
+;
+1A31ED0 	58 46 A0  1 
+
+headers
+: pattern-match?  ( case-insensitive? pat-str test-str -- flag )  recursive
+1A31ED4 	 0 70 61 74 
+1A31ED8 	74 65 72 6E 2D 6D 61 74 
+1A31EE0 	63 68 3F 8E 28 1E A3  1 
+1A31EE8 	20 40 A0  1 
+   -initial-match                       ( case pat-str' test-str' )
+1A31EEC 	28 1E A3  1 
+
+   \ If the pattern string is empty, we can decide the question right now;
+   \ it's a match iff the test string is also empty.
+   third 0=  if                         ( case pat-str test-str )
+1A31EF0 	CC 1D A3  1 24 47 A0  1 
+1A31EF8 	DC 41 A0  1 1C  0  0  0 
+      nip nip nip nip 0=  exit
+1A31F00 	FC 46 A0  1 FC 46 A0  1 
+1A31F08 	FC 46 A0  1 FC 46 A0  1 
+1A31F10 	24 47 A0  1 40 46 A0  1 
+   then                                 ( case pat-str test-str )
+
+   \ If the first remaining character in the pattern string is not a '*',
+   \ then the strings don't match.
+
+   fourth c@  ascii *  <>  if           ( case pat-str test-str )
+1A31F18 	E8 1D A3  1 C4 4C A0  1 
+1A31F20 	58 41 A0  1 2A  0  0  0 
+1A31F28 	44 48 A0  1 DC 41 A0  1 
+1A31F30 	10  0  0  0 
+      5drop false  exit                 \ Lose
+1A31F34 	4C 53 A0  1 
+1A31F38 	18 70 A0  1 40 46 A0  1 
+   then                                 ( case pat-str test-str )
+
+   \ The pattern string begins with an *; remove it and try to
+   \ match the remaining pattern with all possible trailing substrings
+   \ of the test pattern.
+
+   2swap 1 /string 2swap                ( case pat-str test-str )
+1A31F40 	F4 49 A0  1 80 6F A0  1 
+1A31F48 	3C 85 A0  1 F4 49 A0  1 
+
+   \ If the pattern is now empty, we win, because a trailing "*" matches
+   \ any possible remaining string.
+   third 0=  if  5drop true  exit  then ( case pat-str test-str )
+1A31F50 	CC 1D A3  1 24 47 A0  1 
+1A31F58 	DC 41 A0  1 10  0  0  0 
+1A31F60 	4C 53 A0  1  4 70 A0  1 
+1A31F68 	40 46 A0  1 
+
+   begin  dup  while                    ( case pat-str test-str )
+1A31F6C 	40 49 A0  1 
+1A31F70 	DC 41 A0  1 40  0  0  0 
+      fifth fifth fifth fifth fifth     ( case pat-str test-str case .. test$ )
+1A31F78 	 4 1E A3  1  4 1E A3  1 
+1A31F80 	 4 1E A3  1  4 1E A3  1 
+1A31F88 	 4 1E A3  1 
+      pattern-match?  if                ( case pat-str test-str )
+1A31F8C 	E8 1E A3  1 
+1A31F90 	DC 41 A0  1 10  0  0  0 
+         5drop true  exit               \ We have a winner!
+1A31F98 	4C 53 A0  1  4 70 A0  1 
+1A31FA0 	40 46 A0  1 
+      then                              ( case pat-str test-str )
+      1 /string                         ( case pat-str test-str' )
+1A31FA4 	80 6F A0  1 
+1A31FA8 	3C 85 A0  1 
+   repeat                               ( case pat-str test-str )
+1A31FAC 	C8 41 A0  1 
+1A31FB0 	BC FF FF FF 
+
+   \ Having exhausted all possible matches for the '*', we admit defeat.
+
+   5drop false
+1A31FB4 	4C 53 A0  1 
+1A31FB8 	18 70 A0  1 
+;
+1A31FBC 	58 46 A0  1 

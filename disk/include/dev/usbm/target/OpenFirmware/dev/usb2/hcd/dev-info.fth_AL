@@ -1,0 +1,276 @@
+purpose: Data structures and manuipulation routines for all USB Controllers
+
+hex
+headers
+
+\ ---------------------------------------------------------------------------
+\ device-info (DI): data structure internal to the OHCI driver.
+\ It keeps track of assigned USB addresses.  For each USB device, its speed.
+\ And for each endpoint in a device, its max packet size and data toggle bit.
+\
+\ This data structure, once created, stays around at all time.
+\ ---------------------------------------------------------------------------
+
+struct
+   2 field >di-ep-maxpayload		\ Max packet size for the endpoint
+1A44058 	 0  0 3E 64 69 2D 65 70 
+1A44060 	2D 6D 61 78 70 61 79 6C 
+1A44068 	6F 61 64 91 20 40 A4  1 
+1A44070 	50 EE A0  1  0  0  0  0 
+   1 field >di-ep-in-toggle		\ Data toggle state
+1A44078 	 0  0  0 3E 64 69 2D 65 
+1A44080 	70 2D 69 6E 2D 74 6F 67 
+1A44088 	67 6C 65 90 70 40 A4  1 
+1A44090 	50 EE A0  1  2  0  0  0 
+   1 field >di-ep-out-toggle		\ Data toggle state
+1A44098 	 0  0 3E 64 69 2D 65 70 
+1A440A0 	2D 6F 75 74 2D 74 6F 67 
+1A440A8 	67 6C 65 91 90 40 A4  1 
+1A440B0 	50 EE A0  1  3  0  0  0 
+constant /di-ep-struct
+1A440B8 	 0  0 2F 64 69 2D 65 70 
+1A440C0 	2D 73 74 72 75 63 74 8D 
+1A440C8 	B0 40 A4  1 68 40 A0  1 
+1A440D0 	 4  0  0  0 
+
+struct
+   1 field >di-speed			\ Device speed
+1A440D4 	 0  0 3E 64 
+1A440D8 	69 2D 73 70 65 65 64 89 
+1A440E0 	CC 40 A4  1 50 EE A0  1 
+1A440E8 	 0  0  0  0 
+   1 field >di-hub			\ Hub address (EHCI only)
+1A440EC 	3E 64 69 2D 
+1A440F0 	68 75 62 87 E4 40 A4  1 
+1A440F8 	50 EE A0  1  1  0  0  0 
+   1 field >di-port			\ Port number (EHCI only)
+1A44100 	 0  0  0 3E 64 69 2D 70 
+1A44108 	6F 72 74 88 F8 40 A4  1 
+1A44110 	50 EE A0  1  2  0  0  0 
+   1 field >di-reset			\ reset flag - 0 initially or after a resume, then 1
+1A44118 	 0  0 3E 64 69 2D 72 65 
+1A44120 	73 65 74 89 10 41 A4  1 
+1A44128 	50 EE A0  1  3  0  0  0 
+   /di-ep-struct #max-endpoint * field >di-ep
+1A44130 	 0 3E 64 69 2D 65 70 86 
+1A44138 	28 41 A4  1 50 EE A0  1 
+1A44140 	 4  0  0  0 
+					\ Endpoint structure
+constant /di-entry
+1A44144 	 0  0 2F 64 
+1A44148 	69 2D 65 6E 74 72 79 89 
+1A44150 	3C 41 A4  1 68 40 A0  1 
+1A44158 	44  0  0  0 
+
+/di-entry #max-dev * constant /di
+1A4415C 	2F 64 69 83 
+1A44160 	54 41 A4  1 68 40 A0  1 
+1A44168 	 0 22  0  0 
+0 value di				\ device-info
+1A4416C 	 0 64 69 82 
+1A44170 	64 41 A4  1 50 40 A0  1 
+1A44178 	E4  D  0  0 
+
+0 value cur-dev				\ Value of the last assigned usb address
+1A4417C 	63 75 72 2D 
+1A44180 	64 65 76 87 74 41 A4  1 
+1A44188 	50 40 A0  1 E8  D  0  0 
+
+: 'di     ( idx -- adr )       /di-entry * di +  ;
+1A44190 	27 64 69 83 88 41 A4  1 
+1A44198 	20 40 A0  1 54 41 A4  1 
+1A441A0 	1C 5F A0  1 74 41 A4  1 
+1A441A8 	 4 45 A0  1 58 46 A0  1 
+: 'di-ep  ( pipe idx -- adr )  'di >di-ep swap /di-ep-struct * +  ;
+1A441B0 	 0 27 64 69 2D 65 70 86 
+1A441B8 	98 41 A4  1 20 40 A0  1 
+1A441C0 	98 41 A4  1 3C 41 A4  1 
+1A441C8 	68 49 A0  1 CC 40 A4  1 
+1A441D0 	1C 5F A0  1  4 45 A0  1 
+1A441D8 	58 46 A0  1 
+
+: di-speed!  ( speed idx -- )  'di >di-speed c!  ;
+1A441DC 	 0  0 64 69 
+1A441E0 	2D 73 70 65 65 64 21 89 
+1A441E8 	BC 41 A4  1 20 40 A0  1 
+1A441F0 	98 41 A4  1 E4 40 A4  1 
+1A441F8 	B8 4D A0  1 58 46 A0  1 
+: di-speed@  ( idx -- speed )  'di >di-speed c@  ;
+1A44200 	 0  0 64 69 2D 73 70 65 
+1A44208 	65 64 40 89 EC 41 A4  1 
+1A44210 	20 40 A0  1 98 41 A4  1 
+1A44218 	E4 40 A4  1 C4 4C A0  1 
+1A44220 	58 46 A0  1 
+: di-hub!    ( hub idx -- )    'di >di-hub   c!  ;
+1A44224 	64 69 2D 68 
+1A44228 	75 62 21 87 10 42 A4  1 
+1A44230 	20 40 A0  1 98 41 A4  1 
+1A44238 	F8 40 A4  1 B8 4D A0  1 
+1A44240 	58 46 A0  1 
+: di-hub@    ( idx -- hub )    'di >di-hub   c@  ;
+1A44244 	64 69 2D 68 
+1A44248 	75 62 40 87 30 42 A4  1 
+1A44250 	20 40 A0  1 98 41 A4  1 
+1A44258 	F8 40 A4  1 C4 4C A0  1 
+1A44260 	58 46 A0  1 
+: di-port!   ( port idx -- )   'di >di-port  c!  ;
+1A44264 	 0  0  0 64 
+1A44268 	69 2D 70 6F 72 74 21 88 
+1A44270 	50 42 A4  1 20 40 A0  1 
+1A44278 	98 41 A4  1 10 41 A4  1 
+1A44280 	B8 4D A0  1 58 46 A0  1 
+: di-port@   ( idx -- port )   'di >di-port  c@  ;
+1A44288 	 0  0  0 64 69 2D 70 6F 
+1A44290 	72 74 40 88 74 42 A4  1 
+1A44298 	20 40 A0  1 98 41 A4  1 
+1A442A0 	10 41 A4  1 C4 4C A0  1 
+1A442A8 	58 46 A0  1 
+: di-is-reset  ( idx -- )
+1A442AC 	64 69 2D 69 
+1A442B0 	73 2D 72 65 73 65 74 8B 
+1A442B8 	98 42 A4  1 20 40 A0  1 
+   'di >di-reset          ( adr )
+1A442C0 	98 41 A4  1 28 41 A4  1 
+   0 swap c!
+1A442C8 	70 6F A0  1 68 49 A0  1 
+1A442D0 	B8 4D A0  1 
+;
+1A442D4 	58 46 A0  1 
+: di-reset?  ( idx -- flag )
+1A442D8 	 0  0 64 69 2D 72 65 73 
+1A442E0 	65 74 3F 89 BC 42 A4  1 
+1A442E8 	20 40 A0  1 
+   'di >di-reset          ( adr )
+1A442EC 	98 41 A4  1 
+1A442F0 	28 41 A4  1 
+   dup c@ 0=              ( adr reset? )
+1A442F4 	40 49 A0  1 
+1A442F8 	C4 4C A0  1 24 47 A0  1 
+   1 rot c!               ( reset? )
+1A44300 	80 6F A0  1 7C 49 A0  1 
+1A44308 	B8 4D A0  1 
+;
+1A4430C 	58 46 A0  1 
+
+: 'di-maxpayload  ( pipe idx -- adr )  'di-ep >di-ep-maxpayload  ;
+1A44310 	 0 27 64 69 2D 6D 61 78 
+1A44318 	70 61 79 6C 6F 61 64 8E 
+1A44320 	E8 42 A4  1 20 40 A0  1 
+1A44328 	BC 41 A4  1 70 40 A4  1 
+1A44330 	58 46 A0  1 
+: di-maxpayload!  ( len pipe idx -- )  'di-maxpayload w!  ;
+1A44334 	 0 64 69 2D 
+1A44338 	6D 61 78 70 61 79 6C 6F 
+1A44340 	61 64 21 8E 24 43 A4  1 
+1A44348 	20 40 A0  1 24 43 A4  1 
+1A44350 	A4 4D A0  1 58 46 A0  1 
+: di-maxpayload@  ( pipe idx -- len )  'di-maxpayload w@  ;
+1A44358 	 0 64 69 2D 6D 61 78 70 
+1A44360 	61 79 6C 6F 61 64 40 8E 
+1A44368 	48 43 A4  1 20 40 A0  1 
+1A44370 	24 43 A4  1 94 4C A0  1 
+1A44378 	58 46 A0  1 
+
+: di-in-data!   ( n pipe id -- )       'di-ep >di-ep-in-toggle  c!  ;
+1A4437C 	64 69 2D 69 
+1A44380 	6E 2D 64 61 74 61 21 8B 
+1A44388 	6C 43 A4  1 20 40 A0  1 
+1A44390 	BC 41 A4  1 90 40 A4  1 
+1A44398 	B8 4D A0  1 58 46 A0  1 
+: di-in-data@   ( pipe id -- n )       'di-ep >di-ep-in-toggle  c@  ;
+1A443A0 	64 69 2D 69 6E 2D 64 61 
+1A443A8 	74 61 40 8B 8C 43 A4  1 
+1A443B0 	20 40 A0  1 BC 41 A4  1 
+1A443B8 	90 40 A4  1 C4 4C A0  1 
+1A443C0 	58 46 A0  1 
+: di-out-data!  ( n pipe id -- )       'di-ep >di-ep-out-toggle c!  ;
+1A443C4 	 0  0  0 64 
+1A443C8 	69 2D 6F 75 74 2D 64 61 
+1A443D0 	74 61 21 8C B0 43 A4  1 
+1A443D8 	20 40 A0  1 BC 41 A4  1 
+1A443E0 	B0 40 A4  1 B8 4D A0  1 
+1A443E8 	58 46 A0  1 
+: di-out-data@  ( pipe id -- n )       'di-ep >di-ep-out-toggle c@  ;
+1A443EC 	 0  0  0 64 
+1A443F0 	69 2D 6F 75 74 2D 64 61 
+1A443F8 	74 61 40 8C D8 43 A4  1 
+1A44400 	20 40 A0  1 BC 41 A4  1 
+1A44408 	B0 40 A4  1 C4 4C A0  1 
+1A44410 	58 46 A0  1 
+: di-in-data-toggle   ( pipe idx -- )  2dup di-in-data@  1 xor -rot di-in-data!   ;
+1A44414 	 0  0 64 69 
+1A44418 	2D 69 6E 2D 64 61 74 61 
+1A44420 	2D 74 6F 67 67 6C 65 91 
+1A44428 	 0 44 A4  1 20 40 A0  1 
+1A44430 	C0 49 A0  1 B0 43 A4  1 
+1A44438 	80 6F A0  1 84 44 A0  1 
+1A44440 	94 49 A0  1 8C 43 A4  1 
+1A44448 	58 46 A0  1 
+: di-out-data-toggle  ( pipe idx -- )  2dup di-out-data@ 1 xor -rot di-out-data!  ;
+1A4444C 	 0 64 69 2D 
+1A44450 	6F 75 74 2D 64 61 74 61 
+1A44458 	2D 74 6F 67 67 6C 65 92 
+1A44460 	2C 44 A4  1 20 40 A0  1 
+1A44468 	C0 49 A0  1  0 44 A4  1 
+1A44470 	80 6F A0  1 84 44 A0  1 
+1A44478 	94 49 A0  1 D8 43 A4  1 
+1A44480 	58 46 A0  1 
+
+: next-device#  ( -- true | dev false )
+1A44484 	 0  0  0 6E 
+1A44488 	65 78 74 2D 64 65 76 69 
+1A44490 	63 65 23 8C 64 44 A4  1 
+1A44498 	20 40 A0  1 
+   cur-dev 1+ #max-dev >=  if  true exit  then
+1A4449C 	88 41 A4  1 
+1A444A0 	30 4B A0  1 34 2E A4  1 
+1A444A8 	EC 48 A0  1 DC 41 A0  1 
+1A444B0 	 C  0  0  0  4 70 A0  1 
+1A444B8 	40 46 A0  1 
+   cur-dev 1+ dup to cur-dev  
+1A444BC 	88 41 A4  1 
+1A444C0 	30 4B A0  1 40 49 A0  1 
+1A444C8 	B8 40 A0  1 88 41 A4  1 
+   /pipe0 0 cur-dev di-maxpayload!
+1A444D0 	AC 2E A4  1 70 6F A0  1 
+1A444D8 	88 41 A4  1 48 43 A4  1 
+   false
+1A444E0 	18 70 A0  1 
+;
+1A444E4 	58 46 A0  1 
+
+: init-di  ( -- )
+1A444E8 	69 6E 69 74 2D 64 69 87 
+1A444F0 	98 44 A4  1 20 40 A0  1 
+   di 0=  if
+1A444F8 	74 41 A4  1 24 47 A0  1 
+1A44500 	DC 41 A0  1 14  0  0  0 
+      \ allocate and initialize the device descriptors
+      /di alloc-mem to di
+1A44508 	64 41 A4  1 F0 6C A0  1 
+1A44510 	B8 40 A0  1 74 41 A4  1 
+   then
+   di /di erase
+1A44518 	74 41 A4  1 64 41 A4  1 
+1A44520 	F0 72 A0  1 
+   /pipe0 0 0 di-maxpayload!		\ Default max payload
+1A44524 	AC 2E A4  1 
+1A44528 	70 6F A0  1 70 6F A0  1 
+1A44530 	48 43 A4  1 
+;
+1A44534 	58 46 A0  1 
+
+: init-struct  ( -- )
+1A44538 	69 6E 69 74 2D 73 74 72 
+1A44540 	75 63 74 8B F4 44 A4  1 
+1A44548 	20 40 A0  1 
+   init-di
+1A4454C 	F4 44 A4  1 
+   0 to cur-dev
+1A44550 	70 6F A0  1 B8 40 A0  1 
+1A44558 	88 41 A4  1 
+;
+1A4455C 	58 46 A0  1 
+
+headers
+

@@ -1,0 +1,528 @@
+\ Directory operations:
+\ file and subdirectory creation, renaming, changing directory
+\
+\ TODO:
+\   Allow renames across directory boundaries.
+\   Media change handling (hard to actually implement due to crummy OMTI
+\       floppy controller, but the hooks should be put in)
+
+\ mmo private
+
+: set-file-name  ( ext-adr ext-len name-adr name-len -- )
+1A2F460 	 0  0 73 65 74 2D 66 69 
+1A2F468 	6C 65 2D 6E 61 6D 65 8D 
+1A2F470 	34 F4 A2  1 20 40 A0  1 
+   de_name d# 11 blank ( ext-adr ext-len name-adr name-len )
+1A2F478 	30 BF A2  1 58 41 A0  1 
+1A2F480 	 B  0  0  0  C 73 A0  1 
+   de_name swap 8 min cmove  de_extension swap 3 min cmove ( )
+1A2F488 	30 BF A2  1 68 49 A0  1 
+1A2F490 	F0 6F A0  1 74 4A A0  1 
+1A2F498 	10 44 A0  1 4C BF A2  1 
+1A2F4A0 	68 49 A0  1 A0 6F A0  1 
+1A2F4A8 	74 4A A0  1 10 44 A0  1 
+;
+1A2F4B0 	58 46 A0  1 
+
+: set-stamps  ( attributes -- )
+1A2F4B4 	 0 73 65 74 
+1A2F4B8 	2D 73 74 61 6D 70 73 8A 
+1A2F4C0 	74 F4 A2  1 20 40 A0  1 
+   de_attributes c!
+1A2F4C8 	68 BF A2  1 B8 4D A0  1 
+   0 de_length lel!
+1A2F4D0 	70 6F A0  1 DC C0 A2  1 
+1A2F4D8 	 8 B5 A2  1 
+   now today (set-modtime)
+1A2F4DC 	 4 ED A0  1 
+1A2F4E0 	20 ED A0  1 9C EE A2  1 
+   now today (set-createtime)
+1A2F4E8 	 4 ED A0  1 20 ED A0  1 
+1A2F4F0 	D4 EE A2  1 
+   today (set-accessdate)
+1A2F4F4 	20 ED A0  1 
+1A2F4F8 	34 EF A2  1 
+;
+1A2F4FC 	58 46 A0  1 
+
+\ mmo public
+: dos-create  ( adr len protection -- error? )
+1A2F500 	 0 64 6F 73 2D 63 72 65 
+1A2F508 	61 74 65 8A C4 F4 A2  1 
+1A2F510 	20 40 A0  1 
+\ error? =  0 is success,
+\          -1 means: couldn't create (no free entry or already exists),
+\          0> means: error writing directory cluster.
+   -rot        ( protection adr len )
+1A2F514 	94 49 A0  1 
+
+   \ Error if the file already exists
+   at_rdonly at_system or at_subdir or at_hidden or     ( protection )
+1A2F518 	80 BF A2  1 B0 BF A2  1 
+1A2F520 	70 44 A0  1 E0 BF A2  1 
+1A2F528 	70 44 A0  1 98 BF A2  1 
+1A2F530 	70 44 A0  1 
+   find-first if  drop true  exit  then                 ( protection )
+1A2F534 	18 E4 A2  1 
+1A2F538 	DC 41 A0  1 10  0  0  0 
+1A2F540 	30 49 A0  1  4 70 A0  1 
+1A2F548 	40 46 A0  1 
+
+   \ Create the file but don't open it
+   find-free-dirent  if  drop true  exit  then          ( protection )
+1A2F54C 	F8 E4 A2  1 
+1A2F550 	DC 41 A0  1 10  0  0  0 
+1A2F558 	30 49 A0  1  4 70 A0  1 
+1A2F560 	40 46 A0  1 
+
+   base-ext be-len c@ base-name bn-len c@ set-file-name ( protection )
+1A2F564 	FC D7 A2  1 
+1A2F568 	24 D8 A2  1 C4 4C A0  1 
+1A2F570 	E4 D7 A2  1 10 D8 A2  1 
+1A2F578 	C4 4C A0  1 74 F4 A2  1 
+   set-stamps
+1A2F580 	C4 F4 A2  1 
+   0 file-cluster!
+1A2F584 	70 6F A0  1 
+1A2F588 	70 C2 A2  1 
+
+   write-dir-cl    ( error? )  \ Flush directory cluster image to disk
+1A2F58C 	6C DD A2  1 
+;
+1A2F590 	58 46 A0  1 
+
+\ mmo private
+: (dos-delete)  ( -- error? )   
+1A2F594 	 0  0  0 28 
+1A2F598 	64 6F 73 2D 64 65 6C 65 
+1A2F5A0 	74 65 29 8C 10 F5 A2  1 
+1A2F5A8 	20 40 A0  1 
+\ dirent points to the file to be deleted !
+   file-cluster@  ( 1st-cl# )         \ remember first cluster  
+1A2F5AC 	A0 C2 A2  1 
+   0 file-cluster!  h# e5 de_name c!
+1A2F5B0 	70 6F A0  1 70 C2 A2  1 
+1A2F5B8 	58 41 A0  1 E5  0  0  0 
+1A2F5C0 	30 BF A2  1 B8 4D A0  1 
+   write-dir-cl   ( 1st-cl#  error? ) \ delete entry in directory cluster first
+1A2F5C8 	6C DD A2  1 
+   swap  ?dup  if                     \ & from cluster table second (10/28/91)
+1A2F5CC 	68 49 A0  1 
+1A2F5D0 	B4 70 A0  1 DC 41 A0  1 
+1A2F5D8 	 8  0  0  0 
+      deallocate-clusters  then 
+1A2F5DC 	B8 D5 A2  1 
+   ( error? )
+;
+1A2F5E0 	58 46 A0  1 
+
+\ mmo public
+
+\ This version will delete any file, even read-only, hidden, and system files
+: $delete!  ( adr len -- error? )
+1A2F5E4 	 0  0  0 24 
+1A2F5E8 	64 65 6C 65 74 65 21 88 
+1A2F5F0 	A8 F5 A2  1 20 40 A0  1 
+   at_rdonly at_system or at_hidden or
+1A2F5F8 	80 BF A2  1 B0 BF A2  1 
+1A2F600 	70 44 A0  1 98 BF A2  1 
+1A2F608 	70 44 A0  1 
+   find-first  0=  if  true  exit  then    ( adr len )
+1A2F60C 	18 E4 A2  1 
+1A2F610 	24 47 A0  1 DC 41 A0  1 
+1A2F618 	 C  0  0  0  4 70 A0  1 
+1A2F620 	40 46 A0  1 
+   (dos-delete)  ( error? )
+1A2F624 	A8 F5 A2  1 
+;
+1A2F628 	58 46 A0  1 
+: $delete  ( adr len -- error? )
+1A2F62C 	24 64 65 6C 
+1A2F630 	65 74 65 87 F4 F5 A2  1 
+1A2F638 	20 40 A0  1 
+   0  find-first  0=  if  true  exit  then    ( adr len )
+1A2F63C 	70 6F A0  1 
+1A2F640 	18 E4 A2  1 24 47 A0  1 
+1A2F648 	DC 41 A0  1  C  0  0  0 
+1A2F650 	 4 70 A0  1 40 46 A0  1 
+   (dos-delete)  ( error? )
+1A2F658 	A8 F5 A2  1 
+;
+1A2F65C 	58 46 A0  1 
+
+\ mmo private
+
+\ Creates one of the "special" entries "." and ".."
+: make-dotent  ( cluster# adr len -- )
+1A2F660 	6D 61 6B 65 2D 64 6F 74 
+1A2F668 	65 6E 74 8B 38 F6 A2  1 
+1A2F670 	20 40 A0  1 
+   " " 2swap  set-file-name   ( cluster# )
+1A2F674 	9C 53 A0  1 
+1A2F678 	 0  0  0  0 F4 49 A0  1 
+1A2F680 	74 F4 A2  1 
+   file-cluster!              ( )
+1A2F684 	70 C2 A2  1 
+   at_subdir set-stamps
+1A2F688 	E0 BF A2  1 C4 F4 A2  1 
+;
+1A2F690 	58 46 A0  1 
+: prime-directory  ( parent-cluster# my-cluster# my-dev -- error? )
+1A2F694 	70 72 69 6D 
+1A2F698 	65 2D 64 69 72 65 63 74 
+1A2F6A0 	6F 72 79 8F 70 F6 A2  1 
+1A2F6A8 	20 40 A0  1 
+   over swap 0 -rot  set-dirent             ( parent-cl# my-cl# error? )
+1A2F6AC 	54 49 A0  1 
+1A2F6B0 	68 49 A0  1 70 6F A0  1 
+1A2F6B8 	94 49 A0  1  4 DE A2  1 
+   if  2drop true exit  then                ( parent-cl# my-cl# )
+1A2F6C0 	DC 41 A0  1 10  0  0  0 
+1A2F6C8 	AC 49 A0  1  4 70 A0  1 
+1A2F6D0 	40 46 A0  1 
+
+   \ Clear the first cluster.
+   dirent @  /cluster  0 fill               ( parent-cl# my-cl# )
+1A2F6D4 	DC BE A2  1 
+1A2F6D8 	5C 4C A0  1 18 C3 A2  1 
+1A2F6E0 	70 6F A0  1 8C 4E A0  1 
+
+   \ Make the "." entry.
+   " ."  make-dotent                        ( parent-cl# )
+1A2F6E8 	9C 53 A0  1  1 2E  0  0 
+1A2F6F0 	70 F6 A2  1 
+
+   \ Make the ".." entry.
+   /dirent dirent +!                        ( parent-cl# )
+1A2F6F4 	F0 C0 A2  1 
+1A2F6F8 	DC BE A2  1  C 4C A0  1 
+   " .." make-dotent                        ( )
+1A2F700 	9C 53 A0  1  2 2E 2E  0 
+1A2F708 	70 F6 A2  1 
+
+   write-dir-cl  ( error? )
+1A2F70C 	6C DD A2  1 
+;
+1A2F710 	58 46 A0  1 
+
+\ mmo public
+
+: $mkdir  ( adr len -- error? )
+1A2F714 	 0 24 6D 6B 
+1A2F718 	64 69 72 86 A8 F6 A2  1 
+1A2F720 	20 40 A0  1 
+   at_subdir dos-create  ?dup  if  exit  then
+1A2F724 	E0 BF A2  1 
+1A2F728 	10 F5 A2  1 B4 70 A0  1 
+1A2F730 	DC 41 A0  1  8  0  0  0 
+1A2F738 	40 46 A0  1 
+
+   \ Allocate a cluster for the directory entries.
+   \ We don't want to just fault it in as though the directory were
+   \ being extended, because we don't have an appropriate value for
+   \ the de_first field to indicate this condition.  We could use
+   \ fat-eof, but we would still have the problem that extend-dir
+   \ would need to hook the new cluster to the head node instead of
+   \ to a cluster link.  We might as well just do it here.
+
+   \ Allocate the new cluster near the directory containing it
+   search-cl @ allocate-cluster  ( cl# true | false )  if  ( cl# )
+1A2F73C 	68 D7 A2  1 
+1A2F740 	5C 4C A0  1 10 D5 A2  1 
+1A2F748 	DC 41 A0  1 2C  0  0  0 
+      ?flush-fat-cache             \ cpt - force to update FAT on device first
+1A2F750 	98 CE A2  1 
+      dup file-cluster!
+1A2F754 	40 49 A0  1 
+1A2F758 	70 C2 A2  1 
+      \ ??? what should be done with the de_length field of a subdirectory?
+      write-dir-cl ?dup if  exit  then
+1A2F75C 	6C DD A2  1 
+1A2F760 	B4 70 A0  1 DC 41 A0  1 
+1A2F768 	 8  0  0  0 40 46 A0  1 
+   else
+1A2F770 	C8 41 A0  1  C  0  0  0 
+      true exit
+1A2F778 	 4 70 A0  1 40 46 A0  1 
+   then                         ( cl# )
+
+   search-dir-cl @              ( subdir-cl# parent-dir-cl# )
+1A2F780 	8C D8 A2  1 5C 4C A0  1 
+
+   \ chdir to the new subdirectory
+   dv_cwd-cl l@ -rot  ( old-curdir subdir-cl# parent-dir-cl# )
+1A2F788 	84 BB A2  1 6C 4C A0  1 
+1A2F790 	94 49 A0  1 
+   over dv_cwd-cl l!  ( old-curdir subdir-cl# parent-dir-cl# )
+1A2F794 	54 49 A0  1 
+1A2F798 	84 BB A2  1 7C 4D A0  1 
+
+   \ Clear the new directory and create the "." and ".." entries
+   swap search-dev @ prime-directory    ( old-curdir error? )
+1A2F7A0 	68 49 A0  1 9C D7 A2  1 
+1A2F7A8 	5C 4C A0  1 A8 F6 A2  1 
+
+   swap dv_cwd-cl l!            ( error? )
+1A2F7B0 	68 49 A0  1 84 BB A2  1 
+1A2F7B8 	7C 4D A0  1 
+;
+1A2F7BC 	58 46 A0  1 
+
+\ mmo private
+
+\ Returns true if current directory is empty.
+: directory-empty?  ( -- flag )
+1A2F7C0 	 0  0  0 64 69 72 65 63 
+1A2F7C8 	74 6F 72 79 2D 65 6D 70 
+1A2F7D0 	74 79 3F 90 20 F7 A2  1 
+1A2F7D8 	20 40 A0  1 
+   " *.*" 0 init-search  \ Attrib.s don't matter; next-file ignores them
+1A2F7DC 	9C 53 A0  1 
+1A2F7E0 	 3 2A 2E 2A  0  0  0  0 
+1A2F7E8 	70 6F A0  1 A4 E3 A2  1 
+   begin  next-file  while
+1A2F7F0 	4C E1 A2  1 DC 41 A0  1 
+1A2F7F8 	48  0  0  0 
+      file-name  dup 2 >  if   2drop false  exit  then   ( adr len )
+1A2F7FC 	7C C1 A2  1 
+1A2F800 	40 49 A0  1 90 6F A0  1 
+1A2F808 	 4 48 A0  1 DC 41 A0  1 
+1A2F810 	10  0  0  0 AC 49 A0  1 
+1A2F818 	18 70 A0  1 40 46 A0  1 
+      dot-name? 0=  if  false  exit  then 
+1A2F820 	70 DB A2  1 24 47 A0  1 
+1A2F828 	DC 41 A0  1  C  0  0  0 
+1A2F830 	18 70 A0  1 40 46 A0  1 
+   repeat
+1A2F838 	C8 41 A0  1 B4 FF FF FF 
+   true
+1A2F840 	 4 70 A0  1 
+;
+1A2F844 	58 46 A0  1 
+
+\ mmo public
+
+: $rmdir  ( addr len -- error? )
+1A2F848 	 0 24 72 6D 64 69 72 86 
+1A2F850 	D8 F7 A2  1 20 40 A0  1 
+   at_subdir init-search
+1A2F858 	E0 BF A2  1 A4 E3 A2  1 
+   begin  find-next  while
+1A2F860 	CC E3 A2  1 DC 41 A0  1 
+1A2F868 	90  0  0  0 
+      de_attributes c@ at_subdir and  if   \ Found it
+1A2F86C 	68 BF A2  1 
+1A2F870 	C4 4C A0  1 E0 BF A2  1 
+1A2F878 	5C 44 A0  1 DC 41 A0  1 
+1A2F880 	70  0  0  0 
+
+         \ Remember the current directory location
+         dv_cwd-cl l@ dirent @ dir-buf -  dir-cl @ dir-dev @ ( cwd offs cl dev)
+1A2F884 	84 BB A2  1 
+1A2F888 	6C 4C A0  1 DC BE A2  1 
+1A2F890 	5C 4C A0  1 1C C4 A2  1 
+1A2F898 	18 45 A0  1 A8 DC A2  1 
+1A2F8A0 	5C 4C A0  1 94 DC A2  1 
+1A2F8A8 	5C 4C A0  1 
+
+         \ Change to the directory to be deleted and see if it's empty
+         file-cluster@ dv_cwd-cl l!  directory-empty?  >r    ( cwd offs cl dev)
+1A2F8AC 	A0 C2 A2  1 
+1A2F8B0 	84 BB A2  1 7C 4D A0  1 
+1A2F8B8 	D8 F7 A2  1 BC 45 A0  1 
+
+         \ Go back to where we were
+         set-dirent drop  ( cwd )   dv_cwd-cl l!
+1A2F8C0 	 4 DE A2  1 30 49 A0  1 
+1A2F8C8 	84 BB A2  1 7C 4D A0  1 
+         r>  if  (dos-delete)  else  true  then  exit
+1A2F8D0 	D0 45 A0  1 DC 41 A0  1 
+1A2F8D8 	10  0  0  0 A8 F5 A2  1 
+1A2F8E0 	C8 41 A0  1  8  0  0  0 
+1A2F8E8 	 4 70 A0  1 40 46 A0  1 
+      then
+   repeat
+1A2F8F0 	C8 41 A0  1 6C FF FF FF 
+   true
+1A2F8F8 	 4 70 A0  1 
+;
+1A2F8FC 	58 46 A0  1 
+
+\ mmo private
+
+variable new-device  variable new-directory
+1A2F900 	 0 6E 65 77 2D 64 65 76 
+1A2F908 	69 63 65 8A 54 F8 A2  1 
+1A2F910 	48 40 A0  1 58  9  0  0 
+1A2F918 	 0  0 6E 65 77 2D 64 69 
+1A2F920 	72 65 63 74 6F 72 79 8D 
+1A2F928 	10 F9 A2  1 48 40 A0  1 
+1A2F930 	5C  9  0  0 
+8 buffer: new-name  3 buffer: new-ext
+1A2F934 	 0  0  0 6E 
+1A2F938 	65 77 2D 6E 61 6D 65 88 
+1A2F940 	2C F9 A2  1 B4 A9 A0  1 
+1A2F948 	60  9  0  0  8  0  0  0 
+1A2F950 	 C C1 A2  1 6E 65 77 2D 
+1A2F958 	65 78 74 87 44 F9 A2  1 
+1A2F960 	B4 A9 A0  1 64  9  0  0 
+1A2F968 	 3  0  0  0 44 F9 A2  1 
+
+\ mmo public
+
+: $rename  ( old-adr old-len  new-adr new-len -- error? )
+1A2F970 	24 72 65 6E 61 6D 65 87 
+1A2F978 	60 F9 A2  1 20 40 A0  1 
+\ Complications:
+\ We need to find the device and directory containing both the old file
+\ and the new file.  The following cases are interesting (in order):
+\  a) If the new file already exists, error.
+\  b) If the files are on different devices, error.
+\  c) If the files are in different directories, create a new directory
+\     entry, copy the old dirent to the new place, delete old entry.
+\  d) If the files are in the same directory, overwrite the file name field
+\ A file may be identified by (device, dirent == (cluster,offset)), which is
+\ the set of parameters used by set-dirent.  If the file doesn't exist,
+\ the enclosing directory needs to be known; a directory is specified by
+\ (device, starting-cluster)
+
+   \ Error if the "new" file name already exists
+   at_subdir  find-first  if  2drop true exit  then  ( old-adr,len )
+1A2F980 	E0 BF A2  1 18 E4 A2  1 
+1A2F988 	DC 41 A0  1 10  0  0  0 
+1A2F990 	AC 49 A0  1  4 70 A0  1 
+1A2F998 	40 46 A0  1 
+
+   \ The "new" file doesn't already exist, but as a side effect of looking
+   \ for it, we have processed the directory portion of the pathname.
+   \ Save that directory and the final file name.
+   search-dev @ new-device !  search-dir-cl @ new-directory ! ( old-adr,len )
+1A2F99C 	9C D7 A2  1 
+1A2F9A0 	5C 4C A0  1 10 F9 A2  1 
+1A2F9A8 	54 4D A0  1 8C D8 A2  1 
+1A2F9B0 	5C 4C A0  1 2C F9 A2  1 
+1A2F9B8 	54 4D A0  1 
+   new-name 8 blank  new-ext 3 blank
+1A2F9BC 	44 F9 A2  1 
+1A2F9C0 	F0 6F A0  1  C 73 A0  1 
+1A2F9C8 	60 F9 A2  1 A0 6F A0  1 
+1A2F9D0 	 C 73 A0  1 
+   base-name new-name bn-len c@ cmove                ( old-adr,len )
+1A2F9D4 	E4 D7 A2  1 
+1A2F9D8 	44 F9 A2  1 10 D8 A2  1 
+1A2F9E0 	C4 4C A0  1 10 44 A0  1 
+   base-ext  new-ext  be-len c@ cmove                ( old-adr,len )
+1A2F9E8 	FC D7 A2  1 60 F9 A2  1 
+1A2F9F0 	24 D8 A2  1 C4 4C A0  1 
+1A2F9F8 	10 44 A0  1 
+
+   at_subdir  find-first  if                         ( )
+1A2F9FC 	E0 BF A2  1 
+1A2FA00 	18 E4 A2  1 DC 41 A0  1 
+1A2FA08 	64  0  0  0 
+
+      \ If the new file and the old file are in the same directory, then
+      \ all we have to do is to change the name.  Otherwise, we have to
+      \ move the directory entry.
+
+      search-dev @ new-device @ =  search-dir-cl @ new-directory @ = and  if
+1A2FA0C 	9C D7 A2  1 
+1A2FA10 	5C 4C A0  1 10 F9 A2  1 
+1A2FA18 	5C 4C A0  1 24 48 A0  1 
+1A2FA20 	8C D8 A2  1 5C 4C A0  1 
+1A2FA28 	2C F9 A2  1 5C 4C A0  1 
+1A2FA30 	24 48 A0  1 5C 44 A0  1 
+1A2FA38 	DC 41 A0  1 24  0  0  0 
+         new-ext 3  new-name 8  set-file-name
+1A2FA40 	60 F9 A2  1 A0 6F A0  1 
+1A2FA48 	44 F9 A2  1 F0 6F A0  1 
+1A2FA50 	74 F4 A2  1 
+         write-dir-cl                                      ( error? )
+1A2FA54 	6C DD A2  1 
+      else
+1A2FA58 	C8 41 A0  1  8  0  0  0 
+         \ We don't handle this case yet.  Here's what would be required:
+         \ Make a temporary copy of the "old" dirent.  Remember the
+         \ (device,cluster,offset) for the "old" dirent.  Select the
+         \ "new" directory.  Allocate a new directory entry with
+         \ "find-free-dirent".  Copy the temporary copy of the "old"
+         \ dirent to the newly allocated dirent.  write out that cluster.
+         \ Switch back to the old dirent and mark it free.
+         true
+1A2FA60 	 4 70 A0  1 
+      then
+   else
+1A2FA64 	C8 41 A0  1 
+1A2FA68 	 8  0  0  0 
+      true
+1A2FA6C 	 4 70 A0  1 
+   then
+;
+1A2FA70 	58 46 A0  1 
+
+external
+
+: $chdir  ( adr len -- error? )
+1A2FA74 	 0 24 63 68 
+1A2FA78 	64 69 72 86 7C F9 A2  1 
+1A2FA80 	20 40 A0  1 
+   dup 0=  if   2drop false  exit   then  \ Bail out early if null argument
+1A2FA84 	40 49 A0  1 
+1A2FA88 	24 47 A0  1 DC 41 A0  1 
+1A2FA90 	10  0  0  0 AC 49 A0  1 
+1A2FA98 	18 70 A0  1 40 46 A0  1 
+
+   2dup at_subdir init-search   ( adr len )
+1A2FAA0 	C0 49 A0  1 E0 BF A2  1 
+1A2FAA8 	A4 E3 A2  1 
+
+   \ If the pathname search failed, we give up immediately
+   search-dir-cl @ cl#eof = if  2drop true  exit  then
+1A2FAAC 	8C D8 A2  1 
+1A2FAB0 	5C 4C A0  1 70 D8 A2  1 
+1A2FAB8 	24 48 A0  1 DC 41 A0  1 
+1A2FAC0 	10  0  0  0 AC 49 A0  1 
+1A2FAC8 	 4 70 A0  1 40 46 A0  1 
+
+   \ If the pathname ends with a backslash or colon character, we won't
+   \ actually perform the search; instead we'll just use the directory that
+   \ was found as part of the search initialization
+
+   1- + c@  dup ascii \ =  swap ascii : = or  if
+1A2FAD0 	54 4B A0  1  4 45 A0  1 
+1A2FAD8 	C4 4C A0  1 40 49 A0  1 
+1A2FAE0 	58 41 A0  1 5C  0  0  0 
+1A2FAE8 	24 48 A0  1 68 49 A0  1 
+1A2FAF0 	58 41 A0  1 3A  0  0  0 
+1A2FAF8 	24 48 A0  1 70 44 A0  1 
+1A2FB00 	DC 41 A0  1 34  0  0  0 
+      search-dev @ dup drive ! set-device
+1A2FB08 	9C D7 A2  1 5C 4C A0  1 
+1A2FB10 	40 49 A0  1 F4 D6 A2  1 
+1A2FB18 	54 4D A0  1  4 CC A2  1 
+      search-dir-cl @ dv_cwd-cl l!  false  exit
+1A2FB20 	8C D8 A2  1 5C 4C A0  1 
+1A2FB28 	84 BB A2  1 7C 4D A0  1 
+1A2FB30 	18 70 A0  1 40 46 A0  1 
+   then
+
+   find-dir  if
+1A2FB38 	9C E1 A2  1 DC 41 A0  1 
+1A2FB40 	34  0  0  0 
+      search-dev @ dup drive ! set-device
+1A2FB44 	9C D7 A2  1 
+1A2FB48 	5C 4C A0  1 40 49 A0  1 
+1A2FB50 	F4 D6 A2  1 54 4D A0  1 
+1A2FB58 	 4 CC A2  1 
+      file-cluster@ dv_cwd-cl l!  false
+1A2FB5C 	A0 C2 A2  1 
+1A2FB60 	84 BB A2  1 7C 4D A0  1 
+1A2FB68 	18 70 A0  1 
+   else
+1A2FB6C 	C8 41 A0  1 
+1A2FB70 	 8  0  0  0 
+      true
+1A2FB74 	 4 70 A0  1 
+   then
+;
+1A2FB78 	58 46 A0  1 

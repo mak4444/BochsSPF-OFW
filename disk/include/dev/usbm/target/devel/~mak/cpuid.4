@@ -1,0 +1,39 @@
+
+CODE cpuid@
+	0xf C, 0xA2 C, A; \	CPUID
+     MOV  0xC NEGATE [EBP], EBX
+     MOV -8 [EBP], ECX
+     MOV -4  [EBP], EDX
+     LEA EBP,  0xC NEGATE [EBP]
+     ret
+END-CODE
+
+: >> RSHIFT ;
+
+
+: .cpu
+ 0 cpuid@ .
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+
+ 0x80000002 cpuid@
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+
+ 0x80000003 cpuid@
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+ 0x80000004 cpuid@
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+
+;
+\EOF
+http://wiki.osdev.org/CPUID

@@ -1,0 +1,37 @@
+0 VALUE DOUBLE?
+
+-1 VALUE DP-LOCATION
+
+0 VALUE ?MINUS
+
+: NUMBER?       ( addr len -- d1 f1 )
+	                FALSE TO DOUBLE?                \ initially not a double #
+	                -1 TO DP-LOCATION
+	                OVER C@ [CHAR] - =
+	                OVER SWAP 0< AND DUP>R
+	                IF      1 /STRING
+	                THEN
+	                DUP 0=
+	                IF      RDROP      FALSE TO ?MINUS
+	                        2DROP 0 0 FALSE EXIT   \ always return zero on failure
+	                THEN
+	                0 0 2SWAP >NUMBER
+	                OVER C@ [CHAR] . =              \ next char is a '.'
+	                OVER SWAP 0< AND                     \ more chars to look at
+	                IF      DUP 1- TO DP-LOCATION
+			BEGIN
+	                1 /STRING >NUMBER
+	                DUP 0=
+	                IF      TRUE TO DOUBLE? \ mark as a double number
+	                THEN
+  OVER C@ [CHAR] . <>			UNTIL 
+	            THEN    NIP 0=
+	            R> ?MINUS XOR
+	            IF      >R DNEGATE R>
+	            THEN  FALSE TO ?MINUS
+;
+
+: SNUMBER ( addr len -- d1 )
+ cr ." nb=" 2dump type 
+ NUMBER? ."  -> " 2dup h. h. cr
+  0= THROW ;

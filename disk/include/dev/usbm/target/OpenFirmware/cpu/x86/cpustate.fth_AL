@@ -1,0 +1,72 @@
+purpose: Buffers for saving program state
+
+headers
+\ Data structures defining the CPU state saved by a breakpoint trap.
+\ This must be loaded before either catchexc.fth or register.fth,
+\ and is the complete interface between those 2 modules.
+
+headers
+\ A place to save the CPU registers when we take a trap
+0 value cpu-state               \ Pointer to CPU state save area
+1A1BAA8 	 0  0 63 70 75 2D 73 74 
+1A1BAB0 	61 74 65 89 88 BA A1  1 
+1A1BAB8 	50 40 A0  1 C8  4  0  0 
+
+headerless
+: >state  ( offset -- adr )  cpu-state  +  ;
+1A1BAC0 	 0 3E 73 74 61 74 65 86 
+1A1BAC8 	B8 BA A1  1 20 40 A0  1 
+1A1BAD0 	B8 BA A1  1  4 45 A0  1 
+1A1BAD8 	58 46 A0  1 
+
+h# 40 constant ua-size
+1A1BADC 	75 61 2D 73 
+1A1BAE0 	69 7A 65 87 CC BA A1  1 
+1A1BAE8 	68 40 A0  1 40  0  0  0 
+
+ps-size  buffer: pssave		\ A place to save the Forth data stack
+1A1BAF0 	 0 70 73 73 61 76 65 86 
+1A1BAF8 	E8 BA A1  1 B4 A9 A0  1 
+1A1BB00 	CC  4  0  0  0  8  0  0 
+1A1BB08 	 8 7E A1  1 
+rs-size  buffer: rssave		\ A place to save the Forth return stack
+1A1BB0C 	 0 72 73 73 
+1A1BB10 	61 76 65 86 FC BA A1  1 
+1A1BB18 	B4 A9 A0  1 D0  4  0  0 
+1A1BB20 	 0  8  0  0 FC BA A1  1 
+ua-size  buffer: uasave		\ A place to save part of the Forth user area
+1A1BB28 	 0 75 61 73 61 76 65 86 
+1A1BB30 	18 BB A1  1 B4 A9 A0  1 
+1A1BB38 	D4  4  0  0 40  0  0  0 
+1A1BB40 	18 BB A1  1 
+				\ we really want to save saved-rp and saved-sp
+
+headers
+defer .exception		\ Display the exception type
+1A1BB44 	 0 2E 65 78 
+1A1BB48 	63 65 70 74 69 6F 6E 8A 
+1A1BB50 	34 BB A1  1 5C 40 A0  1 
+1A1BB58 	D8  4  0  0 
+defer handle-breakpoint		\ What to do after saving the state
+1A1BB5C 	 0  0 68 61 
+1A1BB60 	6E 64 6C 65 2D 62 72 65 
+1A1BB68 	61 6B 70 6F 69 6E 74 91 
+1A1BB70 	54 BB A1  1 5C 40 A0  1 
+1A1BB78 	DC  4  0  0 
+
+transient
+variable next-reg
+1A1BB7C 	 0  0  0 6E 
+1A1BB80 	65 78 74 2D 72 65 67 88 
+1A1BB88 	74 BB A1  1 48 40 A0  1 
+1A1BB90 	E0  4  0  0 
+0 next-reg !
+
+: alloc-reg  ( size -- offset )   next-reg @  swap next-reg +!  ;
+1A1BB94 	 0  0 61 6C 
+1A1BB98 	6C 6F 63 2D 72 65 67 89 
+1A1BBA0 	8C BB A1  1 20 40 A0  1 
+1A1BBA8 	8C BB A1  1 5C 4C A0  1 
+1A1BBB0 	68 49 A0  1 8C BB A1  1 
+1A1BBB8 	 C 4C A0  1 58 46 A0  1 
+resident

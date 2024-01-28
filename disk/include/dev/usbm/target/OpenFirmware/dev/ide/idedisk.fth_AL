@@ -1,0 +1,336 @@
+\ IDE disk package implementing a "block" device-type interface.
+\
+\
+
+hex
+
+" disk" device-name
+1A40918 	64 69 73 6B  0  0  0 6E 
+1A40920 	61 6D 65 84  0  0 A0  1 
+1A40928 	BC 13 A2  1 14  0  0  0 
+1A40930 	 5  0  0  0 
+" block" device-type
+1A40934 	62 6C 6F 63 
+1A40938 	6B  0  0  0 64 65 76 69 
+1A40940 	63 65 5F 74 79 70 65 8B 
+1A40948 	28  9 A4  1 BC 13 A2  1 
+1A40950 	1C  0  0  0  6  0  0  0 
+
+headers
+
+0 instance value /block
+1A40958 	 0 2F 62 6C 6F 63 6B 86 
+1A40960 	 0  0 A0  1 C0 FE A1  1 
+1A40968 	18  0  0  0 
+
+0 instance value deblocker
+1A4096C 	 0  0 64 65 
+1A40970 	62 6C 6F 63 6B 65 72 89 
+1A40978 	64  9 A4  1 C0 FE A1  1 
+1A40980 	1C  0  0  0 
+: init-deblocker  ( -- okay? )
+1A40984 	 0 69 6E 69 
+1A40988 	74 2D 64 65 62 6C 6F 63 
+1A40990 	6B 65 72 8E 7C  9 A4  1 
+1A40998 	20 40 A0  1 
+   " "  " deblocker"  $open-package  to deblocker
+1A4099C 	9C 53 A0  1 
+1A409A0 	 0  0  0  0 9C 53 A0  1 
+1A409A8 	 9 64 65 62 6C 6F 63 6B 
+1A409B0 	65 72  0  0 80 3A A2  1 
+1A409B8 	48 B8 A1  1 7C  9 A4  1 
+   deblocker if
+1A409C0 	7C  9 A4  1 DC 41 A0  1 
+1A409C8 	10  0  0  0 
+      true
+1A409CC 	 4 70 A0  1 
+   else
+1A409D0 	C8 41 A0  1 30  0  0  0 
+      ." Can't open deblocker package"  cr  false
+1A409D8 	20 7C A0  1 1C 43 61 6E 
+1A409E0 	27 74 20 6F 70 65 6E 20 
+1A409E8 	64 65 62 6C 6F 63 6B 65 
+1A409F0 	72 20 70 61 63 6B 61 67 
+1A409F8 	65  0  0  0 80 6D A0  1 
+1A40A00 	18 70 A0  1 
+   then
+;
+1A40A04 	58 46 A0  1 
+
+0 instance value offset-low     \ Offset to start of partition
+1A40A08 	 0 6F 66 66 73 65 74 2D 
+1A40A10 	6C 6F 77 8A 98  9 A4  1 
+1A40A18 	C0 FE A1  1 20  0  0  0 
+0 instance value offset-high
+1A40A20 	6F 66 66 73 65 74 2D 68 
+1A40A28 	69 67 68 8B 18  A A4  1 
+1A40A30 	C0 FE A1  1 24  0  0  0 
+
+0 instance value label-package
+1A40A38 	 0  0 6C 61 62 65 6C 2D 
+1A40A40 	70 61 63 6B 61 67 65 8D 
+1A40A48 	30  A A4  1 C0 FE A1  1 
+1A40A50 	28  0  0  0 
+
+\ Sets offset-low and offset-high, reflecting the starting location of the
+\ partition specified by the "my-args" string.
+
+: init-label-package  ( -- okay? )
+1A40A54 	 0 69 6E 69 
+1A40A58 	74 2D 6C 61 62 65 6C 2D 
+1A40A60 	70 61 63 6B 61 67 65 92 
+1A40A68 	4C  A A4  1 20 40 A0  1 
+   0 to offset-high  0 to offset-low
+1A40A70 	70 6F A0  1 48 B8 A1  1 
+1A40A78 	30  A A4  1 70 6F A0  1 
+1A40A80 	48 B8 A1  1 18  A A4  1 
+   my-args  " disk-label"  $open-package to label-package
+1A40A88 	10  7 A2  1 9C 53 A0  1 
+1A40A90 	 A 64 69 73 6B 2D 6C 61 
+1A40A98 	62 65 6C  0 80 3A A2  1 
+1A40AA0 	48 B8 A1  1 4C  A A4  1 
+   label-package  if
+1A40AA8 	4C  A A4  1 DC 41 A0  1 
+1A40AB0 	3C  0  0  0 
+      0 0  " offset" label-package $call-method to offset-high to offset-low
+1A40AB4 	70 6F A0  1 
+1A40AB8 	70 6F A0  1 9C 53 A0  1 
+1A40AC0 	 6 6F 66 66 73 65 74  0 
+1A40AC8 	4C  A A4  1 B4 31 A2  1 
+1A40AD0 	48 B8 A1  1 30  A A4  1 
+1A40AD8 	48 B8 A1  1 18  A A4  1 
+      true
+1A40AE0 	 4 70 A0  1 
+   else
+1A40AE4 	C8 41 A0  1 
+1A40AE8 	30  0  0  0 
+      ." Can't open disk label package"  cr  false
+1A40AEC 	20 7C A0  1 
+1A40AF0 	1D 43 61 6E 27 74 20 6F 
+1A40AF8 	70 65 6E 20 64 69 73 6B 
+1A40B00 	20 6C 61 62 65 6C 20 70 
+1A40B08 	61 63 6B 61 67 65  0  0 
+1A40B10 	80 6D A0  1 18 70 A0  1 
+   then
+;
+1A40B18 	58 46 A0  1 
+
+\ The IDE disk package needs to export dma-alloc and dma-free
+\ methods so the deblocker can allocate DMA-capable buffer memory.
+
+external
+: dma-alloc  ( n -- vaddr )  " dma-alloc" $call-parent  ;
+1A40B1C 	 0  0 64 6D 
+1A40B20 	61 2D 61 6C 6C 6F 63 89 
+1A40B28 	6C  A A4  1 20 40 A0  1 
+1A40B30 	9C 53 A0  1  9 64 6D 61 
+1A40B38 	2D 61 6C 6C 6F 63  0  0 
+1A40B40 	DC 31 A2  1 58 46 A0  1 
+: dma-free   ( vaddr n -- )  " dma-free"  $call-parent  ;
+1A40B48 	 0  0  0 64 6D 61 2D 66 
+1A40B50 	72 65 65 88 2C  B A4  1 
+1A40B58 	20 40 A0  1 9C 53 A0  1 
+1A40B60 	 8 64 6D 61 2D 66 72 65 
+1A40B68 	65  0  0  0 DC 31 A2  1 
+1A40B70 	58 46 A0  1 
+
+\ Return device block size; cache it the first time we find the information
+\ This method is called by the deblocker
+: block-size  ( -- n )
+1A40B74 	 0 62 6C 6F 
+1A40B78 	63 6B 2D 73 69 7A 65 8A 
+1A40B80 	58  B A4  1 20 40 A0  1 
+   /block  if  /block exit  then        \ Don't ask if we already know
+1A40B88 	64  9 A4  1 DC 41 A0  1 
+1A40B90 	 C  0  0  0 64  9 A4  1 
+1A40B98 	40 46 A0  1 
+   " block-size"  $call-parent   dup to /block
+1A40B9C 	9C 53 A0  1 
+1A40BA0 	 A 62 6C 6F 63 6B 2D 73 
+1A40BA8 	69 7A 65  0 DC 31 A2  1 
+1A40BB0 	40 49 A0  1 48 B8 A1  1 
+1A40BB8 	64  9 A4  1 
+;
+1A40BBC 	58 46 A0  1 
+   
+: #blocks  ( -- n )  " #blocks"  $call-parent  ;
+1A40BC0 	23 62 6C 6F 63 6B 73 87 
+1A40BC8 	84  B A4  1 20 40 A0  1 
+1A40BD0 	9C 53 A0  1  7 23 62 6C 
+1A40BD8 	6F 63 6B 73  0  0  0  0 
+1A40BE0 	DC 31 A2  1 58 46 A0  1 
+
+\ These three methods are called by the deblocker.
+
+: max-transfer  ( -- n )  " max-transfer"  $call-parent  ;
+1A40BE8 	 0  0  0 6D 61 78 2D 74 
+1A40BF0 	72 61 6E 73 66 65 72 8C 
+1A40BF8 	CC  B A4  1 20 40 A0  1 
+1A40C00 	9C 53 A0  1  C 6D 61 78 
+1A40C08 	2D 74 72 61 6E 73 66 65 
+1A40C10 	72  0  0  0 DC 31 A2  1 
+1A40C18 	58 46 A0  1 
+: read-blocks   ( addr block# #blocks -- #read )  " read-blocks" $call-parent  ;
+1A40C1C 	72 65 61 64 
+1A40C20 	2D 62 6C 6F 63 6B 73 8B 
+1A40C28 	FC  B A4  1 20 40 A0  1 
+1A40C30 	9C 53 A0  1  B 72 65 61 
+1A40C38 	64 2D 62 6C 6F 63 6B 73 
+1A40C40 	 0  0  0  0 DC 31 A2  1 
+1A40C48 	58 46 A0  1 
+: write-blocks  ( addr block# #blocks -- #written )  " write-blocks" $call-parent  ;
+1A40C4C 	 0  0  0 77 
+1A40C50 	72 69 74 65 2D 62 6C 6F 
+1A40C58 	63 6B 73 8C 2C  C A4  1 
+1A40C60 	20 40 A0  1 9C 53 A0  1 
+1A40C68 	 C 77 72 69 74 65 2D 62 
+1A40C70 	6C 6F 63 6B 73  0  0  0 
+1A40C78 	DC 31 A2  1 58 46 A0  1 
+
+\ Stub implementation of asynchronous write interface
+0 instance value #written
+1A40C80 	 0  0  0 23 77 72 69 74 
+1A40C88 	74 65 6E 88 60  C A4  1 
+1A40C90 	C0 FE A1  1 2C  0  0  0 
+: write-blocks-start  ( addr block# #blocks -- )
+1A40C98 	 0 77 72 69 74 65 2D 62 
+1A40CA0 	6C 6F 63 6B 73 2D 73 74 
+1A40CA8 	61 72 74 92 90  C A4  1 
+1A40CB0 	20 40 A0  1 
+   " write-blocks" $call-parent to #written
+1A40CB4 	9C 53 A0  1 
+1A40CB8 	 C 77 72 69 74 65 2D 62 
+1A40CC0 	6C 6F 63 6B 73  0  0  0 
+1A40CC8 	DC 31 A2  1 48 B8 A1  1 
+1A40CD0 	90  C A4  1 
+;
+1A40CD4 	58 46 A0  1 
+: write-blocks-finish  ( -- #written )  #written  ;
+1A40CD8 	77 72 69 74 65 2D 62 6C 
+1A40CE0 	6F 63 6B 73 2D 66 69 6E 
+1A40CE8 	69 73 68 93 B0  C A4  1 
+1A40CF0 	20 40 A0  1 90  C A4  1 
+1A40CF8 	58 46 A0  1 
+
+
+\ Methods used by external clients
+
+: open  ( -- flag )
+1A40CFC 	 0  0  0 6F 
+1A40D00 	70 65 6E 84 F0  C A4  1 
+1A40D08 	20 40 A0  1 
+   my-unit dup 3 >  if  2drop false exit  then
+1A40D0C 	70 10 A2  1 
+1A40D10 	40 49 A0  1 A0 6F A0  1 
+1A40D18 	 4 48 A0  1 DC 41 A0  1 
+1A40D20 	10  0  0  0 AC 49 A0  1 
+1A40D28 	18 70 A0  1 40 46 A0  1 
+   " set-address" $call-parent
+1A40D30 	9C 53 A0  1  B 73 65 74 
+1A40D38 	2D 61 64 64 72 65 73 73 
+1A40D40 	 0  0  0  0 DC 31 A2  1 
+
+   " ide-inquiry" $call-parent  if  drop  else  false exit  then  ( )
+1A40D48 	9C 53 A0  1  B 69 64 65 
+1A40D50 	2D 69 6E 71 75 69 72 79 
+1A40D58 	 0  0  0  0 DC 31 A2  1 
+1A40D60 	DC 41 A0  1 10  0  0  0 
+1A40D68 	30 49 A0  1 C8 41 A0  1 
+1A40D70 	 C  0  0  0 18 70 A0  1 
+1A40D78 	40 46 A0  1 
+
+   block-size ?dup 0=  if  false exit  then  to /block
+1A40D7C 	84  B A4  1 
+1A40D80 	B4 70 A0  1 24 47 A0  1 
+1A40D88 	DC 41 A0  1  C  0  0  0 
+1A40D90 	18 70 A0  1 40 46 A0  1 
+1A40D98 	48 B8 A1  1 64  9 A4  1 
+
+   #blocks  0=  if  false exit  then
+1A40DA0 	CC  B A4  1 24 47 A0  1 
+1A40DA8 	DC 41 A0  1  C  0  0  0 
+1A40DB0 	18 70 A0  1 40 46 A0  1 
+
+   init-deblocker  0=  if  false exit  then
+1A40DB8 	98  9 A4  1 24 47 A0  1 
+1A40DC0 	DC 41 A0  1  C  0  0  0 
+1A40DC8 	18 70 A0  1 40 46 A0  1 
+
+   init-label-package  0=  if
+1A40DD0 	6C  A A4  1 24 47 A0  1 
+1A40DD8 	DC 41 A0  1 14  0  0  0 
+      deblocker close-package false exit
+1A40DE0 	7C  9 A4  1 A4 36 A2  1 
+1A40DE8 	18 70 A0  1 40 46 A0  1 
+   then
+
+   true
+1A40DF0 	 4 70 A0  1 
+;
+1A40DF4 	58 46 A0  1 
+
+: close  ( -- )
+1A40DF8 	 0  0 63 6C 6F 73 65 85 
+1A40E00 	 8  D A4  1 20 40 A0  1 
+   label-package close-package
+1A40E08 	4C  A A4  1 A4 36 A2  1 
+   deblocker close-package
+1A40E10 	7C  9 A4  1 A4 36 A2  1 
+;
+1A40E18 	58 46 A0  1 
+
+: seek  ( offset.low offset.high -- okay? )
+1A40E1C 	 0  0  0 73 
+1A40E20 	65 65 6B 84  4  E A4  1 
+1A40E28 	20 40 A0  1 
+   offset-low offset-high  d+  " seek"   deblocker $call-method
+1A40E2C 	18  A A4  1 
+1A40E30 	30  A A4  1 E0 5D A0  1 
+1A40E38 	9C 53 A0  1  4 73 65 65 
+1A40E40 	6B  0  0  0 7C  9 A4  1 
+1A40E48 	B4 31 A2  1 
+;
+1A40E4C 	58 46 A0  1 
+
+: read  ( addr len -- actual-len )  " read"  deblocker $call-method  ;
+1A40E50 	 0  0  0 72 65 61 64 84 
+1A40E58 	28  E A4  1 20 40 A0  1 
+1A40E60 	9C 53 A0  1  4 72 65 61 
+1A40E68 	64  0  0  0 7C  9 A4  1 
+1A40E70 	B4 31 A2  1 58 46 A0  1 
+: write ( addr len -- actual-len )  " write" deblocker $call-method  ;
+1A40E78 	 0  0 77 72 69 74 65 85 
+1A40E80 	5C  E A4  1 20 40 A0  1 
+1A40E88 	9C 53 A0  1  5 77 72 69 
+1A40E90 	74 65  0  0 7C  9 A4  1 
+1A40E98 	B4 31 A2  1 58 46 A0  1 
+: load  ( addr     -- size )        " load"  label-package $call-method  ;
+1A40EA0 	 0  0  0 6C 6F 61 64 84 
+1A40EA8 	84  E A4  1 20 40 A0  1 
+1A40EB0 	9C 53 A0  1  4 6C 6F 61 
+1A40EB8 	64  0  0  0 4C  A A4  1 
+1A40EC0 	B4 31 A2  1 58 46 A0  1 
+
+: size  ( -- d.size )               " size"  label-package $call-method  ;
+1A40EC8 	 0  0  0 73 69 7A 65 84 
+1A40ED0 	AC  E A4  1 20 40 A0  1 
+1A40ED8 	9C 53 A0  1  4 73 69 7A 
+1A40EE0 	65  0  0  0 4C  A A4  1 
+1A40EE8 	B4 31 A2  1 58 46 A0  1 
+
+finish-device
+1A40EF0 	 0  0  0  0  0  0  0  0 
+1A40EF8 	 0  0  0  0  0  0  0  0 
+1A40F00 	 0  0  0  0  0  0  0  0 
+1A40F08 	 0  0  0  0  0  0  0  0 
+1A40F10 	 0  0  0  0  0  0  0  0 
+1A40F18 	 0  0  0  0  0  0  0  0 
+end-package
+1A40F20 	F0  1  0  0  0  0  0  0 
+1A40F28 	 0  0  0  0  1  0  0  0 
+1A40F30 	 0  0  0  0  0  0  0  0 
+1A40F38 	 0  0  0  0  0  0  0  0 
+1A40F40 	 0  0  0  0  0  0  0  0 
+1A40F48 	 0  0  0  0  0  0  0  0 
+1A40F50 	 0  0  0  0  0  0  0  0 
+1A40F58 	 0  0  0  0 

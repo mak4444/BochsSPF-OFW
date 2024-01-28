@@ -1,0 +1,440 @@
+purpose: Screen-oriented extension for the line editor
+
+also hidden definitions
+
+d# 24 value display-height
+1A15448 	 0 64 69 73 70 6C 61 79 
+1A15450 	2D 68 65 69 67 68 74 8E 
+1A15458 	B0 53 A1  1 50 40 A0  1 
+1A15460 	 8  4  0  0 
+
+headerless
+0 value window-y	\ The line at the top of the window
+1A15464 	 0  0  0 77 
+1A15468 	69 6E 64 6F 77 2D 79 88 
+1A15470 	5C 54 A1  1 50 40 A0  1 
+1A15478 	 C  4  0  0 
+			\ Offset in lines from beginning of buffer
+1 value window-height	\ Height of window in lines
+1A1547C 	 0  0 77 69 
+1A15480 	6E 64 6F 77 2D 68 65 69 
+1A15488 	67 68 74 8D 74 54 A1  1 
+1A15490 	50 40 A0  1 10  4  0  0 
+0 value old-line#	\ The line that the cursor was on at the last redisplay
+1A15498 	 0  0 6F 6C 64 2D 6C 69 
+1A154A0 	6E 65 23 89 90 54 A1  1 
+1A154A8 	50 40 A0  1 14  4  0  0 
+			\ This tells which line window-x applies to.
+			\ Offset in lines from beginning of buffer
+
+\ Move cursor vertically
+: vmove-cursor  ( window-line# -- )
+1A154B0 	 0  0  0 76 6D 6F 76 65 
+1A154B8 	2D 63 75 72 73 6F 72 8C 
+1A154C0 	A8 54 A1  1 20 40 A0  1 
+   #line @ -  ?dup  if                             ( #lines-down )
+1A154C8 	70 6D A0  1 5C 4C A0  1 
+1A154D0 	18 45 A0  1 B4 70 A0  1 
+1A154D8 	DC 41 A0  1 28  0  0  0 
+      dup  0<  if  negate ups  else  downs  then   ( )
+1A154E0 	40 49 A0  1 64 47 A0  1 
+1A154E8 	DC 41 A0  1 14  0  0  0 
+1A154F0 	48 45 A0  1 68 F7 A0  1 
+1A154F8 	C8 41 A0  1  8  0  0  0 
+1A15500 	94 F7 A0  1 
+   then
+;
+1A15504 	58 46 A0  1 
+
+\ Converts buffer-line-oriented coordinates to window-relative coordinates
+: clip-y  ( buf-line# -- window-line# )  window-y - 0 max  window-height min  ;
+1A15508 	 0 63 6C 69 70 2D 79 86 
+1A15510 	C4 54 A1  1 20 40 A0  1 
+1A15518 	74 54 A1  1 18 45 A0  1 
+1A15520 	70 6F A0  1 9C 4A A0  1 
+1A15528 	90 54 A1  1 74 4A A0  1 
+1A15530 	58 46 A0  1 
+
+: vreframe  ( -- )
+1A15534 	 0  0  0 76 
+1A15538 	72 65 66 72 61 6D 65 88 
+1A15540 	14 55 A1  1 20 40 A0  1 
+   edit-line#  window-height 2/  -  0 max  ( new-window-y )
+1A15548 	24 41 A1  1 90 54 A1  1 
+1A15550 	78 4B A0  1 18 45 A0  1 
+1A15558 	70 6F A0  1 9C 4A A0  1 
+   dup is ydamage  is window-y
+1A15560 	40 49 A0  1 B8 40 A0  1 
+1A15568 	 4 42 A1  1 B8 40 A0  1 
+1A15570 	74 54 A1  1 
+   line-moved			\ The old line info is useless now
+1A15574 	68 46 A1  1 
+;
+1A15578 	58 46 A0  1 
+
+\ If the cursor is out of the window in either direction, set the window so
+\ the cursor is in the middle of the window, but don't let window-y
+\ be negative.
+: ?vreframe  ( -- )
+1A1557C 	 0  0 3F 76 
+1A15580 	72 65 66 72 61 6D 65 89 
+1A15588 	44 55 A1  1 20 40 A0  1 
+   edit-line#  window-y  dup window-height +  within  0=  if  vreframe  then
+1A15590 	24 41 A1  1 74 54 A1  1 
+1A15598 	40 49 A0  1 90 54 A1  1 
+1A155A0 	 4 45 A0  1  8 71 A0  1 
+1A155A8 	24 47 A0  1 DC 41 A0  1 
+1A155B0 	 8  0  0  0 44 55 A1  1 
+;
+1A155B8 	58 46 A0  1 
+
+: move-cursor  ( x y -- )  ( 0 hmove-cursor )  vmove-cursor  hmove-cursor  ;
+1A155BC 	6D 6F 76 65 
+1A155C0 	2D 63 75 72 73 6F 72 8B 
+1A155C8 	8C 55 A1  1 20 40 A0  1 
+1A155D0 	C4 54 A1  1 DC 43 A1  1 
+1A155D8 	58 46 A0  1 
+
+d# 100 buffer: line-ends  
+1A155DC 	 0  0 6C 69 
+1A155E0 	6E 65 2D 65 6E 64 73 89 
+1A155E8 	CC 55 A1  1 B4 A9 A0  1 
+1A155F0 	18  4  0  0 64  0  0  0 
+1A155F8 	2C 4B A1  1 
+: w-new-line-end  ( new-line-end -- old-line-end )
+1A155FC 	 0 77 2D 6E 
+1A15600 	65 77 2D 6C 69 6E 65 2D 
+1A15608 	65 6E 64 8E EC 55 A1  1 
+1A15610 	20 40 A0  1 
+   line-ends  #line @  +          ( new-line-end adr )
+1A15614 	EC 55 A1  1 
+1A15618 	70 6D A0  1 5C 4C A0  1 
+1A15620 	 4 45 A0  1 
+   dup c@  -rot c!                ( old-line-end )
+1A15624 	40 49 A0  1 
+1A15628 	C4 4C A0  1 94 49 A0  1 
+1A15630 	B8 4D A0  1 
+;
+1A15634 	58 46 A0  1 
+
+\ The lower boundary of non-white lines in the window
+\ Offset in lines from top of window
+: rest-blank?  ( -- flag )
+1A15638 	72 65 73 74 2D 62 6C 61 
+1A15640 	6E 6B 3F 8B 10 56 A1  1 
+1A15648 	20 40 A0  1 
+   true                                      ( flag )
+1A1564C 	 4 70 A0  1 
+   window-height  #line @  ?do               ( flag )
+1A15650 	90 54 A1  1 70 6D A0  1 
+1A15658 	5C 4C A0  1 50 42 A0  1 
+1A15660 	2C  0  0  0 
+      line-ends i + c@  if  0=  leave  then  ( flag )
+1A15664 	EC 55 A1  1 
+1A15668 	B4 42 A0  1  4 45 A0  1 
+1A15670 	C4 4C A0  1 DC 41 A0  1 
+1A15678 	 C  0  0  0 24 47 A0  1 
+1A15680 	18 43 A0  1 
+   loop                                      ( flag )
+1A15684 	F8 41 A0  1 
+1A15688 	DC FF FF FF 
+;
+1A1568C 	58 46 A0  1 
+
+\ (display-range) refreshes the display beginning at start-line (in buffer
+\ line coordinates), and continuing for a maximum of #lines, subject to the
+\ lower limit of the window.  (display-range) clips the #lines argument as
+\ necessary.
+
+: (display-range)  ( start-line #lines -- )
+1A15690 	28 64 69 73 70 6C 61 79 
+1A15698 	2D 72 61 6E 67 65 29 8F 
+1A156A0 	48 56 A1  1 20 40 A0  1 
+   #before line-start-adr edit-line# >r >r >r	\ Save current buffer position
+1A156A8 	 C 41 A1  1 E4 40 A1  1 
+1A156B0 	24 41 A1  1 BC 45 A0  1 
+1A156B8 	BC 45 A0  1 BC 45 A0  1 
+
+   \ Find start-line in the buffer
+   beginning-of-file  over 0  ?do  +line  loop            ( start-line #lines )
+1A156C0 	60 51 A1  1 54 49 A0  1 
+1A156C8 	70 6F A0  1 50 42 A0  1 
+1A156D0 	10  0  0  0 34 4D A1  1 
+1A156D8 	F8 41 A0  1 F8 FF FF FF 
+
+   \ Convert start-line from a buffer line number to a window line number,
+   swap clip-y swap bounds                                ( end start )
+1A156E0 	68 49 A0  1 14 55 A1  1 
+1A156E8 	68 49 A0  1 F0 6D A0  1 
+
+   \ Clip the range so it doesn't extend past the bottom of the window.
+   swap  window-height min  swap                          ( end start )
+1A156F0 	68 49 A0  1 90 54 A1  1 
+1A156F8 	74 4A A0  1 68 49 A0  1 
+
+   \ Loop over display window lines, beginning at the window line
+   \ corresponding to the buffer line "start-line", continuing for
+   \ the minimum of "#lines" or the number of lines remaining in the
+   \ display window, or until there are no more lines left in the
+   \ buffer and the remaining display lines are already blank.
+   ?do
+1A15700 	50 42 A0  1 54  0  0  0 
+      \ Move the cursor to the beginning of the next line
+      0 i move-cursor
+1A15708 	70 6F A0  1 B4 42 A0  1 
+1A15710 	CC 55 A1  1 
+
+      end-line?  if
+1A15714 	7C 4D A1  1 
+1A15718 	DC 41 A0  1 14  0  0  0 
+         \ We have displayed all the lines in the buffer,
+         \ so we continue looping and clearing display lines
+         \ until all the lines below us are already blank.
+         rest-blank? ?leave
+1A15720 	48 56 A1  1 34 43 A0  1 
+      else
+1A15728 	C8 41 A0  1 18  0  0  0 
+         \ There is a (possibly zero-length) buffer line here; display it
+         line-start-adr  window-width linelen min  type
+1A15730 	E4 40 A1  1 C4 41 A1  1 
+1A15738 	F8 40 A1  1 74 4A A0  1 
+1A15740 	 4 6C A0  1 
+      then
+
+      \ Erase the rest of the line (perhaps the entire line)
+      #to-clear  spaces
+1A15744 	78 42 A1  1 
+1A15748 	E8 71 A0  1 
+
+      \ Advance to the next line; +line stops at the end of the buffer
+      +line
+1A1574C 	34 4D A1  1 
+   loop
+1A15750 	F8 41 A0  1 B4 FF FF FF 
+
+   r> r> r> set-line  is #before		\ Restore buffer position
+1A15758 	D0 45 A0  1 D0 45 A0  1 
+1A15760 	D0 45 A0  1 F4 4C A1  1 
+1A15768 	B8 40 A0  1  C 41 A1  1 
+;
+1A15770 	58 46 A0  1 
+
+: old-damaged?  ( -- flag )  ydamage old-line# u<=  ;
+1A15774 	 0  0  0 6F 
+1A15778 	6C 64 2D 64 61 6D 61 67 
+1A15780 	65 64 3F 8C A4 56 A1  1 
+1A15788 	20 40 A0  1  4 42 A1  1 
+1A15790 	A8 54 A1  1 88 48 A0  1 
+1A15798 	58 46 A0  1 
+: shifted?  ( -- flag )  window-x 0<>  ;
+1A1579C 	 0  0  0 73 
+1A157A0 	68 69 66 74 65 64 3F 88 
+1A157A8 	88 57 A1  1 20 40 A0  1 
+1A157B0 	DC 41 A1  1 44 47 A0  1 
+1A157B8 	58 46 A0  1 
+: line-moved?  ( -- flag )  edit-line# ( window-y - )  old-line# <>  ;
+1A157BC 	6C 69 6E 65 
+1A157C0 	2D 6D 6F 76 65 64 3F 8B 
+1A157C8 	AC 57 A1  1 20 40 A0  1 
+1A157D0 	24 41 A1  1 A8 54 A1  1 
+1A157D8 	44 48 A0  1 58 46 A0  1 
+
+: display-below  ( -- )
+1A157E0 	 0  0 64 69 73 70 6C 61 
+1A157E8 	79 2D 62 65 6C 6F 77 8D 
+1A157F0 	CC 57 A1  1 20 40 A0  1 
+   shifted?  old-damaged?  and  line-moved? 0=  and  if
+1A157F8 	AC 57 A1  1 88 57 A1  1 
+1A15800 	5C 44 A0  1 CC 57 A1  1 
+1A15808 	24 47 A0  1 5C 44 A0  1 
+1A15810 	DC 41 A0  1  C  0  0  0 
+      \ If the vertical damage includes the current line and it was
+      \ shifted, the vertical redisplay procedure will mess it up,
+      \ so we do this to trigger a horizontal redisplay later.
+      window-x  set-window-x
+1A15818 	DC 41 A1  1 CC 44 A1  1 
+   then
+   ydamage window-height (display-range)
+1A15820 	 4 42 A1  1 90 54 A1  1 
+1A15828 	A4 56 A1  1 
+;
+1A1582C 	58 46 A0  1 
+
+: (vredisplay)  ( -- )
+1A15830 	 0  0  0 28 76 72 65 64 
+1A15838 	69 73 70 6C 61 79 29 8C 
+1A15840 	F4 57 A1  1 20 40 A0  1 
+   ?vreframe
+1A15848 	8C 55 A1  1 
+   ydamage -1 <>  if  display-below  then
+1A1584C 	 4 42 A1  1 
+1A15850 	58 41 A0  1 FF FF FF FF 
+1A15858 	44 48 A0  1 DC 41 A0  1 
+1A15860 	 8  0  0  0 F4 57 A1  1 
+
+   line-moved?  if   \ Need to move vertically
+1A15868 	CC 57 A1  1 DC 41 A0  1 
+1A15870 	44  0  0  0 
+      shifted?  old-damaged? 0=  and  if
+1A15874 	AC 57 A1  1 
+1A15878 	88 57 A1  1 24 47 A0  1 
+1A15880 	5C 44 A0  1 DC 41 A0  1 
+1A15888 	1C  0  0  0 
+         \ Old line was shifted and hasn't yet been redrawn
+         old-line# 1 (display-range)
+1A1588C 	A8 54 A1  1 
+1A15890 	80 6F A0  1 A4 56 A1  1 
+         0 is window-x
+1A15898 	70 6F A0  1 B8 40 A0  1 
+1A158A0 	DC 41 A1  1 
+      then
+      0  edit-line# clip-y  move-cursor
+1A158A4 	70 6F A0  1 
+1A158A8 	24 41 A1  1 14 55 A1  1 
+1A158B0 	CC 55 A1  1 
+   then
+   edit-line# clip-y vmove-cursor
+1A158B4 	24 41 A1  1 
+1A158B8 	14 55 A1  1 C4 54 A1  1 
+   edit-line# is old-line#
+1A158C0 	24 41 A1  1 B8 40 A0  1 
+1A158C8 	A8 54 A1  1 
+   -1 is ydamage
+1A158CC 	58 41 A0  1 
+1A158D0 	FF FF FF FF B8 40 A0  1 
+1A158D8 	 4 42 A1  1 
+;
+1A158DC 	58 46 A0  1 
+
+: transfer-damage  ( -- )
+1A158E0 	74 72 61 6E 73 66 65 72 
+1A158E8 	2D 64 61 6D 61 67 65 8F 
+1A158F0 	44 58 A1  1 20 40 A0  1 
+   \ Horizontal damage only applies to the current line, so when we
+   \ move to a different line, we have to transfer the old line's
+   \ horizontal damage to vertical damage.
+   xdamage -1 <>  if				\ Old line is damaged
+1A158F8 	F0 41 A1  1 58 41 A0  1 
+1A15900 	FF FF FF FF 44 48 A0  1 
+1A15908 	DC 41 A0  1 28  0  0  0 
+      edit-line# ydamage umin  is ydamage	\ Record as vertical damage
+1A15910 	24 41 A1  1  4 42 A1  1 
+1A15918 	4C 4A A0  1 B8 40 A0  1 
+1A15920 	 4 42 A1  1 
+      -1 is xdamage				\ Cancel horizontal damage
+1A15924 	58 41 A0  1 
+1A15928 	FF FF FF FF B8 40 A0  1 
+1A15930 	F0 41 A1  1 
+   then
+;
+1A15934 	58 46 A0  1 
+: open-window  ( -- )
+1A15938 	6F 70 65 6E 2D 77 69 6E 
+1A15940 	64 6F 77 8B F4 58 A1  1 
+1A15948 	20 40 A0  1 
+   0 #out !  0 #line !
+1A1594C 	70 6F A0  1 
+1A15950 	5C 6D A0  1 54 4D A0  1 
+1A15958 	70 6F A0  1 70 6D A0  1 
+1A15960 	54 4D A0  1 
+   line-ends window-height window-width fill
+1A15964 	EC 55 A1  1 
+1A15968 	90 54 A1  1 C4 41 A1  1 
+1A15970 	8C 4E A0  1 
+   0 is ydamage
+1A15974 	70 6F A0  1 
+1A15978 	B8 40 A0  1  4 42 A1  1 
+;
+1A15980 	58 46 A0  1 
+
+: close-window  ( -- )
+1A15984 	 0  0  0 63 
+1A15988 	6C 6F 73 65 2D 77 69 6E 
+1A15990 	64 6F 77 8C 48 59 A1  1 
+1A15998 	20 40 A0  1 
+   window-height 1- vmove-cursor  cr  kill-screen
+1A1599C 	90 54 A1  1 
+1A159A0 	54 4B A0  1 C4 54 A1  1 
+1A159A8 	80 6D A0  1 7C F6 A0  1 
+   one-line-display
+1A159B0 	B0 53 A1  1 
+;
+1A159B4 	58 46 A0  1 
+
+: screen-display  ( -- )
+1A159B8 	 0 73 63 72 65 65 6E 2D 
+1A159C0 	64 69 73 70 6C 61 79 8E 
+1A159C8 	98 59 A1  1 20 40 A0  1 
+   ['] open-window     is open-display
+1A159D0 	60 53 A0  1 48 59 A1  1 
+1A159D8 	98 40 A0  1 F0 46 A1  1 
+   ['] close-window    is close-display
+1A159E0 	60 53 A0  1 98 59 A1  1 
+1A159E8 	98 40 A0  1  C 47 A1  1 
+   ['] (vredisplay)    is vredisplay
+1A159F0 	60 53 A0  1 44 58 A1  1 
+1A159F8 	98 40 A0  1 24 46 A1  1 
+   ['] w-new-line-end  is new-line-end
+1A15A00 	60 53 A0  1 10 56 A1  1 
+1A15A08 	98 40 A0  1 20 42 A1  1 
+   ['] transfer-damage is line-moved
+1A15A10 	60 53 A0  1 F4 58 A1  1 
+1A15A18 	98 40 A0  1 68 46 A1  1 
+   ['] noop            is .line#
+1A15A20 	60 53 A0  1 64 4F A0  1 
+1A15A28 	98 40 A0  1 20 43 A1  1 
+   ['] noop            is to-goal-column
+1A15A30 	60 53 A0  1 64 4F A0  1 
+1A15A38 	98 40 A0  1 88 51 A1  1 
+   ['] noop            is scroll-down
+1A15A40 	60 53 A0  1 64 4F A0  1 
+1A15A48 	98 40 A0  1 50 47 A1  1 
+   ['] vreframe        is recenter
+1A15A50 	60 53 A0  1 44 55 A1  1 
+1A15A58 	98 40 A0  1 90 53 A1  1 
+;
+1A15A60 	58 46 A0  1 
+: (set-window)  ( column# line# #columns #lines -- )
+1A15A64 	 0  0  0 28 
+1A15A68 	73 65 74 2D 77 69 6E 64 
+1A15A70 	6F 77 29 8C CC 59 A1  1 
+1A15A78 	20 40 A0  1 
+   1 max is window-height         ( column# line# #columns )
+1A15A7C 	80 6F A0  1 
+1A15A80 	9C 4A A0  1 B8 40 A0  1 
+1A15A88 	90 54 A1  1 
+
+   2 pick  +                      ( col# line#  max-col# )
+1A15A8C 	90 6F A0  1 
+1A15A90 	 C 4A A0  1  4 45 A0  1 
+   display-width 1- min           ( col# line#  clipped-col# )
+1A15A98 	64 40 A1  1 54 4B A0  1 
+1A15AA0 	74 4A A0  1 
+   2 pick  -                      ( col# line#  clipped-#cols )
+1A15AA4 	90 6F A0  1 
+1A15AA8 	 C 4A A0  1 18 45 A0  1 
+   is window-width                ( col# line# )
+1A15AB0 	B8 40 A0  1 C4 41 A1  1 
+
+   at-xy                          ( )
+1A15AB8 	40 F8 A0  1 
+
+   screen-display
+1A15ABC 	CC 59 A1  1 
+;
+1A15AC0 	58 46 A0  1 
+defer set-window
+1A15AC4 	 0 73 65 74 
+1A15AC8 	2D 77 69 6E 64 6F 77 8A 
+1A15AD0 	78 5A A1  1 5C 40 A0  1 
+1A15AD8 	1C  4  0  0 
+' (set-window) is set-window
+
+headers
+: no-screen  ( -- )  ['] 4drop is set-window  ;
+1A15ADC 	 0  0 6E 6F 
+1A15AE0 	2D 73 63 72 65 65 6E 89 
+1A15AE8 	D4 5A A1  1 20 40 A0  1 
+1A15AF0 	60 53 A0  1 38 53 A0  1 
+1A15AF8 	98 40 A0  1 D4 5A A1  1 
+1A15B00 	58 46 A0  1 

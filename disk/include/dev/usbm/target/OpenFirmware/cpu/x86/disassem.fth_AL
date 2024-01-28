@@ -1,0 +1,2818 @@
+purpose: 386 disassembler.
+
+\ TODO: disassembler floating point opcodes
+\       Try to reduce the size
+\         a) try optimizing string arrays
+\         b) Use a single dispatch table for opcodes 80-ff
+\         c) eliminate some "op-col" calls by moving it into common factors
+
+also forth definitions
+vocabulary disassembler
+1A17A81 	 0  0 64 69 73 61 73 
+1A17A88 	73 65 6D 62 6C 65 72 8C 
+1A17A90 	74 7A A1  1 E0 B6 A0  1 
+1A17A98 	80  4  0  0 48 66 A1  1 
+1A17AA0 	 0  0  0  0 
+also disassembler also definitions
+
+nuser instruction
+1A17AA4 	69 6E 73 74 
+1A17AA8 	72 75 63 74 69 6F 6E 8B 
+1A17AB0 	 0  0 A0  1 48 40 A0  1 
+1A17AB8 	84  4  0  0 
+variable end-found
+1A17ABC 	 0  0 65 6E 
+1A17AC0 	64 2D 66 6F 75 6E 64 89 
+1A17AC8 	B4 7A A1  1 48 40 A0  1 
+1A17AD0 	88  4  0  0 
+nuser pc
+1A17AD4 	 0 70 63 82 
+1A17AD8 	CC 7A A1  1 48 40 A0  1 
+1A17AE0 	8C  4  0  0 
+nuser branch-target
+1A17AE4 	 0  0 62 72 
+1A17AE8 	61 6E 63 68 2D 74 61 72 
+1A17AF0 	67 65 74 8D DC 7A A1  1 
+1A17AF8 	48 40 A0  1 90  4  0  0 
+nuser dis-offset
+1A17B00 	 0 64 69 73 2D 6F 66 66 
+1A17B08 	73 65 74 8A F8 7A A1  1 
+1A17B10 	48 40 A0  1 94  4  0  0 
+
+: op8@   ( -- b )  pc @  dis-offset @ +  c@  1 pc +!  ;
+1A17B18 	 0  0  0 6F 70 38 40 84 
+1A17B20 	10 7B A1  1 20 40 A0  1 
+1A17B28 	DC 7A A1  1 5C 4C A0  1 
+1A17B30 	10 7B A1  1 5C 4C A0  1 
+1A17B38 	 4 45 A0  1 C4 4C A0  1 
+1A17B40 	80 6F A0  1 DC 7A A1  1 
+1A17B48 	 C 4C A0  1 58 46 A0  1 
+: op16@  ( -- w )  op8@   op8@   bwjoin  ;
+1A17B50 	 0  0 6F 70 31 36 40 85 
+1A17B58 	24 7B A1  1 20 40 A0  1 
+1A17B60 	24 7B A1  1 24 7B A1  1 
+1A17B68 	84 FB A0  1 58 46 A0  1 
+: op32@  ( -- l )  op16@  op16@  wljoin  ;
+1A17B70 	 0  0 6F 70 33 32 40 85 
+1A17B78 	5C 7B A1  1 20 40 A0  1 
+1A17B80 	5C 7B A1  1 5C 7B A1  1 
+1A17B88 	D4 4F A0  1 58 46 A0  1 
+
+: bext  ( b -- l )  d# 24 <<  d# 24 >>a  ;
+1A17B90 	 0  0  0 62 65 78 74 84 
+1A17B98 	7C 7B A1  1 20 40 A0  1 
+1A17BA0 	58 41 A0  1 18  0  0  0 
+1A17BA8 	C8 44 A0  1 58 41 A0  1 
+1A17BB0 	18  0  0  0 F0 44 A0  1 
+1A17BB8 	58 46 A0  1 
+: wext  ( w -- l )  d# 16 <<  d# 16 >>a  ;
+1A17BBC 	 0  0  0 77 
+1A17BC0 	65 78 74 84 9C 7B A1  1 
+1A17BC8 	20 40 A0  1 58 41 A0  1 
+1A17BD0 	10  0  0  0 C8 44 A0  1 
+1A17BD8 	58 41 A0  1 10  0  0  0 
+1A17BE0 	F0 44 A0  1 58 46 A0  1 
+
+\ change size of data
+true value op32?
+1A17BE8 	 0  0 6F 70 33 32 3F 85 
+1A17BF0 	C8 7B A1  1 50 40 A0  1 
+1A17BF8 	98  4  0  0 
+: opv@  ( -- l | w )  op32?  if  op32@  else  op16@  then  ;
+1A17BFC 	 0  0  0 6F 
+1A17C00 	70 76 40 84 F4 7B A1  1 
+1A17C08 	20 40 A0  1 F4 7B A1  1 
+1A17C10 	DC 41 A0  1 10  0  0  0 
+1A17C18 	7C 7B A1  1 C8 41 A0  1 
+1A17C20 	 8  0  0  0 5C 7B A1  1 
+1A17C28 	58 46 A0  1 
+true value ad32?
+1A17C2C 	 0  0 61 64 
+1A17C30 	33 32 3F 85  8 7C A1  1 
+1A17C38 	50 40 A0  1 9C  4  0  0 
+: adv@  ( -- l | w )  ad32?  if  op32@  else  op16@   then  ;
+1A17C40 	 0  0  0 61 64 76 40 84 
+1A17C48 	38 7C A1  1 20 40 A0  1 
+1A17C50 	38 7C A1  1 DC 41 A0  1 
+1A17C58 	10  0  0  0 7C 7B A1  1 
+1A17C60 	C8 41 A0  1  8  0  0  0 
+1A17C68 	5C 7B A1  1 58 46 A0  1 
+: dis16  ( -- )  false is op32?  false is ad32?  ;
+1A17C70 	 0  0 64 69 73 31 36 85 
+1A17C78 	4C 7C A1  1 20 40 A0  1 
+1A17C80 	18 70 A0  1 B8 40 A0  1 
+1A17C88 	F4 7B A1  1 18 70 A0  1 
+1A17C90 	B8 40 A0  1 38 7C A1  1 
+1A17C98 	58 46 A0  1 
+: dis32  ( -- )  true  is op32?  true  is ad32?  ;
+1A17C9C 	 0  0 64 69 
+1A17CA0 	73 33 32 85 7C 7C A1  1 
+1A17CA8 	20 40 A0  1  4 70 A0  1 
+1A17CB0 	B8 40 A0  1 F4 7B A1  1 
+1A17CB8 	 4 70 A0  1 B8 40 A0  1 
+1A17CC0 	38 7C A1  1 58 46 A0  1 
+\ XXX We should also change the register names e.g. from "eax" to "ax"
+\ and handle renamed regs, prefix operators,
+
+: get-op  ( -- )  op8@ instruction !  ;
+1A17CC8 	 0 67 65 74 2D 6F 70 86 
+1A17CD0 	A8 7C A1  1 20 40 A0  1 
+1A17CD8 	24 7B A1  1 B4 7A A1  1 
+1A17CE0 	54 4D A0  1 58 46 A0  1 
+
+: ibits  ( right-bit #bits -- field )
+1A17CE8 	 0  0 69 62 69 74 73 85 
+1A17CF0 	D4 7C A1  1 20 40 A0  1 
+   instruction @ -rot bits
+1A17CF8 	B4 7A A1  1 5C 4C A0  1 
+1A17D00 	94 49 A0  1 18 11 A1  1 
+;
+1A17D08 	58 46 A0  1 
+0 value wbit
+1A17D0C 	 0  0  0 77 
+1A17D10 	62 69 74 84 F4 7C A1  1 
+1A17D18 	50 40 A0  1 A0  4  0  0 
+: lowbits  ( -- n )  0 3 ibits  ;
+1A17D20 	6C 6F 77 62 69 74 73 87 
+1A17D28 	18 7D A1  1 20 40 A0  1 
+1A17D30 	70 6F A0  1 A0 6F A0  1 
+1A17D38 	F4 7C A1  1 58 46 A0  1 
+: low4bits ( -- n )  0 4 ibits  ;
+1A17D40 	 0  0  0 6C 6F 77 34 62 
+1A17D48 	69 74 73 88 2C 7D A1  1 
+1A17D50 	20 40 A0  1 70 6F A0  1 
+1A17D58 	B0 6F A0  1 F4 7C A1  1 
+1A17D60 	58 46 A0  1 
+: midbits  ( -- n )  3 3 ibits  ;
+1A17D64 	6D 69 64 62 
+1A17D68 	69 74 73 87 50 7D A1  1 
+1A17D70 	20 40 A0  1 A0 6F A0  1 
+1A17D78 	A0 6F A0  1 F4 7C A1  1 
+1A17D80 	58 46 A0  1 
+: hibits   ( -- n )  6 2 ibits  ;
+1A17D84 	 0 68 69 62 
+1A17D88 	69 74 73 86 70 7D A1  1 
+1A17D90 	20 40 A0  1 D0 6F A0  1 
+1A17D98 	90 6F A0  1 F4 7C A1  1 
+1A17DA0 	58 46 A0  1 
+
+hex
+
+: .,  ( -- )  ." ,"  ;
+1A17DA4 	 0 2E 2C 82 
+1A17DA8 	90 7D A1  1 20 40 A0  1 
+1A17DB0 	20 7C A0  1  1 2C  0  0 
+1A17DB8 	58 46 A0  1 
+
+d# 32 buffer: ea-text
+1A17DBC 	65 61 2D 74 
+1A17DC0 	65 78 74 87 AC 7D A1  1 
+1A17DC8 	B4 A9 A0  1 A4  4  0  0 
+1A17DD0 	20  0  0  0 B8 6B A1  1 
+: $add-text  ( adr len -- )  ea-text $cat  ;
+1A17DD8 	 0  0 24 61 64 64 2D 74 
+1A17DE0 	65 78 74 89 C8 7D A1  1 
+1A17DE8 	20 40 A0  1 C8 7D A1  1 
+1A17DF0 	84 7E A0  1 58 46 A0  1 
+
+d# 34 buffer: disp-buf
+1A17DF8 	 0  0  0 64 69 73 70 2D 
+1A17E00 	62 75 66 88 E8 7D A1  1 
+1A17E08 	B4 A9 A0  1 A8  4  0  0 
+1A17E10 	22  0  0  0 C8 7D A1  1 
+: ?+  ( -- )
+1A17E18 	 0 3F 2B 82  8 7E A1  1 
+1A17E20 	20 40 A0  1 
+   ea-text c@ 1 >  if  " +" $add-text  then
+1A17E24 	C8 7D A1  1 
+1A17E28 	C4 4C A0  1 80 6F A0  1 
+1A17E30 	 4 48 A0  1 DC 41 A0  1 
+1A17E38 	10  0  0  0 9C 53 A0  1 
+1A17E40 	 1 2B  0  0 E8 7D A1  1 
+;
+1A17E48 	58 46 A0  1 
+: ?-  ( disp -- )
+1A17E4C 	 0 3F 2D 82 
+1A17E50 	20 7E A1  1 20 40 A0  1 
+   ea-text c@ 1 >  if  " -" $add-text  negate  then
+1A17E58 	C8 7D A1  1 C4 4C A0  1 
+1A17E60 	80 6F A0  1  4 48 A0  1 
+1A17E68 	DC 41 A0  1 14  0  0  0 
+1A17E70 	9C 53 A0  1  1 2D  0  0 
+1A17E78 	E8 7D A1  1 48 45 A0  1 
+;
+1A17E80 	58 46 A0  1 
+: get-disp  ( mod -- adr len )
+1A17E84 	 0  0  0 67 
+1A17E88 	65 74 2D 64 69 73 70 88 
+1A17E90 	54 7E A1  1 20 40 A0  1 
+   case
+   0  of  " "  exit    endof
+1A17E98 	70 6F A0  1 48 43 A0  1 
+1A17EA0 	18  0  0  0 9C 53 A0  1 
+1A17EA8 	 0  0  0  0 40 46 A0  1 
+1A17EB0 	6C 43 A0  1 50  0  0  0 
+   1  of  op8@ bext     endof
+1A17EB8 	80 6F A0  1 48 43 A0  1 
+1A17EC0 	14  0  0  0 24 7B A1  1 
+1A17EC8 	9C 7B A1  1 6C 43 A0  1 
+1A17ED0 	34  0  0  0 
+   2  of  adv@  ad32? 0=  if  wext  then  endof
+1A17ED4 	90 6F A0  1 
+1A17ED8 	48 43 A0  1 24  0  0  0 
+1A17EE0 	4C 7C A1  1 38 7C A1  1 
+1A17EE8 	24 47 A0  1 DC 41 A0  1 
+1A17EF0 	 8  0  0  0 C8 7B A1  1 
+1A17EF8 	6C 43 A0  1  8  0  0  0 
+   endcase
+1A17F00 	84 43 A0  1 
+   dup 0>=  if  ?+  else  ?-  then  
+1A17F04 	40 49 A0  1 
+1A17F08 	C4 47 A0  1 DC 41 A0  1 
+1A17F10 	10  0  0  0 20 7E A1  1 
+1A17F18 	C8 41 A0  1  8  0  0  0 
+1A17F20 	54 7E A1  1 
+   (u.) disp-buf pack  count
+1A17F24 	AC 77 A0  1 
+1A17F28 	 8 7E A1  1 DC 52 A0  1 
+1A17F30 	BC 53 A0  1 
+;
+1A17F34 	58 46 A0  1 
+\ Used when "w" field contains 0
+string-array >reg8
+1A17F38 	 0  0 3E 72 65 67 38 85 
+1A17F40 	94 7E A1  1 44 15 A1  1 
+1A17F48 	 8  0  0  0 28  0  0  0 
+," al" ," cl" ," dl" ," bl" ," ah" ," ch" ," dh" ," bh"
+1A17F50 	 2 61 6C  0  2 63 6C  0 
+1A17F58 	 2 64 6C  0  2 62 6C  0 
+1A17F60 	 2 61 68  0  2 63 68  0 
+1A17F68 	 2 64 68  0  2 62 68  0 
+end-string-array
+1A17F70 	 8  0  0  0  C  0  0  0 
+1A17F78 	10  0  0  0 14  0  0  0 
+1A17F80 	18  0  0  0 1C  0  0  0 
+1A17F88 	20  0  0  0 24  0  0  0 
+
+\ Used when the instruction implies a 16-bit register
+string-array >reg16
+1A17F90 	 0 3E 72 65 67 31 36 86 
+1A17F98 	44 7F A1  1 44 15 A1  1 
+1A17FA0 	 8  0  0  0 28  0  0  0 
+," ax" ," cx" ," dx" ," bx" ," sp" ," bp" ," si" ," di"
+1A17FA8 	 2 61 78  0  2 63 78  0 
+1A17FB0 	 2 64 78  0  2 62 78  0 
+1A17FB8 	 2 73 70  0  2 62 70  0 
+1A17FC0 	 2 73 69  0  2 64 69  0 
+end-string-array
+1A17FC8 	 8  0  0  0  C  0  0  0 
+1A17FD0 	10  0  0  0 14  0  0  0 
+1A17FD8 	18  0  0  0 1C  0  0  0 
+1A17FE0 	20  0  0  0 24  0  0  0 
+
+\ Used when "w" field contains 1, and when there is no "w" field
+string-array >regw
+1A17FE8 	 0  0 3E 72 65 67 77 85 
+1A17FF0 	9C 7F A1  1 44 15 A1  1 
+1A17FF8 	 8  0  0  0 48  0  0  0 
+\    0       1       2       3       4       5       6       7
+," eax" ," ecx" ," edx" ," ebx" ," esp" ," ebp" ," esi" ," edi"
+1A18000 	 3 65 61 78  0  0  0  0 
+1A18008 	 3 65 63 78  0  0  0  0 
+1A18010 	 3 65 64 78  0  0  0  0 
+1A18018 	 3 65 62 78  0  0  0  0 
+1A18020 	 3 65 73 70  0  0  0  0 
+1A18028 	 3 65 62 70  0  0  0  0 
+1A18030 	 3 65 73 69  0  0  0  0 
+1A18038 	 3 65 64 69  0  0  0  0 
+end-string-array
+1A18040 	 8  0  0  0 10  0  0  0 
+1A18048 	18  0  0  0 20  0  0  0 
+1A18050 	28  0  0  0 30  0  0  0 
+1A18058 	38  0  0  0 40  0  0  0 
+
+: >reg  ( -- adr len )  >regw count  op32? 0=  if  1 /string  then  ;
+1A18060 	 0  0  0 3E 72 65 67 84 
+1A18068 	F4 7F A1  1 20 40 A0  1 
+1A18070 	F4 7F A1  1 BC 53 A0  1 
+1A18078 	F4 7B A1  1 24 47 A0  1 
+1A18080 	DC 41 A0  1  C  0  0  0 
+1A18088 	80 6F A0  1 3C 85 A0  1 
+1A18090 	58 46 A0  1 
+: >areg  ( -- adr len )  >regw count  ad32? 0=  if  1 /string  then  ;
+1A18094 	 0  0 3E 61 
+1A18098 	72 65 67 85 6C 80 A1  1 
+1A180A0 	20 40 A0  1 F4 7F A1  1 
+1A180A8 	BC 53 A0  1 38 7C A1  1 
+1A180B0 	24 47 A0  1 DC 41 A0  1 
+1A180B8 	 C  0  0  0 80 6F A0  1 
+1A180C0 	3C 85 A0  1 58 46 A0  1 
+
+: >greg  ( -- adr len )  wbit  if  >reg  else  >reg8 count  then  ;
+1A180C8 	 0  0 3E 67 72 65 67 85 
+1A180D0 	A0 80 A1  1 20 40 A0  1 
+1A180D8 	18 7D A1  1 DC 41 A0  1 
+1A180E0 	10  0  0  0 6C 80 A1  1 
+1A180E8 	C8 41 A0  1  C  0  0  0 
+1A180F0 	44 7F A1  1 BC 53 A0  1 
+1A180F8 	58 46 A0  1 
+
+: .reg   ( reg -- )  >reg  type  ;
+1A180FC 	 0  0  0 2E 
+1A18100 	72 65 67 84 D4 80 A1  1 
+1A18108 	20 40 A0  1 6C 80 A1  1 
+1A18110 	 4 6C A0  1 58 46 A0  1 
+: .reg8  ( reg -- )  >reg8 type  ;
+1A18118 	 0  0 2E 72 65 67 38 85 
+1A18120 	 8 81 A1  1 20 40 A0  1 
+1A18128 	44 7F A1  1  4 6C A0  1 
+1A18130 	58 46 A0  1 
+
+string-array  >scale
+1A18134 	 0 3E 73 63 
+1A18138 	61 6C 65 86 24 81 A1  1 
+1A18140 	44 15 A1  1  4  0  0  0 
+1A18148 	18  0  0  0 
+   ," "  ," *2"  ," *4"  ," *8"
+1A1814C 	 0  0  0  0 
+1A18150 	 2 2A 32  0  2 2A 34  0 
+1A18158 	 2 2A 38  0 
+end-string-array
+1A1815C 	 8  0  0  0 
+1A18160 	 C  0  0  0 10  0  0  0 
+1A18168 	14  0  0  0 
+
+: get-scaled  ( -- )
+1A1816C 	 0 67 65 74 
+1A18170 	2D 73 63 61 6C 65 64 8A 
+1A18178 	40 81 A1  1 20 40 A0  1 
+   hibits  midbits                       ( scale index-reg )
+1A18180 	90 7D A1  1 70 7D A1  1 
+   dup 4 =  if                           ( scale index-reg )
+1A18188 	40 49 A0  1 B0 6F A0  1 
+1A18190 	24 48 A0  1 DC 41 A0  1 
+1A18198 	2C  0  0  0 
+      drop                               ( scale )
+1A1819C 	30 49 A0  1 
+      if  ?+  " UNDEF" $add-text  then   ( )
+1A181A0 	DC 41 A0  1 18  0  0  0 
+1A181A8 	20 7E A1  1 9C 53 A0  1 
+1A181B0 	 5 55 4E 44 45 46  0  0 
+1A181B8 	E8 7D A1  1 
+   else                                  ( scale index-reg )
+1A181BC 	C8 41 A0  1 
+1A181C0 	1C  0  0  0 
+      ?+  >areg $add-text                ( scale )
+1A181C4 	20 7E A1  1 
+1A181C8 	A0 80 A1  1 E8 7D A1  1 
+      >scale count  $add-text            ( )
+1A181D0 	40 81 A1  1 BC 53 A0  1 
+1A181D8 	E8 7D A1  1 
+   then                                  ( )
+;
+1A181DC 	58 46 A0  1 
+: .[ " ["  $add-text ;
+1A181E0 	 0 2E 5B 82 7C 81 A1  1 
+1A181E8 	20 40 A0  1 9C 53 A0  1 
+1A181F0 	 1 5B  0  0 E8 7D A1  1 
+1A181F8 	58 46 A0  1 
+: .] " ]"  $add-text ;
+1A181FC 	 0 2E 5D 82 
+1A18200 	E8 81 A1  1 20 40 A0  1 
+1A18208 	9C 53 A0  1  1 5D  0  0 
+1A18210 	E8 7D A1  1 58 46 A0  1 
+: add-disp  ( sib? reg mod -- )
+1A18218 	 0  0  0 61 64 64 2D 64 
+1A18220 	69 73 70 88  4 82 A1  1 
+1A18228 	20 40 A0  1 
+   .[                            ( sib? reg mod )
+1A1822C 	E8 81 A1  1 
+   2dup 0<>  swap 5 <>  or  if   ( sib? reg mod )   \ D32
+1A18230 	C0 49 A0  1 44 47 A0  1 
+1A18238 	68 49 A0  1 C0 6F A0  1 
+1A18240 	44 48 A0  1 70 44 A0  1 
+1A18248 	DC 41 A0  1 18  0  0  0 
+      swap >areg $add-text       ( sib? mod )
+1A18250 	68 49 A0  1 A0 80 A1  1 
+1A18258 	E8 7D A1  1 
+   else                          ( sib? reg mod )
+1A1825C 	C8 41 A0  1 
+1A18260 	 C  0  0  0 
+      2drop 2                    ( sib? mod=2 )
+1A18264 	AC 49 A0  1 
+1A18268 	90 6F A0  1 
+   then                          ( sib? mod )
+   swap  if  get-scaled  then    ( mod )
+1A1826C 	68 49 A0  1 
+1A18270 	DC 41 A0  1  8  0  0  0 
+1A18278 	7C 81 A1  1 
+   get-disp  $add-text           ( )
+1A1827C 	94 7E A1  1 
+1A18280 	E8 7D A1  1 
+   .]                            ( )
+1A18284 	 4 82 A1  1 
+;
+1A18288 	58 46 A0  1 
+
+: .ea32  ( reg mod -- )
+1A1828C 	 0  0 2E 65 
+1A18290 	61 33 32 85 28 82 A1  1 
+1A18298 	20 40 A0  1 
+   >r                                    ( reg r: mod )
+1A1829C 	BC 45 A0  1 
+   dup 4 =  if                           ( reg )     \ s-i-b
+1A182A0 	40 49 A0  1 B0 6F A0  1 
+1A182A8 	24 48 A0  1 DC 41 A0  1 
+1A182B0 	1C  0  0  0 
+      drop  get-op  true  lowbits        ( true reg )
+1A182B4 	30 49 A0  1 
+1A182B8 	D4 7C A1  1  4 70 A0  1 
+1A182C0 	2C 7D A1  1 
+   else                                  ( reg )     \ displaced
+1A182C4 	C8 41 A0  1 
+1A182C8 	 C  0  0  0 
+      false swap                         ( false reg )
+1A182CC 	18 70 A0  1 
+1A182D0 	68 49 A0  1 
+   then                                  ( sib? reg )
+   r> add-disp
+1A182D4 	D0 45 A0  1 
+1A182D8 	28 82 A1  1 
+;
+1A182DC 	58 46 A0  1 
+
+string-array modes16
+1A182E0 	6D 6F 64 65 73 31 36 87 
+1A182E8 	98 82 A1  1 44 15 A1  1 
+1A182F0 	 8  0  0  0 58  0  0  0 
+   ," [bx+si]"
+1A182F8 	 7 5B 62 78 2B 73 69 5D 
+1A18300 	 0  0  0  0 
+   ," [bx+di]"
+1A18304 	 7 5B 62 78 
+1A18308 	2B 64 69 5D  0  0  0  0 
+   ," [bp+si]"
+1A18310 	 7 5B 62 70 2B 73 69 5D 
+1A18318 	 0  0  0  0 
+   ," [bp+di]"
+1A1831C 	 7 5B 62 70 
+1A18320 	2B 64 69 5D  0  0  0  0 
+   ," [si]"
+1A18328 	 4 5B 73 69 5D  0  0  0 
+   ," [di]"
+1A18330 	 4 5B 64 69 5D  0  0  0 
+   ," [bp]"
+1A18338 	 4 5B 62 70 5D  0  0  0 
+   ," [bx]"
+1A18340 	 4 5B 62 78 5D  0  0  0 
+end-string-array
+1A18348 	 8  0  0  0 14  0  0  0 
+1A18350 	20  0  0  0 2C  0  0  0 
+1A18358 	38  0  0  0 40  0  0  0 
+1A18360 	48  0  0  0 50  0  0  0 
+
+: add-disp16  ( disp -- )
+1A18368 	 0 61 64 64 2D 64 69 73 
+1A18370 	70 31 36 8A EC 82 A1  1 
+1A18378 	20 40 A0  1 
+   h# ffff and  (u.) disp-buf pack count  $add-text
+1A1837C 	58 41 A0  1 
+1A18380 	FF FF  0  0 5C 44 A0  1 
+1A18388 	AC 77 A0  1  8 7E A1  1 
+1A18390 	DC 52 A0  1 BC 53 A0  1 
+1A18398 	E8 7D A1  1 
+;
+1A1839C 	58 46 A0  1 
+: +disp16  ( disp -- )
+1A183A0 	2B 64 69 73 70 31 36 87 
+1A183A8 	78 83 A1  1 20 40 A0  1 
+   dup 0<  if
+1A183B0 	40 49 A0  1 64 47 A0  1 
+1A183B8 	DC 41 A0  1 1C  0  0  0 
+      " -" $add-text  negate
+1A183C0 	9C 53 A0  1  1 2D  0  0 
+1A183C8 	E8 7D A1  1 48 45 A0  1 
+   else
+1A183D0 	C8 41 A0  1 10  0  0  0 
+      " +" $add-text
+1A183D8 	9C 53 A0  1  1 2B  0  0 
+1A183E0 	E8 7D A1  1 
+   then
+   add-disp16
+1A183E4 	78 83 A1  1 
+;
+1A183E8 	58 46 A0  1 
+
+: .ea16  ( reg mod -- )
+1A183EC 	 0  0 2E 65 
+1A183F0 	61 31 36 85 AC 83 A1  1 
+1A183F8 	20 40 A0  1 
+   over 6 =  over 0= and  if             ( reg mod )
+1A183FC 	54 49 A0  1 
+1A18400 	D0 6F A0  1 24 48 A0  1 
+1A18408 	54 49 A0  1 24 47 A0  1 
+1A18410 	5C 44 A0  1 DC 41 A0  1 
+1A18418 	1C  0  0  0 
+      \ disp16 only, takes the place of the [bp] mode
+      2drop op16@ .[ add-disp16 .] exit
+1A1841C 	AC 49 A0  1 
+1A18420 	5C 7B A1  1 E8 81 A1  1 
+1A18428 	78 83 A1  1  4 82 A1  1 
+1A18430 	40 46 A0  1 
+   then                                  ( reg mod )
+   swap modes16 count $add-text          ( mod )
+1A18434 	68 49 A0  1 
+1A18438 	EC 82 A1  1 BC 53 A0  1 
+1A18440 	E8 7D A1  1 
+   case
+      1 of  op8@  bext +disp16  endof
+1A18444 	80 6F A0  1 
+1A18448 	48 43 A0  1 18  0  0  0 
+1A18450 	24 7B A1  1 9C 7B A1  1 
+1A18458 	AC 83 A1  1 6C 43 A0  1 
+1A18460 	28  0  0  0 
+      2 of  op16@ wext +disp16  endof
+1A18464 	90 6F A0  1 
+1A18468 	48 43 A0  1 18  0  0  0 
+1A18470 	5C 7B A1  1 C8 7B A1  1 
+1A18478 	AC 83 A1  1 6C 43 A0  1 
+1A18480 	 8  0  0  0 
+   endcase
+1A18484 	84 43 A0  1 
+;
+1A18488 	58 46 A0  1 
+: .ea  ( -- )
+1A1848C 	2E 65 61 83 
+1A18490 	F8 83 A1  1 20 40 A0  1 
+   " "  ea-text  place
+1A18498 	9C 53 A0  1  0  0  0  0 
+1A184A0 	C8 7D A1  1 F0 88 A0  1 
+   lowbits  hibits >r                    ( reg ) ( r: mod )
+1A184A8 	2C 7D A1  1 90 7D A1  1 
+1A184B0 	BC 45 A0  1 
+   r@  3 =  if                           ( reg )     \ register direct
+1A184B4 	E4 45 A0  1 
+1A184B8 	A0 6F A0  1 24 48 A0  1 
+1A184C0 	DC 41 A0  1 20  0  0  0 
+      >greg $add-text                    ( )
+1A184C8 	D4 80 A1  1 E8 7D A1  1 
+      r> drop  ea-text ". exit
+1A184D0 	D0 45 A0  1 30 49 A0  1 
+1A184D8 	C8 7D A1  1 A8 7C A0  1 
+1A184E0 	40 46 A0  1 
+   then                                  ( reg )
+   r> ad32?  if  .ea32  else  .ea16  then
+1A184E4 	D0 45 A0  1 
+1A184E8 	38 7C A1  1 DC 41 A0  1 
+1A184F0 	10  0  0  0 98 82 A1  1 
+1A184F8 	C8 41 A0  1  8  0  0  0 
+1A18500 	F8 83 A1  1 
+   ea-text ".
+1A18504 	C8 7D A1  1 
+1A18508 	A8 7C A0  1 
+;
+1A1850C 	58 46 A0  1 
+: ,ea  ( -- )  .,  .ea  ;
+1A18510 	2C 65 61 83 94 84 A1  1 
+1A18518 	20 40 A0  1 AC 7D A1  1 
+1A18520 	94 84 A1  1 58 46 A0  1 
+
+
+\ Display formatting
+variable start-column
+1A18528 	 0  0  0 73 74 61 72 74 
+1A18530 	2D 63 6F 6C 75 6D 6E 8C 
+1A18538 	18 85 A1  1 48 40 A0  1 
+1A18540 	AC  4  0  0 
+: op-col  ( -- )  start-column @  d# 9 +  #out @  -  1 max  spaces  ;
+1A18544 	 0 6F 70 2D 
+1A18548 	63 6F 6C 86 3C 85 A1  1 
+1A18550 	20 40 A0  1 3C 85 A1  1 
+1A18558 	5C 4C A0  1 58 41 A0  1 
+1A18560 	 9  0  0  0  4 45 A0  1 
+1A18568 	5C 6D A0  1 5C 4C A0  1 
+1A18570 	18 45 A0  1 80 6F A0  1 
+1A18578 	9C 4A A0  1 E8 71 A0  1 
+1A18580 	58 46 A0  1 
+
+string-array >segment
+1A18584 	 0  0  0 3E 
+1A18588 	73 65 67 6D 65 6E 74 88 
+1A18590 	50 85 A1  1 44 15 A1  1 
+1A18598 	 6  0  0  0 20  0  0  0 
+   ," es"  ," cs"  ," ss"  ," ds"  ," fs"  ," gs"
+1A185A0 	 2 65 73  0  2 63 73  0 
+1A185A8 	 2 73 73  0  2 64 73  0 
+1A185B0 	 2 66 73  0  2 67 73  0 
+end-string-array
+1A185B8 	 8  0  0  0  C  0  0  0 
+1A185C0 	10  0  0  0 14  0  0  0 
+1A185C8 	18  0  0  0 1C  0  0  0 
+
+string-array >binop
+1A185D0 	 0 3E 62 69 6E 6F 70 86 
+1A185D8 	94 85 A1  1 44 15 A1  1 
+1A185E0 	 8  0  0  0 44  0  0  0 
+   ," add"  ," or"  ," adc"  ," sbb"  ," and"  ," sub"  ," xor"  ," cmp"   
+1A185E8 	 3 61 64 64  0  0  0  0 
+1A185F0 	 2 6F 72  0  3 61 64 63 
+1A185F8 	 0  0  0  0  3 73 62 62 
+1A18600 	 0  0  0  0  3 61 6E 64 
+1A18608 	 0  0  0  0  3 73 75 62 
+1A18610 	 0  0  0  0  3 78 6F 72 
+1A18618 	 0  0  0  0  3 63 6D 70 
+1A18620 	 0  0  0  0 
+end-string-array
+1A18624 	 8  0  0  0 
+1A18628 	10  0  0  0 14  0  0  0 
+1A18630 	1C  0  0  0 24  0  0  0 
+1A18638 	2C  0  0  0 34  0  0  0 
+1A18640 	3C  0  0  0 
+
+: .binop  ( n -- )  >binop ". op-col  ;
+1A18644 	 0 2E 62 69 
+1A18648 	6E 6F 70 86 DC 85 A1  1 
+1A18650 	20 40 A0  1 DC 85 A1  1 
+1A18658 	A8 7C A0  1 50 85 A1  1 
+1A18660 	58 46 A0  1 
+
+string-array >unop
+1A18664 	 0  0 3E 75 
+1A18668 	6E 6F 70 85 50 86 A1  1 
+1A18670 	44 15 A1  1  4  0  0  0 
+1A18678 	28  0  0  0 
+   ," inc"  ," dec"  ," push"  ," pop"
+1A1867C 	 3 69 6E 63 
+1A18680 	 0  0  0  0  3 64 65 63 
+1A18688 	 0  0  0  0  4 70 75 73 
+1A18690 	68  0  0  0  3 70 6F 70 
+1A18698 	 0  0  0  0 
+end-string-array
+1A1869C 	 8  0  0  0 
+1A186A0 	10  0  0  0 18  0  0  0 
+1A186A8 	20  0  0  0 
+
+: .segment  ( -- )  3 2 ibits  >segment ".  ;
+1A186AC 	 0  0  0 2E 
+1A186B0 	73 65 67 6D 65 6E 74 88 
+1A186B8 	70 86 A1  1 20 40 A0  1 
+1A186C0 	A0 6F A0  1 90 6F A0  1 
+1A186C8 	F4 7C A1  1 94 85 A1  1 
+1A186D0 	A8 7C A0  1 58 46 A0  1 
+
+string-array >adjust
+1A186D8 	3E 61 64 6A 75 73 74 87 
+1A186E0 	BC 86 A1  1 44 15 A1  1 
+1A186E8 	 4  0  0  0 28  0  0  0 
+   ," daa"  ," das"  ," aaa"  ," aas"
+1A186F0 	 3 64 61 61  0  0  0  0 
+1A186F8 	 3 64 61 73  0  0  0  0 
+1A18700 	 3 61 61 61  0  0  0  0 
+1A18708 	 3 61 61 73  0  0  0  0 
+end-string-array
+1A18710 	 8  0  0  0 10  0  0  0 
+1A18718 	18  0  0  0 20  0  0  0 
+: .fescape  ( -- )  ." Later, dude"  ;
+1A18720 	 0  0  0 2E 66 65 73 63 
+1A18728 	61 70 65 88 E4 86 A1  1 
+1A18730 	20 40 A0  1 20 7C A0  1 
+1A18738 	 B 4C 61 74 65 72 2C 20 
+1A18740 	64 75 64 65  0  0  0  0 
+1A18748 	58 46 A0  1 
+
+0 value reg-field
+1A1874C 	 0  0 72 65 
+1A18750 	67 2D 66 69 65 6C 64 89 
+1A18758 	30 87 A1  1 50 40 A0  1 
+1A18760 	B0  4  0  0 
+: get-ea  ( -- )  get-op  midbits  is reg-field  ;
+1A18764 	 0 67 65 74 
+1A18768 	2D 65 61 86 5C 87 A1  1 
+1A18770 	20 40 A0  1 D4 7C A1  1 
+1A18778 	70 7D A1  1 B8 40 A0  1 
+1A18780 	5C 87 A1  1 58 46 A0  1 
+
+: sreg  ( -- )  reg-field  >segment ".  ;
+1A18788 	 0  0  0 73 72 65 67 84 
+1A18790 	70 87 A1  1 20 40 A0  1 
+1A18798 	5C 87 A1  1 94 85 A1  1 
+1A187A0 	A8 7C A0  1 58 46 A0  1 
+: .mm   ( reg# -- )  ." mm" (.) type  ;
+1A187A8 	2E 6D 6D 83 94 87 A1  1 
+1A187B0 	20 40 A0  1 20 7C A0  1 
+1A187B8 	 2 6D 6D  0 10 78 A0  1 
+1A187C0 	 4 6C A0  1 58 46 A0  1 
+: mreg  ( -- )  reg-field  .mm  ;
+1A187C8 	 0  0  0 6D 72 65 67 84 
+1A187D0 	B0 87 A1  1 20 40 A0  1 
+1A187D8 	5C 87 A1  1 B0 87 A1  1 
+1A187E0 	58 46 A0  1 
+: .mea  ( -- )  hibits 3 =  if  lowbits .mm  else  .ea  then  ;
+1A187E4 	 0  0  0 2E 
+1A187E8 	6D 65 61 84 D4 87 A1  1 
+1A187F0 	20 40 A0  1 90 7D A1  1 
+1A187F8 	A0 6F A0  1 24 48 A0  1 
+1A18800 	DC 41 A0  1 14  0  0  0 
+1A18808 	2C 7D A1  1 B0 87 A1  1 
+1A18810 	C8 41 A0  1  8  0  0  0 
+1A18818 	94 84 A1  1 58 46 A0  1 
+
+: gb/v  ( -- )  reg-field  >greg type  ;
+1A18820 	 0  0  0 67 62 2F 76 84 
+1A18828 	F0 87 A1  1 20 40 A0  1 
+1A18830 	5C 87 A1  1 D4 80 A1  1 
+1A18838 	 4 6C A0  1 58 46 A0  1 
+: ib    ( -- )  op8@ bext  (.) type  ;
+1A18840 	 0 69 62 82 2C 88 A1  1 
+1A18848 	20 40 A0  1 24 7B A1  1 
+1A18850 	9C 7B A1  1 10 78 A0  1 
+1A18858 	 4 6C A0  1 58 46 A0  1 
+: ,ib  ( -- )  .,  ib  ;
+1A18860 	2C 69 62 83 48 88 A1  1 
+1A18868 	20 40 A0  1 AC 7D A1  1 
+1A18870 	48 88 A1  1 58 46 A0  1 
+: iub   ( -- )  op8@       (.) type  ;
+1A18878 	69 75 62 83 68 88 A1  1 
+1A18880 	20 40 A0  1 24 7B A1  1 
+1A18888 	10 78 A0  1  4 6C A0  1 
+1A18890 	58 46 A0  1 
+: iw    ( -- )  op16@ (.) type  ;
+1A18894 	 0 69 77 82 
+1A18898 	80 88 A1  1 20 40 A0  1 
+1A188A0 	5C 7B A1  1 10 78 A0  1 
+1A188A8 	 4 6C A0  1 58 46 A0  1 
+: iv    ( -- )  opv@ (.) type  ;
+1A188B0 	 0 69 76 82 9C 88 A1  1 
+1A188B8 	20 40 A0  1  8 7C A1  1 
+1A188C0 	10 78 A0  1  4 6C A0  1 
+1A188C8 	58 46 A0  1 
+: iuv   ( -- )  adv@ (u.) type  ;
+1A188CC 	69 75 76 83 
+1A188D0 	B8 88 A1  1 20 40 A0  1 
+1A188D8 	4C 7C A1  1 AC 77 A0  1 
+1A188E0 	 4 6C A0  1 58 46 A0  1 
+: ,ib/v ( -- )  .,  wbit  if  opv@  else  op8@  then  (u.) type  ;
+1A188E8 	 0  0 2C 69 62 2F 76 85 
+1A188F0 	D4 88 A1  1 20 40 A0  1 
+1A188F8 	AC 7D A1  1 18 7D A1  1 
+1A18900 	DC 41 A0  1 10  0  0  0 
+1A18908 	 8 7C A1  1 C8 41 A0  1 
+1A18910 	 8  0  0  0 24 7B A1  1 
+1A18918 	AC 77 A0  1  4 6C A0  1 
+1A18920 	58 46 A0  1 
+: al/x  ( -- )  wbit  if  ." eax"  else  ." al"  then  ;
+1A18924 	 0  0  0 61 
+1A18928 	6C 2F 78 84 F4 88 A1  1 
+1A18930 	20 40 A0  1 18 7D A1  1 
+1A18938 	DC 41 A0  1 18  0  0  0 
+1A18940 	20 7C A0  1  3 65 61 78 
+1A18948 	 0  0  0  0 C8 41 A0  1 
+1A18950 	 C  0  0  0 20 7C A0  1 
+1A18958 	 2 61 6C  0 58 46 A0  1 
+: ,al/x ( -- )  .,  al/x  ;
+1A18960 	 0  0 2C 61 6C 2F 78 85 
+1A18968 	30 89 A1  1 20 40 A0  1 
+1A18970 	AC 7D A1  1 30 89 A1  1 
+1A18978 	58 46 A0  1 
+: ,cl  ( -- )  .,  ." cl"  ;
+1A1897C 	2C 63 6C 83 
+1A18980 	6C 89 A1  1 20 40 A0  1 
+1A18988 	AC 7D A1  1 20 7C A0  1 
+1A18990 	 2 63 6C  0 58 46 A0  1 
+
+: .mode  ( mode -- )
+1A18998 	 0  0 2E 6D 6F 64 65 85 
+1A189A0 	84 89 A1  1 20 40 A0  1 
+   1 >>
+1A189A8 	80 6F A0  1 DC 44 A0  1 
+   case
+      0  of  get-ea  .ea   .,  gb/v  endof
+1A189B0 	70 6F A0  1 48 43 A0  1 
+1A189B8 	1C  0  0  0 70 87 A1  1 
+1A189C0 	94 84 A1  1 AC 7D A1  1 
+1A189C8 	2C 88 A1  1 6C 43 A0  1 
+1A189D0 	44  0  0  0 
+      1  of  get-ea  gb/v  ,ea       endof
+1A189D4 	80 6F A0  1 
+1A189D8 	48 43 A0  1 18  0  0  0 
+1A189E0 	70 87 A1  1 2C 88 A1  1 
+1A189E8 	18 85 A1  1 6C 43 A0  1 
+1A189F0 	24  0  0  0 
+      2  of          al/x  ,ib/v     endof
+1A189F4 	90 6F A0  1 
+1A189F8 	48 43 A0  1 14  0  0  0 
+1A18A00 	30 89 A1  1 F4 88 A1  1 
+1A18A08 	6C 43 A0  1  8  0  0  0 
+   endcase
+1A18A10 	84 43 A0  1 
+;
+1A18A14 	58 46 A0  1 
+: .push  ( -- )  ." push" op-col  ;
+1A18A18 	 0  0 2E 70 75 73 68 85 
+1A18A20 	A4 89 A1  1 20 40 A0  1 
+1A18A28 	20 7C A0  1  4 70 75 73 
+1A18A30 	68  0  0  0 50 85 A1  1 
+1A18A38 	58 46 A0  1 
+: .pop   ( -- )  ." pop"  op-col  ;
+1A18A3C 	 0  0  0 2E 
+1A18A40 	70 6F 70 84 24 8A A1  1 
+1A18A48 	20 40 A0  1 20 7C A0  1 
+1A18A50 	 3 70 6F 70  0  0  0  0 
+1A18A58 	50 85 A1  1 58 46 A0  1 
+
+string-array >cond
+1A18A60 	 0  0 3E 63 6F 6E 64 85 
+1A18A68 	48 8A A1  1 44 15 A1  1 
+1A18A70 	10  0  0  0 48  0  0  0 
+   ," o"  ," no"  ," b"  ," ae"  ," e"  ," ne"  ," be"  ," a"
+1A18A78 	 1 6F  0  0  2 6E 6F  0 
+1A18A80 	 1 62  0  0  2 61 65  0 
+1A18A88 	 1 65  0  0  2 6E 65  0 
+1A18A90 	 2 62 65  0  1 61  0  0 
+   ," s"  ," ns"  ," pe" ," po"  ," l"  ," ge"  ," le"  ," g"
+1A18A98 	 1 73  0  0  2 6E 73  0 
+1A18AA0 	 2 70 65  0  2 70 6F  0 
+1A18AA8 	 1 6C  0  0  2 67 65  0 
+1A18AB0 	 2 6C 65  0  1 67  0  0 
+end-string-array
+1A18AB8 	 8  0  0  0  C  0  0  0 
+1A18AC0 	10  0  0  0 14  0  0  0 
+1A18AC8 	18  0  0  0 1C  0  0  0 
+1A18AD0 	20  0  0  0 24  0  0  0 
+1A18AD8 	28  0  0  0 2C  0  0  0 
+1A18AE0 	30  0  0  0 34  0  0  0 
+1A18AE8 	38  0  0  0 3C  0  0  0 
+1A18AF0 	40  0  0  0 44  0  0  0 
+
+: showbranch  ( offset -- )
+1A18AF8 	 0 73 68 6F 77 62 72 61 
+1A18B00 	6E 63 68 8A 6C 8A A1  1 
+1A18B08 	20 40 A0  1 
+   pc @  op32?  if  ( offset pc )
+1A18B0C 	DC 7A A1  1 
+1A18B10 	5C 4C A0  1 F4 7B A1  1 
+1A18B18 	DC 41 A0  1 10  0  0  0 
+      +                    ( pc' )
+1A18B20 	 4 45 A0  1 
+   else                    ( offset pc )
+1A18B24 	C8 41 A0  1 
+1A18B28 	24  0  0  0 
+      lwsplit  -rot        ( pc.high offset pc.low )
+1A18B2C 	A0 4F A0  1 
+1A18B30 	94 49 A0  1 
+      + h# ffff and        ( pc.high pc.low' )
+1A18B34 	 4 45 A0  1 
+1A18B38 	58 41 A0  1 FF FF  0  0 
+1A18B40 	5C 44 A0  1 
+      swap wljoin          ( pc' )
+1A18B44 	68 49 A0  1 
+1A18B48 	D4 4F A0  1 
+   then                    ( pc' )
+   dup branch-target !  showaddr
+1A18B4C 	40 49 A0  1 
+1A18B50 	F8 7A A1  1 54 4D A0  1 
+1A18B58 	30 13 A1  1 
+;
+1A18B5C 	58 46 A0  1 
+: jb  ( -- )  op8@ bext  showbranch  ;
+1A18B60 	 0 6A 62 82  8 8B A1  1 
+1A18B68 	20 40 A0  1 24 7B A1  1 
+1A18B70 	9C 7B A1  1  8 8B A1  1 
+1A18B78 	58 46 A0  1 
+: jv  ( -- )  opv@  showbranch  ;
+1A18B7C 	 0 6A 76 82 
+1A18B80 	68 8B A1  1 20 40 A0  1 
+1A18B88 	 8 7C A1  1  8 8B A1  1 
+1A18B90 	58 46 A0  1 
+
+: .jcc  ( -- )  ." j"  low4bits >cond ".  op-col jb  ;
+1A18B94 	 0  0  0 2E 
+1A18B98 	6A 63 63 84 84 8B A1  1 
+1A18BA0 	20 40 A0  1 20 7C A0  1 
+1A18BA8 	 1 6A  0  0 50 7D A1  1 
+1A18BB0 	6C 8A A1  1 A8 7C A0  1 
+1A18BB8 	50 85 A1  1 68 8B A1  1 
+1A18BC0 	58 46 A0  1 
+: ea,g  ( -- )  get-ea  .ea ., gb/v  ;
+1A18BC4 	 0  0  0 65 
+1A18BC8 	61 2C 67 84 A0 8B A1  1 
+1A18BD0 	20 40 A0  1 70 87 A1  1 
+1A18BD8 	94 84 A1  1 AC 7D A1  1 
+1A18BE0 	2C 88 A1  1 58 46 A0  1 
+: g,ea  ( -- )  get-ea  gb/v ,ea  ;
+1A18BE8 	 0  0  0 67 2C 65 61 84 
+1A18BF0 	D0 8B A1  1 20 40 A0  1 
+1A18BF8 	70 87 A1  1 2C 88 A1  1 
+1A18C00 	18 85 A1  1 58 46 A0  1 
+
+: decode-op  ( -- high4bits )  get-op   0 1 ibits  is wbit  4 4 ibits   ;
+1A18C08 	 0  0 64 65 63 6F 64 65 
+1A18C10 	2D 6F 70 89 F4 8B A1  1 
+1A18C18 	20 40 A0  1 D4 7C A1  1 
+1A18C20 	70 6F A0  1 80 6F A0  1 
+1A18C28 	F4 7C A1  1 B8 40 A0  1 
+1A18C30 	18 7D A1  1 B0 6F A0  1 
+1A18C38 	B0 6F A0  1 F4 7C A1  1 
+1A18C40 	58 46 A0  1 
+
+string-array >grp6
+1A18C44 	 0  0 3E 67 
+1A18C48 	72 70 36 85 18 8C A1  1 
+1A18C50 	44 15 A1  1  6  0  0  0 
+1A18C58 	38  0  0  0 
+   ," sldt"  ," str"  ," lldt"  ," ltr"  ," verr"  ," verw"
+1A18C5C 	 4 73 6C 64 
+1A18C60 	74  0  0  0  3 73 74 72 
+1A18C68 	 0  0  0  0  4 6C 6C 64 
+1A18C70 	74  0  0  0  3 6C 74 72 
+1A18C78 	 0  0  0  0  4 76 65 72 
+1A18C80 	72  0  0  0  4 76 65 72 
+1A18C88 	77  0  0  0 
+end-string-array
+1A18C8C 	 8  0  0  0 
+1A18C90 	10  0  0  0 18  0  0  0 
+1A18C98 	20  0  0  0 28  0  0  0 
+1A18CA0 	30  0  0  0 
+string-array >grp7
+1A18CA4 	 0  0 3E 67 
+1A18CA8 	72 70 37 85 50 8C A1  1 
+1A18CB0 	44 15 A1  1  8  0  0  0 
+1A18CB8 	48  0  0  0 
+   ," sgdt" ," sidt" ," lgdt" ," lidt" ," smsw" ," Unimp" ," lmsw" ," invlpg"
+1A18CBC 	 4 73 67 64 
+1A18CC0 	74  0  0  0  4 73 69 64 
+1A18CC8 	74  0  0  0  4 6C 67 64 
+1A18CD0 	74  0  0  0  4 6C 69 64 
+1A18CD8 	74  0  0  0  4 73 6D 73 
+1A18CE0 	77  0  0  0  5 55 6E 69 
+1A18CE8 	6D 70  0  0  4 6C 6D 73 
+1A18CF0 	77  0  0  0  6 69 6E 76 
+1A18CF8 	6C 70 67  0 
+end-string-array
+1A18CFC 	 8  0  0  0 
+1A18D00 	10  0  0  0 18  0  0  0 
+1A18D08 	20  0  0  0 28  0  0  0 
+1A18D10 	30  0  0  0 38  0  0  0 
+1A18D18 	40  0  0  0 
+string-array >grp8
+1A18D1C 	 0  0 3E 67 
+1A18D20 	72 70 38 85 B0 8C A1  1 
+1A18D28 	44 15 A1  1  8  0  0  0 
+1A18D30 	34  0  0  0 
+   ," "  ," "  ," "  ," "  ," bt"  ," bts"  ," btr"  ," btc"
+1A18D34 	 0  0  0  0 
+1A18D38 	 0  0  0  0  0  0  0  0 
+1A18D40 	 0  0  0  0  2 62 74  0 
+1A18D48 	 3 62 74 73  0  0  0  0 
+1A18D50 	 3 62 74 72  0  0  0  0 
+1A18D58 	 3 62 74 63  0  0  0  0 
+end-string-array
+1A18D60 	 8  0  0  0  C  0  0  0 
+1A18D68 	10  0  0  0 14  0  0  0 
+1A18D70 	18  0  0  0 1C  0  0  0 
+1A18D78 	24  0  0  0 2C  0  0  0 
+
+: .unimp  ( -- )  ." Unimp"  ;
+1A18D80 	 0 2E 75 6E 69 6D 70 86 
+1A18D88 	28 8D A1  1 20 40 A0  1 
+1A18D90 	20 7C A0  1  5 55 6E 69 
+1A18D98 	6D 70  0  0 58 46 A0  1 
+
+: ew  ( -- )  .ea  ;  \ XXX should print, e.g. BX not eBX
+1A18DA0 	 0 65 77 82 8C 8D A1  1 
+1A18DA8 	20 40 A0  1 94 84 A1  1 
+1A18DB0 	58 46 A0  1 
+: 2b0op  ( -- )
+1A18DB4 	 0  0 32 62 
+1A18DB8 	30 6F 70 85 A8 8D A1  1 
+1A18DC0 	20 40 A0  1 
+   low4bits  case
+1A18DC4 	50 7D A1  1 
+      0 of  get-ea  midbits >grp6 ".  op-col  ew  endof
+1A18DC8 	70 6F A0  1 48 43 A0  1 
+1A18DD0 	24  0  0  0 70 87 A1  1 
+1A18DD8 	70 7D A1  1 50 8C A1  1 
+1A18DE0 	A8 7C A0  1 50 85 A1  1 
+1A18DE8 	A8 8D A1  1 6C 43 A0  1 
+1A18DF0 	 4  1  0  0 
+      1 of  get-ea  midbits >grp7 ".  op-col  ew  endof
+1A18DF4 	80 6F A0  1 
+1A18DF8 	48 43 A0  1 24  0  0  0 
+1A18E00 	70 87 A1  1 70 7D A1  1 
+1A18E08 	B0 8C A1  1 A8 7C A0  1 
+1A18E10 	50 85 A1  1 A8 8D A1  1 
+1A18E18 	6C 43 A0  1 D8  0  0  0 
+      2 of  ." lar"  op-col  1 is wbit  g,ea  endof
+1A18E20 	90 6F A0  1 48 43 A0  1 
+1A18E28 	2C  0  0  0 20 7C A0  1 
+1A18E30 	 3 6C 61 72  0  0  0  0 
+1A18E38 	50 85 A1  1 80 6F A0  1 
+1A18E40 	B8 40 A0  1 18 7D A1  1 
+1A18E48 	F4 8B A1  1 6C 43 A0  1 
+1A18E50 	A4  0  0  0 
+      3 of  ." lsr"  op-col  1 is wbit  g,ea  endof
+1A18E54 	A0 6F A0  1 
+1A18E58 	48 43 A0  1 2C  0  0  0 
+1A18E60 	20 7C A0  1  3 6C 73 72 
+1A18E68 	 0  0  0  0 50 85 A1  1 
+1A18E70 	80 6F A0  1 B8 40 A0  1 
+1A18E78 	18 7D A1  1 F4 8B A1  1 
+1A18E80 	6C 43 A0  1 70  0  0  0 
+      6 of  ." clts"  endof
+1A18E88 	D0 6F A0  1 48 43 A0  1 
+1A18E90 	18  0  0  0 20 7C A0  1 
+1A18E98 	 4 63 6C 74 73  0  0  0 
+1A18EA0 	6C 43 A0  1 50  0  0  0 
+      8 of  ." invd"  endof
+1A18EA8 	F0 6F A0  1 48 43 A0  1 
+1A18EB0 	18  0  0  0 20 7C A0  1 
+1A18EB8 	 4 69 6E 76 64  0  0  0 
+1A18EC0 	6C 43 A0  1 30  0  0  0 
+      9 of  ." wbinvd"  endof
+1A18EC8 	58 41 A0  1  9  0  0  0 
+1A18ED0 	48 43 A0  1 18  0  0  0 
+1A18ED8 	20 7C A0  1  6 77 62 69 
+1A18EE0 	6E 76 64  0 6C 43 A0  1 
+1A18EE8 	 C  0  0  0 
+         .unimp
+1A18EEC 	8C 8D A1  1 
+   endcase
+1A18EF0 	84 43 A0  1 
+;   
+1A18EF4 	58 46 A0  1 
+: .mov  ( -- )  ." mov"  op-col  ;
+1A18EF8 	 0  0  0 2E 6D 6F 76 84 
+1A18F00 	C0 8D A1  1 20 40 A0  1 
+1A18F08 	20 7C A0  1  3 6D 6F 76 
+1A18F10 	 0  0  0  0 50 85 A1  1 
+1A18F18 	58 46 A0  1 
+: .byte  ( -- )  ." byte ptr "  ;
+1A18F1C 	 0  0 2E 62 
+1A18F20 	79 74 65 85  4 8F A1  1 
+1A18F28 	20 40 A0  1 20 7C A0  1 
+1A18F30 	 9 62 79 74 65 20 70 74 
+1A18F38 	72 20  0  0 58 46 A0  1 
+\ Don't bother to say "byte" for register direct addressing mode
+: ?.byte  ( -- )  hibits 3 <>  wbit 0=  and  if  .byte  then  ;
+1A18F40 	 0 3F 2E 62 79 74 65 86 
+1A18F48 	28 8F A1  1 20 40 A0  1 
+1A18F50 	90 7D A1  1 A0 6F A0  1 
+1A18F58 	44 48 A0  1 18 7D A1  1 
+1A18F60 	24 47 A0  1 5C 44 A0  1 
+1A18F68 	DC 41 A0  1  8  0  0  0 
+1A18F70 	28 8F A1  1 58 46 A0  1 
+
+: .r#  ( -- )  reg-field (.) type  ;
+1A18F78 	2E 72 23 83 4C 8F A1  1 
+1A18F80 	20 40 A0  1 5C 87 A1  1 
+1A18F88 	10 78 A0  1  4 6C A0  1 
+1A18F90 	58 46 A0  1 
+: movspec  ( -- )
+1A18F94 	6D 6F 76 73 
+1A18F98 	70 65 63 87 80 8F A1  1 
+1A18FA0 	20 40 A0  1 
+   .mov
+1A18FA4 	 4 8F A1  1 
+   1 is wbit		\ These are always 32 bits
+1A18FA8 	80 6F A0  1 B8 40 A0  1 
+1A18FB0 	18 7D A1  1 
+   low4bits  get-ea  case
+1A18FB4 	50 7D A1  1 
+1A18FB8 	70 87 A1  1 
+      \ XXX Warning - the 386 and 486 books disagree about the
+      \ operand order of these instructions.
+      2 of   ." cr" .r#  ,ea       endof
+1A18FBC 	90 6F A0  1 
+1A18FC0 	48 43 A0  1 1C  0  0  0 
+1A18FC8 	20 7C A0  1  2 63 72  0 
+1A18FD0 	80 8F A1  1 18 85 A1  1 
+1A18FD8 	6C 43 A0  1 CC  0  0  0 
+      3 of   ." dr" .r#  ,ea       endof
+1A18FE0 	A0 6F A0  1 48 43 A0  1 
+1A18FE8 	1C  0  0  0 20 7C A0  1 
+1A18FF0 	 2 64 72  0 80 8F A1  1 
+1A18FF8 	18 85 A1  1 6C 43 A0  1 
+1A19000 	A8  0  0  0 
+      6 of   ." tr" .r#  ,ea       endof
+1A19004 	D0 6F A0  1 
+1A19008 	48 43 A0  1 1C  0  0  0 
+1A19010 	20 7C A0  1  2 74 72  0 
+1A19018 	80 8F A1  1 18 85 A1  1 
+1A19020 	6C 43 A0  1 84  0  0  0 
+      0 of   .ea  .,  ." cr" .r#   endof
+1A19028 	70 6F A0  1 48 43 A0  1 
+1A19030 	20  0  0  0 94 84 A1  1 
+1A19038 	AC 7D A1  1 20 7C A0  1 
+1A19040 	 2 63 72  0 80 8F A1  1 
+1A19048 	6C 43 A0  1 5C  0  0  0 
+      1 of   .ea  .,  ." dr" .r#   endof
+1A19050 	80 6F A0  1 48 43 A0  1 
+1A19058 	20  0  0  0 94 84 A1  1 
+1A19060 	AC 7D A1  1 20 7C A0  1 
+1A19068 	 2 64 72  0 80 8F A1  1 
+1A19070 	6C 43 A0  1 34  0  0  0 
+      4 of   .ea  .,  ." tr" .r#   endof
+1A19078 	B0 6F A0  1 48 43 A0  1 
+1A19080 	20  0  0  0 94 84 A1  1 
+1A19088 	AC 7D A1  1 20 7C A0  1 
+1A19090 	 2 74 72  0 80 8F A1  1 
+1A19098 	6C 43 A0  1  C  0  0  0 
+         .unimp
+1A190A0 	8C 8D A1  1 
+   endcase
+1A190A4 	84 43 A0  1 
+;
+1A190A8 	58 46 A0  1 
+: 2baop  ( -- )
+1A190AC 	 0  0 32 62 
+1A190B0 	61 6F 70 85 A0 8F A1  1 
+1A190B8 	20 40 A0  1 
+   low4bits  case
+1A190BC 	50 7D A1  1 
+      0 of  .push  ." fs"  endof
+1A190C0 	70 6F A0  1 48 43 A0  1 
+1A190C8 	18  0  0  0 24 8A A1  1 
+1A190D0 	20 7C A0  1  2 66 73  0 
+1A190D8 	6C 43 A0  1 74  2  0  0 
+      1 of  .pop   ." fs"  endof
+1A190E0 	80 6F A0  1 48 43 A0  1 
+1A190E8 	18  0  0  0 48 8A A1  1 
+1A190F0 	20 7C A0  1  2 66 73  0 
+1A190F8 	6C 43 A0  1 54  2  0  0 
+      2 of  ." cpuid"      endof
+1A19100 	90 6F A0  1 48 43 A0  1 
+1A19108 	18  0  0  0 20 7C A0  1 
+1A19110 	 5 63 70 75 69 64  0  0 
+1A19118 	6C 43 A0  1 34  2  0  0 
+      3 of  ." bt"   op-col             ea,g  endof
+1A19120 	A0 6F A0  1 48 43 A0  1 
+1A19128 	1C  0  0  0 20 7C A0  1 
+1A19130 	 2 62 74  0 50 85 A1  1 
+1A19138 	D0 8B A1  1 6C 43 A0  1 
+1A19140 	10  2  0  0 
+      4 of  ." shld" op-col  1 is wbit  ea,g  ,ib  endof
+1A19144 	B0 6F A0  1 
+1A19148 	48 43 A0  1 30  0  0  0 
+1A19150 	20 7C A0  1  4 73 68 6C 
+1A19158 	64  0  0  0 50 85 A1  1 
+1A19160 	80 6F A0  1 B8 40 A0  1 
+1A19168 	18 7D A1  1 D0 8B A1  1 
+1A19170 	68 88 A1  1 6C 43 A0  1 
+1A19178 	D8  1  0  0 
+      5 of  ." shld" op-col  1 is wbit  ea,g  ,cl  endof
+1A1917C 	C0 6F A0  1 
+1A19180 	48 43 A0  1 30  0  0  0 
+1A19188 	20 7C A0  1  4 73 68 6C 
+1A19190 	64  0  0  0 50 85 A1  1 
+1A19198 	80 6F A0  1 B8 40 A0  1 
+1A191A0 	18 7D A1  1 D0 8B A1  1 
+1A191A8 	84 89 A1  1 6C 43 A0  1 
+1A191B0 	A0  1  0  0 
+      6 of  ." cmpxchg" op-col          ea,g  endof
+1A191B4 	D0 6F A0  1 
+1A191B8 	48 43 A0  1 24  0  0  0 
+1A191C0 	20 7C A0  1  7 63 6D 70 
+1A191C8 	78 63 68 67  0  0  0  0 
+1A191D0 	50 85 A1  1 D0 8B A1  1 
+1A191D8 	6C 43 A0  1 74  1  0  0 
+      7 of  ." cmpxchg" op-col          ea,g  endof
+1A191E0 	E0 6F A0  1 48 43 A0  1 
+1A191E8 	24  0  0  0 20 7C A0  1 
+1A191F0 	 7 63 6D 70 78 63 68 67 
+1A191F8 	 0  0  0  0 50 85 A1  1 
+1A19200 	D0 8B A1  1 6C 43 A0  1 
+1A19208 	48  1  0  0 
+      8 of  .push  ." gs"  endof
+1A1920C 	F0 6F A0  1 
+1A19210 	48 43 A0  1 18  0  0  0 
+1A19218 	24 8A A1  1 20 7C A0  1 
+1A19220 	 2 67 73  0 6C 43 A0  1 
+1A19228 	28  1  0  0 
+      9 of  .pop   ." gs"  endof
+1A1922C 	58 41 A0  1 
+1A19230 	 9  0  0  0 48 43 A0  1 
+1A19238 	18  0  0  0 48 8A A1  1 
+1A19240 	20 7C A0  1  2 67 73  0 
+1A19248 	6C 43 A0  1  4  1  0  0 
+      a of  ." rsm"  end-found on  endof
+1A19250 	58 41 A0  1  A  0  0  0 
+1A19258 	48 43 A0  1 20  0  0  0 
+1A19260 	20 7C A0  1  3 72 73 6D 
+1A19268 	 0  0  0  0 CC 7A A1  1 
+1A19270 	E0 4B A0  1 6C 43 A0  1 
+1A19278 	D8  0  0  0 
+      b of  ." bt"   op-col             ea,g  endof
+1A1927C 	58 41 A0  1 
+1A19280 	 B  0  0  0 48 43 A0  1 
+1A19288 	1C  0  0  0 20 7C A0  1 
+1A19290 	 2 62 74  0 50 85 A1  1 
+1A19298 	D0 8B A1  1 6C 43 A0  1 
+1A192A0 	B0  0  0  0 
+      c of  ." shrd" op-col  1 is wbit  ea,g  ,ib  endof
+1A192A4 	58 41 A0  1 
+1A192A8 	 C  0  0  0 48 43 A0  1 
+1A192B0 	30  0  0  0 20 7C A0  1 
+1A192B8 	 4 73 68 72 64  0  0  0 
+1A192C0 	50 85 A1  1 80 6F A0  1 
+1A192C8 	B8 40 A0  1 18 7D A1  1 
+1A192D0 	D0 8B A1  1 68 88 A1  1 
+1A192D8 	6C 43 A0  1 74  0  0  0 
+      d of  ." shrd" op-col  1 is wbit  ea,g  ,cl  endof
+1A192E0 	58 41 A0  1  D  0  0  0 
+1A192E8 	48 43 A0  1 30  0  0  0 
+1A192F0 	20 7C A0  1  4 73 68 72 
+1A192F8 	64  0  0  0 50 85 A1  1 
+1A19300 	80 6F A0  1 B8 40 A0  1 
+1A19308 	18 7D A1  1 D0 8B A1  1 
+1A19310 	84 89 A1  1 6C 43 A0  1 
+1A19318 	38  0  0  0 
+      f of  ." imul" op-col  g,ea  endof
+1A1931C 	58 41 A0  1 
+1A19320 	 F  0  0  0 48 43 A0  1 
+1A19328 	20  0  0  0 20 7C A0  1 
+1A19330 	 4 69 6D 75 6C  0  0  0 
+1A19338 	50 85 A1  1 F4 8B A1  1 
+1A19340 	6C 43 A0  1  C  0  0  0 
+         .unimp
+1A19348 	8C 8D A1  1 
+   endcase
+1A1934C 	84 43 A0  1 
+;
+1A19350 	58 46 A0  1 
+\ Decode operands for lds,..,lgs,lss instructions
+: .lfp  ( -- )  op-col get-ea midbits .reg  ,ea   ;
+1A19354 	 0  0  0 2E 
+1A19358 	6C 66 70 84 B8 90 A1  1 
+1A19360 	20 40 A0  1 50 85 A1  1 
+1A19368 	70 87 A1  1 70 7D A1  1 
+1A19370 	 8 81 A1  1 18 85 A1  1 
+1A19378 	58 46 A0  1 
+
+: reg,  ( -- )  op-col  get-ea reg-field .reg  .,  ;
+1A1937C 	 0  0  0 72 
+1A19380 	65 67 2C 84 60 93 A1  1 
+1A19388 	20 40 A0  1 50 85 A1  1 
+1A19390 	70 87 A1  1 5C 87 A1  1 
+1A19398 	 8 81 A1  1 AC 7D A1  1 
+1A193A0 	58 46 A0  1 
+: ?.b/w  ( -- )
+1A193A4 	 0  0 3F 2E 
+1A193A8 	62 2F 77 85 88 93 A1  1 
+1A193B0 	20 40 A0  1 
+   hibits 3 <>  if
+1A193B4 	90 7D A1  1 
+1A193B8 	A0 6F A0  1 44 48 A0  1 
+1A193C0 	DC 41 A0  1 2C  0  0  0 
+      wbit  if  ." word ptr "  else  .byte  then
+1A193C8 	18 7D A1  1 DC 41 A0  1 
+1A193D0 	1C  0  0  0 20 7C A0  1 
+1A193D8 	 9 77 6F 72 64 20 70 74 
+1A193E0 	72 20  0  0 C8 41 A0  1 
+1A193E8 	 8  0  0  0 28 8F A1  1 
+   then
+;
+1A193F0 	58 46 A0  1 
+: 2bbop  ( -- )
+1A193F4 	 0  0 32 62 
+1A193F8 	62 6F 70 85 B0 93 A1  1 
+1A19400 	20 40 A0  1 
+   low4bits  case
+1A19404 	50 7D A1  1 
+      2 of  ." lss"    .lfp               endof
+1A19408 	90 6F A0  1 48 43 A0  1 
+1A19410 	1C  0  0  0 20 7C A0  1 
+1A19418 	 3 6C 73 73  0  0  0  0 
+1A19420 	60 93 A1  1 6C 43 A0  1 
+1A19428 	F0  1  0  0 
+      3 of  ." btr"    op-col  ea,g       endof
+1A1942C 	A0 6F A0  1 
+1A19430 	48 43 A0  1 20  0  0  0 
+1A19438 	20 7C A0  1  3 62 74 72 
+1A19440 	 0  0  0  0 50 85 A1  1 
+1A19448 	D0 8B A1  1 6C 43 A0  1 
+1A19450 	C8  1  0  0 
+      4 of  ." lfs"    .lfp               endof
+1A19454 	B0 6F A0  1 
+1A19458 	48 43 A0  1 1C  0  0  0 
+1A19460 	20 7C A0  1  3 6C 66 73 
+1A19468 	 0  0  0  0 60 93 A1  1 
+1A19470 	6C 43 A0  1 A4  1  0  0 
+      5 of  ." lgs"    .lfp               endof
+1A19478 	C0 6F A0  1 48 43 A0  1 
+1A19480 	1C  0  0  0 20 7C A0  1 
+1A19488 	 3 6C 67 73  0  0  0  0 
+1A19490 	60 93 A1  1 6C 43 A0  1 
+1A19498 	80  1  0  0 
+      6 of  ." movzx"  reg,  ?.b/w  .ea   endof
+1A1949C 	D0 6F A0  1 
+1A194A0 	48 43 A0  1 24  0  0  0 
+1A194A8 	20 7C A0  1  5 6D 6F 76 
+1A194B0 	7A 78  0  0 88 93 A1  1 
+1A194B8 	B0 93 A1  1 94 84 A1  1 
+1A194C0 	6C 43 A0  1 54  1  0  0 
+      7 of  ." movzx"  reg,         .ea   endof
+1A194C8 	E0 6F A0  1 48 43 A0  1 
+1A194D0 	20  0  0  0 20 7C A0  1 
+1A194D8 	 5 6D 6F 76 7A 78  0  0 
+1A194E0 	88 93 A1  1 94 84 A1  1 
+1A194E8 	6C 43 A0  1 2C  1  0  0 
+      a of  get-ea midbits >grp8 ".  1 is wbit  op-col .ea ,ib    endof
+1A194F0 	58 41 A0  1  A  0  0  0 
+1A194F8 	48 43 A0  1 34  0  0  0 
+1A19500 	70 87 A1  1 70 7D A1  1 
+1A19508 	28 8D A1  1 A8 7C A0  1 
+1A19510 	80 6F A0  1 B8 40 A0  1 
+1A19518 	18 7D A1  1 50 85 A1  1 
+1A19520 	94 84 A1  1 68 88 A1  1 
+1A19528 	6C 43 A0  1 EC  0  0  0 
+      b of  ." btc"    op-col  ea,g       endof
+1A19530 	58 41 A0  1  B  0  0  0 
+1A19538 	48 43 A0  1 20  0  0  0 
+1A19540 	20 7C A0  1  3 62 74 63 
+1A19548 	 0  0  0  0 50 85 A1  1 
+1A19550 	D0 8B A1  1 6C 43 A0  1 
+1A19558 	C0  0  0  0 
+      c of  ." bsf"    reg,         .ea   endof
+1A1955C 	58 41 A0  1 
+1A19560 	 C  0  0  0 48 43 A0  1 
+1A19568 	20  0  0  0 20 7C A0  1 
+1A19570 	 3 62 73 66  0  0  0  0 
+1A19578 	88 93 A1  1 94 84 A1  1 
+1A19580 	6C 43 A0  1 94  0  0  0 
+      d of  ." bsr"    reg,         .ea   endof
+1A19588 	58 41 A0  1  D  0  0  0 
+1A19590 	48 43 A0  1 20  0  0  0 
+1A19598 	20 7C A0  1  3 62 73 72 
+1A195A0 	 0  0  0  0 88 93 A1  1 
+1A195A8 	94 84 A1  1 6C 43 A0  1 
+1A195B0 	68  0  0  0 
+      e of  ." movsx"  reg,  ?.b/w  .ea   endof
+1A195B4 	58 41 A0  1 
+1A195B8 	 E  0  0  0 48 43 A0  1 
+1A195C0 	24  0  0  0 20 7C A0  1 
+1A195C8 	 5 6D 6F 76 73 78  0  0 
+1A195D0 	88 93 A1  1 B0 93 A1  1 
+1A195D8 	94 84 A1  1 6C 43 A0  1 
+1A195E0 	38  0  0  0 
+      f of  ." movsx"  reg,         .ea   endof
+1A195E4 	58 41 A0  1 
+1A195E8 	 F  0  0  0 48 43 A0  1 
+1A195F0 	20  0  0  0 20 7C A0  1 
+1A195F8 	 5 6D 6F 76 73 78  0  0 
+1A19600 	88 93 A1  1 94 84 A1  1 
+1A19608 	6C 43 A0  1  C  0  0  0 
+         .unimp
+1A19610 	8C 8D A1  1 
+   endcase
+1A19614 	84 43 A0  1 
+;
+1A19618 	58 46 A0  1 
+: 2bcop  ( -- )
+1A1961C 	 0  0 32 62 
+1A19620 	63 6F 70 85  0 94 A1  1 
+1A19628 	20 40 A0  1 
+   low4bits  case
+1A1962C 	50 7D A1  1 
+      0 of  ." xadd"  op-col  ea,g  endof
+1A19630 	70 6F A0  1 48 43 A0  1 
+1A19638 	20  0  0  0 20 7C A0  1 
+1A19640 	 4 78 61 64 64  0  0  0 
+1A19648 	50 85 A1  1 D0 8B A1  1 
+1A19650 	6C 43 A0  1 70  0  0  0 
+      1 of  ." xadd"  op-col  ea,g  endof
+1A19658 	80 6F A0  1 48 43 A0  1 
+1A19660 	20  0  0  0 20 7C A0  1 
+1A19668 	 4 78 61 64 64  0  0  0 
+1A19670 	50 85 A1  1 D0 8B A1  1 
+1A19678 	6C 43 A0  1 48  0  0  0 
+         dup 8 <  if
+1A19680 	40 49 A0  1 F0 6F A0  1 
+1A19688 	E4 47 A0  1 DC 41 A0  1 
+1A19690 	10  0  0  0 
+            .unimp
+1A19694 	8C 8D A1  1 
+         else
+1A19698 	C8 41 A0  1 24  0  0  0 
+            ." bswap" op-col  dup 8 - .reg
+1A196A0 	20 7C A0  1  5 62 73 77 
+1A196A8 	61 70  0  0 50 85 A1  1 
+1A196B0 	40 49 A0  1 F0 6F A0  1 
+1A196B8 	18 45 A0  1  8 81 A1  1 
+         then
+   endcase
+1A196C0 	84 43 A0  1 
+;
+1A196C4 	58 46 A0  1 
+: 2b6op  ( -- )
+1A196C8 	 0  0 32 62 36 6F 70 85 
+1A196D0 	28 96 A1  1 20 40 A0  1 
+   low4bits  case
+1A196D8 	50 7D A1  1 
+      e of  ." movd"  op-col get-ea  1 is wbit  mreg ., .ea  endof
+1A196DC 	58 41 A0  1 
+1A196E0 	 E  0  0  0 48 43 A0  1 
+1A196E8 	38  0  0  0 20 7C A0  1 
+1A196F0 	 4 6D 6F 76 64  0  0  0 
+1A196F8 	50 85 A1  1 70 87 A1  1 
+1A19700 	80 6F A0  1 B8 40 A0  1 
+1A19708 	18 7D A1  1 D4 87 A1  1 
+1A19710 	AC 7D A1  1 94 84 A1  1 
+1A19718 	6C 43 A0  1 50  0  0  0 
+      f of  ." movq"  op-col get-ea  1 is wbit  mreg ., .mea endof
+1A19720 	58 41 A0  1  F  0  0  0 
+1A19728 	48 43 A0  1 38  0  0  0 
+1A19730 	20 7C A0  1  4 6D 6F 76 
+1A19738 	71  0  0  0 50 85 A1  1 
+1A19740 	70 87 A1  1 80 6F A0  1 
+1A19748 	B8 40 A0  1 18 7D A1  1 
+1A19750 	D4 87 A1  1 AC 7D A1  1 
+1A19758 	F0 87 A1  1 6C 43 A0  1 
+1A19760 	 C  0  0  0 
+      .unimp
+1A19764 	8C 8D A1  1 
+   endcase
+1A19768 	84 43 A0  1 
+;
+1A1976C 	58 46 A0  1 
+: 2b7op  ( -- )
+1A19770 	 0  0 32 62 37 6F 70 85 
+1A19778 	D4 96 A1  1 20 40 A0  1 
+   low4bits  case
+1A19780 	50 7D A1  1 
+      7 of  ." emms"  endof
+1A19784 	E0 6F A0  1 
+1A19788 	48 43 A0  1 18  0  0  0 
+1A19790 	20 7C A0  1  4 65 6D 6D 
+1A19798 	73  0  0  0 6C 43 A0  1 
+1A197A0 	18  1  0  0 
+      8 of  ." svdc"  op-col get-ea  1 is wbit  .ea  ., sreg endof
+1A197A4 	F0 6F A0  1 
+1A197A8 	48 43 A0  1 38  0  0  0 
+1A197B0 	20 7C A0  1  4 73 76 64 
+1A197B8 	63  0  0  0 50 85 A1  1 
+1A197C0 	70 87 A1  1 80 6F A0  1 
+1A197C8 	B8 40 A0  1 18 7D A1  1 
+1A197D0 	94 84 A1  1 AC 7D A1  1 
+1A197D8 	94 87 A1  1 6C 43 A0  1 
+1A197E0 	D8  0  0  0 
+      9 of  ." rsdc"  op-col get-ea  1 is wbit  sreg ., .ea  endof
+1A197E4 	58 41 A0  1 
+1A197E8 	 9  0  0  0 48 43 A0  1 
+1A197F0 	38  0  0  0 20 7C A0  1 
+1A197F8 	 4 72 73 64 63  0  0  0 
+1A19800 	50 85 A1  1 70 87 A1  1 
+1A19808 	80 6F A0  1 B8 40 A0  1 
+1A19810 	18 7D A1  1 94 87 A1  1 
+1A19818 	AC 7D A1  1 94 84 A1  1 
+1A19820 	6C 43 A0  1 94  0  0  0 
+      e of  ." movd"  op-col get-ea  1 is wbit  .ea  ., mreg endof
+1A19828 	58 41 A0  1  E  0  0  0 
+1A19830 	48 43 A0  1 38  0  0  0 
+1A19838 	20 7C A0  1  4 6D 6F 76 
+1A19840 	64  0  0  0 50 85 A1  1 
+1A19848 	70 87 A1  1 80 6F A0  1 
+1A19850 	B8 40 A0  1 18 7D A1  1 
+1A19858 	94 84 A1  1 AC 7D A1  1 
+1A19860 	D4 87 A1  1 6C 43 A0  1 
+1A19868 	50  0  0  0 
+      f of  ." movq"  op-col get-ea  1 is wbit  .mea ., mreg endof
+1A1986C 	58 41 A0  1 
+1A19870 	 F  0  0  0 48 43 A0  1 
+1A19878 	38  0  0  0 20 7C A0  1 
+1A19880 	 4 6D 6F 76 71  0  0  0 
+1A19888 	50 85 A1  1 70 87 A1  1 
+1A19890 	80 6F A0  1 B8 40 A0  1 
+1A19898 	18 7D A1  1 F0 87 A1  1 
+1A198A0 	AC 7D A1  1 D4 87 A1  1 
+1A198A8 	6C 43 A0  1  C  0  0  0 
+      .unimp
+1A198B0 	8C 8D A1  1 
+   endcase
+1A198B4 	84 43 A0  1 
+;
+1A198B8 	58 46 A0  1 
+: msrop  ( -- )
+1A198BC 	 0  0 6D 73 
+1A198C0 	72 6F 70 85 7C 97 A1  1 
+1A198C8 	20 40 A0  1 
+   low4bits case
+1A198CC 	50 7D A1  1 
+      0 of  ." wrmsr"  endof
+1A198D0 	70 6F A0  1 48 43 A0  1 
+1A198D8 	18  0  0  0 20 7C A0  1 
+1A198E0 	 5 77 72 6D 73 72  0  0 
+1A198E8 	6C 43 A0  1 6C  0  0  0 
+      1 of  ." rdtsc"  endof
+1A198F0 	80 6F A0  1 48 43 A0  1 
+1A198F8 	18  0  0  0 20 7C A0  1 
+1A19900 	 5 72 64 74 73 63  0  0 
+1A19908 	6C 43 A0  1 4C  0  0  0 
+      2 of  ." rdmsr"  endof
+1A19910 	90 6F A0  1 48 43 A0  1 
+1A19918 	18  0  0  0 20 7C A0  1 
+1A19920 	 5 72 64 6D 73 72  0  0 
+1A19928 	6C 43 A0  1 2C  0  0  0 
+      8 of  ." smint"  endof
+1A19930 	F0 6F A0  1 48 43 A0  1 
+1A19938 	18  0  0  0 20 7C A0  1 
+1A19940 	 5 73 6D 69 6E 74  0  0 
+1A19948 	6C 43 A0  1  C  0  0  0 
+      .unimp
+1A19950 	8C 8D A1  1 
+   endcase
+1A19954 	84 43 A0  1 
+;
+1A19958 	58 46 A0  1 
+
+: .2byte  ( -- )
+1A1995C 	 0 2E 32 62 
+1A19960 	79 74 65 86 C8 98 A1  1 
+1A19968 	20 40 A0  1 
+   decode-op  case
+1A1996C 	18 8C A1  1 
+      0 of  2b0op  endof
+1A19970 	70 6F A0  1 48 43 A0  1 
+1A19978 	10  0  0  0 C0 8D A1  1 
+1A19980 	6C 43 A0  1 38  1  0  0 
+      2 of  movspec  endof
+1A19988 	90 6F A0  1 48 43 A0  1 
+1A19990 	10  0  0  0 A0 8F A1  1 
+1A19998 	6C 43 A0  1 20  1  0  0 
+      3 of  msrop    endof
+1A199A0 	A0 6F A0  1 48 43 A0  1 
+1A199A8 	10  0  0  0 C8 98 A1  1 
+1A199B0 	6C 43 A0  1  8  1  0  0 
+      6 of  2b6op    endof
+1A199B8 	D0 6F A0  1 48 43 A0  1 
+1A199C0 	10  0  0  0 D4 96 A1  1 
+1A199C8 	6C 43 A0  1 F0  0  0  0 
+      7 of  2b7op    endof
+1A199D0 	E0 6F A0  1 48 43 A0  1 
+1A199D8 	10  0  0  0 7C 97 A1  1 
+1A199E0 	6C 43 A0  1 D8  0  0  0 
+      8 of  ." j"   low4bits >cond ".  op-col  jv  endof
+1A199E8 	F0 6F A0  1 48 43 A0  1 
+1A199F0 	28  0  0  0 20 7C A0  1 
+1A199F8 	 1 6A  0  0 50 7D A1  1 
+1A19A00 	6C 8A A1  1 A8 7C A0  1 
+1A19A08 	50 85 A1  1 84 8B A1  1 
+1A19A10 	6C 43 A0  1 A8  0  0  0 
+      9 of  ." set" low4bits >cond ".  op-col  0 is wbit  get-ea  .ea  endof
+1A19A18 	58 41 A0  1  9  0  0  0 
+1A19A20 	48 43 A0  1 3C  0  0  0 
+1A19A28 	20 7C A0  1  3 73 65 74 
+1A19A30 	 0  0  0  0 50 7D A1  1 
+1A19A38 	6C 8A A1  1 A8 7C A0  1 
+1A19A40 	50 85 A1  1 70 6F A0  1 
+1A19A48 	B8 40 A0  1 18 7D A1  1 
+1A19A50 	70 87 A1  1 94 84 A1  1 
+1A19A58 	6C 43 A0  1 60  0  0  0 
+      a of  2baop  endof
+1A19A60 	58 41 A0  1  A  0  0  0 
+1A19A68 	48 43 A0  1 10  0  0  0 
+1A19A70 	B8 90 A1  1 6C 43 A0  1 
+1A19A78 	44  0  0  0 
+      b of  2bbop  endof
+1A19A7C 	58 41 A0  1 
+1A19A80 	 B  0  0  0 48 43 A0  1 
+1A19A88 	10  0  0  0  0 94 A1  1 
+1A19A90 	6C 43 A0  1 28  0  0  0 
+      c of  2bcop  endof
+1A19A98 	58 41 A0  1  C  0  0  0 
+1A19AA0 	48 43 A0  1 10  0  0  0 
+1A19AA8 	28 96 A1  1 6C 43 A0  1 
+1A19AB0 	 C  0  0  0 
+         .unimp
+1A19AB4 	8C 8D A1  1 
+   endcase
+1A19AB8 	84 43 A0  1 
+;
+1A19ABC 	58 46 A0  1 
+: .wierd  ( -- )
+1A19AC0 	 0 2E 77 69 65 72 64 86 
+1A19AC8 	68 99 A1  1 20 40 A0  1 
+   instruction @  f =  if  .2byte  exit then
+1A19AD0 	B4 7A A1  1 5C 4C A0  1 
+1A19AD8 	58 41 A0  1  F  0  0  0 
+1A19AE0 	24 48 A0  1 DC 41 A0  1 
+1A19AE8 	 C  0  0  0 68 99 A1  1 
+1A19AF0 	40 46 A0  1 
+   instruction @  h# 21 and  case
+1A19AF4 	B4 7A A1  1 
+1A19AF8 	5C 4C A0  1 58 41 A0  1 
+1A19B00 	21  0  0  0 5C 44 A0  1 
+      0  of  .push    .segment   endof
+1A19B08 	70 6F A0  1 48 43 A0  1 
+1A19B10 	14  0  0  0 24 8A A1  1 
+1A19B18 	BC 86 A1  1 6C 43 A0  1 
+1A19B20 	74  0  0  0 
+      1  of  .pop     .segment   endof
+1A19B24 	80 6F A0  1 
+1A19B28 	48 43 A0  1 14  0  0  0 
+1A19B30 	48 8A A1  1 BC 86 A1  1 
+1A19B38 	6C 43 A0  1 58  0  0  0 
+     20  of           .segment  ." :"   endof
+1A19B40 	58 41 A0  1 20  0  0  0 
+1A19B48 	48 43 A0  1 18  0  0  0 
+1A19B50 	BC 86 A1  1 20 7C A0  1 
+1A19B58 	 1 3A  0  0 6C 43 A0  1 
+1A19B60 	34  0  0  0 
+     21  of  3 2 ibits >adjust  ". endof
+1A19B64 	58 41 A0  1 
+1A19B68 	21  0  0  0 48 43 A0  1 
+1A19B70 	20  0  0  0 A0 6F A0  1 
+1A19B78 	90 6F A0  1 F4 7C A1  1 
+1A19B80 	E4 86 A1  1 A8 7C A0  1 
+1A19B88 	6C 43 A0  1  8  0  0  0 
+   endcase
+1A19B90 	84 43 A0  1 
+;
+1A19B94 	58 46 A0  1 
+: .2op  ( -- )
+1A19B98 	 0  0  0 2E 32 6F 70 84 
+1A19BA0 	CC 9A A1  1 20 40 A0  1 
+   lowbits 5 >  if
+1A19BA8 	2C 7D A1  1 C0 6F A0  1 
+1A19BB0 	 4 48 A0  1 DC 41 A0  1 
+1A19BB8 	10  0  0  0 
+      .wierd
+1A19BBC 	CC 9A A1  1 
+   else
+1A19BC0 	C8 41 A0  1 14  0  0  0 
+      midbits .binop  lowbits .mode
+1A19BC8 	70 7D A1  1 50 86 A1  1 
+1A19BD0 	2C 7D A1  1 A4 89 A1  1 
+   then
+;
+1A19BD8 	58 46 A0  1 
+: .1op  ( -- )
+1A19BDC 	 0  0  0 2E 
+1A19BE0 	31 6F 70 84 A4 9B A1  1 
+1A19BE8 	20 40 A0  1 
+   3 2 ibits  >unop ".  op-col  lowbits .reg
+1A19BEC 	A0 6F A0  1 
+1A19BF0 	90 6F A0  1 F4 7C A1  1 
+1A19BF8 	70 86 A1  1 A8 7C A0  1 
+1A19C00 	50 85 A1  1 2C 7D A1  1 
+1A19C08 	 8 81 A1  1 
+;
+1A19C0C 	58 46 A0  1 
+
+defer dis-body
+1A19C10 	 0  0  0 64 69 73 2D 62 
+1A19C18 	6F 64 79 88 E8 9B A1  1 
+1A19C20 	5C 40 A0  1 B4  4  0  0 
+: dis-op:  ( -- )
+1A19C28 	64 69 73 2D 6F 70 3A 87 
+1A19C30 	20 9C A1  1 20 40 A0  1 
+   op32? 0=  is op32?
+1A19C38 	F4 7B A1  1 24 47 A0  1 
+1A19C40 	B8 40 A0  1 F4 7B A1  1 
+   ['] dis-body catch  ( error? )
+1A19C48 	60 53 A0  1 20 9C A1  1 
+1A19C50 	14 7F A0  1 
+   op32? 0=  is op32?
+1A19C54 	F4 7B A1  1 
+1A19C58 	24 47 A0  1 B8 40 A0  1 
+1A19C60 	F4 7B A1  1 
+   throw
+1A19C64 	74 7F A0  1 
+;
+1A19C68 	58 46 A0  1 
+: dis-ad:  ( -- )
+1A19C6C 	64 69 73 2D 
+1A19C70 	61 64 3A 87 34 9C A1  1 
+1A19C78 	20 40 A0  1 
+   ad32? 0=  is ad32?
+1A19C7C 	38 7C A1  1 
+1A19C80 	24 47 A0  1 B8 40 A0  1 
+1A19C88 	38 7C A1  1 
+   ['] dis-body catch  ( error? )
+1A19C8C 	60 53 A0  1 
+1A19C90 	20 9C A1  1 14 7F A0  1 
+   ad32? 0=  is ad32?
+1A19C98 	38 7C A1  1 24 47 A0  1 
+1A19CA0 	B8 40 A0  1 38 7C A1  1 
+   throw
+1A19CA8 	74 7F A0  1 
+;
+1A19CAC 	58 46 A0  1 
+
+: .op6  ( -- )
+1A19CB0 	 0  0  0 2E 6F 70 36 84 
+1A19CB8 	78 9C A1  1 20 40 A0  1 
+   low4bits case
+1A19CC0 	50 7D A1  1 
+      0 of  ." pushad" endof
+1A19CC4 	70 6F A0  1 
+1A19CC8 	48 43 A0  1 18  0  0  0 
+1A19CD0 	20 7C A0  1  6 70 75 73 
+1A19CD8 	68 61 64  0 6C 43 A0  1 
+1A19CE0 	3C  2  0  0 
+      1 of  ." popad"  endof
+1A19CE4 	80 6F A0  1 
+1A19CE8 	48 43 A0  1 18  0  0  0 
+1A19CF0 	20 7C A0  1  5 70 6F 70 
+1A19CF8 	61 64  0  0 6C 43 A0  1 
+1A19D00 	1C  2  0  0 
+      2 of  ." bound"  op-col   get-ea reg-field .reg ,ea  endof
+1A19D04 	90 6F A0  1 
+1A19D08 	48 43 A0  1 2C  0  0  0 
+1A19D10 	20 7C A0  1  5 62 6F 75 
+1A19D18 	6E 64  0  0 50 85 A1  1 
+1A19D20 	70 87 A1  1 5C 87 A1  1 
+1A19D28 	 8 81 A1  1 18 85 A1  1 
+1A19D30 	6C 43 A0  1 E8  1  0  0 
+      3 of  ." arpl"   op-col   ea,g  endof  \ XXX should be w-reg, not d-reg
+1A19D38 	A0 6F A0  1 48 43 A0  1 
+1A19D40 	20  0  0  0 20 7C A0  1 
+1A19D48 	 4 61 72 70 6C  0  0  0 
+1A19D50 	50 85 A1  1 D0 8B A1  1 
+1A19D58 	6C 43 A0  1 C0  1  0  0 
+      4 of  ." fs:"  endof
+1A19D60 	B0 6F A0  1 48 43 A0  1 
+1A19D68 	18  0  0  0 20 7C A0  1 
+1A19D70 	 3 66 73 3A  0  0  0  0 
+1A19D78 	6C 43 A0  1 A0  1  0  0 
+      5 of  ." gs:"  endof
+1A19D80 	C0 6F A0  1 48 43 A0  1 
+1A19D88 	18  0  0  0 20 7C A0  1 
+1A19D90 	 3 67 73 3A  0  0  0  0 
+1A19D98 	6C 43 A0  1 80  1  0  0 
+      6 of  ." op: "  dis-op:  endof
+1A19DA0 	D0 6F A0  1 48 43 A0  1 
+1A19DA8 	1C  0  0  0 20 7C A0  1 
+1A19DB0 	 4 6F 70 3A 20  0  0  0 
+1A19DB8 	34 9C A1  1 6C 43 A0  1 
+1A19DC0 	5C  1  0  0 
+      7 of  ." ad: "  dis-ad:  endof
+1A19DC4 	E0 6F A0  1 
+1A19DC8 	48 43 A0  1 1C  0  0  0 
+1A19DD0 	20 7C A0  1  4 61 64 3A 
+1A19DD8 	20  0  0  0 78 9C A1  1 
+1A19DE0 	6C 43 A0  1 38  1  0  0 
+      8 of  .push    iv  endof
+1A19DE8 	F0 6F A0  1 48 43 A0  1 
+1A19DF0 	14  0  0  0 24 8A A1  1 
+1A19DF8 	B8 88 A1  1 6C 43 A0  1 
+1A19E00 	1C  1  0  0 
+      9 of  ." imul" op-col g,ea ., iv  endof
+1A19E04 	58 41 A0  1 
+1A19E08 	 9  0  0  0 48 43 A0  1 
+1A19E10 	28  0  0  0 20 7C A0  1 
+1A19E18 	 4 69 6D 75 6C  0  0  0 
+1A19E20 	50 85 A1  1 F4 8B A1  1 
+1A19E28 	AC 7D A1  1 B8 88 A1  1 
+1A19E30 	6C 43 A0  1 E8  0  0  0 
+      a of  .push    ib  endof
+1A19E38 	58 41 A0  1  A  0  0  0 
+1A19E40 	48 43 A0  1 14  0  0  0 
+1A19E48 	24 8A A1  1 48 88 A1  1 
+1A19E50 	6C 43 A0  1 C8  0  0  0 
+      b of  ." imul" op-col g,ea ,ib    endof
+1A19E58 	58 41 A0  1  B  0  0  0 
+1A19E60 	48 43 A0  1 24  0  0  0 
+1A19E68 	20 7C A0  1  4 69 6D 75 
+1A19E70 	6C  0  0  0 50 85 A1  1 
+1A19E78 	F4 8B A1  1 68 88 A1  1 
+1A19E80 	6C 43 A0  1 98  0  0  0 
+      c of  ." insb"  endof
+1A19E88 	58 41 A0  1  C  0  0  0 
+1A19E90 	48 43 A0  1 18  0  0  0 
+1A19E98 	20 7C A0  1  4 69 6E 73 
+1A19EA0 	62  0  0  0 6C 43 A0  1 
+1A19EA8 	74  0  0  0 
+      d of  ." insd"  endof
+1A19EAC 	58 41 A0  1 
+1A19EB0 	 D  0  0  0 48 43 A0  1 
+1A19EB8 	18  0  0  0 20 7C A0  1 
+1A19EC0 	 4 69 6E 73 64  0  0  0 
+1A19EC8 	6C 43 A0  1 50  0  0  0 
+      e of  ." outsb" endof
+1A19ED0 	58 41 A0  1  E  0  0  0 
+1A19ED8 	48 43 A0  1 18  0  0  0 
+1A19EE0 	20 7C A0  1  5 6F 75 74 
+1A19EE8 	73 62  0  0 6C 43 A0  1 
+1A19EF0 	2C  0  0  0 
+      f of  ." outsd" endof
+1A19EF4 	58 41 A0  1 
+1A19EF8 	 F  0  0  0 48 43 A0  1 
+1A19F00 	18  0  0  0 20 7C A0  1 
+1A19F08 	 5 6F 75 74 73 64  0  0 
+1A19F10 	6C 43 A0  1  8  0  0  0 
+   endcase
+1A19F18 	84 43 A0  1 
+;
+1A19F1C 	58 46 A0  1 
+
+: grp1op  ( -- )  get-ea  midbits .binop  ;
+1A19F20 	 0 67 72 70 31 6F 70 86 
+1A19F28 	BC 9C A1  1 20 40 A0  1 
+1A19F30 	70 87 A1  1 70 7D A1  1 
+1A19F38 	50 86 A1  1 58 46 A0  1 
+: .test  ( -- )  ." test" op-col  ;
+1A19F40 	 0  0 2E 74 65 73 74 85 
+1A19F48 	2C 9F A1  1 20 40 A0  1 
+1A19F50 	20 7C A0  1  4 74 65 73 
+1A19F58 	74  0  0  0 50 85 A1  1 
+1A19F60 	58 46 A0  1 
+
+: .op8  ( -- )
+1A19F64 	 0  0  0 2E 
+1A19F68 	6F 70 38 84 4C 9F A1  1 
+1A19F70 	20 40 A0  1 
+   low4bits  case
+1A19F74 	50 7D A1  1 
+      0 of  grp1op    .byte .ea ., iub  endof
+1A19F78 	70 6F A0  1 48 43 A0  1 
+1A19F80 	20  0  0  0 2C 9F A1  1 
+1A19F88 	28 8F A1  1 94 84 A1  1 
+1A19F90 	AC 7D A1  1 80 88 A1  1 
+1A19F98 	6C 43 A0  1 30  2  0  0 
+      1 of  grp1op          .ea ., iv   endof
+1A19FA0 	80 6F A0  1 48 43 A0  1 
+1A19FA8 	1C  0  0  0 2C 9F A1  1 
+1A19FB0 	94 84 A1  1 AC 7D A1  1 
+1A19FB8 	B8 88 A1  1 6C 43 A0  1 
+1A19FC0 	 C  2  0  0 
+\ The opcode map in the Intel manual says 82 is "movb", but it actually
+\ appears to be the same as "80" - the sign extension of the immediate
+\ byte is irrelevant to a byte-width operation
+\     2 of  ." movb"       al/x ,ib   endof
+      2 of  grp1op    .byte .ea ,ib   endof \ Opcode maps says "movb"
+1A19FC4 	90 6F A0  1 
+1A19FC8 	48 43 A0  1 1C  0  0  0 
+1A19FD0 	2C 9F A1  1 28 8F A1  1 
+1A19FD8 	94 84 A1  1 68 88 A1  1 
+1A19FE0 	6C 43 A0  1 E8  1  0  0 
+      3 of  grp1op          .ea ,ib   endof
+1A19FE8 	A0 6F A0  1 48 43 A0  1 
+1A19FF0 	18  0  0  0 2C 9F A1  1 
+1A19FF8 	94 84 A1  1 68 88 A1  1 
+1A1A000 	6C 43 A0  1 C8  1  0  0 
+      4 of  .test           ea,g  endof
+1A1A008 	B0 6F A0  1 48 43 A0  1 
+1A1A010 	14  0  0  0 4C 9F A1  1 
+1A1A018 	D0 8B A1  1 6C 43 A0  1 
+1A1A020 	AC  1  0  0 
+      5 of  .test           ea,g  endof
+1A1A024 	C0 6F A0  1 
+1A1A028 	48 43 A0  1 14  0  0  0 
+1A1A030 	4C 9F A1  1 D0 8B A1  1 
+1A1A038 	6C 43 A0  1 90  1  0  0 
+      6 of  ." xchg" op-col ea,g  endof
+1A1A040 	D0 6F A0  1 48 43 A0  1 
+1A1A048 	20  0  0  0 20 7C A0  1 
+1A1A050 	 4 78 63 68 67  0  0  0 
+1A1A058 	50 85 A1  1 D0 8B A1  1 
+1A1A060 	6C 43 A0  1 68  1  0  0 
+      7 of  ." xchg" op-col ea,g  endof
+1A1A068 	E0 6F A0  1 48 43 A0  1 
+1A1A070 	20  0  0  0 20 7C A0  1 
+1A1A078 	 4 78 63 68 67  0  0  0 
+1A1A080 	50 85 A1  1 D0 8B A1  1 
+1A1A088 	6C 43 A0  1 40  1  0  0 
+      8 of  .mov            ea,g  endof
+1A1A090 	F0 6F A0  1 48 43 A0  1 
+1A1A098 	14  0  0  0  4 8F A1  1 
+1A1A0A0 	D0 8B A1  1 6C 43 A0  1 
+1A1A0A8 	24  1  0  0 
+      9 of  .mov            ea,g  endof
+1A1A0AC 	58 41 A0  1 
+1A1A0B0 	 9  0  0  0 48 43 A0  1 
+1A1A0B8 	14  0  0  0  4 8F A1  1 
+1A1A0C0 	D0 8B A1  1 6C 43 A0  1 
+1A1A0C8 	 4  1  0  0 
+      a of  .mov            g,ea  endof
+1A1A0CC 	58 41 A0  1 
+1A1A0D0 	 A  0  0  0 48 43 A0  1 
+1A1A0D8 	14  0  0  0  4 8F A1  1 
+1A1A0E0 	F4 8B A1  1 6C 43 A0  1 
+1A1A0E8 	E4  0  0  0 
+      b of  .mov            g,ea  endof
+1A1A0EC 	58 41 A0  1 
+1A1A0F0 	 B  0  0  0 48 43 A0  1 
+1A1A0F8 	14  0  0  0  4 8F A1  1 
+1A1A100 	F4 8B A1  1 6C 43 A0  1 
+1A1A108 	C4  0  0  0 
+      c of  .mov  get-ea  1 is wbit  .ea  ., sreg  endof
+1A1A10C 	58 41 A0  1 
+1A1A110 	 C  0  0  0 48 43 A0  1 
+1A1A118 	2C  0  0  0  4 8F A1  1 
+1A1A120 	70 87 A1  1 80 6F A0  1 
+1A1A128 	B8 40 A0  1 18 7D A1  1 
+1A1A130 	94 84 A1  1 AC 7D A1  1 
+1A1A138 	94 87 A1  1 6C 43 A0  1 
+1A1A140 	8C  0  0  0 
+      e of  .mov  get-ea  1 is wbit  sreg ,ea   endof
+1A1A144 	58 41 A0  1 
+1A1A148 	 E  0  0  0 48 43 A0  1 
+1A1A150 	28  0  0  0  4 8F A1  1 
+1A1A158 	70 87 A1  1 80 6F A0  1 
+1A1A160 	B8 40 A0  1 18 7D A1  1 
+1A1A168 	94 87 A1  1 18 85 A1  1 
+1A1A170 	6C 43 A0  1 58  0  0  0 
+      d of  ." lea" op-col  g,ea         endof
+1A1A178 	58 41 A0  1  D  0  0  0 
+1A1A180 	48 43 A0  1 20  0  0  0 
+1A1A188 	20 7C A0  1  3 6C 65 61 
+1A1A190 	 0  0  0  0 50 85 A1  1 
+1A1A198 	F4 8B A1  1 6C 43 A0  1 
+1A1A1A0 	2C  0  0  0 
+      f of  .pop  get-ea  .ea  endof
+1A1A1A4 	58 41 A0  1 
+1A1A1A8 	 F  0  0  0 48 43 A0  1 
+1A1A1B0 	18  0  0  0 48 8A A1  1 
+1A1A1B8 	70 87 A1  1 94 84 A1  1 
+1A1A1C0 	6C 43 A0  1  8  0  0  0 
+   endcase
+1A1A1C8 	84 43 A0  1 
+;
+1A1A1CC 	58 46 A0  1 
+
+: .4x  ( n -- )  push-hex <# u# u# u# u# u#> type pop-base  ;
+1A1A1D0 	2E 34 78 83 70 9F A1  1 
+1A1A1D8 	20 40 A0  1 5C F4 A0  1 
+1A1A1E0 	 8 76 A0  1 94 76 A0  1 
+1A1A1E8 	94 76 A0  1 94 76 A0  1 
+1A1A1F0 	94 76 A0  1 E0 76 A0  1 
+1A1A1F8 	 4 6C A0  1 9C F4 A0  1 
+1A1A200 	58 46 A0  1 
+: ap  ( -- )
+1A1A204 	 0 61 70 82 
+1A1A208 	D8 A1 A1  1 20 40 A0  1 
+   opv@ ." far "
+1A1A210 	 8 7C A1  1 20 7C A0  1 
+1A1A218 	 4 66 61 72 20  0  0  0 
+   op16@ push-hex (.) type pop-base
+1A1A220 	5C 7B A1  1 5C F4 A0  1 
+1A1A228 	10 78 A0  1  4 6C A0  1 
+1A1A230 	9C F4 A0  1 
+   ." :"  op32?  if  showaddr  else  .4x  then
+1A1A234 	20 7C A0  1 
+1A1A238 	 1 3A  0  0 F4 7B A1  1 
+1A1A240 	DC 41 A0  1 10  0  0  0 
+1A1A248 	30 13 A1  1 C8 41 A0  1 
+1A1A250 	 8  0  0  0 D8 A1 A1  1 
+   end-found on
+1A1A258 	CC 7A A1  1 E0 4B A0  1 
+;
+1A1A260 	58 46 A0  1 
+
+string-array >8line-ops
+1A1A264 	 0 3E 38 6C 
+1A1A268 	69 6E 65 2D 6F 70 73 8A 
+1A1A270 	 C A2 A1  1 44 15 A1  1 
+1A1A278 	 8  0  0  0 48  0  0  0 
+  ," cwde"  ," cdq"  ," call"  ," wait"  ," pushfd" ," popfd" ," sahf" ," lahf"
+1A1A280 	 4 63 77 64 65  0  0  0 
+1A1A288 	 3 63 64 71  0  0  0  0 
+1A1A290 	 4 63 61 6C 6C  0  0  0 
+1A1A298 	 4 77 61 69 74  0  0  0 
+1A1A2A0 	 6 70 75 73 68 66 64  0 
+1A1A2A8 	 5 70 6F 70 66 64  0  0 
+1A1A2B0 	 4 73 61 68 66  0  0  0 
+1A1A2B8 	 4 6C 61 68 66  0  0  0 
+end-string-array
+1A1A2C0 	 8  0  0  0 10  0  0  0 
+1A1A2C8 	18  0  0  0 20  0  0  0 
+1A1A2D0 	28  0  0  0 30  0  0  0 
+1A1A2D8 	38  0  0  0 40  0  0  0 
+
+: .op9  ( -- )
+1A1A2E0 	 0  0  0 2E 6F 70 39 84 
+1A1A2E8 	74 A2 A1  1 20 40 A0  1 
+   low4bits                                                       ( low4bits )
+1A1A2F0 	50 7D A1  1 
+   dup  8 <  if  ." xchg"  op-col  .reg  ., ." eax"  exit  then   ( low4bits )
+1A1A2F4 	40 49 A0  1 
+1A1A2F8 	F0 6F A0  1 E4 47 A0  1 
+1A1A300 	DC 41 A0  1 2C  0  0  0 
+1A1A308 	20 7C A0  1  4 78 63 68 
+1A1A310 	67  0  0  0 50 85 A1  1 
+1A1A318 	 8 81 A1  1 AC 7D A1  1 
+1A1A320 	20 7C A0  1  3 65 61 78 
+1A1A328 	 0  0  0  0 40 46 A0  1 
+   dup 8 -  >8line-ops ".   a =  if  op-col ap  then
+1A1A330 	40 49 A0  1 F0 6F A0  1 
+1A1A338 	18 45 A0  1 74 A2 A1  1 
+1A1A340 	A8 7C A0  1 58 41 A0  1 
+1A1A348 	 A  0  0  0 24 48 A0  1 
+1A1A350 	DC 41 A0  1  C  0  0  0 
+1A1A358 	50 85 A1  1  C A2 A1  1 
+;
+1A1A360 	58 46 A0  1 
+
+: .opa  ( -- )
+1A1A364 	 0  0  0 2E 
+1A1A368 	6F 70 61 84 EC A2 A1  1 
+1A1A370 	20 40 A0  1 
+   low4bits case
+1A1A374 	50 7D A1  1 
+      0 of  .mov  al/x ., ." [" iuv ." ]"  endof
+1A1A378 	70 6F A0  1 48 43 A0  1 
+1A1A380 	2C  0  0  0  4 8F A1  1 
+1A1A388 	30 89 A1  1 AC 7D A1  1 
+1A1A390 	20 7C A0  1  1 5B  0  0 
+1A1A398 	D4 88 A1  1 20 7C A0  1 
+1A1A3A0 	 1 5D  0  0 6C 43 A0  1 
+1A1A3A8 	38  2  0  0 
+      1 of  .mov  al/x ., ." [" iuv ." ]"  endof
+1A1A3AC 	80 6F A0  1 
+1A1A3B0 	48 43 A0  1 2C  0  0  0 
+1A1A3B8 	 4 8F A1  1 30 89 A1  1 
+1A1A3C0 	AC 7D A1  1 20 7C A0  1 
+1A1A3C8 	 1 5B  0  0 D4 88 A1  1 
+1A1A3D0 	20 7C A0  1  1 5D  0  0 
+1A1A3D8 	6C 43 A0  1  4  2  0  0 
+      2 of  .mov  ." [" iuv ." ]" ,al/x  endof
+1A1A3E0 	90 6F A0  1 48 43 A0  1 
+1A1A3E8 	28  0  0  0  4 8F A1  1 
+1A1A3F0 	20 7C A0  1  1 5B  0  0 
+1A1A3F8 	D4 88 A1  1 20 7C A0  1 
+1A1A400 	 1 5D  0  0 6C 89 A1  1 
+1A1A408 	6C 43 A0  1 D4  1  0  0 
+      3 of  .mov  ." [" iuv ." ]" ,al/x  endof
+1A1A410 	A0 6F A0  1 48 43 A0  1 
+1A1A418 	28  0  0  0  4 8F A1  1 
+1A1A420 	20 7C A0  1  1 5B  0  0 
+1A1A428 	D4 88 A1  1 20 7C A0  1 
+1A1A430 	 1 5D  0  0 6C 89 A1  1 
+1A1A438 	6C 43 A0  1 A4  1  0  0 
+      4 of  ." movsb"  endof
+1A1A440 	B0 6F A0  1 48 43 A0  1 
+1A1A448 	18  0  0  0 20 7C A0  1 
+1A1A450 	 5 6D 6F 76 73 62  0  0 
+1A1A458 	6C 43 A0  1 84  1  0  0 
+      5 of  ." movsd"  endof
+1A1A460 	C0 6F A0  1 48 43 A0  1 
+1A1A468 	18  0  0  0 20 7C A0  1 
+1A1A470 	 5 6D 6F 76 73 64  0  0 
+1A1A478 	6C 43 A0  1 64  1  0  0 
+      6 of  ." cmpsb"  endof
+1A1A480 	D0 6F A0  1 48 43 A0  1 
+1A1A488 	18  0  0  0 20 7C A0  1 
+1A1A490 	 5 63 6D 70 73 62  0  0 
+1A1A498 	6C 43 A0  1 44  1  0  0 
+      7 of  ." cmpsd"  endof
+1A1A4A0 	E0 6F A0  1 48 43 A0  1 
+1A1A4A8 	18  0  0  0 20 7C A0  1 
+1A1A4B0 	 5 63 6D 70 73 64  0  0 
+1A1A4B8 	6C 43 A0  1 24  1  0  0 
+      8 of  .test  al/x ,ib/v  endof
+1A1A4C0 	F0 6F A0  1 48 43 A0  1 
+1A1A4C8 	18  0  0  0 4C 9F A1  1 
+1A1A4D0 	30 89 A1  1 F4 88 A1  1 
+1A1A4D8 	6C 43 A0  1  4  1  0  0 
+      9 of  .test  al/x ,ib/v  endof
+1A1A4E0 	58 41 A0  1  9  0  0  0 
+1A1A4E8 	48 43 A0  1 18  0  0  0 
+1A1A4F0 	4C 9F A1  1 30 89 A1  1 
+1A1A4F8 	F4 88 A1  1 6C 43 A0  1 
+1A1A500 	E0  0  0  0 
+      a of  ." stosb"  endof
+1A1A504 	58 41 A0  1 
+1A1A508 	 A  0  0  0 48 43 A0  1 
+1A1A510 	18  0  0  0 20 7C A0  1 
+1A1A518 	 5 73 74 6F 73 62  0  0 
+1A1A520 	6C 43 A0  1 BC  0  0  0 
+      b of  ." stosd"  endof
+1A1A528 	58 41 A0  1  B  0  0  0 
+1A1A530 	48 43 A0  1 18  0  0  0 
+1A1A538 	20 7C A0  1  5 73 74 6F 
+1A1A540 	73 64  0  0 6C 43 A0  1 
+1A1A548 	98  0  0  0 
+      c of  ." lodsb"  endof
+1A1A54C 	58 41 A0  1 
+1A1A550 	 C  0  0  0 48 43 A0  1 
+1A1A558 	18  0  0  0 20 7C A0  1 
+1A1A560 	 5 6C 6F 64 73 62  0  0 
+1A1A568 	6C 43 A0  1 74  0  0  0 
+      d of  ." lodsd"  endof
+1A1A570 	58 41 A0  1  D  0  0  0 
+1A1A578 	48 43 A0  1 18  0  0  0 
+1A1A580 	20 7C A0  1  5 6C 6F 64 
+1A1A588 	73 64  0  0 6C 43 A0  1 
+1A1A590 	50  0  0  0 
+      e of  ." scasb"  endof
+1A1A594 	58 41 A0  1 
+1A1A598 	 E  0  0  0 48 43 A0  1 
+1A1A5A0 	18  0  0  0 20 7C A0  1 
+1A1A5A8 	 5 73 63 61 73 62  0  0 
+1A1A5B0 	6C 43 A0  1 2C  0  0  0 
+      f of  ." scasd"  endof
+1A1A5B8 	58 41 A0  1  F  0  0  0 
+1A1A5C0 	48 43 A0  1 18  0  0  0 
+1A1A5C8 	20 7C A0  1  5 73 63 61 
+1A1A5D0 	73 64  0  0 6C 43 A0  1 
+1A1A5D8 	 8  0  0  0 
+   endcase
+1A1A5DC 	84 43 A0  1 
+;
+1A1A5E0 	58 46 A0  1 
+string-array >grp2-op
+1A1A5E4 	 0  0  0 3E 
+1A1A5E8 	67 72 70 32 2D 6F 70 88 
+1A1A5F0 	70 A3 A1  1 44 15 A1  1 
+1A1A5F8 	 8  0  0  0 48  0  0  0 
+   ," rol"   ," ror"  ," rcl"  ," rcr"  ," shl"  ," shr"  ," sal"  ," sar"
+1A1A600 	 3 72 6F 6C  0  0  0  0 
+1A1A608 	 3 72 6F 72  0  0  0  0 
+1A1A610 	 3 72 63 6C  0  0  0  0 
+1A1A618 	 3 72 63 72  0  0  0  0 
+1A1A620 	 3 73 68 6C  0  0  0  0 
+1A1A628 	 3 73 68 72  0  0  0  0 
+1A1A630 	 3 73 61 6C  0  0  0  0 
+1A1A638 	 3 73 61 72  0  0  0  0 
+end-string-array
+1A1A640 	 8  0  0  0 10  0  0  0 
+1A1A648 	18  0  0  0 20  0  0  0 
+1A1A650 	28  0  0  0 30  0  0  0 
+1A1A658 	38  0  0  0 40  0  0  0 
+: grp2op  ( -- )  get-ea  midbits >grp2-op ". op-col  ;
+1A1A660 	 0 67 72 70 32 6F 70 86 
+1A1A668 	F4 A5 A1  1 20 40 A0  1 
+1A1A670 	70 87 A1  1 70 7D A1  1 
+1A1A678 	F4 A5 A1  1 A8 7C A0  1 
+1A1A680 	50 85 A1  1 58 46 A0  1 
+: .ret   ( -- )  ." ret"  op-col  end-found on  ;
+1A1A688 	 0  0  0 2E 72 65 74 84 
+1A1A690 	6C A6 A1  1 20 40 A0  1 
+1A1A698 	20 7C A0  1  3 72 65 74 
+1A1A6A0 	 0  0  0  0 50 85 A1  1 
+1A1A6A8 	CC 7A A1  1 E0 4B A0  1 
+1A1A6B0 	58 46 A0  1 
+: .near  ( -- )  ." near "  ;
+1A1A6B4 	 0  0 2E 6E 
+1A1A6B8 	65 61 72 85 94 A6 A1  1 
+1A1A6C0 	20 40 A0  1 20 7C A0  1 
+1A1A6C8 	 5 6E 65 61 72 20  0  0 
+1A1A6D0 	58 46 A0  1 
+: .far   ( -- )  ." far "  ;
+1A1A6D4 	 0  0  0 2E 
+1A1A6D8 	66 61 72 84 C0 A6 A1  1 
+1A1A6E0 	20 40 A0  1 20 7C A0  1 
+1A1A6E8 	 4 66 61 72 20  0  0  0 
+1A1A6F0 	58 46 A0  1 
+
+: .opc  ( -- )
+1A1A6F4 	 0  0  0 2E 
+1A1A6F8 	6F 70 63 84 E0 A6 A1  1 
+1A1A700 	20 40 A0  1 
+   low4bits case
+1A1A704 	50 7D A1  1 
+      0 of  grp2op        ?.byte .ea ,ib    endof
+1A1A708 	70 6F A0  1 48 43 A0  1 
+1A1A710 	1C  0  0  0 6C A6 A1  1 
+1A1A718 	4C 8F A1  1 94 84 A1  1 
+1A1A720 	68 88 A1  1 6C 43 A0  1 
+1A1A728 	38  2  0  0 
+      1 of  grp2op               .ea ,ib    endof
+1A1A72C 	80 6F A0  1 
+1A1A730 	48 43 A0  1 18  0  0  0 
+1A1A738 	6C A6 A1  1 94 84 A1  1 
+1A1A740 	68 88 A1  1 6C 43 A0  1 
+1A1A748 	18  2  0  0 
+      2 of  .ret           .near iw         endof
+1A1A74C 	90 6F A0  1 
+1A1A750 	48 43 A0  1 18  0  0  0 
+1A1A758 	94 A6 A1  1 C0 A6 A1  1 
+1A1A760 	9C 88 A1  1 6C 43 A0  1 
+1A1A768 	F8  1  0  0 
+      3 of  .ret           .near            endof
+1A1A76C 	A0 6F A0  1 
+1A1A770 	48 43 A0  1 14  0  0  0 
+1A1A778 	94 A6 A1  1 C0 A6 A1  1 
+1A1A780 	6C 43 A0  1 DC  1  0  0 
+      4 of  ." les"        .lfp             endof
+1A1A788 	B0 6F A0  1 48 43 A0  1 
+1A1A790 	1C  0  0  0 20 7C A0  1 
+1A1A798 	 3 6C 65 73  0  0  0  0 
+1A1A7A0 	60 93 A1  1 6C 43 A0  1 
+1A1A7A8 	B8  1  0  0 
+      5 of  ." lds"        .lfp             endof
+1A1A7AC 	C0 6F A0  1 
+1A1A7B0 	48 43 A0  1 1C  0  0  0 
+1A1A7B8 	20 7C A0  1  3 6C 64 73 
+1A1A7C0 	 0  0  0  0 60 93 A1  1 
+1A1A7C8 	6C 43 A0  1 94  1  0  0 
+      6 of  .mov           get-ea  ?.byte .ea  ,ib/v  endof
+1A1A7D0 	D0 6F A0  1 48 43 A0  1 
+1A1A7D8 	20  0  0  0  4 8F A1  1 
+1A1A7E0 	70 87 A1  1 4C 8F A1  1 
+1A1A7E8 	94 84 A1  1 F4 88 A1  1 
+1A1A7F0 	6C 43 A0  1 6C  1  0  0 
+      7 of  .mov           get-ea         .ea  ,ib/v  endof
+1A1A7F8 	E0 6F A0  1 48 43 A0  1 
+1A1A800 	1C  0  0  0  4 8F A1  1 
+1A1A808 	70 87 A1  1 94 84 A1  1 
+1A1A810 	F4 88 A1  1 6C 43 A0  1 
+1A1A818 	48  1  0  0 
+      8 of  ." enter" op-col  iw ,ib        endof
+1A1A81C 	F0 6F A0  1 
+1A1A820 	48 43 A0  1 24  0  0  0 
+1A1A828 	20 7C A0  1  5 65 6E 74 
+1A1A830 	65 72  0  0 50 85 A1  1 
+1A1A838 	9C 88 A1  1 68 88 A1  1 
+1A1A840 	6C 43 A0  1 1C  1  0  0 
+      9 of  ." leave"                       endof
+1A1A848 	58 41 A0  1  9  0  0  0 
+1A1A850 	48 43 A0  1 18  0  0  0 
+1A1A858 	20 7C A0  1  5 6C 65 61 
+1A1A860 	76 65  0  0 6C 43 A0  1 
+1A1A868 	F8  0  0  0 
+      a of  .ret             .far  iw       endof
+1A1A86C 	58 41 A0  1 
+1A1A870 	 A  0  0  0 48 43 A0  1 
+1A1A878 	18  0  0  0 94 A6 A1  1 
+1A1A880 	E0 A6 A1  1 9C 88 A1  1 
+1A1A888 	6C 43 A0  1 D4  0  0  0 
+      b of  .ret             .far           endof
+1A1A890 	58 41 A0  1  B  0  0  0 
+1A1A898 	48 43 A0  1 14  0  0  0 
+1A1A8A0 	94 A6 A1  1 E0 A6 A1  1 
+1A1A8A8 	6C 43 A0  1 B4  0  0  0 
+      c of  ." int"   op-col ." 3"          endof
+1A1A8B0 	58 41 A0  1  C  0  0  0 
+1A1A8B8 	48 43 A0  1 24  0  0  0 
+1A1A8C0 	20 7C A0  1  3 69 6E 74 
+1A1A8C8 	 0  0  0  0 50 85 A1  1 
+1A1A8D0 	20 7C A0  1  1 33  0  0 
+1A1A8D8 	6C 43 A0  1 84  0  0  0 
+      d of  ." int"   op-col iub            endof
+1A1A8E0 	58 41 A0  1  D  0  0  0 
+1A1A8E8 	48 43 A0  1 20  0  0  0 
+1A1A8F0 	20 7C A0  1  3 69 6E 74 
+1A1A8F8 	 0  0  0  0 50 85 A1  1 
+1A1A900 	80 88 A1  1 6C 43 A0  1 
+1A1A908 	58  0  0  0 
+      e of  ." into"                        endof
+1A1A90C 	58 41 A0  1 
+1A1A910 	 E  0  0  0 48 43 A0  1 
+1A1A918 	18  0  0  0 20 7C A0  1 
+1A1A920 	 4 69 6E 74 6F  0  0  0 
+1A1A928 	6C 43 A0  1 34  0  0  0 
+      f of  ." iretd"  end-found on         endof
+1A1A930 	58 41 A0  1  F  0  0  0 
+1A1A938 	48 43 A0  1 20  0  0  0 
+1A1A940 	20 7C A0  1  5 69 72 65 
+1A1A948 	74 64  0  0 CC 7A A1  1 
+1A1A950 	E0 4B A0  1 6C 43 A0  1 
+1A1A958 	 8  0  0  0 
+   endcase
+1A1A95C 	84 43 A0  1 
+;
+1A1A960 	58 46 A0  1 
+
+defer .esc
+1A1A964 	 0  0  0 2E 
+1A1A968 	65 73 63 84  0 A7 A1  1 
+1A1A970 	5C 40 A0  1 B8  4  0  0 
+: null.esc  ( -- )
+1A1A978 	 0  0  0 6E 75 6C 6C 2E 
+1A1A980 	65 73 63 88 70 A9 A1  1 
+1A1A988 	20 40 A0  1 
+   ." Coprocessor Escape " instruction @ .  op8@ .
+1A1A98C 	20 7C A0  1 
+1A1A990 	13 43 6F 70 72 6F 63 65 
+1A1A998 	73 73 6F 72 20 45 73 63 
+1A1A9A0 	61 70 65 20  0  0  0  0 
+1A1A9A8 	B4 7A A1  1 5C 4C A0  1 
+1A1A9B0 	94 7A A0  1 24 7B A1  1 
+1A1A9B8 	94 7A A0  1 
+;
+1A1A9BC 	58 46 A0  1 
+' null.esc is .esc
+
+: .opd  ( -- )
+1A1A9C0 	 0  0  0 2E 6F 70 64 84 
+1A1A9C8 	88 A9 A1  1 20 40 A0  1 
+   low4bits  case
+1A1A9D0 	50 7D A1  1 
+      0 of  grp2op   .byte .ea  .,  ." 1"   endof
+1A1A9D4 	70 6F A0  1 
+1A1A9D8 	48 43 A0  1 24  0  0  0 
+1A1A9E0 	6C A6 A1  1 28 8F A1  1 
+1A1A9E8 	94 84 A1  1 AC 7D A1  1 
+1A1A9F0 	20 7C A0  1  1 31  0  0 
+1A1A9F8 	6C 43 A0  1  0  1  0  0 
+      1 of  grp2op         .ea  .,  ." 1"   endof
+1A1AA00 	80 6F A0  1 48 43 A0  1 
+1A1AA08 	20  0  0  0 6C A6 A1  1 
+1A1AA10 	94 84 A1  1 AC 7D A1  1 
+1A1AA18 	20 7C A0  1  1 31  0  0 
+1A1AA20 	6C 43 A0  1 D8  0  0  0 
+      2 of  grp2op   .byte .ea  ,cl  endof
+1A1AA28 	90 6F A0  1 48 43 A0  1 
+1A1AA30 	1C  0  0  0 6C A6 A1  1 
+1A1AA38 	28 8F A1  1 94 84 A1  1 
+1A1AA40 	84 89 A1  1 6C 43 A0  1 
+1A1AA48 	B4  0  0  0 
+      3 of  grp2op         .ea  ,cl  endof
+1A1AA4C 	A0 6F A0  1 
+1A1AA50 	48 43 A0  1 18  0  0  0 
+1A1AA58 	6C A6 A1  1 94 84 A1  1 
+1A1AA60 	84 89 A1  1 6C 43 A0  1 
+1A1AA68 	94  0  0  0 
+      4 of  ." aam"   op8@ drop  endof   \ D4 is always followed by 0A (10)
+1A1AA6C 	B0 6F A0  1 
+1A1AA70 	48 43 A0  1 20  0  0  0 
+1A1AA78 	20 7C A0  1  3 61 61 6D 
+1A1AA80 	 0  0  0  0 24 7B A1  1 
+1A1AA88 	30 49 A0  1 6C 43 A0  1 
+1A1AA90 	6C  0  0  0 
+      5 of  ." aad"   op8@ drop  endof   \ D5 is always followed by 0A (10)
+1A1AA94 	C0 6F A0  1 
+1A1AA98 	48 43 A0  1 20  0  0  0 
+1A1AAA0 	20 7C A0  1  3 61 61 64 
+1A1AAA8 	 0  0  0  0 24 7B A1  1 
+1A1AAB0 	30 49 A0  1 6C 43 A0  1 
+1A1AAB8 	44  0  0  0 
+      6 of  .unimp    endof
+1A1AABC 	D0 6F A0  1 
+1A1AAC0 	48 43 A0  1 10  0  0  0 
+1A1AAC8 	8C 8D A1  1 6C 43 A0  1 
+1A1AAD0 	2C  0  0  0 
+      7 of  ." xlatb" endof
+1A1AAD4 	E0 6F A0  1 
+1A1AAD8 	48 43 A0  1 18  0  0  0 
+1A1AAE0 	20 7C A0  1  5 78 6C 61 
+1A1AAE8 	74 62  0  0 6C 43 A0  1 
+1A1AAF0 	 C  0  0  0 
+          .esc
+1A1AAF4 	70 A9 A1  1 
+   endcase
+1A1AAF8 	84 43 A0  1 
+;
+1A1AAFC 	58 46 A0  1 
+
+string-array >loops
+1A1AB00 	 0 3E 6C 6F 6F 70 73 86 
+1A1AB08 	CC A9 A1  1 44 15 A1  1 
+1A1AB10 	 4  0  0  0 28  0  0  0 
+   ," loopne"  ," loope"  ," loop"  ," jcxz"
+1A1AB18 	 6 6C 6F 6F 70 6E 65  0 
+1A1AB20 	 5 6C 6F 6F 70 65  0  0 
+1A1AB28 	 4 6C 6F 6F 70  0  0  0 
+1A1AB30 	 4 6A 63 78 7A  0  0  0 
+end-string-array
+1A1AB38 	 8  0  0  0 10  0  0  0 
+1A1AB40 	18  0  0  0 20  0  0  0 
+
+: .in    ( -- )  ." in"   op-col  ;
+1A1AB48 	2E 69 6E 83  C AB A1  1 
+1A1AB50 	20 40 A0  1 20 7C A0  1 
+1A1AB58 	 2 69 6E  0 50 85 A1  1 
+1A1AB60 	58 46 A0  1 
+: .out   ( -- )  ." out"  op-col  ;
+1A1AB64 	 0  0  0 2E 
+1A1AB68 	6F 75 74 84 50 AB A1  1 
+1A1AB70 	20 40 A0  1 20 7C A0  1 
+1A1AB78 	 3 6F 75 74  0  0  0  0 
+1A1AB80 	50 85 A1  1 58 46 A0  1 
+: .call  ( -- )  ." call" op-col  ;
+1A1AB88 	 0  0 2E 63 61 6C 6C 85 
+1A1AB90 	70 AB A1  1 20 40 A0  1 
+1A1AB98 	20 7C A0  1  4 63 61 6C 
+1A1ABA0 	6C  0  0  0 50 85 A1  1 
+1A1ABA8 	58 46 A0  1 
+: .jmp   ( -- )  ." jmp"  op-col  end-found on  ;
+1A1ABAC 	 0  0  0 2E 
+1A1ABB0 	6A 6D 70 84 94 AB A1  1 
+1A1ABB8 	20 40 A0  1 20 7C A0  1 
+1A1ABC0 	 3 6A 6D 70  0  0  0  0 
+1A1ABC8 	50 85 A1  1 CC 7A A1  1 
+1A1ABD0 	E0 4B A0  1 58 46 A0  1 
+: dx  ( -- )  ." edx"  ;
+1A1ABD8 	 0 64 78 82 B8 AB A1  1 
+1A1ABE0 	20 40 A0  1 20 7C A0  1 
+1A1ABE8 	 3 65 64 78  0  0  0  0 
+1A1ABF0 	58 46 A0  1 
+
+: ub    ( -- )  op8@  (.) type  ;
+1A1ABF4 	 0 75 62 82 
+1A1ABF8 	E0 AB A1  1 20 40 A0  1 
+1A1AC00 	24 7B A1  1 10 78 A0  1 
+1A1AC08 	 4 6C A0  1 58 46 A0  1 
+: .ope  ( -- )
+1A1AC10 	 0  0  0 2E 6F 70 65 84 
+1A1AC18 	FC AB A1  1 20 40 A0  1 
+   low4bits  dup  4 <  if  >loops ".  op-col jb   exit  then   ( low4bits )
+1A1AC20 	50 7D A1  1 40 49 A0  1 
+1A1AC28 	B0 6F A0  1 E4 47 A0  1 
+1A1AC30 	DC 41 A0  1 18  0  0  0 
+1A1AC38 	 C AB A1  1 A8 7C A0  1 
+1A1AC40 	50 85 A1  1 68 8B A1  1 
+1A1AC48 	40 46 A0  1 
+   case
+      4 of  .in   al/x  ., ub   endof
+1A1AC4C 	B0 6F A0  1 
+1A1AC50 	48 43 A0  1 1C  0  0  0 
+1A1AC58 	50 AB A1  1 30 89 A1  1 
+1A1AC60 	AC 7D A1  1 FC AB A1  1 
+1A1AC68 	6C 43 A0  1 80  1  0  0 
+      5 of  .in   al/x  ., ub   endof
+1A1AC70 	C0 6F A0  1 48 43 A0  1 
+1A1AC78 	1C  0  0  0 50 AB A1  1 
+1A1AC80 	30 89 A1  1 AC 7D A1  1 
+1A1AC88 	FC AB A1  1 6C 43 A0  1 
+1A1AC90 	5C  1  0  0 
+      6 of  .out  ub    ,al/x   endof
+1A1AC94 	D0 6F A0  1 
+1A1AC98 	48 43 A0  1 18  0  0  0 
+1A1ACA0 	70 AB A1  1 FC AB A1  1 
+1A1ACA8 	6C 89 A1  1 6C 43 A0  1 
+1A1ACB0 	3C  1  0  0 
+      7 of  .out  ub    ,al/x   endof
+1A1ACB4 	E0 6F A0  1 
+1A1ACB8 	48 43 A0  1 18  0  0  0 
+1A1ACC0 	70 AB A1  1 FC AB A1  1 
+1A1ACC8 	6C 89 A1  1 6C 43 A0  1 
+1A1ACD0 	1C  1  0  0 
+      8 of  .call jv            endof
+1A1ACD4 	F0 6F A0  1 
+1A1ACD8 	48 43 A0  1 14  0  0  0 
+1A1ACE0 	94 AB A1  1 84 8B A1  1 
+1A1ACE8 	6C 43 A0  1  0  1  0  0 
+      9 of  .jmp  jv            endof
+1A1ACF0 	58 41 A0  1  9  0  0  0 
+1A1ACF8 	48 43 A0  1 14  0  0  0 
+1A1AD00 	B8 AB A1  1 84 8B A1  1 
+1A1AD08 	6C 43 A0  1 E0  0  0  0 
+      a of  .jmp  ap            endof
+1A1AD10 	58 41 A0  1  A  0  0  0 
+1A1AD18 	48 43 A0  1 14  0  0  0 
+1A1AD20 	B8 AB A1  1  C A2 A1  1 
+1A1AD28 	6C 43 A0  1 C0  0  0  0 
+      b of  .jmp  jb            endof
+1A1AD30 	58 41 A0  1  B  0  0  0 
+1A1AD38 	48 43 A0  1 14  0  0  0 
+1A1AD40 	B8 AB A1  1 68 8B A1  1 
+1A1AD48 	6C 43 A0  1 A0  0  0  0 
+      c of  .in   al/x  .,  dx  endof
+1A1AD50 	58 41 A0  1  C  0  0  0 
+1A1AD58 	48 43 A0  1 1C  0  0  0 
+1A1AD60 	50 AB A1  1 30 89 A1  1 
+1A1AD68 	AC 7D A1  1 E0 AB A1  1 
+1A1AD70 	6C 43 A0  1 78  0  0  0 
+      d of  .in   al/x  .,  dx  endof
+1A1AD78 	58 41 A0  1  D  0  0  0 
+1A1AD80 	48 43 A0  1 1C  0  0  0 
+1A1AD88 	50 AB A1  1 30 89 A1  1 
+1A1AD90 	AC 7D A1  1 E0 AB A1  1 
+1A1AD98 	6C 43 A0  1 50  0  0  0 
+      e of  .out  dx    ,al/x   endof
+1A1ADA0 	58 41 A0  1  E  0  0  0 
+1A1ADA8 	48 43 A0  1 18  0  0  0 
+1A1ADB0 	70 AB A1  1 E0 AB A1  1 
+1A1ADB8 	6C 89 A1  1 6C 43 A0  1 
+1A1ADC0 	2C  0  0  0 
+      f of  .out  dx    ,al/x   endof
+1A1ADC4 	58 41 A0  1 
+1A1ADC8 	 F  0  0  0 48 43 A0  1 
+1A1ADD0 	18  0  0  0 70 AB A1  1 
+1A1ADD8 	E0 AB A1  1 6C 89 A1  1 
+1A1ADE0 	6C 43 A0  1  8  0  0  0 
+   endcase
+1A1ADE8 	84 43 A0  1 
+;
+1A1ADEC 	58 46 A0  1 
+
+string-array >fline-ops
+1A1ADF0 	 0 3E 66 6C 69 6E 65 2D 
+1A1ADF8 	6F 70 73 8A 1C AC A1  1 
+1A1AE00 	44 15 A1  1  E  0  0  0 
+1A1AE08 	70  0  0  0 
+   ," lock"  ," unimp"  ," repne"  ," repe"  ," hlt"   ," cmc"  ," "  ," "
+1A1AE0C 	 4 6C 6F 63 
+1A1AE10 	6B  0  0  0  5 75 6E 69 
+1A1AE18 	6D 70  0  0  5 72 65 70 
+1A1AE20 	6E 65  0  0  4 72 65 70 
+1A1AE28 	65  0  0  0  3 68 6C 74 
+1A1AE30 	 0  0  0  0  3 63 6D 63 
+1A1AE38 	 0  0  0  0  0  0  0  0 
+1A1AE40 	 0  0  0  0 
+   ," clc"   ," stc"    ," cli"    ," sti"   ," cld"   ," std"
+1A1AE44 	 3 63 6C 63 
+1A1AE48 	 0  0  0  0  3 73 74 63 
+1A1AE50 	 0  0  0  0  3 63 6C 69 
+1A1AE58 	 0  0  0  0  3 73 74 69 
+1A1AE60 	 0  0  0  0  3 63 6C 64 
+1A1AE68 	 0  0  0  0  3 73 74 64 
+1A1AE70 	 0  0  0  0 
+end-string-array
+1A1AE74 	 8  0  0  0 
+1A1AE78 	10  0  0  0 18  0  0  0 
+1A1AE80 	20  0  0  0 28  0  0  0 
+1A1AE88 	30  0  0  0 38  0  0  0 
+1A1AE90 	3C  0  0  0 40  0  0  0 
+1A1AE98 	48  0  0  0 50  0  0  0 
+1A1AEA0 	58  0  0  0 60  0  0  0 
+1A1AEA8 	68  0  0  0 
+
+: acc-op  ( -- )  op-col  al/x  ,ea   ;
+1A1AEAC 	 0 61 63 63 
+1A1AEB0 	2D 6F 70 86  0 AE A1  1 
+1A1AEB8 	20 40 A0  1 50 85 A1  1 
+1A1AEC0 	30 89 A1  1 18 85 A1  1 
+1A1AEC8 	58 46 A0  1 
+: .grp3  ( -- )
+1A1AECC 	 0  0 2E 67 
+1A1AED0 	72 70 33 85 B8 AE A1  1 
+1A1AED8 	20 40 A0  1 
+   get-ea
+1A1AEDC 	70 87 A1  1 
+   midbits  case
+1A1AEE0 	70 7D A1  1 
+      0 of   .test             ?.byte .ea  ,ib/v  endof
+1A1AEE4 	70 6F A0  1 
+1A1AEE8 	48 43 A0  1 1C  0  0  0 
+1A1AEF0 	4C 9F A1  1 4C 8F A1  1 
+1A1AEF8 	94 84 A1  1 F4 88 A1  1 
+1A1AF00 	6C 43 A0  1 10  1  0  0 
+      1 of   .test                    .ea  ,ib/v  endof
+1A1AF08 	80 6F A0  1 48 43 A0  1 
+1A1AF10 	18  0  0  0 4C 9F A1  1 
+1A1AF18 	94 84 A1  1 F4 88 A1  1 
+1A1AF20 	6C 43 A0  1 F0  0  0  0 
+      2 of   ." not"   op-col  ?.byte .ea  endof
+1A1AF28 	90 6F A0  1 48 43 A0  1 
+1A1AF30 	24  0  0  0 20 7C A0  1 
+1A1AF38 	 3 6E 6F 74  0  0  0  0 
+1A1AF40 	50 85 A1  1 4C 8F A1  1 
+1A1AF48 	94 84 A1  1 6C 43 A0  1 
+1A1AF50 	C4  0  0  0 
+      3 of   ." neg"   op-col  ?.byte .ea  endof
+1A1AF54 	A0 6F A0  1 
+1A1AF58 	48 43 A0  1 24  0  0  0 
+1A1AF60 	20 7C A0  1  3 6E 65 67 
+1A1AF68 	 0  0  0  0 50 85 A1  1 
+1A1AF70 	4C 8F A1  1 94 84 A1  1 
+1A1AF78 	6C 43 A0  1 98  0  0  0 
+      4 of   ." mul"   acc-op              endof
+1A1AF80 	B0 6F A0  1 48 43 A0  1 
+1A1AF88 	1C  0  0  0 20 7C A0  1 
+1A1AF90 	 3 6D 75 6C  0  0  0  0 
+1A1AF98 	B8 AE A1  1 6C 43 A0  1 
+1A1AFA0 	74  0  0  0 
+      5 of   ." imul"  acc-op              endof
+1A1AFA4 	C0 6F A0  1 
+1A1AFA8 	48 43 A0  1 1C  0  0  0 
+1A1AFB0 	20 7C A0  1  4 69 6D 75 
+1A1AFB8 	6C  0  0  0 B8 AE A1  1 
+1A1AFC0 	6C 43 A0  1 50  0  0  0 
+      6 of   ." div"   acc-op              endof
+1A1AFC8 	D0 6F A0  1 48 43 A0  1 
+1A1AFD0 	1C  0  0  0 20 7C A0  1 
+1A1AFD8 	 3 64 69 76  0  0  0  0 
+1A1AFE0 	B8 AE A1  1 6C 43 A0  1 
+1A1AFE8 	2C  0  0  0 
+      7 of   ." idiv"  acc-op              endof
+1A1AFEC 	E0 6F A0  1 
+1A1AFF0 	48 43 A0  1 1C  0  0  0 
+1A1AFF8 	20 7C A0  1  4 69 64 69 
+1A1B000 	76  0  0  0 B8 AE A1  1 
+1A1B008 	6C 43 A0  1  8  0  0  0 
+   endcase
+1A1B010 	84 43 A0  1 
+;
+1A1B014 	58 46 A0  1 
+: .grp4  ( -- )
+1A1B018 	 0  0 2E 67 72 70 34 85 
+1A1B020 	D8 AE A1  1 20 40 A0  1 
+   get-ea midbits  dup 1 >  if
+1A1B028 	70 87 A1  1 70 7D A1  1 
+1A1B030 	40 49 A0  1 80 6F A0  1 
+1A1B038 	 4 48 A0  1 DC 41 A0  1 
+1A1B040 	14  0  0  0 
+      drop .unimp
+1A1B044 	30 49 A0  1 
+1A1B048 	8C 8D A1  1 
+   else
+1A1B04C 	C8 41 A0  1 
+1A1B050 	38  0  0  0 
+      if  ." dec"  else  ." inc"  then
+1A1B054 	DC 41 A0  1 
+1A1B058 	18  0  0  0 20 7C A0  1 
+1A1B060 	 3 64 65 63  0  0  0  0 
+1A1B068 	C8 41 A0  1 10  0  0  0 
+1A1B070 	20 7C A0  1  3 69 6E 63 
+1A1B078 	 0  0  0  0 
+      op-col  ?.byte .ea
+1A1B07C 	50 85 A1  1 
+1A1B080 	4C 8F A1  1 94 84 A1  1 
+   then
+;
+1A1B088 	58 46 A0  1 
+: .ep  ( -- )  ." far ptr "  .ea  ;
+1A1B08C 	2E 65 70 83 
+1A1B090 	24 B0 A1  1 20 40 A0  1 
+1A1B098 	20 7C A0  1  8 66 61 72 
+1A1B0A0 	20 70 74 72 20  0  0  0 
+1A1B0A8 	94 84 A1  1 58 46 A0  1 
+: .grp5  ( -- )
+1A1B0B0 	 0  0 2E 67 72 70 35 85 
+1A1B0B8 	94 B0 A1  1 20 40 A0  1 
+   get-ea  midbits  case
+1A1B0C0 	70 87 A1  1 70 7D A1  1 
+      0 of  ." inc"  op-col  .ea   endof
+1A1B0C8 	70 6F A0  1 48 43 A0  1 
+1A1B0D0 	20  0  0  0 20 7C A0  1 
+1A1B0D8 	 3 69 6E 63  0  0  0  0 
+1A1B0E0 	50 85 A1  1 94 84 A1  1 
+1A1B0E8 	6C 43 A0  1 DC  0  0  0 
+      1 of  ." dec"  op-col  .ea   endof
+1A1B0F0 	80 6F A0  1 48 43 A0  1 
+1A1B0F8 	20  0  0  0 20 7C A0  1 
+1A1B100 	 3 64 65 63  0  0  0  0 
+1A1B108 	50 85 A1  1 94 84 A1  1 
+1A1B110 	6C 43 A0  1 B4  0  0  0 
+      2 of  .call  .ea   endof
+1A1B118 	90 6F A0  1 48 43 A0  1 
+1A1B120 	14  0  0  0 94 AB A1  1 
+1A1B128 	94 84 A1  1 6C 43 A0  1 
+1A1B130 	98  0  0  0 
+      3 of  .call  .ep   endof
+1A1B134 	A0 6F A0  1 
+1A1B138 	48 43 A0  1 14  0  0  0 
+1A1B140 	94 AB A1  1 94 B0 A1  1 
+1A1B148 	6C 43 A0  1 7C  0  0  0 
+      4 of  .jmp   .ea   instruction @  e7 =  end-found !  endof
+1A1B150 	B0 6F A0  1 48 43 A0  1 
+1A1B158 	30  0  0  0 B8 AB A1  1 
+1A1B160 	94 84 A1  1 B4 7A A1  1 
+1A1B168 	5C 4C A0  1 58 41 A0  1 
+1A1B170 	E7  0  0  0 24 48 A0  1 
+1A1B178 	CC 7A A1  1 54 4D A0  1 
+1A1B180 	6C 43 A0  1 44  0  0  0 
+      5 of  .jmp   .ep   endof
+1A1B188 	C0 6F A0  1 48 43 A0  1 
+1A1B190 	14  0  0  0 B8 AB A1  1 
+1A1B198 	94 B0 A1  1 6C 43 A0  1 
+1A1B1A0 	28  0  0  0 
+      6 of  .push  .ea   endof
+1A1B1A4 	D0 6F A0  1 
+1A1B1A8 	48 43 A0  1 14  0  0  0 
+1A1B1B0 	24 8A A1  1 94 84 A1  1 
+1A1B1B8 	6C 43 A0  1  C  0  0  0 
+         .unimp
+1A1B1C0 	8C 8D A1  1 
+   endcase
+1A1B1C4 	84 43 A0  1 
+;
+1A1B1C8 	58 46 A0  1 
+: .opf  ( -- )
+1A1B1CC 	 0  0  0 2E 
+1A1B1D0 	6F 70 66 84 BC B0 A1  1 
+1A1B1D8 	20 40 A0  1 
+   low4bits  lowbits  6 <  if
+1A1B1DC 	50 7D A1  1 
+1A1B1E0 	2C 7D A1  1 D0 6F A0  1 
+1A1B1E8 	E4 47 A0  1 DC 41 A0  1 
+1A1B1F0 	14  0  0  0 
+      >fline-ops ".
+1A1B1F4 	 0 AE A1  1 
+1A1B1F8 	A8 7C A0  1 
+   else
+1A1B1FC 	C8 41 A0  1 
+1A1B200 	70  0  0  0 
+      case
+         6 of  .grp3   endof
+1A1B204 	D0 6F A0  1 
+1A1B208 	48 43 A0  1 10  0  0  0 
+1A1B210 	D8 AE A1  1 6C 43 A0  1 
+1A1B218 	58  0  0  0 
+         7 of  .grp3   endof
+1A1B21C 	E0 6F A0  1 
+1A1B220 	48 43 A0  1 10  0  0  0 
+1A1B228 	D8 AE A1  1 6C 43 A0  1 
+1A1B230 	40  0  0  0 
+         e of  .grp4   endof
+1A1B234 	58 41 A0  1 
+1A1B238 	 E  0  0  0 48 43 A0  1 
+1A1B240 	10  0  0  0 24 B0 A1  1 
+1A1B248 	6C 43 A0  1 24  0  0  0 
+         f of  .grp5   endof
+1A1B250 	58 41 A0  1  F  0  0  0 
+1A1B258 	48 43 A0  1 10  0  0  0 
+1A1B260 	BC B0 A1  1 6C 43 A0  1 
+1A1B268 	 8  0  0  0 
+      endcase
+1A1B26C 	84 43 A0  1 
+   then
+;
+1A1B270 	58 46 A0  1 
+: .movi ( -- )
+1A1B274 	 0  0 2E 6D 
+1A1B278 	6F 76 69 85 D8 B1 A1  1 
+1A1B280 	20 40 A0  1 
+   ." mov" op-col  3 1 ibits  is wbit  lowbits >greg type  ,ib/v
+1A1B284 	20 7C A0  1 
+1A1B288 	 3 6D 6F 76  0  0  0  0 
+1A1B290 	50 85 A1  1 A0 6F A0  1 
+1A1B298 	80 6F A0  1 F4 7C A1  1 
+1A1B2A0 	B8 40 A0  1 18 7D A1  1 
+1A1B2A8 	2C 7D A1  1 D4 80 A1  1 
+1A1B2B0 	 4 6C A0  1 F4 88 A1  1 
+;
+1A1B2B8 	58 46 A0  1 
+d# 16 case: op-class
+1A1B2BC 	 0  0  0 6F 
+1A1B2C0 	70 2D 63 6C 61 73 73 88 
+1A1B2C8 	80 B2 A1  1 B8 24 A1  1 
+1A1B2D0 	10  0  0  0 
+   .2op  .2op  .2op  .2op  .1op  .1op  .op6  .jcc
+1A1B2D4 	A4 9B A1  1 
+1A1B2D8 	A4 9B A1  1 A4 9B A1  1 
+1A1B2E0 	A4 9B A1  1 E8 9B A1  1 
+1A1B2E8 	E8 9B A1  1 BC 9C A1  1 
+1A1B2F0 	A0 8B A1  1 
+   .op8  .op9  .opa  .movi .opc  .opd  .ope  .opf
+1A1B2F4 	70 9F A1  1 
+1A1B2F8 	EC A2 A1  1 70 A3 A1  1 
+1A1B300 	80 B2 A1  1  0 A7 A1  1 
+1A1B308 	CC A9 A1  1 1C AC A1  1 
+1A1B310 	D8 B1 A1  1 
+;
+1A1B314 	58 46 A0  1 
+
+: (dis-body)  ( -- )  branch-target off  decode-op  op-class  ;
+1A1B318 	 0 28 64 69 73 2D 62 6F 
+1A1B320 	64 79 29 8A CC B2 A1  1 
+1A1B328 	20 40 A0  1 F8 7A A1  1 
+1A1B330 	F8 4B A0  1 18 8C A1  1 
+1A1B338 	CC B2 A1  1 58 46 A0  1 
+' (dis-body) is dis-body
+: dis1  ( -- )
+1A1B340 	 0  0  0 64 69 73 31 84 
+1A1B348 	28 B3 A1  1 20 40 A0  1 
+   ??cr
+1A1B350 	 0 A1 A0  1 
+   pc @ showaddr  4 spaces  #out @  start-column !
+1A1B354 	DC 7A A1  1 
+1A1B358 	5C 4C A0  1 30 13 A1  1 
+1A1B360 	B0 6F A0  1 E8 71 A0  1 
+1A1B368 	5C 6D A0  1 5C 4C A0  1 
+1A1B370 	3C 85 A1  1 54 4D A0  1 
+   dis-body  cr
+1A1B378 	20 9C A1  1 80 6D A0  1 
+;
+1A1B380 	58 46 A0  1 
+: +dis  ( -- )
+1A1B384 	 0  0  0 2B 
+1A1B388 	64 69 73 84 4C B3 A1  1 
+1A1B390 	20 40 A0  1 
+   base @ >r  hex
+1A1B394 	B8 75 A0  1 
+1A1B398 	5C 4C A0  1 BC 45 A0  1 
+1A1B3A0 	C0 8D A0  1 
+   end-found off
+1A1B3A4 	CC 7A A1  1 
+1A1B3A8 	F8 4B A0  1 
+   begin   dis1  end-found @  exit? or  until
+1A1B3AC 	4C B3 A1  1 
+1A1B3B0 	CC 7A A1  1 5C 4C A0  1 
+1A1B3B8 	34  D A1  1 70 44 A0  1 
+1A1B3C0 	DC 41 A0  1 E8 FF FF FF 
+   r> base !
+1A1B3C8 	D0 45 A0  1 B8 75 A0  1 
+1A1B3D0 	54 4D A0  1 
+;
+1A1B3D4 	58 46 A0  1 
+: dis      ( adr -- )   pc !   +dis  ;
+1A1B3D8 	64 69 73 83 90 B3 A1  1 
+1A1B3E0 	20 40 A0  1 DC 7A A1  1 
+1A1B3E8 	54 4D A0  1 90 B3 A1  1 
+1A1B3F0 	58 46 A0  1 
+: pc!dis1  ( adr -- )   pc !   dis1  ;
+1A1B3F4 	70 63 21 64 
+1A1B3F8 	69 73 31 87 E0 B3 A1  1 
+1A1B400 	20 40 A0  1 DC 7A A1  1 
+1A1B408 	54 4D A0  1 4C B3 A1  1 
+1A1B410 	58 46 A0  1 
+forth definitions disassembler  \ Search disassembler but define in forth
+
+alias pc!dis1 pc!dis1
+1A1B414 	70 63 21 64 
+1A1B418 	69 73 31 A7 94 7A A1  1 
+1A1B420 	 0 B4 A1  1 
+alias +dis +dis
+1A1B424 	 0  0  0 2B 
+1A1B428 	64 69 73 A4 20 B4 A1  1 
+1A1B430 	90 B3 A1  1 
+alias dis dis
+1A1B434 	64 69 73 A3 
+1A1B438 	30 B4 A1  1 E0 B3 A1  1 
+alias dis16 dis16
+1A1B440 	 0  0 64 69 73 31 36 A5 
+1A1B448 	3C B4 A1  1 7C 7C A1  1 
+alias dis32 dis32
+1A1B450 	 0  0 64 69 73 33 32 A5 
+1A1B458 	4C B4 A1  1 A8 7C A1  1 
+
+previous previous previous definitions
+
+
+only forth also hidden 
+  ' dis is disassemble
+only forth also definitions

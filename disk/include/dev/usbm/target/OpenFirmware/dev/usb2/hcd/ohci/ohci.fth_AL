@@ -1,0 +1,360 @@
+purpose: Driver for OHCI USB Controller
+
+hex
+headers
+
+defer end-extra				' noop to end-extra
+1A54738 	 0  0 65 6E 64 2D 65 78 
+1A54740 	74 72 61 89 E0 46 A5  1 
+1A54748 	5C 40 A0  1 B4  E  0  0 
+
+1 constant potpgt			\ PowerONToPowerGoodTime
+1A54750 	 0 70 6F 74 70 67 74 86 
+1A54758 	48 47 A5  1 68 40 A0  1 
+1A54760 	 1  0  0  0 
+
+true value first-open?
+1A54764 	66 69 72 73 
+1A54768 	74 2D 6F 70 65 6E 3F 8B 
+1A54770 	5C 47 A5  1 50 40 A0  1 
+1A54778 	B8  E  0  0 
+0 value open-count
+1A5477C 	 0 6F 70 65 
+1A54780 	6E 2D 63 6F 75 6E 74 8A 
+1A54788 	74 47 A5  1 50 40 A0  1 
+1A54790 	BC  E  0  0 
+0 value ohci-reg
+1A54794 	 0  0  0 6F 
+1A54798 	68 63 69 2D 72 65 67 88 
+1A547A0 	8C 47 A5  1 50 40 A0  1 
+1A547A8 	C0  E  0  0 
+
+: my-w@  ( offset -- w )  my-space +  " config-w@" $call-parent  ;
+1A547AC 	 0  0 6D 79 
+1A547B0 	2D 77 40 85 A4 47 A5  1 
+1A547B8 	20 40 A0  1 AC  3 A2  1 
+1A547C0 	 4 45 A0  1 9C 53 A0  1 
+1A547C8 	 9 63 6F 6E 66 69 67 2D 
+1A547D0 	77 40  0  0 DC 31 A2  1 
+1A547D8 	58 46 A0  1 
+: my-w!  ( w offset -- )  my-space +  " config-w!" $call-parent  ;
+1A547DC 	 0  0 6D 79 
+1A547E0 	2D 77 21 85 B8 47 A5  1 
+1A547E8 	20 40 A0  1 AC  3 A2  1 
+1A547F0 	 4 45 A0  1 9C 53 A0  1 
+1A547F8 	 9 63 6F 6E 66 69 67 2D 
+1A54800 	77 21  0  0 DC 31 A2  1 
+1A54808 	58 46 A0  1 
+
+: map-regs  ( -- )
+1A5480C 	 0  0  0 6D 
+1A54810 	61 70 2D 72 65 67 73 88 
+1A54818 	E8 47 A5  1 20 40 A0  1 
+   4 my-w@  h# 16 or  4 my-w!
+1A54820 	B0 6F A0  1 B8 47 A5  1 
+1A54828 	58 41 A0  1 16  0  0  0 
+1A54830 	70 44 A0  1 B0 6F A0  1 
+1A54838 	E8 47 A5  1 
+   0 0 my-space h# 02000010 + 1000  " map-in" $call-parent to ohci-reg
+1A5483C 	70 6F A0  1 
+1A54840 	70 6F A0  1 AC  3 A2  1 
+1A54848 	58 41 A0  1 10  0  0  2 
+1A54850 	 4 45 A0  1 58 41 A0  1 
+1A54858 	 0 10  0  0 9C 53 A0  1 
+1A54860 	 6 6D 61 70 2D 69 6E  0 
+1A54868 	DC 31 A2  1 B8 40 A0  1 
+1A54870 	A4 47 A5  1 
+;
+1A54874 	58 46 A0  1 
+
+: unmap-regs  ( -- )
+1A54878 	 0 75 6E 6D 61 70 2D 72 
+1A54880 	65 67 73 8A 1C 48 A5  1 
+1A54888 	20 40 A0  1 
+   ohci-reg  1000  " map-out" $call-parent  0 to ohci-reg
+1A5488C 	A4 47 A5  1 
+1A54890 	58 41 A0  1  0 10  0  0 
+1A54898 	9C 53 A0  1  7 6D 61 70 
+1A548A0 	2D 6F 75 74  0  0  0  0 
+1A548A8 	DC 31 A2  1 70 6F A0  1 
+1A548B0 	B8 40 A0  1 A4 47 A5  1 
+;
+1A548B8 	58 46 A0  1 
+
+: ohci-reg@  ( idx -- data )  ohci-reg + rl@  ;
+1A548BC 	 0  0 6F 68 
+1A548C0 	63 69 2D 72 65 67 40 89 
+1A548C8 	88 48 A5  1 20 40 A0  1 
+1A548D0 	A4 47 A5  1  4 45 A0  1 
+1A548D8 	F8 B1 A2  1 58 46 A0  1 
+: ohci-reg!  ( data idx -- )  ohci-reg + rl!  ;
+1A548E0 	 0  0 6F 68 63 69 2D 72 
+1A548E8 	65 67 21 89 CC 48 A5  1 
+1A548F0 	20 40 A0  1 A4 47 A5  1 
+1A548F8 	 4 45 A0  1 68 B2 A2  1 
+1A54900 	58 46 A0  1 
+
+: hc-cntl@  ( -- data )   4 ohci-reg@  ;
+1A54904 	 0  0  0 68 
+1A54908 	63 2D 63 6E 74 6C 40 88 
+1A54910 	F0 48 A5  1 20 40 A0  1 
+1A54918 	B0 6F A0  1 CC 48 A5  1 
+1A54920 	58 46 A0  1 
+: hc-cntl!  ( data -- )   4 ohci-reg!  ;
+1A54924 	 0  0  0 68 
+1A54928 	63 2D 63 6E 74 6C 21 88 
+1A54930 	14 49 A5  1 20 40 A0  1 
+1A54938 	B0 6F A0  1 F0 48 A5  1 
+1A54940 	58 46 A0  1 
+: hc-stat@  ( -- data )   8 ohci-reg@  ;
+1A54944 	 0  0  0 68 
+1A54948 	63 2D 73 74 61 74 40 88 
+1A54950 	34 49 A5  1 20 40 A0  1 
+1A54958 	F0 6F A0  1 CC 48 A5  1 
+1A54960 	58 46 A0  1 
+: hc-cmd!   ( data -- )   8 ohci-reg!  ;
+1A54964 	68 63 2D 63 
+1A54968 	6D 64 21 87 54 49 A5  1 
+1A54970 	20 40 A0  1 F0 6F A0  1 
+1A54978 	F0 48 A5  1 58 46 A0  1 
+: hc-intr@  ( -- data )   c ohci-reg@  ;
+1A54980 	 0  0  0 68 63 2D 69 6E 
+1A54988 	74 72 40 88 70 49 A5  1 
+1A54990 	20 40 A0  1 58 41 A0  1 
+1A54998 	 C  0  0  0 CC 48 A5  1 
+1A549A0 	58 46 A0  1 
+: hc-intr!  ( data -- )   c ohci-reg!  ;
+1A549A4 	 0  0  0 68 
+1A549A8 	63 2D 69 6E 74 72 21 88 
+1A549B0 	90 49 A5  1 20 40 A0  1 
+1A549B8 	58 41 A0  1  C  0  0  0 
+1A549C0 	F0 48 A5  1 58 46 A0  1 
+: hc-hcca@  ( -- data )  18 ohci-reg@  ;
+1A549C8 	 0  0  0 68 63 2D 68 63 
+1A549D0 	63 61 40 88 B4 49 A5  1 
+1A549D8 	20 40 A0  1 58 41 A0  1 
+1A549E0 	18  0  0  0 CC 48 A5  1 
+1A549E8 	58 46 A0  1 
+: hc-hcca!  ( data -- )  18 ohci-reg!  ;
+1A549EC 	 0  0  0 68 
+1A549F0 	63 2D 68 63 63 61 21 88 
+1A549F8 	D8 49 A5  1 20 40 A0  1 
+1A54A00 	58 41 A0  1 18  0  0  0 
+1A54A08 	F0 48 A5  1 58 46 A0  1 
+
+: hc-rh-desA@  ( -- data )  48 ohci-reg@  ;
+1A54A10 	68 63 2D 72 68 2D 64 65 
+1A54A18 	73 61 40 8B FC 49 A5  1 
+1A54A20 	20 40 A0  1 58 41 A0  1 
+1A54A28 	48  0  0  0 CC 48 A5  1 
+1A54A30 	58 46 A0  1 
+: hc-rh-desA!  ( data -- )  48 ohci-reg!  ;
+1A54A34 	68 63 2D 72 
+1A54A38 	68 2D 64 65 73 61 21 8B 
+1A54A40 	20 4A A5  1 20 40 A0  1 
+1A54A48 	58 41 A0  1 48  0  0  0 
+1A54A50 	F0 48 A5  1 58 46 A0  1 
+: hc-rh-desB@  ( -- data )  4c ohci-reg@  ;
+1A54A58 	68 63 2D 72 68 2D 64 65 
+1A54A60 	73 62 40 8B 44 4A A5  1 
+1A54A68 	20 40 A0  1 58 41 A0  1 
+1A54A70 	4C  0  0  0 CC 48 A5  1 
+1A54A78 	58 46 A0  1 
+: hc-rh-desB!  ( data -- )  4c ohci-reg!  ;
+1A54A7C 	68 63 2D 72 
+1A54A80 	68 2D 64 65 73 62 21 8B 
+1A54A88 	68 4A A5  1 20 40 A0  1 
+1A54A90 	58 41 A0  1 4C  0  0  0 
+1A54A98 	F0 48 A5  1 58 46 A0  1 
+: hc-rh-stat@  ( -- data )  50 ohci-reg@  ;
+1A54AA0 	68 63 2D 72 68 2D 73 74 
+1A54AA8 	61 74 40 8B 8C 4A A5  1 
+1A54AB0 	20 40 A0  1 58 41 A0  1 
+1A54AB8 	50  0  0  0 CC 48 A5  1 
+1A54AC0 	58 46 A0  1 
+: hc-rh-stat!  ( data -- )  50 ohci-reg!  ;
+1A54AC4 	68 63 2D 72 
+1A54AC8 	68 2D 73 74 61 74 21 8B 
+1A54AD0 	B0 4A A5  1 20 40 A0  1 
+1A54AD8 	58 41 A0  1 50  0  0  0 
+1A54AE0 	F0 48 A5  1 58 46 A0  1 
+
+: hc-rh-psta@  ( port -- data )  4 * 54 + ohci-reg@  ;
+1A54AE8 	68 63 2D 72 68 2D 70 73 
+1A54AF0 	74 61 40 8B D4 4A A5  1 
+1A54AF8 	20 40 A0  1 B0 6F A0  1 
+1A54B00 	1C 5F A0  1 58 41 A0  1 
+1A54B08 	54  0  0  0  4 45 A0  1 
+1A54B10 	CC 48 A5  1 58 46 A0  1 
+: hc-rh-psta!  ( data port -- )  4 * 54 + ohci-reg!  ;
+1A54B18 	68 63 2D 72 68 2D 70 73 
+1A54B20 	74 61 21 8B F8 4A A5  1 
+1A54B28 	20 40 A0  1 B0 6F A0  1 
+1A54B30 	1C 5F A0  1 58 41 A0  1 
+1A54B38 	54  0  0  0  4 45 A0  1 
+1A54B40 	F0 48 A5  1 58 46 A0  1 
+
+: hc-cntl-clr  ( bit-mask -- )  hc-cntl@ swap invert and hc-cntl!  ;
+1A54B48 	68 63 2D 63 6E 74 6C 2D 
+1A54B50 	63 6C 72 8B 28 4B A5  1 
+1A54B58 	20 40 A0  1 14 49 A5  1 
+1A54B60 	68 49 A0  1 30 45 A0  1 
+1A54B68 	5C 44 A0  1 34 49 A5  1 
+1A54B70 	58 46 A0  1 
+: hc-cntl-set  ( bit-mask -- )  hc-cntl@ swap or hc-cntl!  ;
+1A54B74 	68 63 2D 63 
+1A54B78 	6E 74 6C 2D 73 65 74 8B 
+1A54B80 	58 4B A5  1 20 40 A0  1 
+1A54B88 	14 49 A5  1 68 49 A0  1 
+1A54B90 	70 44 A0  1 34 49 A5  1 
+1A54B98 	58 46 A0  1 
+
+: reset-port  ( port -- )
+1A54B9C 	 0 72 65 73 
+1A54BA0 	65 74 2D 70 6F 72 74 8A 
+1A54BA8 	84 4B A5  1 20 40 A0  1 
+   >r
+1A54BB0 	BC 45 A0  1 
+   h# 10002 r@ hc-rh-psta!		\ enable port
+1A54BB4 	58 41 A0  1 
+1A54BB8 	 2  0  1  0 E4 45 A0  1 
+1A54BC0 	28 4B A5  1 
+   h# 10 r@ hc-rh-psta!			\ reset port
+1A54BC4 	58 41 A0  1 
+1A54BC8 	10  0  0  0 E4 45 A0  1 
+1A54BD0 	28 4B A5  1 
+   r@ d# 10 0  do
+1A54BD4 	E4 45 A0  1 
+1A54BD8 	58 41 A0  1  A  0  0  0 
+1A54BE0 	70 6F A0  1 88 42 A0  1 
+1A54BE8 	30  0  0  0 
+      d# 10 ms
+1A54BEC 	58 41 A0  1 
+1A54BF0 	 A  0  0  0 60 E0 A1  1 
+      dup hc-rh-psta@ 100000 and  ?leave
+1A54BF8 	40 49 A0  1 F8 4A A5  1 
+1A54C00 	58 41 A0  1  0  0 10  0 
+1A54C08 	5C 44 A0  1 34 43 A0  1 
+   loop  drop
+1A54C10 	F8 41 A0  1 D8 FF FF FF 
+1A54C18 	30 49 A0  1 
+   r@ hc-rh-psta@ 100000 and 0=  if  abort  then
+1A54C1C 	E4 45 A0  1 
+1A54C20 	F8 4A A5  1 58 41 A0  1 
+1A54C28 	 0  0 10  0 5C 44 A0  1 
+1A54C30 	24 47 A0  1 DC 41 A0  1 
+1A54C38 	 8  0  0  0 28 91 A0  1 
+   h# 1f0000 r> hc-rh-psta!		\ clear status change bits
+1A54C40 	58 41 A0  1  0  0 1F  0 
+1A54C48 	D0 45 A0  1 28 4B A5  1 
+   d# 256 ms
+1A54C50 	58 41 A0  1  0  1  0  0 
+1A54C58 	60 E0 A1  1 
+;
+1A54C5C 	58 46 A0  1 
+
+: reset-usb  ( -- )
+1A54C60 	 0  0 72 65 73 65 74 2D 
+1A54C68 	75 73 62 89 AC 4B A5  1 
+1A54C70 	20 40 A0  1 
+   ohci-reg dup 0=  if  map-regs  then
+1A54C74 	A4 47 A5  1 
+1A54C78 	40 49 A0  1 24 47 A0  1 
+1A54C80 	DC 41 A0  1  8  0  0  0 
+1A54C88 	1C 48 A5  1 
+   1 hc-rh-stat!		\ power-off root hub
+1A54C8C 	80 6F A0  1 
+1A54C90 	D4 4A A5  1 
+   1 hc-cmd!			\ reset usb host controller
+1A54C94 	80 6F A0  1 
+1A54C98 	70 49 A5  1 
+   d# 10 ms
+1A54C9C 	58 41 A0  1 
+1A54CA0 	 A  0  0  0 60 E0 A1  1 
+   0= if  unmap-regs  then
+1A54CA8 	24 47 A0  1 DC 41 A0  1 
+1A54CB0 	 8  0  0  0 88 48 A5  1 
+;
+1A54CB8 	58 46 A0  1 
+
+: init-ohci-regs  ( -- )
+1A54CBC 	 0 69 6E 69 
+1A54CC0 	74 2D 6F 68 63 69 2D 72 
+1A54CC8 	65 67 73 8E 70 4C A5  1 
+1A54CD0 	20 40 A0  1 
+   hcca-phys hc-hcca!		\ physical address of hcca
+1A54CD4 	F0 2E A5  1 
+1A54CD8 	FC 49 A5  1 
+
+   81 hc-cntl!			\ USB operational, 2:1 ControlBulkServiceRatio
+1A54CDC 	58 41 A0  1 
+1A54CE0 	81  0  0  0 34 49 A5  1 
+   d# 10 ms
+1A54CE8 	58 41 A0  1  A  0  0  0 
+1A54CF0 	60 E0 A1  1 
+
+   a668.2edf 34 ohci-reg!	\ HcFmInterval
+1A54CF4 	80 41 A0  1 
+1A54CF8 	DF 2E 68 A6  0  0  0  0 
+1A54D00 	58 41 A0  1 34  0  0  0 
+1A54D08 	F0 48 A5  1 
+   2580 40 ohci-reg!		\ HcPeriodicStart
+1A54D0C 	58 41 A0  1 
+1A54D10 	80 25  0  0 58 41 A0  1 
+1A54D18 	40  0  0  0 F0 48 A5  1 
+;
+1A54D20 	58 46 A0  1 
+
+: (process-hc-status)  ( -- )
+1A54D24 	28 70 72 6F 
+1A54D28 	63 65 73 73 2D 68 63 2D 
+1A54D30 	73 74 61 74 75 73 29 93 
+1A54D38 	D0 4C A5  1 20 40 A0  1 
+   hc-intr@ dup hc-intr!
+1A54D40 	90 49 A5  1 40 49 A0  1 
+1A54D48 	B4 49 A5  1 
+   h# 10 and  if  " Unrecoverable error" USB_ERR_HCHALTED set-usb-error  then
+1A54D4C 	58 41 A0  1 
+1A54D50 	10  0  0  0 5C 44 A0  1 
+1A54D58 	DC 41 A0  1 28  0  0  0 
+1A54D60 	9C 53 A0  1 13 55 6E 72 
+1A54D68 	65 63 6F 76 65 72 61 62 
+1A54D70 	6C 65 20 65 72 72 6F 72 
+1A54D78 	 0  0  0  0 E0 2C A4  1 
+1A54D80 	20 40 A4  1 
+;
+1A54D84 	58 46 A0  1 
+' (process-hc-status) to process-hc-status
+
+: wait-for-frame  ( -- )  begin  hc-intr@ 4 and  until  ;
+1A54D88 	 0 77 61 69 74 2D 66 6F 
+1A54D90 	72 2D 66 72 61 6D 65 8E 
+1A54D98 	3C 4D A5  1 20 40 A0  1 
+1A54DA0 	90 49 A5  1 B0 6F A0  1 
+1A54DA8 	5C 44 A0  1 DC 41 A0  1 
+1A54DB0 	F0 FF FF FF 58 46 A0  1 
+: next-frame      ( -- )  4 hc-intr!  wait-for-frame    ;
+1A54DB8 	 0 6E 65 78 74 2D 66 72 
+1A54DC0 	61 6D 65 8A 9C 4D A5  1 
+1A54DC8 	20 40 A0  1 B0 6F A0  1 
+1A54DD0 	B4 49 A5  1 9C 4D A5  1 
+1A54DD8 	58 46 A0  1 
+
+external
+\ Kick the USB controller into operation mode.
+: start-usb     ( -- )  c0 hc-cntl-clr 80 hc-cntl-set  ;
+1A54DDC 	 0  0 73 74 
+1A54DE0 	61 72 74 2D 75 73 62 89 
+1A54DE8 	C8 4D A5  1 20 40 A0  1 
+1A54DF0 	58 41 A0  1 C0  0  0  0 
+1A54DF8 	58 4B A5  1 58 41 A0  1 
+1A54E00 	80  0  0  0 84 4B A5  1 
+1A54E08 	58 46 A0  1 
+: suspend-usb   ( -- )  c0 hc-cntl-set  ;
+1A54E0C 	73 75 73 70 
+1A54E10 	65 6E 64 2D 75 73 62 8B 
+1A54E18 	EC 4D A5  1 20 40 A0  1 
+1A54E20 	58 41 A0  1 C0  0  0  0 
+1A54E28 	84 4B A5  1 58 46 A0  1 
+
+headers

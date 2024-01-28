@@ -1,0 +1,191 @@
+h# 100 constant /regs
+1A55598 	 0  0 2F 72 65 67 73 85 
+1A555A0 	 0  0 A0  1 68 40 A0  1 
+1A555A8 	 0  1  0  0 
+
+: my-b@  ( offset -- b )  my-space +  " config-b@" $call-parent  ;
+1A555AC 	 0  0 6D 79 
+1A555B0 	2D 62 40 85 A4 55 A5  1 
+1A555B8 	20 40 A0  1 AC  3 A2  1 
+1A555C0 	 4 45 A0  1 9C 53 A0  1 
+1A555C8 	 9 63 6F 6E 66 69 67 2D 
+1A555D0 	62 40  0  0 DC 31 A2  1 
+1A555D8 	58 46 A0  1 
+: my-b!  ( b offset -- )  my-space +  " config-b!" $call-parent  ;
+1A555DC 	 0  0 6D 79 
+1A555E0 	2D 62 21 85 B8 55 A5  1 
+1A555E8 	20 40 A0  1 AC  3 A2  1 
+1A555F0 	 4 45 A0  1 9C 53 A0  1 
+1A555F8 	 9 63 6F 6E 66 69 67 2D 
+1A55600 	62 21  0  0 DC 31 A2  1 
+1A55608 	58 46 A0  1 
+
+: my-w@  ( offset -- w )  my-space +  " config-w@" $call-parent  ;
+1A5560C 	 0  0 6D 79 
+1A55610 	2D 77 40 85 E8 55 A5  1 
+1A55618 	20 40 A0  1 AC  3 A2  1 
+1A55620 	 4 45 A0  1 9C 53 A0  1 
+1A55628 	 9 63 6F 6E 66 69 67 2D 
+1A55630 	77 40  0  0 DC 31 A2  1 
+1A55638 	58 46 A0  1 
+: my-w!  ( w offset -- )  my-space +  " config-w!" $call-parent  ;
+1A5563C 	 0  0 6D 79 
+1A55640 	2D 77 21 85 18 56 A5  1 
+1A55648 	20 40 A0  1 AC  3 A2  1 
+1A55650 	 4 45 A0  1 9C 53 A0  1 
+1A55658 	 9 63 6F 6E 66 69 67 2D 
+1A55660 	77 21  0  0 DC 31 A2  1 
+1A55668 	58 46 A0  1 
+
+: my-l@  ( offset -- l )  my-space +  " config-l@" $call-parent  ;
+1A5566C 	 0  0 6D 79 
+1A55670 	2D 6C 40 85 48 56 A5  1 
+1A55678 	20 40 A0  1 AC  3 A2  1 
+1A55680 	 4 45 A0  1 9C 53 A0  1 
+1A55688 	 9 63 6F 6E 66 69 67 2D 
+1A55690 	6C 40  0  0 DC 31 A2  1 
+1A55698 	58 46 A0  1 
+: my-l!  ( l offset -- )  my-space +  " config-l!" $call-parent  ;
+1A5569C 	 0  0 6D 79 
+1A556A0 	2D 6C 21 85 78 56 A5  1 
+1A556A8 	20 40 A0  1 AC  3 A2  1 
+1A556B0 	 4 45 A0  1 9C 53 A0  1 
+1A556B8 	 9 63 6F 6E 66 69 67 2D 
+1A556C0 	6C 21  0  0 DC 31 A2  1 
+1A556C8 	58 46 A0  1 
+
+: my-map-in  ( len -- adr )
+1A556CC 	 0  0 6D 79 
+1A556D0 	2D 6D 61 70 2D 69 6E 89 
+1A556D8 	A8 56 A5  1 20 40 A0  1 
+   >r  0 0 my-space h# 02000010 +  r>  " map-in" $call-parent
+1A556E0 	BC 45 A0  1 70 6F A0  1 
+1A556E8 	70 6F A0  1 AC  3 A2  1 
+1A556F0 	58 41 A0  1 10  0  0  2 
+1A556F8 	 4 45 A0  1 D0 45 A0  1 
+1A55700 	9C 53 A0  1  6 6D 61 70 
+1A55708 	2D 69 6E  0 DC 31 A2  1 
+   4 my-w@  h# 16 or  4 my-w!  \ Set MWI, bus mastering, and mem enable
+1A55710 	B0 6F A0  1 18 56 A5  1 
+1A55718 	58 41 A0  1 16  0  0  0 
+1A55720 	70 44 A0  1 B0 6F A0  1 
+1A55728 	48 56 A5  1 
+;
+1A5572C 	58 46 A0  1 
+: my-map-out  ( adr len -- )
+1A55730 	 0 6D 79 2D 6D 61 70 2D 
+1A55738 	6F 75 74 8A DC 56 A5  1 
+1A55740 	20 40 A0  1 
+   \ Don't disable because somebody else might be using the controller.
+   \ 4 my-w@  7 invert and  4 my-w!
+   " map-out" $call-parent
+1A55744 	9C 53 A0  1 
+1A55748 	 7 6D 61 70 2D 6F 75 74 
+1A55750 	 0  0  0  0 DC 31 A2  1 
+;
+1A55758 	58 46 A0  1 
+
+: has-dbgp-regs?  ( -- false | offset bar true)
+1A5575C 	 0 68 61 73 
+1A55760 	2D 64 62 67 70 2D 72 65 
+1A55768 	67 73 3F 8E 40 57 A5  1 
+1A55770 	20 40 A0  1 
+   h# 34 my-l@                   ( capability-ptr )
+1A55774 	58 41 A0  1 
+1A55778 	34  0  0  0 78 56 A5  1 
+   begin  dup  while             ( cap-offset )
+1A55780 	40 49 A0  1 DC 41 A0  1 
+1A55788 	78  0  0  0 
+      dup my-b@ h# 0a =  if      ( cfg-adr )
+1A5578C 	40 49 A0  1 
+1A55790 	B8 55 A5  1 58 41 A0  1 
+1A55798 	 A  0  0  0 24 48 A0  1 
+1A557A0 	DC 41 A0  1 4C  0  0  0 
+         2+ my-w@                ( dbgp-ptr )
+1A557A8 	40 4B A0  1 18 56 A5  1 
+         dup h# 1fff and         ( offset )
+1A557B0 	40 49 A0  1 58 41 A0  1 
+1A557B8 	FF 1F  0  0 5C 44 A0  1 
+         d# 13 rshift  7 and  1- /l* h# 10 +  ( offset bar )
+1A557C0 	58 41 A0  1  D  0  0  0 
+1A557C8 	B4 44 A0  1 E0 6F A0  1 
+1A557D0 	5C 44 A0  1 54 4B A0  1 
+1A557D8 	84 51 A0  1 58 41 A0  1 
+1A557E0 	10  0  0  0  4 45 A0  1 
+         true                    ( offset bar true )
+1A557E8 	 4 70 A0  1 
+         exit
+1A557EC 	40 46 A0  1 
+      then                       ( cfg-adr )
+      1+ my-b@                   ( cap-offset' )
+1A557F0 	30 4B A0  1 B8 55 A5  1 
+   repeat                        ( cap-offset )
+1A557F8 	C8 41 A0  1 84 FF FF FF 
+   drop  false                   ( false )
+1A55800 	30 49 A0  1 18 70 A0  1 
+;
+1A55808 	58 46 A0  1 
+: needs-dummy-qh?  ( -- flag )  0 my-w@ h# 1106 ( VIA ) =  ;
+1A5580C 	6E 65 65 64 
+1A55810 	73 2D 64 75 6D 6D 79 2D 
+1A55818 	71 68 3F 8F 70 57 A5  1 
+1A55820 	20 40 A0  1 70 6F A0  1 
+1A55828 	18 56 A5  1 58 41 A0  1 
+1A55830 	 6 11  0  0 24 48 A0  1 
+1A55838 	58 46 A0  1 
+: grab-controller  ( config-adr -- error? )
+1A5583C 	67 72 61 62 
+1A55840 	2D 63 6F 6E 74 72 6F 6C 
+1A55848 	6C 65 72 8F 20 58 A5  1 
+1A55850 	20 40 A0  1 
+   dup my-l@  h# 10001 =  if              ( config-adr )
+1A55854 	40 49 A0  1 
+1A55858 	78 56 A5  1 58 41 A0  1 
+1A55860 	 1  0  1  0 24 48 A0  1 
+1A55868 	DC 41 A0  1 BC  0  0  0 
+      h# 1000000 over my-l!              ( config-adr )  \ Ask for it
+1A55870 	58 41 A0  1  0  0  0  1 
+1A55878 	54 49 A0  1 A8 56 A5  1 
+      true                                ( config-adr error? )
+1A55880 	 4 70 A0  1 
+      d# 100 0  do                        ( config-adr error? )
+1A55884 	58 41 A0  1 
+1A55888 	64  0  0  0 70 6F A0  1 
+1A55890 	88 42 A0  1 8C  0  0  0 
+         over my-l@ h# 1010000 and  h# 1000000 =  if
+1A55898 	54 49 A0  1 78 56 A5  1 
+1A558A0 	58 41 A0  1  0  0  1  1 
+1A558A8 	5C 44 A0  1 58 41 A0  1 
+1A558B0 	 0  0  0  1 24 48 A0  1 
+1A558B8 	DC 41 A0  1 50  0  0  0 
+            \ Turn off SMIs in Legacy Support Extended CSR
+            h# e0000000 h# 6c my-l!      ( config-adr error? )
+1A558C0 	58 41 A0  1  0  0  0 E0 
+1A558C8 	58 41 A0  1 6C  0  0  0 
+1A558D0 	A8 56 A5  1 
+            0 my-l@ h# 27cc8086 =  if
+1A558D4 	70 6F A0  1 
+1A558D8 	78 56 A5  1 58 41 A0  1 
+1A558E0 	86 80 CC 27 24 48 A0  1 
+1A558E8 	DC 41 A0  1 18  0  0  0 
+               h# ffff0000  h# 70  my-l!  \ Clear EHCI Intel special SMIs
+1A558F0 	58 41 A0  1  0  0 FF FF 
+1A558F8 	58 41 A0  1 70  0  0  0 
+1A55900 	A8 56 A5  1 
+            then
+            0= leave                      ( config-adr error?' )
+1A55904 	24 47 A0  1 
+1A55908 	18 43 A0  1 
+         then                             ( config-adr error? )
+         d# 10 ms                         ( config-adr error? )
+1A5590C 	58 41 A0  1 
+1A55910 	 A  0  0  0 60 E0 A1  1 
+      loop                                ( config-adr error? )
+1A55918 	F8 41 A0  1 7C FF FF FF 
+      nip exit
+1A55920 	FC 46 A0  1 40 46 A0  1 
+   then                                   ( config-adr )
+   drop false                             ( false )
+1A55928 	30 49 A0  1 18 70 A0  1 
+;
+1A55930 	58 46 A0  1 

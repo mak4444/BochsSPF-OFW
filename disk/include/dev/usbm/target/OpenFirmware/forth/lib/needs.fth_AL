@@ -1,0 +1,49 @@
+
+\ Implements needs and \needs.  These work as follows:
+\
+\ needs foo tools.fth
+\
+\ If foo is not defined, the file tools.fth will be loaded, which should
+\ define foo.  If foo is already defined, nothing will happen.
+\
+\ \needs foo <arbitrary Forth commands>
+\
+\ If foo is not defined, the rest of the line is executed, else it is ignored
+
+: needs  \ wordname filename  ( -- )
+1A10758 	 0  0 6E 65 65 64 73 85 
+1A10760 	24  7 A1  1 20 40 A0  1 
+   safe-parse-word $canonical $find  if  ( cfa +-1 )
+1A10768 	88 93 A0  1 FC B9 A0  1 
+1A10770 	C4 93 A0  1 DC 41 A0  1 
+1A10778 	18  0  0  0 
+      drop  safe-parse-word 2drop
+1A1077C 	30 49 A0  1 
+1A10780 	88 93 A0  1 AC 49 A0  1 
+   else
+1A10788 	C8 41 A0  1 10  0  0  0 
+      2drop safe-parse-word included
+1A10790 	AC 49 A0  1 88 93 A0  1 
+1A10798 	C8 E8 A0  1 
+   then
+;
+1A1079C 	58 46 A0  1 
+: \needs ( -- ) ( Input Stream: desired-word  more-forth-commands )
+1A107A0 	 0 5C 6E 65 65 64 73 86 
+1A107A8 	64  7 A1  1 20 40 A0  1 
+   safe-parse-word $canonical $find  if  ( cfa +-1 )
+1A107B0 	88 93 A0  1 FC B9 A0  1 
+1A107B8 	C4 93 A0  1 DC 41 A0  1 
+1A107C0 	14  0  0  0 
+      drop  postpone \
+1A107C4 	30 49 A0  1 
+1A107C8 	74 8A A0  1 
+   else                                  ( adr len )
+1A107CC 	C8 41 A0  1 
+1A107D0 	 8  0  0  0 
+      2drop
+1A107D4 	AC 49 A0  1 
+   then
+;
+1A107D8 	58 46 A0  1 
+

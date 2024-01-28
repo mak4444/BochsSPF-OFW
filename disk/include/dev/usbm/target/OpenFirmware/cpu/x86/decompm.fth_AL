@@ -1,0 +1,67 @@
+\ Machine/implementation-dependent definitions
+
+decimal
+
+only forth also hidden also definitions
+headerless
+: dictionary-base  ( -- adr )  origin 16 +  user-size +  ;
+1A1792B 	 0 64 69 63 74 
+1A17930 	69 6F 6E 61 72 79 2D 62 
+1A17938 	61 73 65 8F 70 6F A1  1 
+1A17940 	20 40 A0  1 50 55 A0  1 
+1A17948 	58 41 A0  1 10  0  0  0 
+1A17950 	 4 45 A0  1 E8 65 A0  1 
+1A17958 	 4 45 A0  1 58 46 A0  1 
+
+: ram/rom-in-dictionary?  ( adr flag -- )
+1A17960 	 0 72 61 6D 2F 72 6F 6D 
+1A17968 	2D 69 6E 2D 64 69 63 74 
+1A17970 	69 6F 6E 61 72 79 3F 96 
+1A17978 	40 79 A1  1 20 40 A0  1 
+   dup  #align 1- and  0=  if
+1A17980 	40 49 A0  1 54 5A A0  1 
+1A17988 	54 4B A0  1 5C 44 A0  1 
+1A17990 	24 47 A0  1 DC 41 A0  1 
+1A17998 	30  0  0  0 
+	  dup  lo-segment-base lo-segment-limit  within
+1A1799C 	40 49 A0  1 
+1A179A0 	70  E A1  1 90  E A1  1 
+1A179A8 	 8 71 A0  1 
+	  swap hi-segment-base hi-segment-limit  within  or
+1A179AC 	68 49 A0  1 
+1A179B0 	AC  E A1  1 CC  E A1  1 
+1A179B8 	 8 71 A0  1 70 44 A0  1 
+   else
+1A179C0 	C8 41 A0  1  C  0  0  0 
+	  drop false
+1A179C8 	30 49 A0  1 18 70 A0  1 
+   then
+;
+1A179D0 	58 46 A0  1 
+
+: reasonable-ip?  ( ip -- flag )  in-dictionary?  ;
+1A179D4 	 0 72 65 61 
+1A179D8 	73 6F 6E 61 62 6C 65 2D 
+1A179E0 	69 70 3F 8E 7C 79 A1  1 
+1A179E8 	20 40 A0  1 24 CF A0  1 
+1A179F0 	58 46 A0  1 
+
+
+\ Decompiler extension for 32-bit literals
+: .llit      ( ip -- ip' )  ta1+ dup l@ n.  la1+  ;  
+1A179F4 	 0  0 2E 6C 
+1A179F8 	6C 69 74 85 E8 79 A1  1 
+1A17A00 	20 40 A0  1 FC 50 A0  1 
+1A17A08 	40 49 A0  1 6C 4C A0  1 
+1A17A10 	D0 7A A0  1 B4 50 A0  1 
+1A17A18 	58 46 A0  1 
+: skip-llit  ( ip -- ip' )  ta1+ la1+  ;  
+1A17A1C 	 0  0 73 6B 
+1A17A20 	69 70 2D 6C 6C 69 74 89 
+1A17A28 	 0 7A A1  1 20 40 A0  1 
+1A17A30 	FC 50 A0  1 B4 50 A0  1 
+1A17A38 	58 46 A0  1 
+\ ' (llit)  ' .llit  ' skip-llit  install-decomp
+
+headers
+only forth also definitions

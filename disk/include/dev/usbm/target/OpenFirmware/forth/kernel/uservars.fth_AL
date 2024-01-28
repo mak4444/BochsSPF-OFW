@@ -1,0 +1,68 @@
+
+
+decimal
+
+user-size-t constant user-size
+1A065D8 	 0  0 75 73 65 72 2D 73 
+1A065E0 	69 7A 65 89 B8 65 A0  1 
+1A065E8 	68 40 A0  1  0 40  0  0 
+
+\ Initial user number
+
+
+nuser link       \ link to next task
+1A065F0 	 0  0  0 6C 69 6E 6B 84 
+1A065F8 	E8 65 A0  1 48 40 A0  1 
+1A06600 	38  0  0  0 
+nuser entry      \ entry address for this task
+1A06604 	 0  0 65 6E 
+1A06608 	74 72 79 85 FC 65 A0  1 
+1A06610 	48 40 A0  1 3C  0  0  0 
+nuser saved-ip
+1A06618 	 0  0  0 73 61 76 65 64 
+1A06620 	2D 69 70 88 10 66 A0  1 
+1A06628 	48 40 A0  1 40  0  0  0 
+nuser saved-rp
+1A06630 	 0  0  0 73 61 76 65 64 
+1A06638 	2D 72 70 88 28 66 A0  1 
+1A06640 	48 40 A0  1 44  0  0  0 
+nuser saved-sp
+1A06648 	 0  0  0 73 61 76 65 64 
+1A06650 	2D 73 70 88 40 66 A0  1 
+1A06658 	48 40 A0  1 48  0  0  0 
+\ next 2 user variables are used for booting
+nuser up0     \ initial up
+1A06660 	75 70 30 83 58 66 A0  1 
+1A06668 	48 40 A0  1 4C  0  0  0 
+nuser #user   \ next available user location
+1A06670 	 0  0 23 75 73 65 72 85 
+1A06678 	68 66 A0  1 48 40 A0  1 
+1A06680 	50  0  0  0 
+nuser sp0          \ initial parameter stack
+1A06684 	73 70 30 83 
+1A06688 	7C 66 A0  1 48 40 A0  1 
+1A06690 	54  0  0  0 
+nuser rp0          \ initial return stack
+1A06694 	72 70 30 83 
+1A06698 	8C 66 A0  1 48 40 A0  1 
+1A066A0 	58  0  0  0 
+
+\ This is the beginning of the initialization chain
+: init  ( -- )  up@ link !  ;	\ Initially, only one task is active
+1A066A4 	 0  0  0 69 
+1A066A8 	6E 69 74 84 9C 66 A0  1 
+1A066B0 	20 40 A0  1 5C 45 A0  1 
+1A066B8 	FC 65 A0  1 54 4D A0  1 
+1A066C0 	58 46 A0  1 
+
+/n constant #ualign
+1A066C4 	23 75 61 6C 
+1A066C8 	69 67 6E 87 B0 66 A0  1 
+1A066D0 	68 40 A0  1  4  0  0  0 
+: ualigned  ( n -- n' )  #ualign round-up  ;
+1A066D8 	 0  0  0 75 61 6C 69 67 
+1A066E0 	6E 65 64 88 D0 66 A0  1 
+1A066E8 	20 40 A0  1 D0 66 A0  1 
+1A066F0 	7C 5C A0  1 58 46 A0  1 
+
+

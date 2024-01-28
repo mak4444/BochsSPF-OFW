@@ -1,0 +1,205 @@
+purpose: Aligned dma aligned alloc and free
+
+hex
+headers
+
+d# 256 constant /align256
+1A43580 	 0  0 2F 61 6C 69 67 6E 
+1A43588 	32 35 36 89 5C 35 A4  1 
+1A43590 	68 40 A0  1  0  1  0  0 
+d#  16 constant /align16
+1A43598 	 0  0  0 2F 61 6C 69 67 
+1A435A0 	6E 31 36 88 90 35 A4  1 
+1A435A8 	68 40 A0  1 10  0  0  0 
+d#  32 constant /align32
+1A435B0 	 0  0  0 2F 61 6C 69 67 
+1A435B8 	6E 33 32 88 A8 35 A4  1 
+1A435C0 	68 40 A0  1 20  0  0  0 
+
+: round-up  ( n align -- n' )  1- tuck + swap invert and  ;
+1A435C8 	 0  0  0 72 6F 75 6E 64 
+1A435D0 	2D 75 70 88 C0 35 A4  1 
+1A435D8 	20 40 A0  1 54 4B A0  1 
+1A435E0 	E8 46 A0  1  4 45 A0  1 
+1A435E8 	68 49 A0  1 30 45 A0  1 
+1A435F0 	5C 44 A0  1 58 46 A0  1 
+
+external
+: dma-push     ( virt phys size -- )         " dma-push" $call-parent     ;
+1A435F8 	 0  0  0 64 6D 61 2D 70 
+1A43600 	75 73 68 88 D8 35 A4  1 
+1A43608 	20 40 A0  1 9C 53 A0  1 
+1A43610 	 8 64 6D 61 2D 70 75 73 
+1A43618 	68  0  0  0 DC 31 A2  1 
+1A43620 	58 46 A0  1 
+: dma-pull     ( virt phys size -- )         " dma-pull" $call-parent     ;
+1A43624 	 0  0  0 64 
+1A43628 	6D 61 2D 70 75 6C 6C 88 
+1A43630 	 8 36 A4  1 20 40 A0  1 
+1A43638 	9C 53 A0  1  8 64 6D 61 
+1A43640 	2D 70 75 6C 6C  0  0  0 
+1A43648 	DC 31 A2  1 58 46 A0  1 
+: dma-alloc    ( size -- virt )              " dma-alloc" $call-parent    ;
+1A43650 	 0  0 64 6D 61 2D 61 6C 
+1A43658 	6C 6F 63 89 34 36 A4  1 
+1A43660 	20 40 A0  1 9C 53 A0  1 
+1A43668 	 9 64 6D 61 2D 61 6C 6C 
+1A43670 	6F 63  0  0 DC 31 A2  1 
+1A43678 	58 46 A0  1 
+: dma-free     ( virt size -- )              " dma-free" $call-parent     ;
+1A4367C 	 0  0  0 64 
+1A43680 	6D 61 2D 66 72 65 65 88 
+1A43688 	60 36 A4  1 20 40 A0  1 
+1A43690 	9C 53 A0  1  8 64 6D 61 
+1A43698 	2D 66 72 65 65  0  0  0 
+1A436A0 	DC 31 A2  1 58 46 A0  1 
+: dma-map-in   ( virt size cache? -- phys )  " dma-map-in" $call-parent   ;
+1A436A8 	 0 64 6D 61 2D 6D 61 70 
+1A436B0 	2D 69 6E 8A 8C 36 A4  1 
+1A436B8 	20 40 A0  1 9C 53 A0  1 
+1A436C0 	 A 64 6D 61 2D 6D 61 70 
+1A436C8 	2D 69 6E  0 DC 31 A2  1 
+1A436D0 	58 46 A0  1 
+: dma-map-out  ( virt phys size -- )         " dma-map-out" $call-parent  ;
+1A436D4 	64 6D 61 2D 
+1A436D8 	6D 61 70 2D 6F 75 74 8B 
+1A436E0 	B8 36 A4  1 20 40 A0  1 
+1A436E8 	9C 53 A0  1  B 64 6D 61 
+1A436F0 	2D 6D 61 70 2D 6F 75 74 
+1A436F8 	 0  0  0  0 DC 31 A2  1 
+1A43700 	58 46 A0  1 
+
+headers
+
+: aligned-alloc  ( size align -- unaligned-virt aligned-virtual )
+1A43704 	 0  0 61 6C 
+1A43708 	69 67 6E 65 64 2D 61 6C 
+1A43710 	6C 6F 63 8D E4 36 A4  1 
+1A43718 	20 40 A0  1 
+   dup >r + dma-alloc  dup r> round-up
+1A4371C 	40 49 A0  1 
+1A43720 	BC 45 A0  1  4 45 A0  1 
+1A43728 	60 36 A4  1 40 49 A0  1 
+1A43730 	D0 45 A0  1 D8 35 A4  1 
+;
+1A43738 	58 46 A0  1 
+: aligned-free  ( virtual size align -- )  + dma-free  ;
+1A4373C 	 0  0  0 61 
+1A43740 	6C 69 67 6E 65 64 2D 66 
+1A43748 	72 65 65 8C 18 37 A4  1 
+1A43750 	20 40 A0  1  4 45 A0  1 
+1A43758 	8C 36 A4  1 58 46 A0  1 
+
+: aligned16-alloc  ( size -- unaligned-virt aligned-virtual )
+1A43760 	61 6C 69 67 6E 65 64 31 
+1A43768 	36 2D 61 6C 6C 6F 63 8F 
+1A43770 	50 37 A4  1 20 40 A0  1 
+   /align16 aligned-alloc
+1A43778 	A8 35 A4  1 18 37 A4  1 
+;
+1A43780 	58 46 A0  1 
+: aligned16-free  ( virtual size -- )
+1A43784 	 0 61 6C 69 
+1A43788 	67 6E 65 64 31 36 2D 66 
+1A43790 	72 65 65 8E 74 37 A4  1 
+1A43798 	20 40 A0  1 
+   /align16 aligned-free
+1A4379C 	A8 35 A4  1 
+1A437A0 	50 37 A4  1 
+;
+1A437A4 	58 46 A0  1 
+
+: aligned16-alloc-map-in  ( size -- unaligned-virt aligned-virt phys )
+1A437A8 	 0 61 6C 69 67 6E 65 64 
+1A437B0 	31 36 2D 61 6C 6C 6F 63 
+1A437B8 	2D 6D 61 70 2D 69 6E 96 
+1A437C0 	98 37 A4  1 20 40 A0  1 
+   dup >r aligned16-alloc
+1A437C8 	40 49 A0  1 BC 45 A0  1 
+1A437D0 	74 37 A4  1 
+   dup r> true dma-map-in
+1A437D4 	40 49 A0  1 
+1A437D8 	D0 45 A0  1  4 70 A0  1 
+1A437E0 	B8 36 A4  1 
+;
+1A437E4 	58 46 A0  1 
+: aligned16-free-map-out  ( unaligned virt phys size -- )
+1A437E8 	 0 61 6C 69 67 6E 65 64 
+1A437F0 	31 36 2D 66 72 65 65 2D 
+1A437F8 	6D 61 70 2D 6F 75 74 96 
+1A43800 	C4 37 A4  1 20 40 A0  1 
+   dup >r dma-map-out
+1A43808 	40 49 A0  1 BC 45 A0  1 
+1A43810 	E4 36 A4  1 
+   r> aligned16-free
+1A43814 	D0 45 A0  1 
+1A43818 	98 37 A4  1 
+;
+1A4381C 	58 46 A0  1 
+
+: aligned32-alloc  ( size -- unaligned-virt aligned-virtual )
+1A43820 	61 6C 69 67 6E 65 64 33 
+1A43828 	32 2D 61 6C 6C 6F 63 8F 
+1A43830 	 4 38 A4  1 20 40 A0  1 
+   /align32 aligned-alloc
+1A43838 	C0 35 A4  1 18 37 A4  1 
+;
+1A43840 	58 46 A0  1 
+: aligned32-free  ( virtual size -- )
+1A43844 	 0 61 6C 69 
+1A43848 	67 6E 65 64 33 32 2D 66 
+1A43850 	72 65 65 8E 34 38 A4  1 
+1A43858 	20 40 A0  1 
+   /align32 aligned-free
+1A4385C 	C0 35 A4  1 
+1A43860 	50 37 A4  1 
+;
+1A43864 	58 46 A0  1 
+
+: aligned32-alloc-map-in  ( size -- unaligned-virt aligned-virt phys )
+1A43868 	 0 61 6C 69 67 6E 65 64 
+1A43870 	33 32 2D 61 6C 6C 6F 63 
+1A43878 	2D 6D 61 70 2D 69 6E 96 
+1A43880 	58 38 A4  1 20 40 A0  1 
+   dup >r aligned32-alloc
+1A43888 	40 49 A0  1 BC 45 A0  1 
+1A43890 	34 38 A4  1 
+   dup r> true dma-map-in
+1A43894 	40 49 A0  1 
+1A43898 	D0 45 A0  1  4 70 A0  1 
+1A438A0 	B8 36 A4  1 
+;
+1A438A4 	58 46 A0  1 
+: aligned32-free-map-out  ( unaligned virt phys size -- )
+1A438A8 	 0 61 6C 69 67 6E 65 64 
+1A438B0 	33 32 2D 66 72 65 65 2D 
+1A438B8 	6D 61 70 2D 6F 75 74 96 
+1A438C0 	84 38 A4  1 20 40 A0  1 
+   dup >r dma-map-out
+1A438C8 	40 49 A0  1 BC 45 A0  1 
+1A438D0 	E4 36 A4  1 
+   r> aligned32-free
+1A438D4 	D0 45 A0  1 
+1A438D8 	58 38 A4  1 
+;
+1A438DC 	58 46 A0  1 
+
+: aligned256-alloc  ( size -- unaligned-virt aligned-virtual )
+1A438E0 	 0  0  0 61 6C 69 67 6E 
+1A438E8 	65 64 32 35 36 2D 61 6C 
+1A438F0 	6C 6F 63 90 C4 38 A4  1 
+1A438F8 	20 40 A0  1 
+   /align256 aligned-alloc
+1A438FC 	90 35 A4  1 
+1A43900 	18 37 A4  1 
+;
+1A43904 	58 46 A0  1 
+: aligned256-free  ( virtual size -- )
+1A43908 	61 6C 69 67 6E 65 64 32 
+1A43910 	35 36 2D 66 72 65 65 8F 
+1A43918 	F8 38 A4  1 20 40 A0  1 
+   /align256 aligned-free
+1A43920 	90 35 A4  1 50 37 A4  1 
+;
+1A43928 	58 46 A0  1 
+

@@ -1,0 +1,497 @@
+purpose: OHCI USB Controller transaction processing
+
+hex
+headers
+
+: disable-control  ( -- )  10 hc-cntl-clr  next-frame  0 20 ohci-reg!  ;
+1A54E30 	64 69 73 61 62 6C 65 2D 
+1A54E38 	63 6F 6E 74 72 6F 6C 8F 
+1A54E40 	1C 4E A5  1 20 40 A0  1 
+1A54E48 	58 41 A0  1 10  0  0  0 
+1A54E50 	58 4B A5  1 C8 4D A5  1 
+1A54E58 	70 6F A0  1 58 41 A0  1 
+1A54E60 	20  0  0  0 F0 48 A5  1 
+1A54E68 	58 46 A0  1 
+: enable-control   ( -- )
+1A54E6C 	 0 65 6E 61 
+1A54E70 	62 6C 65 2D 63 6F 6E 74 
+1A54E78 	72 6F 6C 8E 44 4E A5  1 
+1A54E80 	20 40 A0  1 
+   ed-control >ed-phys l@ 20 ohci-reg!	\ set HcControlHeadED
+1A54E84 	40 32 A5  1 
+1A54E88 	EC 32 A5  1 6C 4C A0  1 
+1A54E90 	58 41 A0  1 20  0  0  0 
+1A54E98 	F0 48 A5  1 
+   2 hc-cmd!				\ mark TD added in control list
+1A54E9C 	90 6F A0  1 
+1A54EA0 	70 49 A5  1 
+   10 hc-cntl-set  			\ enable control list processing
+1A54EA4 	58 41 A0  1 
+1A54EA8 	10  0  0  0 84 4B A5  1 
+;
+1A54EB0 	58 46 A0  1 
+
+: insert-control  ( ed -- )
+1A54EB4 	 0 69 6E 73 
+1A54EB8 	65 72 74 2D 63 6F 6E 74 
+1A54EC0 	72 6F 6C 8E 80 4E A5  1 
+1A54EC8 	20 40 A0  1 
+   ed-control  if  disable-control  then
+1A54ECC 	40 32 A5  1 
+1A54ED0 	DC 41 A0  1  8  0  0  0 
+1A54ED8 	44 4E A5  1 
+   ( ed ) insert-control-ed
+1A54EDC 	D8 3F A5  1 
+   enable-control
+1A54EE0 	80 4E A5  1 
+;
+1A54EE4 	58 46 A0  1 
+: remove-control  ( ed -- )
+1A54EE8 	 0 72 65 6D 6F 76 65 2D 
+1A54EF0 	63 6F 6E 74 72 6F 6C 8E 
+1A54EF8 	C8 4E A5  1 20 40 A0  1 
+   disable-control
+1A54F00 	44 4E A5  1 
+   ( ed ) remove-control-ed
+1A54F04 	 C 40 A5  1 
+   ed-control  if  enable-control  then
+1A54F08 	40 32 A5  1 DC 41 A0  1 
+1A54F10 	 8  0  0  0 80 4E A5  1 
+;
+1A54F18 	58 46 A0  1 
+
+\ Local temporary variables (common for control, bulk & interrupt)
+
+\ my-dev and my-real-dev are created here to deal with set-address.
+\ Normally my-dev and my-real-dev are both of the value of target.
+\ However, during set-address, target=my-dev=0, my-real-dev is the
+\ address to be assigned to my-real-dev.  The correct path to get
+\ a device's characteristics is via my-real-dev.
+
+0 value my-dev					\ Equals to target
+1A54F1C 	 0 6D 79 2D 
+1A54F20 	64 65 76 86 FC 4E A5  1 
+1A54F28 	50 40 A0  1 C4  E  0  0 
+0 value my-real-dev				\ Path to device's characteristics
+1A54F30 	6D 79 2D 72 65 61 6C 2D 
+1A54F38 	64 65 76 8B 28 4F A5  1 
+1A54F40 	50 40 A0  1 C8  E  0  0 
+0 value my-dev/pipe				\ Device/pipe for ED
+1A54F48 	6D 79 2D 64 65 76 2F 70 
+1A54F50 	69 70 65 8B 40 4F A5  1 
+1A54F58 	50 40 A0  1 CC  E  0  0 
+
+0 value my-speed				\ Speed of my-real-dev
+1A54F60 	 0  0  0 6D 79 2D 73 70 
+1A54F68 	65 65 64 88 58 4F A5  1 
+1A54F70 	50 40 A0  1 D0  E  0  0 
+0 value my-maxpayload				\ Pipe's max payload
+1A54F78 	 0  0 6D 79 2D 6D 61 78 
+1A54F80 	70 61 79 6C 6F 61 64 8D 
+1A54F88 	70 4F A5  1 50 40 A0  1 
+1A54F90 	D4  E  0  0 
+
+0 value my-buf					\ Virtual address of data buffer
+1A54F94 	 0 6D 79 2D 
+1A54F98 	62 75 66 86 8C 4F A5  1 
+1A54FA0 	50 40 A0  1 D8  E  0  0 
+0 value my-buf-phys				\ Physical address of data buffer
+1A54FA8 	6D 79 2D 62 75 66 2D 70 
+1A54FB0 	68 79 73 8B A0 4F A5  1 
+1A54FB8 	50 40 A0  1 DC  E  0  0 
+0 value /my-buf					\ Size of data buffer
+1A54FC0 	2F 6D 79 2D 62 75 66 87 
+1A54FC8 	B8 4F A5  1 50 40 A0  1 
+1A54FD0 	E0  E  0  0 
+
+0 value my-td					\ Current TD head
+1A54FD4 	 0  0 6D 79 
+1A54FD8 	2D 74 64 85 CC 4F A5  1 
+1A54FE0 	50 40 A0  1 E4  E  0  0 
+0 value my-ed					\ Current ED
+1A54FE8 	 0  0 6D 79 2D 65 64 85 
+1A54FF0 	E0 4F A5  1 50 40 A0  1 
+1A54FF8 	E8  E  0  0 
+
+: set-real-dev  ( real-dev target -- )		\ For set-address only
+1A54FFC 	 0  0  0 73 
+1A55000 	65 74 2D 72 65 61 6C 2D 
+1A55008 	64 65 76 8C F4 4F A5  1 
+1A55010 	20 40 A0  1 
+   to my-dev to my-real-dev
+1A55014 	B8 40 A0  1 
+1A55018 	28 4F A5  1 B8 40 A0  1 
+1A55020 	40 4F A5  1 
+;
+1A55024 	58 46 A0  1 
+
+\- set-my-dev defer set-my-dev
+
+: set-my-char  ( pipe -- )			\ Set device's characteristics
+1A55028 	73 65 74 2D 6D 79 2D 63 
+1A55030 	68 61 72 8B 10 50 A5  1 
+1A55038 	20 40 A0  1 
+   dup 7 << my-dev or to my-dev/pipe		( pipe )
+1A5503C 	40 49 A0  1 
+1A55040 	E0 6F A0  1 C8 44 A0  1 
+1A55048 	28 4F A5  1 70 44 A0  1 
+1A55050 	B8 40 A0  1 58 4F A5  1 
+   my-real-dev dup di-speed@			( pipe dev speed )
+1A55058 	40 4F A5  1 40 49 A0  1 
+1A55060 	10 42 A4  1 
+   speed-full =  if  ED_SPEED_FULL  else  ED_SPEED_LO  then  to my-speed
+1A55064 	68 2E A4  1 
+1A55068 	24 48 A0  1 DC 41 A0  1 
+1A55070 	10  0  0  0 F0 33 A5  1 
+1A55078 	C8 41 A0  1  8  0  0  0 
+1A55080 	 8 34 A5  1 B8 40 A0  1 
+1A55088 	70 4F A5  1 
+						( pipe dev )
+   di-maxpayload@  to my-maxpayload		( )
+1A5508C 	6C 43 A4  1 
+1A55090 	B8 40 A0  1 8C 4F A5  1 
+;
+1A55098 	58 46 A0  1 
+: process-control-args  ( buf phy len -- )
+1A5509C 	 0  0  0 70 
+1A550A0 	72 6F 63 65 73 73 2D 63 
+1A550A8 	6F 6E 74 72 6F 6C 2D 61 
+1A550B0 	72 67 73 94 38 50 A5  1 
+1A550B8 	20 40 A0  1 
+   to /my-buf to my-buf-phys to my-buf
+1A550BC 	B8 40 A0  1 
+1A550C0 	CC 4F A5  1 B8 40 A0  1 
+1A550C8 	B8 4F A5  1 B8 40 A0  1 
+1A550D0 	A0 4F A5  1 
+   clear-usb-error
+1A550D4 	F8 3F A4  1 
+   set-my-dev
+1A550D8 	20 51 A4  1 
+   0 set-my-char
+1A550DC 	70 6F A0  1 
+1A550E0 	38 50 A5  1 
+;
+1A550E4 	58 46 A0  1 
+
+: alloc-control-edtds  ( extra-tds -- )
+1A550E8 	61 6C 6C 6F 63 2D 63 6F 
+1A550F0 	6E 74 72 6F 6C 2D 65 64 
+1A550F8 	74 64 73 93 B8 50 A5  1 
+1A55100 	20 40 A0  1 
+   /my-buf  if  1+ data-timeout  else  nodata-timeout  then  to timeout
+1A55104 	CC 4F A5  1 
+1A55108 	DC 41 A0  1 14  0  0  0 
+1A55110 	30 4B A0  1 14 3B A4  1 
+1A55118 	C8 41 A0  1  8  0  0  0 
+1A55120 	F8 3A A4  1 B8 40 A0  1 
+1A55128 	FC 42 A5  1 
+   alloc-edtds to my-td to my-ed
+1A5512C 	74 3D A5  1 
+1A55130 	B8 40 A0  1 E0 4F A5  1 
+1A55138 	B8 40 A0  1 F4 4F A5  1 
+;
+1A55140 	58 46 A0  1 
+
+: fill-setup-td  ( sbuf sphy slen control -- )
+1A55144 	 0  0 66 69 
+1A55148 	6C 6C 2D 73 65 74 75 70 
+1A55150 	2D 74 64 8D  0 51 A5  1 
+1A55158 	20 40 A0  1 
+   TD_CC_NOTACCESSED or TD_DIR_SETUP or TD_INTR_OFF or TD_TOGGLE_USE_LSB0 or
+1A5515C 	68 3B A5  1 
+1A55160 	70 44 A0  1 98 38 A5  1 
+1A55168 	70 44 A0  1 10 39 A5  1 
+1A55170 	70 44 A0  1 6C 39 A5  1 
+1A55178 	70 44 A0  1 
+   my-td >hctd-control le-l!
+1A5517C 	E0 4F A5  1 
+1A55180 	54 36 A5  1 5C 35 A4  1 
+   over + 1-  my-td >hctd-be le-l!
+1A55188 	54 49 A0  1  4 45 A0  1 
+1A55190 	54 4B A0  1 E0 4F A5  1 
+1A55198 	9C 36 A5  1 5C 35 A4  1 
+   ( sphy ) my-td 2dup >hctd-cbp le-l!
+1A551A0 	E0 4F A5  1 C0 49 A0  1 
+1A551A8 	6C 36 A5  1 5C 35 A4  1 
+   ( sphy ) >td-pcbp l!
+1A551B0 	 0 38 A5  1 7C 4D A0  1 
+   ( sbuf ) my-td >td-cbp l!
+1A551B8 	E0 4F A5  1 E8 37 A5  1 
+1A551C0 	7C 4D A0  1 
+;
+1A551C4 	58 46 A0  1 
+
+: fill-io-tds  ( td control -- )
+1A551C8 	66 69 6C 6C 2D 69 6F 2D 
+1A551D0 	74 64 73 8B 58 51 A5  1 
+1A551D8 	20 40 A0  1 
+   over >hctd-control le-l!
+1A551DC 	54 49 A0  1 
+1A551E0 	54 36 A5  1 5C 35 A4  1 
+   my-buf over >td-cbp l!
+1A551E8 	A0 4F A5  1 54 49 A0  1 
+1A551F0 	E8 37 A5  1 7C 4D A0  1 
+   my-buf-phys over 2dup >hctd-cbp le-l!
+1A551F8 	B8 4F A5  1 54 49 A0  1 
+1A55200 	C0 49 A0  1 6C 36 A5  1 
+1A55208 	5C 35 A4  1 
+   >td-pcbp l!
+1A5520C 	 0 38 A5  1 
+1A55210 	7C 4D A0  1 
+   my-buf-phys /my-buf + 1- swap >hctd-be le-l!
+1A55214 	B8 4F A5  1 
+1A55218 	CC 4F A5  1  4 45 A0  1 
+1A55220 	54 4B A0  1 68 49 A0  1 
+1A55228 	9C 36 A5  1 5C 35 A4  1 
+;
+1A55230 	58 46 A0  1 
+: fill-control-io-tds  ( dir -- std )
+1A55234 	66 69 6C 6C 
+1A55238 	2D 63 6F 6E 74 72 6F 6C 
+1A55240 	2D 69 6F 2D 74 64 73 93 
+1A55248 	D8 51 A5  1 20 40 A0  1 
+   my-td >td-next l@				( dir td )
+1A55250 	E0 4F A5  1 D4 37 A5  1 
+1A55258 	6C 4C A0  1 
+   /my-buf 0=  if  nip exit  then		( dir td )
+1A5525C 	CC 4F A5  1 
+1A55260 	24 47 A0  1 DC 41 A0  1 
+1A55268 	 C  0  0  0 FC 46 A0  1 
+1A55270 	40 46 A0  1 
+   dup rot					( td td dir )
+1A55274 	40 49 A0  1 
+1A55278 	7C 49 A0  1 
+   TD_CC_NOTACCESSED or TD_INTR_OFF or TD_TOGGLE_USE_LSB1 or
+1A5527C 	68 3B A5  1 
+1A55280 	70 44 A0  1 10 39 A5  1 
+1A55288 	70 44 A0  1 8C 39 A5  1 
+1A55290 	70 44 A0  1 
+						( td td control )
+   fill-io-tds					( td )
+1A55294 	D8 51 A5  1 
+   >td-next l@					( std )
+1A55298 	D4 37 A5  1 6C 4C A0  1 
+;
+1A552A0 	58 46 A0  1 
+
+: fill-control-ed  ( ed -- )
+1A552A4 	66 69 6C 6C 
+1A552A8 	2D 63 6F 6E 74 72 6F 6C 
+1A552B0 	2D 65 64 8F 4C 52 A5  1 
+1A552B8 	20 40 A0  1 
+   my-dev my-speed or ED_DIR_TD or ED_SKIP_OFF or ED_FORMAT_G or
+1A552BC 	28 4F A5  1 
+1A552C0 	70 4F A5  1 70 44 A0  1 
+1A552C8 	8C 33 A5  1 70 44 A0  1 
+1A552D0 	3C 34 A5  1 70 44 A0  1 
+1A552D8 	88 34 A5  1 70 44 A0  1 
+   my-maxpayload d# 16 << or
+1A552E0 	8C 4F A5  1 58 41 A0  1 
+1A552E8 	10  0  0  0 C8 44 A0  1 
+1A552F0 	70 44 A0  1 
+   swap >hced-control le-l!
+1A552F4 	68 49 A0  1 
+1A552F8 	70 32 A5  1 5C 35 A4  1 
+;
+1A55300 	58 46 A0  1 
+
+: insert-my-control  ( -- )
+1A55304 	 0  0 69 6E 
+1A55308 	73 65 72 74 2D 6D 79 2D 
+1A55310 	63 6F 6E 74 72 6F 6C 91 
+1A55318 	B8 52 A5  1 20 40 A0  1 
+   my-ed dup fill-control-ed
+1A55320 	F4 4F A5  1 40 49 A0  1 
+1A55328 	B8 52 A5  1 
+   dup push-edtds
+1A5532C 	40 49 A0  1 
+1A55330 	48 3E A5  1 
+   insert-control
+1A55334 	C8 4E A5  1 
+;
+1A55338 	58 46 A0  1 
+
+: remove-my-control  ( -- )
+1A5533C 	 0  0 72 65 
+1A55340 	6D 6F 76 65 2D 6D 79 2D 
+1A55348 	63 6F 6E 74 72 6F 6C 91 
+1A55350 	1C 53 A5  1 20 40 A0  1 
+   my-ed dup remove-control
+1A55358 	F4 4F A5  1 40 49 A0  1 
+1A55360 	FC 4E A5  1 
+   free-edtds
+1A55364 	 0 3E A5  1 
+;
+1A55368 	58 46 A0  1 
+
+
+\ ---------------------------------------------------------------------------
+\ CONTROL pipe operations
+\ ---------------------------------------------------------------------------
+
+: (control-get)  ( sbuf sphy slen buf phy len -- actual usberr )
+1A5536C 	 0  0 28 63 
+1A55370 	6F 6E 74 72 6F 6C 2D 67 
+1A55378 	65 74 29 8D 54 53 A5  1 
+1A55380 	20 40 A0  1 
+   process-control-args				( sbuf sphy slen )
+1A55384 	B8 50 A5  1 
+   /my-buf 0=  if  3drop 0 USB_ERR_INV_OP exit  then
+1A55388 	CC 4F A5  1 24 47 A0  1 
+1A55390 	DC 41 A0  1 14  0  0  0 
+1A55398 	A4 3E A4  1 70 6F A0  1 
+1A553A0 	E0 2D A4  1 40 46 A0  1 
+   3 alloc-control-edtds			( sbuf sphy slen )
+1A553A8 	A0 6F A0  1  0 51 A5  1 
+
+   \ SETUP TD
+   TD_ROUND_ON fill-setup-td			( )
+1A553B0 	44 38 A5  1 58 51 A5  1 
+
+   \ IN TD
+   TD_DIR_IN TD_ROUND_ON or fill-control-io-tds	( std )
+1A553B8 	C8 38 A5  1 44 38 A5  1 
+1A553C0 	70 44 A0  1 4C 52 A5  1 
+
+   \ Status TD (OUT)
+   TD_CC_NOTACCESSED TD_DIR_OUT or TD_INTR_MIN or TD_TOGGLE_USE_LSB1 or
+1A553C8 	68 3B A5  1 B0 38 A5  1 
+1A553D0 	70 44 A0  1 F8 38 A5  1 
+1A553D8 	70 44 A0  1 8C 39 A5  1 
+1A553E0 	70 44 A0  1 
+   TD_ROUND_ON or
+1A553E4 	44 38 A5  1 
+1A553E8 	70 44 A0  1 
+   swap >hctd-control le-l!			( )
+1A553EC 	68 49 A0  1 
+1A553F0 	54 36 A5  1 5C 35 A4  1 
+
+   \ Start control transaction
+   insert-my-control				( )
+1A553F8 	1C 53 A5  1 
+
+   \ Process results
+   my-ed done?  if				( )
+1A553FC 	F4 4F A5  1 
+1A55400 	50 46 A5  1 DC 41 A0  1 
+1A55408 	10  0  0  0 
+      0						( actual )	\ System error, timeout
+1A5540C 	70 6F A0  1 
+   else
+1A55410 	C8 41 A0  1 58  0  0  0 
+      my-td error?  if				( )
+1A55418 	E0 4F A5  1 68 45 A5  1 
+1A55420 	DC 41 A0  1 10  0  0  0 
+	 0					( actual )	\ USB error
+1A55428 	70 6F A0  1 
+      else
+1A5542C 	C8 41 A0  1 
+1A55430 	3C  0  0  0 
+         my-td >td-next l@ dup get-actual	( td actual )
+1A55434 	E0 4F A5  1 
+1A55438 	D4 37 A5  1 6C 4C A0  1 
+1A55440 	40 49 A0  1 E0 46 A5  1 
+         over >td-cbp l@ rot >td-pcbp l@ 2 pick dma-pull	( actual )
+1A55448 	54 49 A0  1 E8 37 A5  1 
+1A55450 	6C 4C A0  1 7C 49 A0  1 
+1A55458 	 0 38 A5  1 6C 4C A0  1 
+1A55460 	90 6F A0  1  C 4A A0  1 
+1A55468 	34 36 A4  1 
+      then
+   then
+
+   remove-my-control				( actual )
+1A5546C 	54 53 A5  1 
+   usb-error					( actual usberr )
+1A55470 	DC 3F A4  1 
+;
+1A55474 	58 46 A0  1 
+
+: (control-set)  ( sbuf sphy slen buf phy len -- usberr )
+1A55478 	 0  0 28 63 6F 6E 74 72 
+1A55480 	6F 6C 2D 73 65 74 29 8D 
+1A55488 	80 53 A5  1 20 40 A0  1 
+   process-control-args				( sbuf sphy slen )
+1A55490 	B8 50 A5  1 
+   3 alloc-control-edtds			( sbuf sphy slen )
+1A55494 	A0 6F A0  1 
+1A55498 	 0 51 A5  1 
+
+   \ SETUP TD
+   0 fill-setup-td				( )
+1A5549C 	70 6F A0  1 
+1A554A0 	58 51 A5  1 
+
+   \ OUT TD
+   TD_DIR_OUT fill-control-io-tds		( std )
+1A554A4 	B0 38 A5  1 
+1A554A8 	4C 52 A5  1 
+
+   \ Status TD (IN) 	   			( std )
+   TD_CC_NOTACCESSED TD_DIR_IN or TD_INTR_MIN or TD_TOGGLE_USE_LSB1 or
+1A554AC 	68 3B A5  1 
+1A554B0 	C8 38 A5  1 70 44 A0  1 
+1A554B8 	F8 38 A5  1 70 44 A0  1 
+1A554C0 	8C 39 A5  1 70 44 A0  1 
+   ( TD_ROUND_ON or )
+   swap >hctd-control le-l!			( )
+1A554C8 	68 49 A0  1 54 36 A5  1 
+1A554D0 	5C 35 A4  1 
+
+   \ Start control transaction
+   insert-my-control
+1A554D4 	1C 53 A5  1 
+
+   \ Process results
+   my-ed done? 0=  if  my-td error? drop  then
+1A554D8 	F4 4F A5  1 50 46 A5  1 
+1A554E0 	24 47 A0  1 DC 41 A0  1 
+1A554E8 	10  0  0  0 E0 4F A5  1 
+1A554F0 	68 45 A5  1 30 49 A0  1 
+
+   remove-my-control				( )
+1A554F8 	54 53 A5  1 
+   usb-error					( usberr )
+1A554FC 	DC 3F A4  1 
+;
+1A55500 	58 46 A0  1 
+
+: (control-set-nostat)  ( sbuf sphy slen buf phy len -- usberr )
+1A55504 	 0  0  0 28 
+1A55508 	63 6F 6E 74 72 6F 6C 2D 
+1A55510 	73 65 74 2D 6E 6F 73 74 
+1A55518 	61 74 29 94 8C 54 A5  1 
+1A55520 	20 40 A0  1 
+   process-control-args				( sbuf sphy slen )
+1A55524 	B8 50 A5  1 
+   2 alloc-control-edtds			( sbuf sphy slen )
+1A55528 	90 6F A0  1  0 51 A5  1 
+
+   \ SETUP TD
+   0 fill-setup-td				( )
+1A55530 	70 6F A0  1 58 51 A5  1 
+
+   \ OUT TD
+   TD_DIR_OUT fill-control-io-tds drop		( )
+1A55538 	B0 38 A5  1 4C 52 A5  1 
+1A55540 	30 49 A0  1 
+
+   \ Start control transaction
+   insert-my-control				( )
+1A55544 	1C 53 A5  1 
+
+   \ Process results
+   my-ed done? 0=  if  my-td error? drop then
+1A55548 	F4 4F A5  1 50 46 A5  1 
+1A55550 	24 47 A0  1 DC 41 A0  1 
+1A55558 	10  0  0  0 E0 4F A5  1 
+1A55560 	68 45 A5  1 30 49 A0  1 
+
+   remove-my-control				( )
+1A55568 	54 53 A5  1 
+   usb-error					( usberr )
+1A5556C 	DC 3F A4  1 
+;
+1A55570 	58 46 A0  1 
+
+headers

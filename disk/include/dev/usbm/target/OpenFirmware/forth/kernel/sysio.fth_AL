@@ -1,0 +1,38 @@
+
+[ifndef] omit-files
+hex
+\ Aligns to a 512-byte boundary; this is okay for most systems.
+: _falign  ( l.byte# fd -- l.aligned )  drop  1ff invert and  ;
+1A0EEA0 	5F 66 61 6C 69 67 6E 87 
+1A0EEA8 	98 EE A0  1 20 40 A0  1 
+1A0EEB0 	30 49 A0  1 58 41 A0  1 
+1A0EEB8 	FF  1  0  0 30 45 A0  1 
+1A0EEC0 	5C 44 A0  1 58 46 A0  1 
+: _dfalign  ( d.byte# fd -- d.aligned )  drop  swap 1ff invert and swap	;
+1A0EEC8 	 0  0  0 5F 64 66 61 6C 
+1A0EED0 	69 67 6E 88 AC EE A0  1 
+1A0EED8 	20 40 A0  1 30 49 A0  1 
+1A0EEE0 	68 49 A0  1 58 41 A0  1 
+1A0EEE8 	FF  1  0  0 30 45 A0  1 
+1A0EEF0 	5C 44 A0  1 68 49 A0  1 
+1A0EEF8 	58 46 A0  1 
+[then]
+
+
+headers
+\ Line terminators for various operating systems
+create lf-pstr    1 c, linefeed c,               \ Unix
+1A0EEFC 	6C 66 2D 70 
+1A0EF00 	73 74 72 87 D8 EE A0  1 
+1A0EF08 	30 40 A0  1  1  A 
+create cr-pstr    1 c, carret   c,               \ Macintosh, OS-9
+1A0EF0E 	 0  0 
+1A0EF10 	63 72 2D 70 73 74 72 87 
+1A0EF18 	 8 EF A0  1 30 40 A0  1 
+1A0EF20 	 1  D 
+create crlf-pstr  2 c, carret   c,  linefeed c,  \ DOS
+1A0EF22 	63 72 6C 66 2D 70 
+1A0EF28 	73 74 72 89 1C EF A0  1 
+1A0EF30 	30 40 A0  1  2  D  A 
+[then]
+

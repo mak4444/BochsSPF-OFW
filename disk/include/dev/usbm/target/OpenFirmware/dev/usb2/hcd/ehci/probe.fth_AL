@@ -1,0 +1,881 @@
+purpose: EHCI USB Controller probe
+
+hex
+headers
+
+: probefth
+1A5C104 	 0  0  0 70 
+1A5C108 	72 6F 62 65 66 74 68 88 
+1A5C110 	BC 8F A5  1 20 40 A0  1 
+
+s" 0 value port-speed" eval
+1A5C118 	9C 53 A0  1 12 30 20 76 
+1A5C120 	61 6C 75 65 20 70 6F 72 
+1A5C128 	74 2D 73 70 65 65 64  0 
+1A5C130 	D8 E5 A0  1 
+
+s" : make-root-hub-node" eval  ( port -- )
+1A5C134 	9C 53 A0  1 
+1A5C138 	14 3A 20 6D 61 6B 65 2D 
+1A5C140 	72 6F 6F 74 2D 68 75 62 
+1A5C148 	2D 6E 6F 64 65  0  0  0 
+1A5C150 	D8 E5 A0  1 
+s"    0 set-target" eval	\ First address it as device 0	( port )
+1A5C154 	9C 53 A0  1 
+1A5C158 	 F 20 20 20 30 20 73 65 
+1A5C160 	74 2D 74 61 72 67 65 74 
+1A5C168 	 0  0  0  0 D8 E5 A0  1 
+s"    port-speed 0 di-speed!" eval     \ Use high speed for getting the device descriptor
+1A5C170 	9C 53 A0  1 19 20 20 20 
+1A5C178 	70 6F 72 74 2D 73 70 65 
+1A5C180 	65 64 20 30 20 64 69 2D 
+1A5C188 	73 70 65 65 64 21  0  0 
+1A5C190 	D8 E5 A0  1 
+
+s"    dup reset-port" eval		( port )
+1A5C194 	9C 53 A0  1 
+1A5C198 	11 20 20 20 64 75 70 20 
+1A5C1A0 	72 65 73 65 74 2D 70 6F 
+1A5C1A8 	72 74  0  0 D8 E5 A0  1 
+
+s"    port-speed" eval			( port speed )
+1A5C1B0 	9C 53 A0  1  D 20 20 20 
+1A5C1B8 	70 6F 72 74 2D 73 70 65 
+1A5C1C0 	65 64  0  0 D8 E5 A0  1 
+
+   \ hub-port and hub-dev route USB 1.1 transactions through USB 2.0 hubs
+s"    over get-hub20-port  get-hub20-dev" eval		( port speed hub-port hub-dev )
+1A5C1C8 	9C 53 A0  1 25 20 20 20 
+1A5C1D0 	6F 76 65 72 20 67 65 74 
+1A5C1D8 	2D 68 75 62 32 30 2D 70 
+1A5C1E0 	6F 72 74 20 20 67 65 74 
+1A5C1E8 	2D 68 75 62 32 30 2D 64 
+1A5C1F0 	65 76  0  0 D8 E5 A0  1 
+
+   \ Execute setup-new-node in root context and make-device-node in hub node context
+s"  setup-new-node  if  execute  then ;" eval
+1A5C1F8 	9C 53 A0  1 24 20 73 65 
+1A5C200 	74 75 70 2D 6E 65 77 2D 
+1A5C208 	6E 6F 64 65 20 20 69 66 
+1A5C210 	20 20 65 78 65 63 75 74 
+1A5C218 	65 20 20 74 68 65 6E 20 
+1A5C220 	3B  0  0  0 D8 E5 A0  1 
+
+s" 0 instance value probe-error?" eval  \ Back channel to selftest
+1A5C228 	9C 53 A0  1 1D 30 20 69 
+1A5C230 	6E 73 74 61 6E 63 65 20 
+1A5C238 	76 61 6C 75 65 20 70 72 
+1A5C240 	6F 62 65 2D 65 72 72 6F 
+1A5C248 	72 3F  0  0 D8 E5 A0  1 
+
+s" : make-port-node" eval  ( port -- )
+1A5C250 	9C 53 A0  1 10 3A 20 6D 
+1A5C258 	61 6B 65 2D 70 6F 72 74 
+1A5C260 	2D 6E 6F 64 65  0  0  0 
+1A5C268 	D8 E5 A0  1 
+s"    ['] make-root-hub-node catch  if" eval
+1A5C26C 	9C 53 A0  1 
+1A5C270 	23 20 20 20 5B 27 5D 20 
+1A5C278 	6D 61 6B 65 2D 72 6F 6F 
+1A5C280 	74 2D 68 75 62 2D 6E 6F 
+1A5C288 	64 65 20 63 61 74 63 68 
+1A5C290 	20 20 69 66  0  0  0  0 
+1A5C298 	D8 E5 A0  1 
+ "       drop ."" Failed to make root hub node for port "" dup .d cr" eval
+1A5C29C 	9C 53 A0  1 
+1A5C2A0 	3F 20 20 20 20 20 20 64 
+1A5C2A8 	72 6F 70 20 2E 22 20 46 
+1A5C2B0 	61 69 6C 65 64 20 74 6F 
+1A5C2B8 	20 6D 61 6B 65 20 72 6F 
+1A5C2C0 	6F 74 20 68 75 62 20 6E 
+1A5C2C8 	6F 64 65 20 66 6F 72 20 
+1A5C2D0 	70 6F 72 74 20 22 20 64 
+1A5C2D8 	75 70 20 2E 64 20 63 72 
+1A5C2E0 	 0  0  0  0 D8 E5 A0  1 
+s"       true to probe-error?" eval
+1A5C2E8 	9C 53 A0  1 1A 20 20 20 
+1A5C2F0 	20 20 20 74 72 75 65 20 
+1A5C2F8 	74 6F 20 70 72 6F 62 65 
+1A5C300 	2D 65 72 72 6F 72 3F  0 
+1A5C308 	D8 E5 A0  1 
+s"    then ;" eval
+1A5C30C 	9C 53 A0  1 
+1A5C310 	 9 20 20 20 74 68 65 6E 
+1A5C318 	20 3B  0  0 D8 E5 A0  1 
+
+s" defer handle-ls-device  ' disown-port to handle-ls-device" eval
+1A5C320 	9C 53 A0  1 39 64 65 66 
+1A5C328 	65 72 20 68 61 6E 64 6C 
+1A5C330 	65 2D 6C 73 2D 64 65 76 
+1A5C338 	69 63 65 20 20 27 20 64 
+1A5C340 	69 73 6F 77 6E 2D 70 6F 
+1A5C348 	72 74 20 74 6F 20 68 61 
+1A5C350 	6E 64 6C 65 2D 6C 73 2D 
+1A5C358 	64 65 76 69 63 65  0  0 
+1A5C360 	D8 E5 A0  1 
+s" defer handle-fs-device  ' disown-port to handle-fs-device" eval
+1A5C364 	9C 53 A0  1 
+1A5C368 	39 64 65 66 65 72 20 68 
+1A5C370 	61 6E 64 6C 65 2D 66 73 
+1A5C378 	2D 64 65 76 69 63 65 20 
+1A5C380 	20 27 20 64 69 73 6F 77 
+1A5C388 	6E 2D 70 6F 72 74 20 74 
+1A5C390 	6F 20 68 61 6E 64 6C 65 
+1A5C398 	2D 66 73 2D 64 65 76 69 
+1A5C3A0 	63 65  0  0 D8 E5 A0  1 
+
+s" : probe-root-hub-port" eval  ( port -- )
+1A5C3A8 	9C 53 A0  1 15 3A 20 70 
+1A5C3B0 	72 6F 62 65 2D 72 6F 6F 
+1A5C3B8 	74 2D 68 75 62 2D 70 6F 
+1A5C3C0 	72 74  0  0 D8 E5 A0  1 
+s"    false to probe-error?" eval			( port )
+1A5C3C8 	9C 53 A0  1 18 20 20 20 
+1A5C3D0 	66 61 6C 73 65 20 74 6F 
+1A5C3D8 	20 70 72 6F 62 65 2D 65 
+1A5C3E0 	72 72 6F 72 3F  0  0  0 
+1A5C3E8 	D8 E5 A0  1 
+s"    dup disable-old-nodes" eval			( port )
+1A5C3EC 	9C 53 A0  1 
+1A5C3F0 	18 20 20 20 64 75 70 20 
+1A5C3F8 	64 69 73 61 62 6C 65 2D 
+1A5C400 	6F 6C 64 2D 6E 6F 64 65 
+1A5C408 	73  0  0  0 D8 E5 A0  1 
+s"    dup portsc@ 1 and 0=  if  drop exit  then" eval	( port ) \ No device detected
+1A5C410 	9C 53 A0  1 2C 20 20 20 
+1A5C418 	64 75 70 20 70 6F 72 74 
+1A5C420 	73 63 40 20 31 20 61 6E 
+1A5C428 	64 20 30 3D 20 20 69 66 
+1A5C430 	20 20 64 72 6F 70 20 65 
+1A5C438 	78 69 74 20 20 74 68 65 
+1A5C440 	6E  0  0  0 D8 E5 A0  1 
+
+s"    dup portsc@ h# c00 and h# 400 =  if" eval		\ A low speed device detected
+1A5C448 	9C 53 A0  1 26 20 20 20 
+1A5C450 	64 75 70 20 70 6F 72 74 
+1A5C458 	73 63 40 20 68 23 20 63 
+1A5C460 	30 30 20 61 6E 64 20 68 
+1A5C468 	23 20 34 30 30 20 3D 20 
+1A5C470 	20 69 66  0 D8 E5 A0  1 
+s"       speed-low to port-speed" eval
+1A5C478 	9C 53 A0  1 1D 20 20 20 
+1A5C480 	20 20 20 73 70 65 65 64 
+1A5C488 	2D 6C 6F 77 20 74 6F 20 
+1A5C490 	70 6F 72 74 2D 73 70 65 
+1A5C498 	65 64  0  0 D8 E5 A0  1 
+s"       dup handle-ls-device" eval			\ Process low-speed device
+1A5C4A0 	9C 53 A0  1 1A 20 20 20 
+1A5C4A8 	20 20 20 64 75 70 20 68 
+1A5C4B0 	61 6E 64 6C 65 2D 6C 73 
+1A5C4B8 	2D 64 65 76 69 63 65  0 
+1A5C4C0 	D8 E5 A0  1 
+s"    else" eval						\ Don't know what it is
+1A5C4C4 	9C 53 A0  1 
+1A5C4C8 	 7 20 20 20 65 6C 73 65 
+1A5C4D0 	 0  0  0  0 D8 E5 A0  1 
+s"       dup reset-port" eval				\ Reset to find out
+1A5C4D8 	9C 53 A0  1 14 20 20 20 
+1A5C4E0 	20 20 20 64 75 70 20 72 
+1A5C4E8 	65 73 65 74 2D 70 6F 72 
+1A5C4F0 	74  0  0  0 D8 E5 A0  1 
+s"       dup portsc@ 4 and  0=  if" eval			\ A full speed device detected
+1A5C4F8 	9C 53 A0  1 1F 20 20 20 
+1A5C500 	20 20 20 64 75 70 20 70 
+1A5C508 	6F 72 74 73 63 40 20 34 
+1A5C510 	20 61 6E 64 20 20 30 3D 
+1A5C518 	20 20 69 66  0  0  0  0 
+1A5C520 	D8 E5 A0  1 
+s"          speed-full to port-speed" eval
+1A5C524 	9C 53 A0  1 
+1A5C528 	21 20 20 20 20 20 20 20 
+1A5C530 	20 20 73 70 65 65 64 2D 
+1A5C538 	66 75 6C 6C 20 74 6F 20 
+1A5C540 	70 6F 72 74 2D 73 70 65 
+1A5C548 	65 64  0  0 D8 E5 A0  1 
+s" 	 dup handle-fs-device" eval			\ Process full-speed device
+1A5C550 	9C 53 A0  1 16  9 20 64 
+1A5C558 	75 70 20 68 61 6E 64 6C 
+1A5C560 	65 2D 66 73 2D 64 65 76 
+1A5C568 	69 63 65  0 D8 E5 A0  1 
+s"       else" eval					\ A high speed device detected
+1A5C570 	9C 53 A0  1  A 20 20 20 
+1A5C578 	20 20 20 65 6C 73 65  0 
+1A5C580 	D8 E5 A0  1 
+s"          speed-high to port-speed" eval
+1A5C584 	9C 53 A0  1 
+1A5C588 	21 20 20 20 20 20 20 20 
+1A5C590 	20 20 73 70 65 65 64 2D 
+1A5C598 	68 69 67 68 20 74 6F 20 
+1A5C5A0 	70 6F 72 74 2D 73 70 65 
+1A5C5A8 	65 64  0  0 D8 E5 A0  1 
+s"          dup make-port-node" eval			\ Process high-speed device
+1A5C5B0 	9C 53 A0  1 1B 20 20 20 
+1A5C5B8 	20 20 20 20 20 20 64 75 
+1A5C5C0 	70 20 6D 61 6B 65 2D 70 
+1A5C5C8 	6F 72 74 2D 6E 6F 64 65 
+1A5C5D0 	 0  0  0  0 D8 E5 A0  1 
+s"       then" eval
+1A5C5D8 	9C 53 A0  1  A 20 20 20 
+1A5C5E0 	20 20 20 74 68 65 6E  0 
+1A5C5E8 	D8 E5 A0  1 
+s"    then" eval                           ( port# )
+1A5C5EC 	9C 53 A0  1 
+1A5C5F0 	 7 20 20 20 74 68 65 6E 
+1A5C5F8 	 0  0  0  0 D8 E5 A0  1 
+s"    dup portsc@ swap portsc! ;" eval     ( )		\ Clear connection change bit
+1A5C600 	9C 53 A0  1 1D 20 20 20 
+1A5C608 	64 75 70 20 70 6F 72 74 
+1A5C610 	73 63 40 20 73 77 61 70 
+1A5C618 	20 70 6F 72 74 73 63 21 
+1A5C620 	20 3B  0  0 D8 E5 A0  1 
+
+
+s" : #testable-ports" eval  ( -- n )
+1A5C628 	9C 53 A0  1 11 3A 20 23 
+1A5C630 	74 65 73 74 61 62 6C 65 
+1A5C638 	2D 70 6F 72 74 73  0  0 
+1A5C640 	D8 E5 A0  1 
+s"    #ports" eval                                            ( #hardware-ports )
+1A5C644 	9C 53 A0  1 
+1A5C648 	 9 20 20 20 23 70 6F 72 
+1A5C650 	74 73  0  0 D8 E5 A0  1 
+ "    "" usb-test-ports"" get-inherited-property  0=  if" eval  ( #hardware-ports adr len )
+1A5C658 	9C 53 A0  1 33 20 20 20 
+1A5C660 	22 20 75 73 62 2D 74 65 
+1A5C668 	73 74 2D 70 6F 72 74 73 
+1A5C670 	22 20 67 65 74 2D 69 6E 
+1A5C678 	68 65 72 69 74 65 64 2D 
+1A5C680 	70 72 6F 70 65 72 74 79 
+1A5C688 	20 20 30 3D 20 20 69 66 
+1A5C690 	 0  0  0  0 D8 E5 A0  1 
+s"       decode-int  nip nip  min" eval                       ( #testable-ports )
+1A5C698 	9C 53 A0  1 1E 20 20 20 
+1A5C6A0 	20 20 20 64 65 63 6F 64 
+1A5C6A8 	65 2D 69 6E 74 20 20 6E 
+1A5C6B0 	69 70 20 6E 69 70 20 20 
+1A5C6B8 	6D 69 6E  0 D8 E5 A0  1 
+s"    then ; " eval                                              ( #testable-ports )
+1A5C6C0 	9C 53 A0  1  A 20 20 20 
+1A5C6C8 	74 68 65 6E 20 3B 20  0 
+1A5C6D0 	D8 E5 A0  1 
+
+
+\ Port owned by usb 1.1 controller (2000) or device is present (1)
+s" : port-connected?  ( port# -- flag )  portsc@ h# 2001 and  ;" eval
+1A5C6D4 	9C 53 A0  1 
+1A5C6D8 	3C 3A 20 70 6F 72 74 2D 
+1A5C6E0 	63 6F 6E 6E 65 63 74 65 
+1A5C6E8 	64 3F 20 20 28 20 70 6F 
+1A5C6F0 	72 74 23 20 2D 2D 20 66 
+1A5C6F8 	6C 61 67 20 29 20 20 70 
+1A5C700 	6F 72 74 73 63 40 20 68 
+1A5C708 	23 20 32 30 30 31 20 61 
+1A5C710 	6E 64 20 20 3B  0  0  0 
+1A5C718 	D8 E5 A0  1 
+s" : wait-connect" eval  ( port# -- error? )
+1A5C71C 	9C 53 A0  1 
+1A5C720 	 E 3A 20 77 61 69 74 2D 
+1A5C728 	63 6F 6E 6E 65 63 74  0 
+1A5C730 	D8 E5 A0  1 
+s"    begin" eval                            ( port# )
+1A5C734 	9C 53 A0  1 
+1A5C738 	 8 20 20 20 62 65 67 69 
+1A5C740 	6E  0  0  0 D8 E5 A0  1 
+s"       dup port-connected?  0=" eval       ( port# unconnected? )
+1A5C748 	9C 53 A0  1 1D 20 20 20 
+1A5C750 	20 20 20 64 75 70 20 70 
+1A5C758 	6F 72 74 2D 63 6F 6E 6E 
+1A5C760 	65 63 74 65 64 3F 20 20 
+1A5C768 	30 3D  0  0 D8 E5 A0  1 
+s"    while" eval                            ( port# )
+1A5C770 	9C 53 A0  1  8 20 20 20 
+1A5C778 	77 68 69 6C 65  0  0  0 
+1A5C780 	D8 E5 A0  1 
+s"       key?  if" eval                      ( port# )
+1A5C784 	9C 53 A0  1 
+1A5C788 	 E 20 20 20 20 20 20 6B 
+1A5C790 	65 79 3F 20 20 69 66  0 
+1A5C798 	D8 E5 A0  1 
+s"          key h# 1b =  if" eval            ( port# )   \ ESC aborts
+1A5C79C 	9C 53 A0  1 
+1A5C7A0 	18 20 20 20 20 20 20 20 
+1A5C7A8 	20 20 6B 65 79 20 68 23 
+1A5C7B0 	20 31 62 20 3D 20 20 69 
+1A5C7B8 	66  0  0  0 D8 E5 A0  1 
+s"             drop true exit" eval          ( -- true )
+1A5C7C0 	9C 53 A0  1 1A 20 20 20 
+1A5C7C8 	20 20 20 20 20 20 20 20 
+1A5C7D0 	20 64 72 6F 70 20 74 72 
+1A5C7D8 	75 65 20 65 78 69 74  0 
+1A5C7E0 	D8 E5 A0  1 
+s"          then" eval                       ( port# )
+1A5C7E4 	9C 53 A0  1 
+1A5C7E8 	 D 20 20 20 20 20 20 20 
+1A5C7F0 	20 20 74 68 65 6E  0  0 
+1A5C7F8 	D8 E5 A0  1 
+s"       then" eval                          ( port# )
+1A5C7FC 	9C 53 A0  1 
+1A5C800 	 A 20 20 20 20 20 20 74 
+1A5C808 	68 65 6E  0 D8 E5 A0  1 
+s"    repeat" eval                           ( port# )
+1A5C810 	9C 53 A0  1  9 20 20 20 
+1A5C818 	72 65 70 65 61 74  0  0 
+1A5C820 	D8 E5 A0  1 
+ "    ."" Device connected - probing ... "" " eval
+1A5C824 	9C 53 A0  1 
+1A5C828 	27 20 20 20 2E 22 20 44 
+1A5C830 	65 76 69 63 65 20 63 6F 
+1A5C838 	6E 6E 65 63 74 65 64 20 
+1A5C840 	2D 20 70 72 6F 62 69 6E 
+1A5C848 	67 20 2E 2E 2E 20 22 20 
+1A5C850 	 0  0  0  0 D8 E5 A0  1 
+s"    probe-setup" eval                      ( port# )
+1A5C858 	9C 53 A0  1  E 20 20 20 
+1A5C860 	70 72 6F 62 65 2D 73 65 
+1A5C868 	74 75 70  0 D8 E5 A0  1 
+s"    probe-root-hub-port" eval              ( )
+1A5C870 	9C 53 A0  1 16 20 20 20 
+1A5C878 	70 72 6F 62 65 2D 72 6F 
+1A5C880 	6F 74 2D 68 75 62 2D 70 
+1A5C888 	6F 72 74  0 D8 E5 A0  1 
+s"    probe-teardown" eval                   ( )
+1A5C890 	9C 53 A0  1 11 20 20 20 
+1A5C898 	70 72 6F 62 65 2D 74 65 
+1A5C8A0 	61 72 64 6F 77 6E  0  0 
+1A5C8A8 	D8 E5 A0  1 
+s"    probe-error?" eval                     ( error? )
+1A5C8AC 	9C 53 A0  1 
+1A5C8B0 	 F 20 20 20 70 72 6F 62 
+1A5C8B8 	65 2D 65 72 72 6F 72 3F 
+1A5C8C0 	 0  0  0  0 D8 E5 A0  1 
+ "    dup  if  ."" Failed"" else  ."" Done""  then  cr ;" eval ( error? )
+1A5C8C8 	9C 53 A0  1 31 20 20 20 
+1A5C8D0 	64 75 70 20 20 69 66 20 
+1A5C8D8 	20 2E 22 20 46 61 69 6C 
+1A5C8E0 	65 64 22 20 65 6C 73 65 
+1A5C8E8 	20 20 2E 22 20 44 6F 6E 
+1A5C8F0 	65 22 20 20 74 68 65 6E 
+1A5C8F8 	20 20 63 72 20 3B  0  0 
+1A5C900 	D8 E5 A0  1 
+
+s" : power-usb-ports  ( -- )  ;" eval
+1A5C904 	9C 53 A0  1 
+1A5C908 	1C 3A 20 70 6F 77 65 72 
+1A5C910 	2D 75 73 62 2D 70 6F 72 
+1A5C918 	74 73 20 20 28 20 2D 2D 
+1A5C920 	20 29 20 20 3B  0  0  0 
+1A5C928 	D8 E5 A0  1 
+
+s" : port-changed?  ( port# -- flag )  portsc@ 2 and 0<>  ;" eval
+1A5C92C 	9C 53 A0  1 
+1A5C930 	38 3A 20 70 6F 72 74 2D 
+1A5C938 	63 68 61 6E 67 65 64 3F 
+1A5C940 	20 20 28 20 70 6F 72 74 
+1A5C948 	23 20 2D 2D 20 66 6C 61 
+1A5C950 	67 20 29 20 20 70 6F 72 
+1A5C958 	74 73 63 40 20 32 20 61 
+1A5C960 	6E 64 20 30 3C 3E 20 20 
+1A5C968 	3B  0  0  0 D8 E5 A0  1 
+s" : ports-changed?" eval  ( -- flag )
+1A5C970 	9C 53 A0  1 10 3A 20 70 
+1A5C978 	6F 72 74 73 2D 63 68 61 
+1A5C980 	6E 67 65 64 3F  0  0  0 
+1A5C988 	D8 E5 A0  1 
+s"    #ports 0  ?do" eval
+1A5C98C 	9C 53 A0  1 
+1A5C990 	10 20 20 20 23 70 6F 72 
+1A5C998 	74 73 20 30 20 20 3F 64 
+1A5C9A0 	6F  0  0  0 D8 E5 A0  1 
+s"       i port-changed?  if  true unloop exit  then" eval
+1A5C9A8 	9C 53 A0  1 31 20 20 20 
+1A5C9B0 	20 20 20 69 20 70 6F 72 
+1A5C9B8 	74 2D 63 68 61 6E 67 65 
+1A5C9C0 	64 3F 20 20 69 66 20 20 
+1A5C9C8 	74 72 75 65 20 75 6E 6C 
+1A5C9D0 	6F 6F 70 20 65 78 69 74 
+1A5C9D8 	20 20 74 68 65 6E  0  0 
+1A5C9E0 	D8 E5 A0  1 
+s"    loop" eval
+1A5C9E4 	9C 53 A0  1 
+1A5C9E8 	 7 20 20 20 6C 6F 6F 70 
+1A5C9F0 	 0  0  0  0 D8 E5 A0  1 
+s"    false ;" eval
+1A5C9F8 	9C 53 A0  1  A 20 20 20 
+1A5CA00 	66 61 6C 73 65 20 3B  0 
+1A5CA08 	D8 E5 A0  1 
+
+s" : probe-root-hub" eval  ( -- )
+1A5CA0C 	9C 53 A0  1 
+1A5CA10 	10 3A 20 70 72 6F 62 65 
+1A5CA18 	2D 72 6F 6F 74 2D 68 75 
+1A5CA20 	62  0  0  0 D8 E5 A0  1 
+s"    probe-setup" eval
+1A5CA28 	9C 53 A0  1  E 20 20 20 
+1A5CA30 	70 72 6F 62 65 2D 73 65 
+1A5CA38 	74 75 70  0 D8 E5 A0  1 
+
+s"    #ports 0  ?do" eval			        \ For each port
+1A5CA40 	9C 53 A0  1 10 20 20 20 
+1A5CA48 	23 70 6F 72 74 73 20 30 
+1A5CA50 	20 20 3F 64 6F  0  0  0 
+1A5CA58 	D8 E5 A0  1 
+s"       i port-changed?  if" eval			\ Connection changed
+1A5CA5C 	9C 53 A0  1 
+1A5CA60 	19 20 20 20 20 20 20 69 
+1A5CA68 	20 70 6F 72 74 2D 63 68 
+1A5CA70 	61 6E 67 65 64 3F 20 20 
+1A5CA78 	69 66  0  0 D8 E5 A0  1 
+\         i rm-obsolete-children			\ Remove obsolete device nodes
+s"          i probe-root-hub-port" eval			\ Probe it
+1A5CA80 	9C 53 A0  1 1E 20 20 20 
+1A5CA88 	20 20 20 20 20 20 69 20 
+1A5CA90 	70 72 6F 62 65 2D 72 6F 
+1A5CA98 	6F 74 2D 68 75 62 2D 70 
+1A5CAA0 	6F 72 74  0 D8 E5 A0  1 
+s"       else" eval
+1A5CAA8 	9C 53 A0  1  A 20 20 20 
+1A5CAB0 	20 20 20 65 6C 73 65  0 
+1A5CAB8 	D8 E5 A0  1 
+s"          i port-is-hub?  if" eval     ( phandle )     \ Already-connected hub?
+1A5CABC 	9C 53 A0  1 
+1A5CAC0 	1B 20 20 20 20 20 20 20 
+1A5CAC8 	20 20 69 20 70 6F 72 74 
+1A5CAD0 	2D 69 73 2D 68 75 62 3F 
+1A5CAD8 	20 20 69 66  0  0  0  0 
+1A5CAE0 	D8 E5 A0  1 
+s"             reprobe-hub-node" eval                    \ Check for changes on its ports
+1A5CAE4 	9C 53 A0  1 
+1A5CAE8 	1C 20 20 20 20 20 20 20 
+1A5CAF0 	20 20 20 20 20 72 65 70 
+1A5CAF8 	72 6F 62 65 2D 68 75 62 
+1A5CB00 	2D 6E 6F 64 65  0  0  0 
+1A5CB08 	D8 E5 A0  1 
+s"          then" eval
+1A5CB0C 	9C 53 A0  1 
+1A5CB10 	 D 20 20 20 20 20 20 20 
+1A5CB18 	20 20 74 68 65 6E  0  0 
+1A5CB20 	D8 E5 A0  1 
+s"       then" eval
+1A5CB24 	9C 53 A0  1 
+1A5CB28 	 A 20 20 20 20 20 20 74 
+1A5CB30 	68 65 6E  0 D8 E5 A0  1 
+s"    loop" eval
+1A5CB38 	9C 53 A0  1  7 20 20 20 
+1A5CB40 	6C 6F 6F 70  0  0  0  0 
+1A5CB48 	D8 E5 A0  1 
+
+s"    probe-teardown ;" eval
+1A5CB4C 	9C 53 A0  1 
+1A5CB50 	13 20 20 20 70 72 6F 62 
+1A5CB58 	65 2D 74 65 61 72 64 6F 
+1A5CB60 	77 6E 20 3B  0  0  0  0 
+1A5CB68 	D8 E5 A0  1 
+
+s" : do-resume" eval  ( -- )
+1A5CB6C 	9C 53 A0  1 
+1A5CB70 	 B 3A 20 64 6F 2D 72 65 
+1A5CB78 	73 75 6D 65  0  0  0  0 
+1A5CB80 	D8 E5 A0  1 
+s"    init-ehci-regs" eval
+1A5CB84 	9C 53 A0  1 
+1A5CB88 	11 20 20 20 69 6E 69 74 
+1A5CB90 	2D 65 68 63 69 2D 72 65 
+1A5CB98 	67 73  0  0 D8 E5 A0  1 
+s"    start-usb" eval
+1A5CBA0 	9C 53 A0  1  C 20 20 20 
+1A5CBA8 	73 74 61 72 74 2D 75 73 
+1A5CBB0 	62  0  0  0 D8 E5 A0  1 
+s"    claim-ownership" eval
+1A5CBB8 	9C 53 A0  1 12 20 20 20 
+1A5CBC0 	63 6C 61 69 6D 2D 6F 77 
+1A5CBC8 	6E 65 72 73 68 69 70  0 
+1A5CBD0 	D8 E5 A0  1 
+s"    init-struct" eval
+1A5CBD4 	9C 53 A0  1 
+1A5CBD8 	 E 20 20 20 69 6E 69 74 
+1A5CBE0 	2D 73 74 72 75 63 74  0 
+1A5CBE8 	D8 E5 A0  1 
+s"    init-extra ;" eval
+1A5CBEC 	9C 53 A0  1 
+1A5CBF0 	 F 20 20 20 69 6E 69 74 
+1A5CBF8 	2D 65 78 74 72 61 20 3B 
+1A5CC00 	 0  0  0  0 D8 E5 A0  1 
+
+\ Some OTG controllers need to do something after reset-usb to go into host mode
+s" defer set-host-mode  ' noop to set-host-mode" eval
+1A5CC08 	9C 53 A0  1 2C 64 65 66 
+1A5CC10 	65 72 20 73 65 74 2D 68 
+1A5CC18 	6F 73 74 2D 6D 6F 64 65 
+1A5CC20 	20 20 27 20 6E 6F 6F 70 
+1A5CC28 	20 74 6F 20 73 65 74 2D 
+1A5CC30 	68 6F 73 74 2D 6D 6F 64 
+1A5CC38 	65  0  0  0 D8 E5 A0  1 
+
+\ This is a sneaky way to determine if the hardware has been turned off without the software's knowledge
+s" : suspended?  ( -- flag )  asynclist@ 0=  qh-ptr 0<>  and  ;" eval
+1A5CC40 	9C 53 A0  1 3C 3A 20 73 
+1A5CC48 	75 73 70 65 6E 64 65 64 
+1A5CC50 	3F 20 20 28 20 2D 2D 20 
+1A5CC58 	66 6C 61 67 20 29 20 20 
+1A5CC60 	61 73 79 6E 63 6C 69 73 
+1A5CC68 	74 40 20 30 3D 20 20 71 
+1A5CC70 	68 2D 70 74 72 20 30 3C 
+1A5CC78 	3E 20 20 61 6E 64 20 20 
+1A5CC80 	3B  0  0  0 D8 E5 A0  1 
+
+s" : open" eval  ( -- flag )
+1A5CC88 	9C 53 A0  1  6 3A 20 6F 
+1A5CC90 	70 65 6E  0 D8 E5 A0  1 
+s"    parse-my-args" eval
+1A5CC98 	9C 53 A0  1 10 20 20 20 
+1A5CCA0 	70 61 72 73 65 2D 6D 79 
+1A5CCA8 	2D 61 72 67 73  0  0  0 
+1A5CCB0 	D8 E5 A0  1 
+s"    open-count 0=  if" eval
+1A5CCB4 	9C 53 A0  1 
+1A5CCB8 	14 20 20 20 6F 70 65 6E 
+1A5CCC0 	2D 63 6F 75 6E 74 20 30 
+1A5CCC8 	3D 20 20 69 66  0  0  0 
+1A5CCD0 	D8 E5 A0  1 
+s"       map-regs" eval
+1A5CCD4 	9C 53 A0  1 
+1A5CCD8 	 E 20 20 20 20 20 20 6D 
+1A5CCE0 	61 70 2D 72 65 67 73  0 
+1A5CCE8 	D8 E5 A0  1 
+s"       alloc-dma-buf" eval
+1A5CCEC 	9C 53 A0  1 
+1A5CCF0 	13 20 20 20 20 20 20 61 
+1A5CCF8 	6C 6C 6F 63 2D 64 6D 61 
+1A5CD00 	2D 62 75 66  0  0  0  0 
+1A5CD08 	D8 E5 A0  1 
+s"       first-open?  if" eval
+1A5CD0C 	9C 53 A0  1 
+1A5CD10 	15 20 20 20 20 20 20 66 
+1A5CD18 	69 72 73 74 2D 6F 70 65 
+1A5CD20 	6E 3F 20 20 69 66  0  0 
+1A5CD28 	D8 E5 A0  1 
+s"          false to first-open?" eval
+1A5CD2C 	9C 53 A0  1 
+1A5CD30 	1D 20 20 20 20 20 20 20 
+1A5CD38 	20 20 66 61 6C 73 65 20 
+1A5CD40 	74 6F 20 66 69 72 73 74 
+1A5CD48 	2D 6F 70 65 6E 3F  0  0 
+1A5CD50 	D8 E5 A0  1 
+s"          hccparams@ 8 rshift h# ff and  ?dup  if" eval  ( config-adr )
+1A5CD54 	9C 53 A0  1 
+1A5CD58 	30 20 20 20 20 20 20 20 
+1A5CD60 	20 20 68 63 63 70 61 72 
+1A5CD68 	61 6D 73 40 20 38 20 72 
+1A5CD70 	73 68 69 66 74 20 68 23 
+1A5CD78 	20 66 66 20 61 6E 64 20 
+1A5CD80 	20 3F 64 75 70 20 20 69 
+1A5CD88 	66  0  0  0 D8 E5 A0  1 
+s"             grab-controller  if" eval
+1A5CD90 	9C 53 A0  1 1F 20 20 20 
+1A5CD98 	20 20 20 20 20 20 20 20 
+1A5CDA0 	20 67 72 61 62 2D 63 6F 
+1A5CDA8 	6E 74 72 6F 6C 6C 65 72 
+1A5CDB0 	20 20 69 66  0  0  0  0 
+1A5CDB8 	D8 E5 A0  1 
+ "                ."" Can't take control of EHCI from underlying BIOS"" cr" eval
+1A5CDBC 	9C 53 A0  1 
+1A5CDC0 	45 20 20 20 20 20 20 20 
+1A5CDC8 	20 20 20 20 20 20 20 20 
+1A5CDD0 	2E 22 20 43 61 6E 27 74 
+1A5CDD8 	20 74 61 6B 65 20 63 6F 
+1A5CDE0 	6E 74 72 6F 6C 20 6F 66 
+1A5CDE8 	20 45 48 43 49 20 66 72 
+1A5CDF0 	6F 6D 20 75 6E 64 65 72 
+1A5CDF8 	6C 79 69 6E 67 20 42 49 
+1A5CE00 	4F 53 22 20 63 72  0  0 
+1A5CE08 	D8 E5 A0  1 
+s"                free-dma-buf unmap-regs" eval
+1A5CE0C 	9C 53 A0  1 
+1A5CE10 	26 20 20 20 20 20 20 20 
+1A5CE18 	20 20 20 20 20 20 20 20 
+1A5CE20 	66 72 65 65 2D 64 6D 61 
+1A5CE28 	2D 62 75 66 20 75 6E 6D 
+1A5CE30 	61 70 2D 72 65 67 73  0 
+1A5CE38 	D8 E5 A0  1 
+s"                false exit" eval
+1A5CE3C 	9C 53 A0  1 
+1A5CE40 	19 20 20 20 20 20 20 20 
+1A5CE48 	20 20 20 20 20 20 20 20 
+1A5CE50 	66 61 6C 73 65 20 65 78 
+1A5CE58 	69 74  0  0 D8 E5 A0  1 
+s"             then" eval
+1A5CE60 	9C 53 A0  1 10 20 20 20 
+1A5CE68 	20 20 20 20 20 20 20 20 
+1A5CE70 	20 74 68 65 6E  0  0  0 
+1A5CE78 	D8 E5 A0  1 
+s"          then" eval
+1A5CE7C 	9C 53 A0  1 
+1A5CE80 	 D 20 20 20 20 20 20 20 
+1A5CE88 	20 20 74 68 65 6E  0  0 
+1A5CE90 	D8 E5 A0  1 
+s"          0 ehci-reg@  h# ff and to op-reg-offset" eval
+1A5CE94 	9C 53 A0  1 
+1A5CE98 	30 20 20 20 20 20 20 20 
+1A5CEA0 	20 20 30 20 65 68 63 69 
+1A5CEA8 	2D 72 65 67 40 20 20 68 
+1A5CEB0 	23 20 66 66 20 61 6E 64 
+1A5CEB8 	20 74 6F 20 6F 70 2D 72 
+1A5CEC0 	65 67 2D 6F 66 66 73 65 
+1A5CEC8 	74  0  0  0 D8 E5 A0  1 
+s"          reset-usb" eval
+1A5CED0 	9C 53 A0  1 12 20 20 20 
+1A5CED8 	20 20 20 20 20 20 72 65 
+1A5CEE0 	73 65 74 2D 75 73 62  0 
+1A5CEE8 	D8 E5 A0  1 
+s"          set-host-mode" eval
+1A5CEEC 	9C 53 A0  1 
+1A5CEF0 	16 20 20 20 20 20 20 20 
+1A5CEF8 	20 20 73 65 74 2D 68 6F 
+1A5CF00 	73 74 2D 6D 6F 64 65  0 
+1A5CF08 	D8 E5 A0  1 
+s"          do-resume" eval
+1A5CF0C 	9C 53 A0  1 
+1A5CF10 	12 20 20 20 20 20 20 20 
+1A5CF18 	20 20 64 6F 2D 72 65 73 
+1A5CF20 	75 6D 65  0 D8 E5 A0  1 
+s"       then" eval
+1A5CF28 	9C 53 A0  1  A 20 20 20 
+1A5CF30 	20 20 20 74 68 65 6E  0 
+1A5CF38 	D8 E5 A0  1 
+s"       suspended?  if  do-resume  then" eval
+1A5CF3C 	9C 53 A0  1 
+1A5CF40 	25 20 20 20 20 20 20 73 
+1A5CF48 	75 73 70 65 6E 64 65 64 
+1A5CF50 	3F 20 20 69 66 20 20 64 
+1A5CF58 	6F 2D 72 65 73 75 6D 65 
+1A5CF60 	20 20 74 68 65 6E  0  0 
+1A5CF68 	D8 E5 A0  1 
+s"    then" eval
+1A5CF6C 	9C 53 A0  1 
+1A5CF70 	 7 20 20 20 74 68 65 6E 
+1A5CF78 	 0  0  0  0 D8 E5 A0  1 
+s"    probe-root-hub" eval
+1A5CF80 	9C 53 A0  1 11 20 20 20 
+1A5CF88 	70 72 6F 62 65 2D 72 6F 
+1A5CF90 	6F 74 2D 68 75 62  0  0 
+1A5CF98 	D8 E5 A0  1 
+s"    open-count 1+ to open-count" eval
+1A5CF9C 	9C 53 A0  1 
+1A5CFA0 	1E 20 20 20 6F 70 65 6E 
+1A5CFA8 	2D 63 6F 75 6E 74 20 31 
+1A5CFB0 	2B 20 74 6F 20 6F 70 65 
+1A5CFB8 	6E 2D 63 6F 75 6E 74  0 
+1A5CFC0 	D8 E5 A0  1 
+s"    true ;" eval
+1A5CFC4 	9C 53 A0  1 
+1A5CFC8 	 9 20 20 20 74 72 75 65 
+1A5CFD0 	20 3B  0  0 D8 E5 A0  1 
+
+s" : close" eval  ( -- )
+1A5CFD8 	9C 53 A0  1  7 3A 20 63 
+1A5CFE0 	6C 6F 73 65  0  0  0  0 
+1A5CFE8 	D8 E5 A0  1 
+s"    open-count 1- to open-count" eval
+1A5CFEC 	9C 53 A0  1 
+1A5CFF0 	1E 20 20 20 6F 70 65 6E 
+1A5CFF8 	2D 63 6F 75 6E 74 20 31 
+1A5D000 	2D 20 74 6F 20 6F 70 65 
+1A5D008 	6E 2D 63 6F 75 6E 74  0 
+1A5D010 	D8 E5 A0  1 
+s"    end-extra" eval
+1A5D014 	9C 53 A0  1 
+1A5D018 	 C 20 20 20 65 6E 64 2D 
+1A5D020 	65 78 74 72 61  0  0  0 
+1A5D028 	D8 E5 A0  1 
+s"    open-count 0=  if  free-dma-buf unmap-regs  then ;" eval
+1A5D02C 	9C 53 A0  1 
+1A5D030 	35 20 20 20 6F 70 65 6E 
+1A5D038 	2D 63 6F 75 6E 74 20 30 
+1A5D040 	3D 20 20 69 66 20 20 66 
+1A5D048 	72 65 65 2D 64 6D 61 2D 
+1A5D050 	62 75 66 20 75 6E 6D 61 
+1A5D058 	70 2D 72 65 67 73 20 20 
+1A5D060 	74 68 65 6E 20 3B  0  0 
+1A5D068 	D8 E5 A0  1 
+
+s" : regs{  ( -- prev )  ehci-reg dup 0=  if  map-regs  then  ;" eval
+1A5D06C 	9C 53 A0  1 
+1A5D070 	3C 3A 20 72 65 67 73 7B 
+1A5D078 	20 20 28 20 2D 2D 20 70 
+1A5D080 	72 65 76 20 29 20 20 65 
+1A5D088 	68 63 69 2D 72 65 67 20 
+1A5D090 	64 75 70 20 30 3D 20 20 
+1A5D098 	69 66 20 20 6D 61 70 2D 
+1A5D0A0 	72 65 67 73 20 20 74 68 
+1A5D0A8 	65 6E 20 20 3B  0  0  0 
+1A5D0B0 	D8 E5 A0  1 
+s" : }regs  ( prev -- )  0=  if  unmap-regs  then  ;" eval
+1A5D0B4 	9C 53 A0  1 
+1A5D0B8 	31 3A 20 7D 72 65 67 73 
+1A5D0C0 	20 20 28 20 70 72 65 76 
+1A5D0C8 	20 2D 2D 20 29 20 20 30 
+1A5D0D0 	3D 20 20 69 66 20 20 75 
+1A5D0D8 	6E 6D 61 70 2D 72 65 67 
+1A5D0E0 	73 20 20 74 68 65 6E 20 
+1A5D0E8 	20 3B  0  0 D8 E5 A0  1 
+
+s" : selftest" eval  ( -- error? )
+1A5D0F0 	9C 53 A0  1  A 3A 20 73 
+1A5D0F8 	65 6C 66 74 65 73 74  0 
+1A5D100 	D8 E5 A0  1 
+s"   open 0=  if  true exit  then" eval
+1A5D104 	9C 53 A0  1 
+1A5D108 	1E 20 20 6F 70 65 6E 20 
+1A5D110 	30 3D 20 20 69 66 20 20 
+1A5D118 	74 72 75 65 20 65 78 69 
+1A5D120 	74 20 20 74 68 65 6E  0 
+1A5D128 	D8 E5 A0  1 
+s"   #testable-ports  0  ?do" eval
+1A5D12C 	9C 53 A0  1 
+1A5D130 	19 20 20 23 74 65 73 74 
+1A5D138 	61 62 6C 65 2D 70 6F 72 
+1A5D140 	74 73 20 20 30 20 20 3F 
+1A5D148 	64 6F  0  0 D8 E5 A0  1 
+ "      ."" USB port "" i u. ."" : "" " eval
+1A5D150 	9C 53 A0  1 1F 20 20 20 
+1A5D158 	20 20 2E 22 20 55 53 42 
+1A5D160 	20 70 6F 72 74 20 22 20 
+1A5D168 	69 20 75 2E 20 2E 22 20 
+1A5D170 	3A 20 22 20  0  0  0  0 
+1A5D178 	D8 E5 A0  1 
+s"      i port-connected?  if" eval
+1A5D17C 	9C 53 A0  1 
+1A5D180 	1A 20 20 20 20 20 69 20 
+1A5D188 	70 6F 72 74 2D 63 6F 6E 
+1A5D190 	6E 65 63 74 65 64 3F 20 
+1A5D198 	20 69 66  0 D8 E5 A0  1 
+"         ."" In use - "" " eval
+1A5D1A0 	9C 53 A0  1 16 20 20 20 
+1A5D1A8 	20 20 20 20 20 2E 22 20 
+1A5D1B0 	49 6E 20 75 73 65 20 2D 
+1A5D1B8 	20 22 20  0 D8 E5 A0  1 
+s"         i .usb-device cr" eval
+1A5D1C0 	9C 53 A0  1 18 20 20 20 
+1A5D1C8 	20 20 20 20 20 69 20 2E 
+1A5D1D0 	75 73 62 2D 64 65 76 69 
+1A5D1D8 	63 65 20 63 72  0  0  0 
+1A5D1E0 	D8 E5 A0  1 
+s"      else" eval
+1A5D1E4 	9C 53 A0  1 
+1A5D1E8 	 9 20 20 20 20 20 65 6C 
+1A5D1F0 	73 65  0  0 D8 E5 A0  1 
+s"         diagnostic-mode?  if" eval
+1A5D1F8 	9C 53 A0  1 1C 20 20 20 
+1A5D200 	20 20 20 20 20 64 69 61 
+1A5D208 	67 6E 6F 73 74 69 63 2D 
+1A5D210 	6D 6F 64 65 3F 20 20 69 
+1A5D218 	66  0  0  0 D8 E5 A0  1 
+ "            ."" Please connect a device"" cr" eval
+1A5D220 	9C 53 A0  1 29 20 20 20 
+1A5D228 	20 20 20 20 20 20 20 20 
+1A5D230 	2E 22 20 50 6C 65 61 73 
+1A5D238 	65 20 63 6F 6E 6E 65 63 
+1A5D240 	74 20 61 20 64 65 76 69 
+1A5D248 	63 65 22 20 63 72  0  0 
+1A5D250 	D8 E5 A0  1 
+s"            i wait-connect  if  true unloop exit  then" eval
+1A5D254 	9C 53 A0  1 
+1A5D258 	35 20 20 20 20 20 20 20 
+1A5D260 	20 20 20 20 69 20 77 61 
+1A5D268 	69 74 2D 63 6F 6E 6E 65 
+1A5D270 	63 74 20 20 69 66 20 20 
+1A5D278 	74 72 75 65 20 75 6E 6C 
+1A5D280 	6F 6F 70 20 65 78 69 74 
+1A5D288 	20 20 74 68 65 6E  0  0 
+1A5D290 	D8 E5 A0  1 
+s"            i .usb-device cr" eval
+1A5D294 	9C 53 A0  1 
+1A5D298 	1B 20 20 20 20 20 20 20 
+1A5D2A0 	20 20 20 20 69 20 2E 75 
+1A5D2A8 	73 62 2D 64 65 76 69 63 
+1A5D2B0 	65 20 63 72  0  0  0  0 
+1A5D2B8 	D8 E5 A0  1 
+s"         else" eval
+1A5D2BC 	9C 53 A0  1 
+1A5D2C0 	 C 20 20 20 20 20 20 20 
+1A5D2C8 	20 65 6C 73 65  0  0  0 
+1A5D2D0 	D8 E5 A0  1 
+s"            fisheye?  if" eval
+1A5D2D4 	9C 53 A0  1 
+1A5D2D8 	17 20 20 20 20 20 20 20 
+1A5D2E0 	20 20 20 20 66 69 73 68 
+1A5D2E8 	65 79 65 3F 20 20 69 66 
+1A5D2F0 	 0  0  0  0 D8 E5 A0  1 
+ "               ."" Fisheye pattern"" cr" eval
+1A5D2F8 	9C 53 A0  1 24 20 20 20 
+1A5D300 	20 20 20 20 20 20 20 20 
+1A5D308 	20 20 20 2E 22 20 46 69 
+1A5D310 	73 68 65 79 65 20 70 61 
+1A5D318 	74 74 65 72 6E 22 20 63 
+1A5D320 	72  0  0  0 D8 E5 A0  1 
+s"               i test-port-begin" eval
+1A5D328 	9C 53 A0  1 1F 20 20 20 
+1A5D330 	20 20 20 20 20 20 20 20 
+1A5D338 	20 20 20 69 20 74 65 73 
+1A5D340 	74 2D 70 6F 72 74 2D 62 
+1A5D348 	65 67 69 6E  0  0  0  0 
+1A5D350 	D8 E5 A0  1 
+s"               d# 2,000 ms" eval
+1A5D354 	9C 53 A0  1 
+1A5D358 	19 20 20 20 20 20 20 20 
+1A5D360 	20 20 20 20 20 20 20 64 
+1A5D368 	23 20 32 2C 30 30 30 20 
+1A5D370 	6D 73  0  0 D8 E5 A0  1 
+s"               i test-port-end" eval
+1A5D378 	9C 53 A0  1 1D 20 20 20 
+1A5D380 	20 20 20 20 20 20 20 20 
+1A5D388 	20 20 20 69 20 74 65 73 
+1A5D390 	74 2D 70 6F 72 74 2D 65 
+1A5D398 	6E 64  0  0 D8 E5 A0  1 
+s"               0 i portsc!  i reset-port  i power-port" eval
+1A5D3A0 	9C 53 A0  1 35 20 20 20 
+1A5D3A8 	20 20 20 20 20 20 20 20 
+1A5D3B0 	20 20 20 30 20 69 20 70 
+1A5D3B8 	6F 72 74 73 63 21 20 20 
+1A5D3C0 	69 20 72 65 73 65 74 2D 
+1A5D3C8 	70 6F 72 74 20 20 69 20 
+1A5D3D0 	70 6F 77 65 72 2D 70 6F 
+1A5D3D8 	72 74  0  0 D8 E5 A0  1 
+s"            else" eval
+1A5D3E0 	9C 53 A0  1  F 20 20 20 
+1A5D3E8 	20 20 20 20 20 20 20 20 
+1A5D3F0 	65 6C 73 65  0  0  0  0 
+1A5D3F8 	D8 E5 A0  1 
+ "               ."" Empty"" cr" eval
+1A5D3FC 	9C 53 A0  1 
+1A5D400 	1A 20 20 20 20 20 20 20 
+1A5D408 	20 20 20 20 20 20 20 2E 
+1A5D410 	22 20 45 6D 70 74 79 22 
+1A5D418 	20 63 72  0 D8 E5 A0  1 
+s"            then" eval
+1A5D420 	9C 53 A0  1  F 20 20 20 
+1A5D428 	20 20 20 20 20 20 20 20 
+1A5D430 	74 68 65 6E  0  0  0  0 
+1A5D438 	D8 E5 A0  1 
+s"         then" eval
+1A5D43C 	9C 53 A0  1 
+1A5D440 	 C 20 20 20 20 20 20 20 
+1A5D448 	20 74 68 65 6E  0  0  0 
+1A5D450 	D8 E5 A0  1 
+s"      then" eval
+1A5D454 	9C 53 A0  1 
+1A5D458 	 9 20 20 20 20 20 74 68 
+1A5D460 	65 6E  0  0 D8 E5 A0  1 
+s"   loop" eval
+1A5D468 	9C 53 A0  1  6 20 20 6C 
+1A5D470 	6F 6F 70  0 D8 E5 A0  1 
+s"   false" eval
+1A5D478 	9C 53 A0  1  7 20 20 66 
+1A5D480 	61 6C 73 65  0  0  0  0 
+1A5D488 	D8 E5 A0  1 
+s"   close ;" eval
+1A5D48C 	9C 53 A0  1 
+1A5D490 	 9 20 20 63 6C 6F 73 65 
+1A5D498 	20 3B  0  0 D8 E5 A0  1 
+;
+1A5D4A0 	58 46 A0  1 

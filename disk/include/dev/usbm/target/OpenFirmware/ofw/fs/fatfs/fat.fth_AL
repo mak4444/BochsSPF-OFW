@@ -1,0 +1,643 @@
+\ File Allocation Table manipulation.
+
+\ For performance, we cache a portion of the FAT (currently 3 sectors).
+\ This also makes it easier to extract entries from the FAT, because
+\ for floppy disk, FAT entries are 1.5 bytes long, and if we have 3
+\ (or multiples of 3) sectors in the cache, then the cache contains
+\ an integral number of FAT entries, with no fragments.
+
+\ We keep a separate FAT cache for each device.
+\ This improve performance and simplifies the code which deals with
+\ flushing the cache, since switching devices does not require a cache
+\ flush.  This also helps in supporting devices with sector sizes
+\ > 512 bytes, because we can size the FAT cache as a multiple of the
+\ device's native sector size.
+
+hex
+
+\ mmo private
+
+\ Magic numbers for FAT entries
+
+$0000000 constant fat-free
+1A2CCD4 	 0  0  0 66 
+1A2CCD8 	61 74 2D 66 72 65 65 88 
+1A2CCE0 	BC CC A2  1 68 40 A0  1 
+1A2CCE8 	 0  0  0  0 
+$fffffff constant fat-eof
+1A2CCEC 	66 61 74 2D 
+1A2CCF0 	65 6F 66 87 E4 CC A2  1 
+1A2CCF8 	68 40 A0  1 FF FF FF  F 
+$ffffff7 constant fat-bad
+1A2CD00 	66 61 74 2D 62 61 64 87 
+1A2CD08 	F8 CC A2  1 68 40 A0  1 
+1A2CD10 	F7 FF FF  F 
+
+( external )
+: fat-end?  ( cl# -- flag )
+1A2CD14 	 0  0  0 66 
+1A2CD18 	61 74 2D 65 6E 64 3F 88 
+1A2CD20 	 C CD A2  1 20 40 A0  1 
+   fat-type c@  case
+1A2CD28 	84 BC A2  1 C4 4C A0  1 
+      fat12  of  h# ff8  endof
+1A2CD30 	C8 BC A2  1 48 43 A0  1 
+1A2CD38 	14  0  0  0 58 41 A0  1 
+1A2CD40 	F8  F  0  0 6C 43 A0  1 
+1A2CD48 	40  0  0  0 
+      fat16  of  h# fff8  endof
+1A2CD4C 	DC BC A2  1 
+1A2CD50 	48 43 A0  1 14  0  0  0 
+1A2CD58 	58 41 A0  1 F8 FF  0  0 
+1A2CD60 	6C 43 A0  1 24  0  0  0 
+      fat32  of  h# ffffff8  endof
+1A2CD68 	F0 BC A2  1 48 43 A0  1 
+1A2CD70 	14  0  0  0 58 41 A0  1 
+1A2CD78 	F8 FF FF  F 6C 43 A0  1 
+1A2CD80 	 8  0  0  0 
+   endcase
+1A2CD84 	84 43 A0  1 
+   >=
+1A2CD88 	EC 48 A0  1 
+;
+1A2CD8C 	58 46 A0  1 
+
+: cl#>sector  ( cl# -- entry# sector# )
+1A2CD90 	 0 63 6C 23 3E 73 65 63 
+1A2CD98 	74 6F 72 8A 24 CD A2  1 
+1A2CDA0 	20 40 A0  1 
+   cl#/fat-cache w@ /mod  sectors/fat-cache w@ *  ( entry# offset-sectors )
+1A2CDA4 	D8 BB A2  1 
+1A2CDA8 	94 4C A0  1 50 5F A0  1 
+1A2CDB0 	A4 BB A2  1 94 4C A0  1 
+1A2CDB8 	1C 5F A0  1 
+   fat-sector0 w@ +                               ( entry# sector# )
+1A2CDBC 	F0 BB A2  1 
+1A2CDC0 	94 4C A0  1  4 45 A0  1 
+;
+1A2CDC8 	58 46 A0  1 
+
+\ The number of sectors of the FAT cache which actually represent valid
+\ disk sectors.  For instance, if the FAT has 5 total sectors, and the
+\ FAT cache has 3 sectors, then sometimes only 2 of the sectors in the
+\ FAT cache will be valid.
+
+: #valid-sectors  ( -- n )
+1A2CDCC 	 0 23 76 61 
+1A2CDD0 	6C 69 64 2D 73 65 63 74 
+1A2CDD8 	6F 72 73 8E A0 CD A2  1 
+1A2CDE0 	20 40 A0  1 
+   spf l@ fat-sector @ fat-sector0 w@ -  -  sectors/fat-cache w@ min
+1A2CDE4 	28 BB A2  1 
+1A2CDE8 	6C 4C A0  1 18 BB A2  1 
+1A2CDF0 	5C 4C A0  1 F0 BB A2  1 
+1A2CDF8 	94 4C A0  1 18 45 A0  1 
+1A2CE00 	18 45 A0  1 A4 BB A2  1 
+1A2CE08 	94 4C A0  1 74 4A A0  1 
+;
+1A2CE10 	58 46 A0  1 
+
+create "fat ," File Allocation Table"
+1A2CE14 	 0  0  0 22 
+1A2CE18 	66 61 74 84 E0 CD A2  1 
+1A2CE20 	30 40 A0  1 15 46 69 6C 
+1A2CE28 	65 20 41 6C 6C 6F 63 61 
+1A2CE30 	74 69 6F 6E 20 54 61 62 
+1A2CE38 	6C 65  0  0 
+
+\ If the FAT cache has been modified since it was last written, flush it
+\ to disk.
+
+: .sectors  ( sector# #sectors -- )
+1A2CE3C 	 0  0  0 2E 
+1A2CE40 	73 65 63 74 6F 72 73 88 
+1A2CE48 	20 CE A2  1 20 40 A0  1 
+   ."  " . ." sectors starting at " .
+1A2CE50 	20 7C A0  1  1 20  0  0 
+1A2CE58 	94 7A A0  1 20 7C A0  1 
+1A2CE60 	14 73 65 63 74 6F 72 73 
+1A2CE68 	20 73 74 61 72 74 69 6E 
+1A2CE70 	67 20 61 74 20  0  0  0 
+1A2CE78 	94 7A A0  1 
+;
+1A2CE7C 	58 46 A0  1 
+: ?flush-fat-cache  ( -- )
+1A2CE80 	 0  0  0 3F 66 6C 75 73 
+1A2CE88 	68 2D 66 61 74 2D 63 61 
+1A2CE90 	63 68 65 90 4C CE A2  1 
+1A2CE98 	20 40 A0  1 
+   fat-dirty w@ if
+1A2CE9C 	BC BB A2  1 
+1A2CEA0 	94 4C A0  1 DC 41 A0  1 
+1A2CEA8 	C0  0  0  0 
+      fat-sector @ #valid-sectors fat-cache @ write-sectors  ( err? )  if
+1A2CEAC 	18 BB A2  1 
+1A2CEB0 	5C 4C A0  1 E0 CD A2  1 
+1A2CEB8 	 0 BB A2  1 5C 4C A0  1 
+1A2CEC0 	8C BE A2  1 DC 41 A0  1 
+1A2CEC8 	28  0  0  0 
+         "CaW ".  "FAT ".
+1A2CECC 	D4 B3 A2  1 
+1A2CED0 	A8 7C A0  1 20 CE A2  1 
+1A2CED8 	A8 7C A0  1 
+         fat-sector @  #valid-sectors  .sectors
+1A2CEDC 	18 BB A2  1 
+1A2CEE0 	5C 4C A0  1 E0 CD A2  1 
+1A2CEE8 	4C CE A2  1 
+         abort
+1A2CEEC 	28 91 A0  1 
+      then
+
+      fat-sector @ spf l@ + #valid-sectors fat-cache @ write-sectors  if
+1A2CEF0 	18 BB A2  1 5C 4C A0  1 
+1A2CEF8 	28 BB A2  1 6C 4C A0  1 
+1A2CF00 	 4 45 A0  1 E0 CD A2  1 
+1A2CF08 	 0 BB A2  1 5C 4C A0  1 
+1A2CF10 	8C BE A2  1 DC 41 A0  1 
+1A2CF18 	44  0  0  0 
+         "CaW ".  ." alternate "  "FAT ".
+1A2CF1C 	D4 B3 A2  1 
+1A2CF20 	A8 7C A0  1 20 7C A0  1 
+1A2CF28 	 A 61 6C 74 65 72 6E 61 
+1A2CF30 	74 65 20  0 20 CE A2  1 
+1A2CF38 	A8 7C A0  1 
+         fat-sector @ spf l@ +  #valid-sectors  .sectors
+1A2CF3C 	18 BB A2  1 
+1A2CF40 	5C 4C A0  1 28 BB A2  1 
+1A2CF48 	6C 4C A0  1  4 45 A0  1 
+1A2CF50 	E0 CD A2  1 4C CE A2  1 
+         abort
+1A2CF58 	28 91 A0  1 
+      then
+
+      false fat-dirty w!
+1A2CF5C 	18 70 A0  1 
+1A2CF60 	BC BB A2  1 A4 4D A0  1 
+   then
+   write-fsinfo 
+1A2CF68 	74 C8 A2  1 
+;
+1A2CF6C 	58 46 A0  1 
+: get-fat-entries  ( cl# -- entry# cache-adr )
+1A2CF70 	67 65 74 2D 66 61 74 2D 
+1A2CF78 	65 6E 74 72 69 65 73 8F 
+1A2CF80 	98 CE A2  1 20 40 A0  1 
+   cl#>sector                   ( entry# sector# )
+1A2CF88 	A0 CD A2  1 
+   dup fat-sector @ =  if       \ Requested sector is in the FAT cache
+1A2CF8C 	40 49 A0  1 
+1A2CF90 	18 BB A2  1 5C 4C A0  1 
+1A2CF98 	24 48 A0  1 DC 41 A0  1 
+1A2CFA0 	10  0  0  0 
+      drop                      ( entry# )
+1A2CFA4 	30 49 A0  1 
+   else                         \ Refill the FAT cache.
+1A2CFA8 	C8 41 A0  1 54  0  0  0 
+      ?flush-fat-cache          ( entry# sector# )
+1A2CFB0 	98 CE A2  1 
+
+      \ Invalidate fat cache in case read fails
+      -1 fat-sector !
+1A2CFB4 	58 41 A0  1 
+1A2CFB8 	FF FF FF FF 18 BB A2  1 
+1A2CFC0 	54 4D A0  1 
+
+      dup  sectors/fat-cache w@ fat-cache @ read-sectors
+1A2CFC4 	40 49 A0  1 
+1A2CFC8 	A4 BB A2  1 94 4C A0  1 
+1A2CFD0 	 0 BB A2  1 5C 4C A0  1 
+1A2CFD8 	4C BE A2  1 
+      ( entry# sector# error? )  if  "CaR ".  "FAT ".  abort  then
+1A2CFDC 	DC 41 A0  1 
+1A2CFE0 	18  0  0  0 B4 B3 A2  1 
+1A2CFE8 	A8 7C A0  1 20 CE A2  1 
+1A2CFF0 	A8 7C A0  1 28 91 A0  1 
+
+      fat-sector !            ( entry# )
+1A2CFF8 	18 BB A2  1 54 4D A0  1 
+   then                       ( entry# )
+   fat-cache @
+1A2D000 	 0 BB A2  1 5C 4C A0  1 
+;
+1A2D008 	58 46 A0  1 
+
+: cluster@  ( cl# -- cl#' )
+1A2D00C 	 0  0  0 63 
+1A2D010 	6C 75 73 74 65 72 40 88 
+1A2D018 	84 CF A2  1 20 40 A0  1 
+   dup max-cl# l@ > if  drop fat-eof exit then   \ *** cpt 06/27/90: no overrun
+1A2D020 	40 49 A0  1 54 BB A2  1 
+1A2D028 	6C 4C A0  1  4 48 A0  1 
+1A2D030 	DC 41 A0  1 10  0  0  0 
+1A2D038 	30 49 A0  1 F8 CC A2  1 
+1A2D040 	40 46 A0  1 
+                                                 \ *** cpt 10/30/90: >, no >= 
+   get-fat-entries      ( entry# cache-adr )
+1A2D044 	84 CF A2  1 
+   fat-type c@  case
+1A2D048 	84 BC A2  1 C4 4C A0  1 
+      fat12  of
+1A2D050 	C8 BC A2  1 48 43 A0  1 
+1A2D058 	58  0  0  0 
+	 over 2/ 3 *  +  le24@  ( entry# 2-entries )
+1A2D05C 	54 49 A0  1 
+1A2D060 	78 4B A0  1 A0 6F A0  1 
+1A2D068 	1C 5F A0  1  4 45 A0  1 
+1A2D070 	38 B5 A2  1 
+         swap 1 and  if  d# 12 >>  else  000fff and  then
+1A2D074 	68 49 A0  1 
+1A2D078 	80 6F A0  1 5C 44 A0  1 
+1A2D080 	DC 41 A0  1 18  0  0  0 
+1A2D088 	58 41 A0  1  C  0  0  0 
+1A2D090 	DC 44 A0  1 C8 41 A0  1 
+1A2D098 	10  0  0  0 58 41 A0  1 
+1A2D0A0 	FF  F  0  0 5C 44 A0  1 
+      endof
+1A2D0A8 	6C 43 A0  1 54  0  0  0 
+      fat16  of
+1A2D0B0 	DC BC A2  1 48 43 A0  1 
+1A2D0B8 	18  0  0  0 
+         swap wa+ lew@
+1A2D0BC 	68 49 A0  1 
+1A2D0C0 	18 50 A0  1 7C B4 A2  1 
+      endof
+1A2D0C8 	6C 43 A0  1 34  0  0  0 
+      fat32  of
+1A2D0D0 	F0 BC A2  1 48 43 A0  1 
+1A2D0D8 	24  0  0  0 
+         swap la+ lel@  h# 0fffffff and
+1A2D0DC 	68 49 A0  1 
+1A2D0E0 	30 50 A0  1 DC B4 A2  1 
+1A2D0E8 	58 41 A0  1 FF FF FF  F 
+1A2D0F0 	5C 44 A0  1 
+      endof
+1A2D0F4 	6C 43 A0  1 
+1A2D0F8 	 8  0  0  0 
+   endcase
+1A2D0FC 	84 43 A0  1 
+;
+1A2D100 	58 46 A0  1 
+
+: cluster!  ( new-cl# adr-cl# -- )
+1A2D104 	 0  0  0 63 
+1A2D108 	6C 75 73 74 65 72 21 88 
+1A2D110 	1C D0 A2  1 20 40 A0  1 
+   get-fat-entries        ( new-cl# entry# cache-adr )
+1A2D118 	84 CF A2  1 
+   fat-type c@  case
+1A2D11C 	84 BC A2  1 
+1A2D120 	C4 4C A0  1 
+      fat12  of
+1A2D124 	C8 BC A2  1 
+1A2D128 	48 43 A0  1 94  0  0  0 
+         rot fff and -rot
+1A2D130 	7C 49 A0  1 58 41 A0  1 
+1A2D138 	FF  F  0  0 5C 44 A0  1 
+1A2D140 	94 49 A0  1 
+         over 2/ 3 *  +  dup >r  le24@  ( cl# entry# 2-entries )  ( r: adr )
+1A2D144 	54 49 A0  1 
+1A2D148 	78 4B A0  1 A0 6F A0  1 
+1A2D150 	1C 5F A0  1  4 45 A0  1 
+1A2D158 	40 49 A0  1 BC 45 A0  1 
+1A2D160 	38 B5 A2  1 
+         swap 1 and  if  000fff and  swap d# 12 <<  or  else  fff000 and or  then
+1A2D164 	68 49 A0  1 
+1A2D168 	80 6F A0  1 5C 44 A0  1 
+1A2D170 	DC 41 A0  1 2C  0  0  0 
+1A2D178 	58 41 A0  1 FF  F  0  0 
+1A2D180 	5C 44 A0  1 68 49 A0  1 
+1A2D188 	58 41 A0  1  C  0  0  0 
+1A2D190 	C8 44 A0  1 70 44 A0  1 
+1A2D198 	C8 41 A0  1 14  0  0  0 
+1A2D1A0 	58 41 A0  1  0 F0 FF  0 
+1A2D1A8 	5C 44 A0  1 70 44 A0  1 
+         r> le24!
+1A2D1B0 	D0 45 A0  1 78 B5 A2  1 
+      endof
+1A2D1B8 	6C 43 A0  1 5C  0  0  0 
+      fat16  of
+1A2D1C0 	DC BC A2  1 48 43 A0  1 
+1A2D1C8 	2C  0  0  0 
+         rot ffff and -rot
+1A2D1CC 	7C 49 A0  1 
+1A2D1D0 	58 41 A0  1 FF FF  0  0 
+1A2D1D8 	5C 44 A0  1 94 49 A0  1 
+         swap wa+ lew!
+1A2D1E0 	68 49 A0  1 18 50 A0  1 
+1A2D1E8 	A8 B4 A2  1 
+      endof
+1A2D1EC 	6C 43 A0  1 
+1A2D1F0 	28  0  0  0 
+      fat32  of
+1A2D1F4 	F0 BC A2  1 
+1A2D1F8 	48 43 A0  1 18  0  0  0 
+         swap la+ lel!
+1A2D200 	68 49 A0  1 30 50 A0  1 
+1A2D208 	 8 B5 A2  1 
+      endof
+1A2D20C 	6C 43 A0  1 
+1A2D210 	 8  0  0  0 
+   endcase
+1A2D214 	84 43 A0  1 
+   true fat-dirty w!
+1A2D218 	 4 70 A0  1 BC BB A2  1 
+1A2D220 	A4 4D A0  1 
+;
+1A2D224 	58 46 A0  1 
+
+\ mmo private
+
+\ For performance sake, we search for clusters physically near the
+\ cluster presently at the end of the file, and we especially try to
+\ find one which would be in the fat cache at the same time as the
+\ previous cluster.
+
+: search-up  ( high-cluster# low-cluster# -- cluster# true  |  false )
+1A2D228 	 0  0 73 65 61 72 63 68 
+1A2D230 	2D 75 70 89 14 D1 A2  1 
+1A2D238 	20 40 A0  1 
+   false -rot  ?do
+1A2D23C 	18 70 A0  1 
+1A2D240 	94 49 A0  1 50 42 A0  1 
+1A2D248 	30  0  0  0 
+      i cluster@ 0=  if  drop i true leave  then
+1A2D24C 	B4 42 A0  1 
+1A2D250 	1C D0 A2  1 24 47 A0  1 
+1A2D258 	DC 41 A0  1 14  0  0  0 
+1A2D260 	30 49 A0  1 B4 42 A0  1 
+1A2D268 	 4 70 A0  1 18 43 A0  1 
+   loop
+1A2D270 	F8 41 A0  1 D8 FF FF FF 
+;
+1A2D278 	58 46 A0  1 
+: search-down  ( low-cluster# high-cluster# -- cluster# true  |  false )
+1A2D27C 	73 65 61 72 
+1A2D280 	63 68 2D 64 6F 77 6E 8B 
+1A2D288 	38 D2 A2  1 20 40 A0  1 
+   false -rot  ?do
+1A2D290 	18 70 A0  1 94 49 A0  1 
+1A2D298 	50 42 A0  1 38  0  0  0 
+      i cluster@ 0=  if  drop i true leave  then
+1A2D2A0 	B4 42 A0  1 1C D0 A2  1 
+1A2D2A8 	24 47 A0  1 DC 41 A0  1 
+1A2D2B0 	14  0  0  0 30 49 A0  1 
+1A2D2B8 	B4 42 A0  1  4 70 A0  1 
+1A2D2C0 	18 43 A0  1 
+   -1 +loop
+1A2D2C4 	58 41 A0  1 
+1A2D2C8 	FF FF FF FF 1C 42 A0  1 
+1A2D2D0 	D0 FF FF FF 
+;
+1A2D2D4 	58 46 A0  1 
+
+\ Search order for free clusters:  First search toward the nearest
+\ fat cache boundary, then search toward the other fat cache boundary, then
+\ search from the beginning of the disk, then search the rest of the disk.
+
+VARIABLE hint  VARIABLE fatc-start  VARIABLE fatc-end
+1A2D2D8 	 0  0  0 68 69 6E 74 84 
+1A2D2E0 	8C D2 A2  1 48 40 A0  1 
+1A2D2E8 	14  9  0  0  0 66 61 74 
+1A2D2F0 	63 2D 73 74 61 72 74 8A 
+1A2D2F8 	E4 D2 A2  1 48 40 A0  1 
+1A2D300 	18  9  0  0  0  0  0 66 
+1A2D308 	61 74 63 2D 65 6E 64 88 
+1A2D310 	FC D2 A2  1 48 40 A0  1 
+1A2D318 	1C  9  0  0 
+
+\ Be careful to avoid cluster numbers 0 and 1, which are reserved
+: set-breaks  ( hint-cluster# -- )
+1A2D31C 	 0 73 65 74 
+1A2D320 	2D 62 72 65 61 6B 73 8A 
+1A2D328 	14 D3 A2  1 20 40 A0  1 
+   2 max  dup hint !
+1A2D330 	90 6F A0  1 9C 4A A0  1 
+1A2D338 	40 49 A0  1 E4 D2 A2  1 
+1A2D340 	54 4D A0  1 
+   dup cl#/fat-cache w@ mod -  2 max  dup fatc-start !
+1A2D344 	40 49 A0  1 
+1A2D348 	D8 BB A2  1 94 4C A0  1 
+1A2D350 	B0 5F A0  1 18 45 A0  1 
+1A2D358 	90 6F A0  1 9C 4A A0  1 
+1A2D360 	40 49 A0  1 FC D2 A2  1 
+1A2D368 	54 4D A0  1 
+   cl#/fat-cache w@ +  max-cl# l@ min  fatc-end !
+1A2D36C 	D8 BB A2  1 
+1A2D370 	94 4C A0  1  4 45 A0  1 
+1A2D378 	54 BB A2  1 6C 4C A0  1 
+1A2D380 	74 4A A0  1 14 D3 A2  1 
+1A2D388 	54 4D A0  1 
+;
+1A2D38C 	58 46 A0  1 
+
+\ Set the new cluster's link to "eof", thus removing it from the free list.
+\ This depends on the fact that newly-allocated clusters are always attached
+\ to the end of a file.
+
+: mark-cluster  ( cluster# -- cluster# true )
+1A2D390 	 0  0  0 6D 61 72 6B 2D 
+1A2D398 	63 6C 75 73 74 65 72 8C 
+1A2D3A0 	2C D3 A2  1 20 40 A0  1 
+   \ Set the new cluster's link to "eof"
+   fat-eof over cluster!   ( cluster# )
+1A2D3A8 	F8 CC A2  1 54 49 A0  1 
+1A2D3B0 	14 D1 A2  1 
+   true
+1A2D3B4 	 4 70 A0  1 
+;
+1A2D3B8 	58 46 A0  1 
+
+: (allocate-cluster)  ( hint-cluster# -- cluster# true  |  false )
+1A2D3BC 	 0 28 61 6C 
+1A2D3C0 	6C 6F 63 61 74 65 2D 63 
+1A2D3C8 	6C 75 73 74 65 72 29 92 
+1A2D3D0 	A4 D3 A2  1 20 40 A0  1 
+   set-breaks
+1A2D3D8 	2C D3 A2  1 
+   hint @ fatc-start @ -  fatc-end @ hint @ -  <  if    \ Search down first
+1A2D3DC 	E4 D2 A2  1 
+1A2D3E0 	5C 4C A0  1 FC D2 A2  1 
+1A2D3E8 	5C 4C A0  1 18 45 A0  1 
+1A2D3F0 	14 D3 A2  1 5C 4C A0  1 
+1A2D3F8 	E4 D2 A2  1 5C 4C A0  1 
+1A2D400 	18 45 A0  1 E4 47 A0  1 
+1A2D408 	DC 41 A0  1 54  0  0  0 
+      fatc-start @ hint @  search-down  if  mark-cluster exit  then
+1A2D410 	FC D2 A2  1 5C 4C A0  1 
+1A2D418 	E4 D2 A2  1 5C 4C A0  1 
+1A2D420 	8C D2 A2  1 DC 41 A0  1 
+1A2D428 	 C  0  0  0 A4 D3 A2  1 
+1A2D430 	40 46 A0  1 
+      fatc-end @   hint @  search-up    if  mark-cluster exit  then
+1A2D434 	14 D3 A2  1 
+1A2D438 	5C 4C A0  1 E4 D2 A2  1 
+1A2D440 	5C 4C A0  1 38 D2 A2  1 
+1A2D448 	DC 41 A0  1  C  0  0  0 
+1A2D450 	A4 D3 A2  1 40 46 A0  1 
+   else                                                 \ Search up first
+1A2D458 	C8 41 A0  1 4C  0  0  0 
+      fatc-end @   hint @  search-up    if  mark-cluster exit  then
+1A2D460 	14 D3 A2  1 5C 4C A0  1 
+1A2D468 	E4 D2 A2  1 5C 4C A0  1 
+1A2D470 	38 D2 A2  1 DC 41 A0  1 
+1A2D478 	 C  0  0  0 A4 D3 A2  1 
+1A2D480 	40 46 A0  1 
+      fatc-start @ hint @  search-down  if  mark-cluster exit  then
+1A2D484 	FC D2 A2  1 
+1A2D488 	5C 4C A0  1 E4 D2 A2  1 
+1A2D490 	5C 4C A0  1 8C D2 A2  1 
+1A2D498 	DC 41 A0  1  C  0  0  0 
+1A2D4A0 	A4 D3 A2  1 40 46 A0  1 
+   then
+
+   \ Search up to the end of the disk ** 10/30/90 cpt: up to last cl (1+)
+   max-cl# l@ 1+ fatc-end @  search-up    if  mark-cluster exit  then
+1A2D4A8 	54 BB A2  1 6C 4C A0  1 
+1A2D4B0 	30 4B A0  1 14 D3 A2  1 
+1A2D4B8 	5C 4C A0  1 38 D2 A2  1 
+1A2D4C0 	DC 41 A0  1  C  0  0  0 
+1A2D4C8 	A4 D3 A2  1 40 46 A0  1 
+
+   \ Search down to the beginning of the disk
+   2         fatc-start @  search-down  if  mark-cluster exit  then
+1A2D4D0 	90 6F A0  1 FC D2 A2  1 
+1A2D4D8 	5C 4C A0  1 8C D2 A2  1 
+1A2D4E0 	DC 41 A0  1  C  0  0  0 
+1A2D4E8 	A4 D3 A2  1 40 46 A0  1 
+
+   false
+1A2D4F0 	18 70 A0  1 
+;
+1A2D4F4 	58 46 A0  1 
+: allocate-cluster  ( hint-cluster# -- false | cluster# true )
+1A2D4F8 	 0  0  0 61 6C 6C 6F 63 
+1A2D500 	61 74 65 2D 63 6C 75 73 
+1A2D508 	74 65 72 90 D4 D3 A2  1 
+1A2D510 	20 40 A0  1 
+   fsinfo @  if                                    ( hint )
+1A2D514 	D0 B9 A2  1 
+1A2D518 	5C 4C A0  1 DC 41 A0  1 
+1A2D520 	78  0  0  0 
+      fs_#freeclusters lel@   if                   ( hint )
+1A2D524 	44 BA A2  1 
+1A2D528 	DC B4 A2  1 DC 41 A0  1 
+1A2D530 	58  0  0  0 
+         fs_freecluster# lel@ max-cl# l@ <=  if    ( hint )
+1A2D534 	60 BA A2  1 
+1A2D538 	DC B4 A2  1 54 BB A2  1 
+1A2D540 	6C 4C A0  1  C 49 A0  1 
+1A2D548 	DC 41 A0  1 10  0  0  0 
+            drop fs_freecluster# lel@              ( hint' )
+1A2D550 	30 49 A0  1 60 BA A2  1 
+1A2D558 	DC B4 A2  1 
+         then                                      ( hint )
+         (allocate-cluster)                        ( false | cluster# true )
+1A2D55C 	D4 D3 A2  1 
+         dup  if  over fs-free#!  -1 +fs-#free  then  ( false | cluster# true )
+1A2D560 	40 49 A0  1 DC 41 A0  1 
+1A2D568 	18  0  0  0 54 49 A0  1 
+1A2D570 	68 BD A2  1 58 41 A0  1 
+1A2D578 	FF FF FF FF  8 BD A2  1 
+      else                                         ( hint )
+1A2D580 	C8 41 A0  1  C  0  0  0 
+         drop false                                ( false )
+1A2D588 	30 49 A0  1 18 70 A0  1 
+      then                                         ( false | cluster# true )
+   else                                            ( hint )
+1A2D590 	C8 41 A0  1  8  0  0  0 
+      (allocate-cluster)                           ( false | cluster# true )
+1A2D598 	D4 D3 A2  1 
+   then                                            ( false | cluster# true )
+;
+1A2D59C 	58 46 A0  1 
+
+\ Frees first-cl# and all clusters linked after it.
+: deallocate-clusters  ( first-cl# -- )
+1A2D5A0 	64 65 61 6C 6C 6F 63 61 
+1A2D5A8 	74 65 2D 63 6C 75 73 74 
+1A2D5B0 	65 72 73 93 10 D5 A2  1 
+1A2D5B8 	20 40 A0  1 
+   begin
+      dup 0<>  over fat-end? 0= and
+1A2D5BC 	40 49 A0  1 
+1A2D5C0 	44 47 A0  1 54 49 A0  1 
+1A2D5C8 	24 CD A2  1 24 47 A0  1 
+1A2D5D0 	5C 44 A0  1 
+   while                                 ( cluster# )
+1A2D5D4 	DC 41 A0  1 
+1A2D5D8 	38  0  0  0 
+      dup  cluster@                      ( cluster# next-cluster# )
+1A2D5DC 	40 49 A0  1 
+1A2D5E0 	1C D0 A2  1 
+      0 rot  cluster!                    ( next-cluster# )
+1A2D5E4 	70 6F A0  1 
+1A2D5E8 	7C 49 A0  1 14 D1 A2  1 
+      fsinfo @  if  1 +fs-#free  then    ( next-cluster# )
+1A2D5F0 	D0 B9 A2  1 5C 4C A0  1 
+1A2D5F8 	DC 41 A0  1  C  0  0  0 
+1A2D600 	80 6F A0  1  8 BD A2  1 
+   repeat
+1A2D608 	C8 41 A0  1 B0 FF FF FF 
+   drop
+1A2D610 	30 49 A0  1 
+   ?flush-fat-cache
+1A2D614 	98 CE A2  1 
+;
+1A2D618 	58 46 A0  1 
+
+\ mmo internal
+
+: unmount  ( device# -- )
+1A2D61C 	75 6E 6D 6F 
+1A2D620 	75 6E 74 87 B8 D5 A2  1 
+1A2D628 	20 40 A0  1 
+   current-device @ >r  ( device# )  current-device !
+1A2D62C 	A8 BA A2  1 
+1A2D630 	5C 4C A0  1 BC 45 A0  1 
+1A2D638 	A8 BA A2  1 54 4D A0  1 
+   ?flush-fat-cache
+1A2D640 	98 CE A2  1 
+   \ XXX should free memory for FAT cache
+   uncache-device
+1A2D644 	78 C3 A2  1 
+   r> current-device !
+1A2D648 	D0 45 A0  1 A8 BA A2  1 
+1A2D650 	54 4D A0  1 
+;
+1A2D654 	58 46 A0  1 
+
+: total-size  ( -- d.bytes )  max-cl# l@ 1+  /cluster *  0  ;
+1A2D658 	 0 74 6F 74 61 6C 2D 73 
+1A2D660 	69 7A 65 8A 28 D6 A2  1 
+1A2D668 	20 40 A0  1 54 BB A2  1 
+1A2D670 	6C 4C A0  1 30 4B A0  1 
+1A2D678 	18 C3 A2  1 1C 5F A0  1 
+1A2D680 	70 6F A0  1 58 46 A0  1 
+
+\ mmo public
+: free-bytes  ( -- d.#bytes )
+1A2D688 	 0 66 72 65 65 2D 62 79 
+1A2D690 	74 65 73 8A 68 D6 A2  1 
+1A2D698 	20 40 A0  1 
+   \ Search up to the end of the disk
+   0  max-cl# l@ 1+ 2  ?do  i cluster@ 0= if  1+  then  loop ( #free-clusters )
+1A2D69C 	70 6F A0  1 
+1A2D6A0 	54 BB A2  1 6C 4C A0  1 
+1A2D6A8 	30 4B A0  1 90 6F A0  1 
+1A2D6B0 	50 42 A0  1 24  0  0  0 
+1A2D6B8 	B4 42 A0  1 1C D0 A2  1 
+1A2D6C0 	24 47 A0  1 DC 41 A0  1 
+1A2D6C8 	 8  0  0  0 30 4B A0  1 
+1A2D6D0 	F8 41 A0  1 E4 FF FF FF 
+   /cluster *  ( #bytes )
+1A2D6D8 	18 C3 A2  1 1C 5F A0  1 
+   0
+1A2D6E0 	70 6F A0  1 
+;
+1A2D6E4 	58 46 A0  1 
+
+[ifdef] notdef
+\ Returns the amount of total and free space on the disk
+: disk-size  ( device -- #bytes )  set-device total-size drop  ;
+: disk-free  ( device -- #bytes )  set-device  free-bytes drop  ;
+[then]

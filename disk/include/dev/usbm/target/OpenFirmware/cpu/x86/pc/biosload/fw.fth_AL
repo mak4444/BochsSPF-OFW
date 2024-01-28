@@ -1,0 +1,155 @@
+true to stand-init-debug?
+
+hex
+\ stand-init-debug?  [if]
+warning @  warning off 
+: init
+1A5D68C 	 0  0  0 69 
+1A5D690 	6E 69 74 84 90 D9 A4  1 
+1A5D698 	20 40 A0  1 
+\ initial-heap add-memory
+   init
+1A5D69C 	CC 65 A1  1 
+
+\  cr0@ h# 9fff.ffff and cr0!	\ enable L1 and L2 caches
+;
+1A5D6A0 	58 46 A0  1 
+warning !
+\ [then]
+
+: (.firmware)  ( -- )
+1A5D6A4 	28 2E 66 69 
+1A5D6A8 	72 6D 77 61 72 65 29 8B 
+1A5D6B0 	98 D6 A5  1 20 40 A0  1 
+   ." Open Firmware  "  .built  cr
+1A5D6B8 	20 7C A0  1  F 4F 70 65 
+1A5D6C0 	6E 20 46 69 72 6D 77 61 
+1A5D6C8 	72 65 20 20  0  0  0  0 
+1A5D6D0 	F4 B0 A2  1 80 6D A0  1 
+   ." Copyright 1999 FirmWorks  All Rights Reserved" cr
+1A5D6D8 	20 7C A0  1 2D 43 6F 70 
+1A5D6E0 	79 72 69 67 68 74 20 31 
+1A5D6E8 	39 39 39 20 46 69 72 6D 
+1A5D6F0 	57 6F 72 6B 73 20 20 41 
+1A5D6F8 	6C 6C 20 52 69 67 68 74 
+1A5D700 	73 20 52 65 73 65 72 76 
+1A5D708 	65 64  0  0 80 6D A0  1 
+;
+1A5D710 	58 46 A0  1 
+' (.firmware) to .firmware
+
+
+: probe-all  ( -- )
+1A5D714 	 0  0 70 72 
+1A5D718 	6F 62 65 2D 61 6C 6C 89 
+1A5D720 	B4 D6 A5  1 20 40 A0  1 
+   ." report-disk" HERE .H  cr   report-disk
+1A5D728 	20 7C A0  1  B 72 65 70 
+1A5D730 	6F 72 74 2D 64 69 73 6B 
+1A5D738 	 0  0  0  0 70 54 A0  1 
+1A5D740 	10  E A1  1 80 6D A0  1 
+1A5D748 	28 10 A4  1 
+   ." probe-pci"  HERE .H cr   probe-pci
+1A5D74C 	20 7C A0  1 
+1A5D750 	 9 70 72 6F 62 65 2D 70 
+1A5D758 	63 69  0  0 70 54 A0  1 
+1A5D760 	10  E A1  1 80 6D A0  1 
+1A5D768 	7C 84 A3  1 
+
+;
+1A5D76C 	58 46 A0  1 
+
+\ This reduces processor use when waiting for a key.  It helps
+\ a lot when running on an emulator.
+\ mmo : c1-idle  ( -- )  interrupts-enabled?  if  halt  then  ;
+\ mmo ' c1-idle to stdin-idle
+
+: startup  ( -- )
+1A5D770 	73 74 61 72 74 75 70 87 
+1A5D778 	24 D7 A5  1 20 40 A0  1 
+   standalone?  0=  if  exit  then
+1A5D780 	F4 DE A1  1 24 47 A0  1 
+1A5D788 	DC 41 A0  1  8  0  0  0 
+1A5D790 	40 46 A0  1 
+   ." calibrate-ms"  cr
+1A5D794 	20 7C A0  1 
+1A5D798 	 C 63 61 6C 69 62 72 61 
+1A5D7A0 	74 65 2D 6D 73  0  0  0 
+1A5D7A8 	80 6D A0  1 
+   calibrate-ms
+1A5D7AC 	 4 E7 A3  1 
+
+    ." nvramrc"  HERE .H cr
+1A5D7B0 	20 7C A0  1  7 6E 76 72 
+1A5D7B8 	61 6D 72 63  0  0  0  0 
+1A5D7C0 	70 54 A0  1 10  E A1  1 
+1A5D7C8 	80 6D A0  1 
+
+      install-mux-io
+1A5D7CC 	14 1F A4  1 
+
+   auto-banner?  if
+1A5D7D0 	F4 AD A2  1 DC 41 A0  1 
+1A5D7D8 	3C  0  0  0 
+      " Probing" type  HERE .H  probe-all
+1A5D7DC 	9C 53 A0  1 
+1A5D7E0 	 7 50 72 6F 62 69 6E 67 
+1A5D7E8 	 0  0  0  0  4 6C A0  1 
+1A5D7F0 	70 54 A0  1 10  E A1  1 
+1A5D7F8 	24 D7 A5  1 
+   ." install-mux-io"  cr
+1A5D7FC 	20 7C A0  1 
+1A5D800 	 E 69 6E 73 74 61 6C 6C 
+1A5D808 	2D 6D 75 78 2D 69 6F  0 
+1A5D810 	80 6D A0  1 
+
+\ mmo      ?usb-keyboard
+   then
+
+   hex
+1A5D814 	C0 8D A0  1 
+   warning on
+1A5D818 	E4 9A A0  1 E0 4B A0  1 
+   only forth also definitions
+1A5D820 	88 C3 A0  1  8 C5 A0  1 
+1A5D828 	C8 C1 A0  1 2C C4 A0  1 
+
+   ." Installing alarms" cr
+1A5D830 	20 7C A0  1 11 49 6E 73 
+1A5D838 	74 61 6C 6C 69 6E 67 20 
+1A5D840 	61 6C 61 72 6D 73  0  0 
+1A5D848 	80 6D A0  1 
+\ mmo   install-alarm
+
+   #line off
+1A5D84C 	70 6D A0  1 
+1A5D850 	F8 4B A0  1 
+
+   ." Open Firmware demonstration version by FirmWorks (info@firmworks.com)" cr
+1A5D854 	20 7C A0  1 
+1A5D858 	45 4F 70 65 6E 20 46 69 
+1A5D860 	72 6D 77 61 72 65 20 64 
+1A5D868 	65 6D 6F 6E 73 74 72 61 
+1A5D870 	74 69 6F 6E 20 76 65 72 
+1A5D878 	73 69 6F 6E 20 62 79 20 
+1A5D880 	46 69 72 6D 57 6F 72 6B 
+1A5D888 	73 20 28 69 6E 66 6F 40 
+1A5D890 	66 69 72 6D 77 6F 72 6B 
+1A5D898 	73 2E 63 6F 6D 29  0  0 
+1A5D8A0 	80 6D A0  1 
+
+s" c:autoexec.4" included
+1A5D8A4 	9C 53 A0  1 
+1A5D8A8 	 C 63 3A 61 75 74 6F 65 
+1A5D8B0 	78 65 63 2E 34  0  0  0 
+1A5D8B8 	C8 E8 A0  1 
+   quit
+1A5D8BC 	FC D0 A0  1 
+;
+1A5D8C0 	58 46 A0  1 
+\ : zz s" u:autoexec.4" included ;
+
+alias crcgen drop  ( crc byte -- crc' )
+1A5D8C4 	 0 63 72 63 
+1A5D8C8 	67 65 6E A6 7C D7 A5  1 
+1A5D8D0 	30 49 A0  1 

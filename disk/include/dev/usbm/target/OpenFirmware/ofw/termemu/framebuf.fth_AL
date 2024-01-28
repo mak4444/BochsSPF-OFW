@@ -1,0 +1,233 @@
+id: @(#)framebuf.fth 3.4 01/04/06
+purpose: Variables and defer words used by many frame buffers drivers
+
+\ Variables that are useful for most kinds of frame buffers.
+headers
+
+\ The definition of frame-buffer-adr has been moved to devtree.fth, as
+\ frame-buffer-adr is now a fixed instance value.  This was done as a
+\ workaround for a problem with old FCode display drivers, some of which
+\ use frame-buffer-adr for their selftest routines.  With multiple frame
+\ buffers on the same machine, a "test" command directed to a frame buffer
+\ can screw up the console device.
+\ 0 termemu-value frame-buffer-adr
+
+0 termemu-value column#			\ Cursor column number
+1A28634 	63 6F 6C 75 
+1A28638 	6D 6E 23 87 B0 85 A2  1 
+1A28640 	E0 84 A2  1 18  0  0  0 
+0 termemu-value line#			\ Cursor line number
+1A28648 	 0  0 6C 69 6E 65 23 85 
+1A28650 	40 86 A2  1 E0 84 A2  1 
+1A28658 	1C  0  0  0 
+
+d# 1152 termemu-value screen-width
+1A2865C 	 0  0  0 73 
+1A28660 	63 72 65 65 6E 2D 77 69 
+1A28668 	64 74 68 8C 54 86 A2  1 
+1A28670 	E0 84 A2  1 20  0  0  0 
+d#  900 termemu-value screen-height
+1A28678 	 0  0 73 63 72 65 65 6E 
+1A28680 	2D 68 65 69 67 68 74 8D 
+1A28688 	70 86 A2  1 E0 84 A2  1 
+1A28690 	24  0  0  0 
+
+0 termemu-value window-top		\ Pixel position of top of text area
+1A28694 	 0 77 69 6E 
+1A28698 	64 6F 77 2D 74 6F 70 8A 
+1A286A0 	8C 86 A2  1 E0 84 A2  1 
+1A286A8 	28  0  0  0 
+0 termemu-value window-left		\ Pixel position of left of text area
+1A286AC 	77 69 6E 64 
+1A286B0 	6F 77 2D 6C 65 66 74 8B 
+1A286B8 	A4 86 A2  1 E0 84 A2  1 
+1A286C0 	2C  0  0  0 
+
+0 termemu-value emu-bytes/line
+1A286C4 	 0 65 6D 75 
+1A286C8 	2D 62 79 74 65 73 2F 6C 
+1A286D0 	69 6E 65 8E BC 86 A2  1 
+1A286D8 	E0 84 A2  1 30  0  0  0 
+0 termemu-value bytes/line		\ Framebuffer pitch
+1A286E0 	 0 62 79 74 65 73 2F 6C 
+1A286E8 	69 6E 65 8A D8 86 A2  1 
+1A286F0 	E0 84 A2  1 34  0  0  0 
+
+\ Interfaces to device-dependent graphics primitives:
+d# 34 termemu-value #lines
+1A286F8 	 0 23 6C 69 6E 65 73 86 
+1A28700 	F0 86 A2  1 E0 84 A2  1 
+1A28708 	38  0  0  0 
+d# 80 termemu-value #columns
+1A2870C 	 0  0  0 23 
+1A28710 	63 6F 6C 75 6D 6E 73 88 
+1A28718 	 4 87 A2  1 E0 84 A2  1 
+1A28720 	3C  0  0  0 
+
+\ Things that change for different pixel depths
+termemu-defer pix*
+1A28724 	 0  0  0 70 
+1A28728 	69 78 2A 84 1C 87 A2  1 
+1A28730 	5C 84 A2  1 40  0  0  0 
+termemu-defer fb-invert
+1A28738 	 0  0 66 62 2D 69 6E 76 
+1A28740 	65 72 74 89 30 87 A2  1 
+1A28748 	5C 84 A2  1 44  0  0  0 
+termemu-defer fb-fill
+1A28750 	66 62 2D 66 69 6C 6C 87 
+1A28758 	48 87 A2  1 5C 84 A2  1 
+1A28760 	48  0  0  0 
+termemu-defer fb-paint
+1A28764 	 0  0  0 66 
+1A28768 	62 2D 70 61 69 6E 74 88 
+1A28770 	5C 87 A2  1 5C 84 A2  1 
+1A28778 	4C  0  0  0 
+termemu-defer fb-16map
+1A2877C 	 0  0  0 66 
+1A28780 	62 2D 31 36 6D 61 70 88 
+1A28788 	74 87 A2  1 5C 84 A2  1 
+1A28790 	50  0  0  0 
+termemu-defer fb-merge
+1A28794 	 0  0  0 66 
+1A28798 	62 2D 6D 65 72 67 65 88 
+1A287A0 	8C 87 A2  1 5C 84 A2  1 
+1A287A8 	54  0  0  0 
+
+termemu-defer draw-character
+1A287AC 	 0 64 72 61 
+1A287B0 	77 2D 63 68 61 72 61 63 
+1A287B8 	74 65 72 8E A4 87 A2  1 
+1A287C0 	5C 84 A2  1 58  0  0  0 
+termemu-defer insert-characters
+1A287C8 	 0  0 69 6E 73 65 72 74 
+1A287D0 	2D 63 68 61 72 61 63 74 
+1A287D8 	65 72 73 91 C0 87 A2  1 
+1A287E0 	5C 84 A2  1 5C  0  0  0 
+termemu-defer delete-characters
+1A287E8 	 0  0 64 65 6C 65 74 65 
+1A287F0 	2D 63 68 61 72 61 63 74 
+1A287F8 	65 72 73 91 E0 87 A2  1 
+1A28800 	5C 84 A2  1 60  0  0  0 
+termemu-defer insert-lines
+1A28808 	 0  0  0 69 6E 73 65 72 
+1A28810 	74 2D 6C 69 6E 65 73 8C 
+1A28818 	 0 88 A2  1 5C 84 A2  1 
+1A28820 	64  0  0  0 
+termemu-defer delete-lines
+1A28824 	 0  0  0 64 
+1A28828 	65 6C 65 74 65 2D 6C 69 
+1A28830 	6E 65 73 8C 1C 88 A2  1 
+1A28838 	5C 84 A2  1 68  0  0  0 
+termemu-defer blink-screen
+1A28840 	 0  0  0 62 6C 69 6E 6B 
+1A28848 	2D 73 63 72 65 65 6E 8C 
+1A28850 	38 88 A2  1 5C 84 A2  1 
+1A28858 	6C  0  0  0 
+termemu-defer invert-screen
+1A2885C 	 0  0 69 6E 
+1A28860 	76 65 72 74 2D 73 63 72 
+1A28868 	65 65 6E 8D 54 88 A2  1 
+1A28870 	5C 84 A2  1 70  0  0  0 
+termemu-defer reset-screen
+1A28878 	 0  0  0 72 65 73 65 74 
+1A28880 	2D 73 63 72 65 65 6E 8C 
+1A28888 	70 88 A2  1 5C 84 A2  1 
+1A28890 	74  0  0  0 
+termemu-defer erase-screen
+1A28894 	 0  0  0 65 
+1A28898 	72 61 73 65 2D 73 63 72 
+1A288A0 	65 65 6E 8C 8C 88 A2  1 
+1A288A8 	5C 84 A2  1 78  0  0  0 
+termemu-defer toggle-cursor
+1A288B0 	 0  0 74 6F 67 67 6C 65 
+1A288B8 	2D 63 75 72 73 6F 72 8D 
+1A288C0 	A8 88 A2  1 5C 84 A2  1 
+1A288C8 	7C  0  0  0 
+
+termemu-defer draw-logo
+1A288CC 	 0  0 64 72 
+1A288D0 	61 77 2D 6C 6F 67 6F 89 
+1A288D8 	C4 88 A2  1 5C 84 A2  1 
+1A288E0 	80  0  0  0 
+
+\ These values are available to the device-dependent routines.
+\ The behavior of the device-dependent routines implicitly depends
+\ on their values.
+
+true  termemu-value showing-cursor?	\ True to display text cursor
+1A288E4 	73 68 6F 77 
+1A288E8 	69 6E 67 2D 63 75 72 73 
+1A288F0 	6F 72 3F 8F DC 88 A2  1 
+1A288F8 	E0 84 A2  1 84  0  0  0 
+false termemu-value inverse-screen?	\ True for overall black background
+1A28900 	69 6E 76 65 72 73 65 2D 
+1A28908 	73 63 72 65 65 6E 3F 8F 
+1A28910 	F8 88 A2  1 E0 84 A2  1 
+1A28918 	88  0  0  0 
+false termemu-value inverse?		\ True for white characters on black background
+1A2891C 	 0  0  0 69 
+1A28920 	6E 76 65 72 73 65 3F 88 
+1A28928 	14 89 A2  1 E0 84 A2  1 
+1A28930 	8C  0  0  0 
+headerless
+\  true value frame-buffer-busy?	\ If true, drivers must assume that the frame
+\  				\ buffer is in use by another program, which
+\  				\ may require extra action to ensure the
+\  				\ visibility of the displayed text.
+\  	\ For example, a frame buffer with an enable plane might require
+\  	\ that the enable plane be written to expose the character.
+\
+
+termemu-defer ansi-emit
+1A28934 	 0  0 61 6E 
+1A28938 	73 69 2D 65 6D 69 74 89 
+1A28940 	2C 89 A2  1 5C 84 A2  1 
+1A28948 	90  0  0  0 
+false termemu-value pending-newline?
+1A2894C 	 0  0  0 70 
+1A28950 	65 6E 64 69 6E 67 2D 6E 
+1A28958 	65 77 6C 69 6E 65 3F 90 
+1A28960 	44 89 A2  1 E0 84 A2  1 
+1A28968 	94  0  0  0 
+\ True if the cursor is at the rightmost column but the next character
+\ should be displayed on the next line
+
+1 termemu-value #scroll-lines			\ Number of lines to scroll
+1A2896C 	 0  0 23 73 
+1A28970 	63 72 6F 6C 6C 2D 6C 69 
+1A28978 	6E 65 73 8D 64 89 A2  1 
+1A28980 	E0 84 A2  1 98  0  0  0 
+
+\ These variables are used to accumulate the optional numeric
+\ argument or arguments of the escape sequence.
+4 termemu-array arg
+1A28988 	61 72 67 83 80 89 A2  1 
+1A28990 	54 85 A2  1 9C  0  0  0 
+0 termemu-value next-arg
+1A28998 	 0  0  0 6E 65 78 74 2D 
+1A289A0 	61 72 67 88 90 89 A2  1 
+1A289A8 	E0 84 A2  1 AC  0  0  0 
+0 termemu-value arginit		\ Remembers the "real" value of argument 0.
+1A289B0 	61 72 67 69 6E 69 74 87 
+1A289B8 	A8 89 A2  1 E0 84 A2  1 
+1A289C0 	B0  0  0  0 
+				\ If arg0 is 0, it is changed to 1.
+
+    0 termemu-value foreground-color	\ Color index for foreground
+1A289C4 	 0  0  0 66 
+1A289C8 	6F 72 65 67 72 6F 75 6E 
+1A289D0 	64 2D 63 6F 6C 6F 72 90 
+1A289D8 	BC 89 A2  1 E0 84 A2  1 
+1A289E0 	B4  0  0  0 
+d# 15 termemu-value background-color	\ Color index for background
+1A289E4 	 0  0  0 62 
+1A289E8 	61 63 6B 67 72 6F 75 6E 
+1A289F0 	64 2D 63 6F 6C 6F 72 90 
+1A289F8 	DC 89 A2  1 E0 84 A2  1 
+1A28A00 	B8  0  0  0 
+false termemu-value 16-color?		\ True if 16-color text is enabled
+1A28A04 	 0  0 31 36 
+1A28A08 	2D 63 6F 6C 6F 72 3F 89 
+1A28A10 	FC 89 A2  1 E0 84 A2  1 
+1A28A18 	BC  0  0  0 
+

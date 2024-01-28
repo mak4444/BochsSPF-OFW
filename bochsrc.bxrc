@@ -1,0 +1,22 @@
+megs: 32
+romimage: file=../BIOS-bochs-latest
+vgaromimage: file=../VGABIOS-lgpl-latest
+#floppya: 1_44=floppya.img, status=inserted
+#floppyb: 1_44=floppyb.img, status=inserted
+
+# hard disk
+ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
+ata0-master: type=disk, path="fdosmini.img"
+ata0-slave: type=disk, mode=vvfat, path=disk, journal=vvfat.redolog
+
+# choose the boot disk.
+boot: c
+
+log: bochsout.txt
+mouse: enabled=0
+cpu: ips=15000000
+clock: sync=both
+
+keyboard: keymap=../keymaps/x11-pc-us.map
+usb_uhci: enabled=1, port2=disk:gfos.img
+com1: enabled=1, mode=file, dev=serial.log

@@ -1,0 +1,126 @@
+
+\ Temporary hex, and temporary decimal.  "h#" interprets the next word
+\ as though the base were hex, regardless of what the base happens to be.
+\ "d#" interprets the next word as though the base were decimal.
+\ "o#" interprets the next word as though the base were octal.
+\ "b#" interprets the next word as though the base were binary.
+
+\  Also, words to stash and set, and retrieve, the base during execution
+\     of a word in which they're used.  The words of the form  push-<base>
+\     (where <base> is hex, decimal, etcetera) does the equivalent of
+\     base @ >r <base>     The word  pop-base  recovers the old base...
+
+decimal
+headerless 
+
+: #:  \ name  ( base -- )  \ Define a temporary-numeric-mode word
+1A0F328 	 0 23 3A 82 18 F3 A0  1 
+1A0F330 	20 40 A0  1 
+   create c, immediate
+1A0F334 	A8 A2 A0  1 
+1A0F338 	B8 55 A0  1 BC B8 A0  1 
+   does>
+1A0F340 	50 A3 A0  1 90 90 90 E8 
+1A0F348 	30 4D FF FF 
+   base @ >r  c@ base !
+1A0F34C 	B8 75 A0  1 
+1A0F350 	5C 4C A0  1 BC 45 A0  1 
+1A0F358 	C4 4C A0  1 B8 75 A0  1 
+1A0F360 	54 4D A0  1 
+   parse-word
+1A0F364 	34 93 A0  1 
+   2dup 2>r  $handle-literal?  0=  if
+1A0F368 	C0 49 A0  1 F8 45 A0  1 
+1A0F370 	74 9E A0  1 24 47 A0  1 
+1A0F378 	DC 41 A0  1  C  0  0  0 
+      2r@  $do-undefined
+1A0F380 	28 46 A0  1 FC 9D A0  1 
+   then
+   2r> 2drop
+1A0F388 	10 46 A0  1 AC 49 A0  1 
+   r> base !
+1A0F390 	D0 45 A0  1 B8 75 A0  1 
+1A0F398 	54 4D A0  1 
+;
+1A0F39C 	58 46 A0  1 
+
+headerless
+
+\ The old names; use h# and d# instead
+10 #: td
+1A0F3A0 	 0 74 64 C2 30 F3 A0  1 
+1A0F3A8 	44 F3 A0  1  A 
+16 #: th
+1A0F3AD 	74 68 C2 
+1A0F3B0 	A8 F3 A0  1 44 F3 A0  1 
+1A0F3B8 	10 
+
+headers 
+
+ 2 #: b#	\ Binary number
+1A0F3B9 	62 23 C2 B4 F3 A0  1 
+1A0F3C0 	44 F3 A0  1  2 
+ 8 #: o#	\ Octal number
+1A0F3C5 	6F 23 C2 
+1A0F3C8 	C0 F3 A0  1 44 F3 A0  1 
+1A0F3D0 	 8 
+10 #: d#	\ Decimal number
+1A0F3D1 	64 23 C2 CC F3 A0  1 
+1A0F3D8 	44 F3 A0  1  A 
+16 #: h#	\ Hex number
+1A0F3DD 	68 23 C2 
+1A0F3E0 	D8 F3 A0  1 44 F3 A0  1 
+1A0F3E8 	10 
+
+headerless 
+
+: push-base:  \ name   ( base -- )  \  Define a base stash-and-set word
+1A0F3E9 	70 75 73 68 2D 62 61 
+1A0F3F0 	73 65 3A 8A E4 F3 A0  1 
+1A0F3F8 	20 40 A0  1 
+   create c,
+1A0F3FC 	A8 A2 A0  1 
+1A0F400 	B8 55 A0  1 
+   does>  r> base @ >r >r c@ base !
+1A0F404 	50 A3 A0  1 
+1A0F408 	90 90 90 E8 6C 4C FF FF 
+1A0F410 	D0 45 A0  1 B8 75 A0  1 
+1A0F418 	5C 4C A0  1 BC 45 A0  1 
+1A0F420 	BC 45 A0  1 C4 4C A0  1 
+1A0F428 	B8 75 A0  1 54 4D A0  1 
+;
+1A0F430 	58 46 A0  1 
+
+headers 
+
+\  Stash the old base on the return stack and set the base to ...
+10 push-base:  push-decimal
+1A0F434 	 0  0  0 70 
+1A0F438 	75 73 68 2D 64 65 63 69 
+1A0F440 	6D 61 6C 8C F8 F3 A0  1 
+1A0F448 	 8 F4 A0  1  A 
+16 push-base:  push-hex
+1A0F44D 	 0  0 70 
+1A0F450 	75 73 68 2D 68 65 78 88 
+1A0F458 	48 F4 A0  1  8 F4 A0  1 
+1A0F460 	10 
+
+ 2 push-base:  push-binary
+1A0F461 	 0  0  0 70 75 73 68 
+1A0F468 	2D 62 69 6E 61 72 79 8B 
+1A0F470 	5C F4 A0  1  8 F4 A0  1 
+1A0F478 	 2 
+ 8 push-base:  push-octal
+1A0F479 	70 75 73 68 2D 6F 63 
+1A0F480 	74 61 6C 8A 74 F4 A0  1 
+1A0F488 	 8 F4 A0  1  8 
+
+\  Retrieve the old base from the return stack
+
+: pop-base ( -- )  r> r> base ! >r ;
+1A0F48D 	 0  0 70 
+1A0F490 	6F 70 2D 62 61 73 65 88 
+1A0F498 	88 F4 A0  1 20 40 A0  1 
+1A0F4A0 	D0 45 A0  1 D0 45 A0  1 
+1A0F4A8 	B8 75 A0  1 54 4D A0  1 
+1A0F4B0 	BC 45 A0  1 58 46 A0  1 

@@ -1,0 +1,445 @@
+\ ATAPI package implementing a "block" device-type interface.
+\
+\
+
+headers
+
+: waitonbusy  ( -- )
+1A3F7F8 	 0 77 61 69 74 6F 6E 62 
+1A3F800 	75 73 79 8A F4 F5 A3  1 
+1A3F808 	20 40 A0  1 
+   h# 2000 0 do
+1A3F80C 	58 41 A0  1 
+1A3F810 	 0 20  0  0 70 6F A0  1 
+1A3F818 	88 42 A0  1 50  0  0  0 
+      r-csr@ dup 80 and 0=  if  drop leave  then	\ Exit if not busy
+1A3F820 	48 EE A3  1 40 49 A0  1 
+1A3F828 	58 41 A0  1 80  0  0  0 
+1A3F830 	5C 44 A0  1 24 47 A0  1 
+1A3F838 	DC 41 A0  1  C  0  0  0 
+1A3F840 	30 49 A0  1 18 43 A0  1 
+      1 and  if  leave  then				\ Exit if error
+1A3F848 	80 6F A0  1 5C 44 A0  1 
+1A3F850 	DC 41 A0  1  8  0  0  0 
+1A3F858 	18 43 A0  1 
+      1 ms
+1A3F85C 	80 6F A0  1 
+1A3F860 	60 E0 A1  1 
+   loop
+1A3F864 	F8 41 A0  1 
+1A3F868 	B8 FF FF FF 
+;
+1A3F86C 	58 46 A0  1 
+
+: atapi-get-drive-parms  ( -- found? )
+1A3F870 	 0  0 61 74 61 70 69 2D 
+1A3F878 	67 65 74 2D 64 72 69 76 
+1A3F880 	65 2D 70 61 72 6D 73 95 
+1A3F888 	 8 F8 A3  1 20 40 A0  1 
+   h# a1 r-csr!         \ send identify command
+1A3F890 	58 41 A0  1 A1  0  0  0 
+1A3F898 	4C F0 A3  1 
+
+   waitonbusy	\ The busy bit can be set even if there's no slave drive
+1A3F89C 	 8 F8 A3  1 
+
+   r-csr@  dup 0=  swap h# ff =  or  if  false exit  then
+1A3F8A0 	48 EE A3  1 40 49 A0  1 
+1A3F8A8 	24 47 A0  1 68 49 A0  1 
+1A3F8B0 	58 41 A0  1 FF  0  0  0 
+1A3F8B8 	24 48 A0  1 70 44 A0  1 
+1A3F8C0 	DC 41 A0  1  C  0  0  0 
+1A3F8C8 	18 70 A0  1 40 46 A0  1 
+
+   true    atapi-drive?!
+1A3F8D0 	 4 70 A0  1 24 EC A3  1 
+
+   scratchbuf d# 512 pio-rblock  if  false exit  then
+1A3F8D8 	F4 F5 A3  1 58 41 A0  1 
+1A3F8E0 	 0  2  0  0 4C F3 A3  1 
+1A3F8E8 	DC 41 A0  1  C  0  0  0 
+1A3F8F0 	18 70 A0  1 40 46 A0  1 
+
+   scratchbuf 1+ c@  h# 1f and  dup  drive-type!   ( type )
+1A3F8F8 	F4 F5 A3  1 30 4B A0  1 
+1A3F900 	C4 4C A0  1 58 41 A0  1 
+1A3F908 	1F  0  0  0 5C 44 A0  1 
+1A3F910 	40 49 A0  1 D4 EB A3  1 
+   5 =  if  d# 2048  else  d# 512  then  /block!
+1A3F918 	C0 6F A0  1 24 48 A0  1 
+1A3F920 	DC 41 A0  1 14  0  0  0 
+1A3F928 	58 41 A0  1  0  8  0  0 
+1A3F930 	C8 41 A0  1  C  0  0  0 
+1A3F938 	58 41 A0  1  0  2  0  0 
+1A3F940 	8C EB A3  1 
+
+[ifdef] notdef
+   \ It's possible that the following workaround was caused by a byte-order
+   \ dependency, now fixed, that used to exist in the code above.
+
+   \ This is a workaround for ATAPI CD-ROM drives such as the NEC MultiSpin
+   \ 2Vi, which do not have the drive-type in the right byte.
+   5 drive-type!
+[then]
+   true
+1A3F944 	 4 70 A0  1 
+;
+1A3F948 	58 46 A0  1 
+
+: waitfordrq  ( -- timeout? )
+1A3F94C 	 0 77 61 69 
+1A3F950 	74 66 6F 72 64 72 71 8A 
+1A3F958 	8C F8 A3  1 20 40 A0  1 
+   d# 100 0 do
+1A3F960 	58 41 A0  1 64  0  0  0 
+1A3F968 	70 6F A0  1 88 42 A0  1 
+1A3F970 	58  0  0  0 
+      r-csr@ dup h# 80 and  if	\ Ignore DRQ if BSY is set
+1A3F974 	48 EE A3  1 
+1A3F978 	40 49 A0  1 58 41 A0  1 
+1A3F980 	80  0  0  0 5C 44 A0  1 
+1A3F988 	DC 41 A0  1 10  0  0  0 
+         drop
+1A3F990 	30 49 A0  1 
+      else
+1A3F994 	C8 41 A0  1 
+1A3F998 	20  0  0  0 
+         8 and  if  false unloop exit  then		\ Exit if DRQ is set
+1A3F99C 	F0 6F A0  1 
+1A3F9A0 	5C 44 A0  1 DC 41 A0  1 
+1A3F9A8 	10  0  0  0 18 70 A0  1 
+1A3F9B0 	3C 42 A0  1 40 46 A0  1 
+      then
+      1 ms
+1A3F9B8 	80 6F A0  1 60 E0 A1  1 
+   loop
+1A3F9C0 	F8 41 A0  1 B0 FF FF FF 
+   true
+1A3F9C8 	 4 70 A0  1 
+;
+1A3F9CC 	58 46 A0  1 
+
+: atapi-reset  ( -- )
+1A3F9D0 	61 74 61 70 69 2D 72 65 
+1A3F9D8 	73 65 74 8B 5C F9 A3  1 
+1A3F9E0 	20 40 A0  1 
+   8 chip-base 7 + rb!      \ ATAPI soft reset
+1A3F9E4 	F0 6F A0  1 
+1A3F9E8 	10 EA A3  1 E0 6F A0  1 
+1A3F9F0 	 4 45 A0  1 1C B2 A2  1 
+   d# 100 0  do
+1A3F9F8 	58 41 A0  1 64  0  0  0 
+1A3FA00 	70 6F A0  1 88 42 A0  1 
+1A3FA08 	48  0  0  0 
+      r-csr@ dup 0= swap 1 and 1 = or  if  leave  then
+1A3FA0C 	48 EE A3  1 
+1A3FA10 	40 49 A0  1 24 47 A0  1 
+1A3FA18 	68 49 A0  1 80 6F A0  1 
+1A3FA20 	5C 44 A0  1 80 6F A0  1 
+1A3FA28 	24 48 A0  1 70 44 A0  1 
+1A3FA30 	DC 41 A0  1  8  0  0  0 
+1A3FA38 	18 43 A0  1 
+      d# 16 ms
+1A3FA3C 	58 41 A0  1 
+1A3FA40 	10  0  0  0 60 E0 A1  1 
+   loop
+1A3FA48 	F8 41 A0  1 C0 FF FF FF 
+;
+1A3FA50 	58 46 A0  1 
+
+: flushdata  ( -- )
+1A3FA54 	 0  0 66 6C 
+1A3FA58 	75 73 68 64 61 74 61 89 
+1A3FA60 	E0 F9 A3  1 20 40 A0  1 
+   h# 10000 0  do
+1A3FA68 	58 41 A0  1  0  0  1  0 
+1A3FA70 	70 6F A0  1 88 42 A0  1 
+1A3FA78 	34  0  0  0 
+      r-csr@ 8 and 0=  if  unloop exit  then  r-data@ drop
+1A3FA7C 	48 EE A3  1 
+1A3FA80 	F0 6F A0  1 5C 44 A0  1 
+1A3FA88 	24 47 A0  1 DC 41 A0  1 
+1A3FA90 	 C  0  0  0 3C 42 A0  1 
+1A3FA98 	40 46 A0  1 64 ED A3  1 
+1A3FAA0 	30 49 A0  1 
+   loop
+1A3FAA4 	F8 41 A0  1 
+1A3FAA8 	D4 FF FF FF 
+
+   \ If the sucker won't stop sending us data, bonk him on the head
+   atapi-reset atapi-get-drive-parms
+1A3FAAC 	E0 F9 A3  1 
+1A3FAB0 	8C F8 A3  1 
+;
+1A3FAB4 	58 46 A0  1 
+
+: r-feature!  ( feature -- )  1 reg!  ;
+1A3FAB8 	 0 72 2D 66 65 61 74 75 
+1A3FAC0 	72 65 21 8A 64 FA A3  1 
+1A3FAC8 	20 40 A0  1 80 6F A0  1 
+1A3FAD0 	44 EF A3  1 58 46 A0  1 
+
+: sendcmd  ( cmd len -- )  flushdata  0 r-feature!  r-cyl!  r-csr!  ;
+1A3FAD8 	73 65 6E 64 63 6D 64 87 
+1A3FAE0 	C8 FA A3  1 20 40 A0  1 
+1A3FAE8 	64 FA A3  1 70 6F A0  1 
+1A3FAF0 	C8 FA A3  1 E8 EF A3  1 
+1A3FAF8 	4C F0 A3  1 58 46 A0  1 
+
+d# 12 constant pkt-len
+1A3FB00 	70 6B 74 2D 6C 65 6E 87 
+1A3FB08 	E4 FA A3  1 68 40 A0  1 
+1A3FB10 	 C  0  0  0 
+
+create pkt-buf pkt-len allot
+1A3FB14 	70 6B 74 2D 
+1A3FB18 	62 75 66 87  C FB A3  1 
+1A3FB20 	30 40 A0  1  0  0  0  0 
+1A3FB28 	 0  0  0  0  0  0  0  0 
+
+: +c!  ( n addr -- addr' )  tuck c! 1+  ;
+1A3FB30 	2B 63 21 83 20 FB A3  1 
+1A3FB38 	20 40 A0  1 E8 46 A0  1 
+1A3FB40 	B8 4D A0  1 30 4B A0  1 
+1A3FB48 	58 46 A0  1 
+: 2c!  ( n addr -- )  >r lbsplit 2drop  r> +c!         c!  ;
+1A3FB4C 	32 63 21 83 
+1A3FB50 	38 FB A3  1 20 40 A0  1 
+1A3FB58 	BC 45 A0  1 B4 FB A0  1 
+1A3FB60 	AC 49 A0  1 D0 45 A0  1 
+1A3FB68 	38 FB A3  1 B8 4D A0  1 
+1A3FB70 	58 46 A0  1 
+: 4c!  ( n addr -- )  >r lbsplit        r> +c! +c! +c! c!  ;
+1A3FB74 	34 63 21 83 
+1A3FB78 	54 FB A3  1 20 40 A0  1 
+1A3FB80 	BC 45 A0  1 B4 FB A0  1 
+1A3FB88 	D0 45 A0  1 38 FB A3  1 
+1A3FB90 	38 FB A3  1 38 FB A3  1 
+1A3FB98 	B8 4D A0  1 58 46 A0  1 
+
+: >pkt-buf  ( byte offset -- )  pkt-buf + c! ;
+1A3FBA0 	 0  0  0 3E 70 6B 74 2D 
+1A3FBA8 	62 75 66 88 7C FB A3  1 
+1A3FBB0 	20 40 A0  1 20 FB A3  1 
+1A3FBB8 	 4 45 A0  1 B8 4D A0  1 
+1A3FBC0 	58 46 A0  1 
+
+defer pio-rwblock  ' noop to pio-rwblock
+1A3FBC4 	70 69 6F 2D 
+1A3FBC8 	72 77 62 6C 6F 63 6B 8B 
+1A3FBD0 	B0 FB A3  1 5C 40 A0  1 
+1A3FBD8 	48  D  0  0 
+: sendpkt  ( addr len pkt-addr -- count )
+1A3FBDC 	73 65 6E 64 
+1A3FBE0 	70 6B 74 87 D4 FB A3  1 
+1A3FBE8 	20 40 A0  1 
+   over h# a0 swap sendcmd                         ( addr len pkt-addr )
+1A3FBEC 	54 49 A0  1 
+1A3FBF0 	58 41 A0  1 A0  0  0  0 
+1A3FBF8 	68 49 A0  1 E4 FA A3  1 
+   wait-until-drq  pkt-len chip-base io-blk-w!     ( addr len )
+1A3FC00 	50 F1 A3  1  C FB A3  1 
+1A3FC08 	10 EA A3  1 6C F0 A3  1 
+   waitonbusy                                      ( addr len )
+1A3FC10 	 8 F8 A3  1 
+   waitfordrq  if		\ Timeout          ( addr len )
+1A3FC14 	5C F9 A3  1 
+1A3FC18 	DC 41 A0  1 20  0  0  0 
+      h# 100 ms  2drop 0                           ( 0 )
+1A3FC20 	58 41 A0  1  0  1  0  0 
+1A3FC28 	60 E0 A1  1 AC 49 A0  1 
+1A3FC30 	70 6F A0  1 
+   else				\ No timeout       ( addr len )
+1A3FC34 	C8 41 A0  1 
+1A3FC38 	14  0  0  0 
+      tuck  pio-rwblock drop   waitonbusy           ( len )
+1A3FC3C 	E8 46 A0  1 
+1A3FC40 	D4 FB A3  1 30 49 A0  1 
+1A3FC48 	 8 F8 A3  1 
+   then
+;
+1A3FC4C 	58 46 A0  1 
+
+: clear-pkt-buf  ( -- )  pkt-buf pkt-len erase  ;
+1A3FC50 	 0  0 63 6C 65 61 72 2D 
+1A3FC58 	70 6B 74 2D 62 75 66 8D 
+1A3FC60 	E8 FB A3  1 20 40 A0  1 
+1A3FC68 	20 FB A3  1  C FB A3  1 
+1A3FC70 	F0 72 A0  1 58 46 A0  1 
+
+0 instance value clen
+1A3FC78 	 0  0  0 63 6C 65 6E 84 
+1A3FC80 	64 FC A3  1 C0 FE A1  1 
+1A3FC88 	28  0  0  0 
+0 instance value cbuf
+1A3FC8C 	 0  0  0 63 
+1A3FC90 	62 75 66 84 84 FC A3  1 
+1A3FC98 	C0 FE A1  1 2C  0  0  0 
+
+: retry-command  ( addr len -- false | count true )
+1A3FCA0 	 0  0 72 65 74 72 79 2D 
+1A3FCA8 	63 6F 6D 6D 61 6E 64 8D 
+1A3FCB0 	98 FC A3  1 20 40 A0  1 
+   to clen to cbuf
+1A3FCB8 	48 B8 A1  1 84 FC A3  1 
+1A3FCC0 	48 B8 A1  1 98 FC A3  1 
+   h# 10 0  do
+1A3FCC8 	58 41 A0  1 10  0  0  0 
+1A3FCD0 	70 6F A0  1 88 42 A0  1 
+1A3FCD8 	44  0  0  0 
+      cbuf clen pkt-buf sendpkt
+1A3FCDC 	98 FC A3  1 
+1A3FCE0 	84 FC A3  1 20 FB A3  1 
+1A3FCE8 	E8 FB A3  1 
+      r-csr@ 1 and 0=  if  unloop true exit  then
+1A3FCEC 	48 EE A3  1 
+1A3FCF0 	80 6F A0  1 5C 44 A0  1 
+1A3FCF8 	24 47 A0  1 DC 41 A0  1 
+1A3FD00 	10  0  0  0 3C 42 A0  1 
+1A3FD08 	 4 70 A0  1 40 46 A0  1 
+      drop
+1A3FD10 	30 49 A0  1 
+   loop
+1A3FD14 	F8 41 A0  1 
+1A3FD18 	C4 FF FF FF 
+   false
+1A3FD1C 	18 70 A0  1 
+;
+1A3FD20 	58 46 A0  1 
+
+: atapi-read  ( addr block# #blocks -- #read )
+1A3FD24 	 0 61 74 61 
+1A3FD28 	70 69 2D 72 65 61 64 8A 
+1A3FD30 	B4 FC A3  1 20 40 A0  1 
+   ['] pio-rblock to pio-rwblock
+1A3FD38 	60 53 A0  1 4C F3 A3  1 
+1A3FD40 	98 40 A0  1 D4 FB A3  1 
+   >r  0 -rot  r>		( #read addr block# #blocks )
+1A3FD48 	BC 45 A0  1 70 6F A0  1 
+1A3FD50 	94 49 A0  1 D0 45 A0  1 
+   0 ?do			( #read addr block# )
+1A3FD58 	70 6F A0  1 50 42 A0  1 
+1A3FD60 	94  0  0  0 
+      2dup >r >r		( #read addr block# ) ( R: block# addr )
+1A3FD64 	C0 49 A0  1 
+1A3FD68 	BC 45 A0  1 BC 45 A0  1 
+      clear-pkt-buf		( #read addr block# ) ( R: block# addr )
+1A3FD70 	64 FC A3  1 
+      h# 28 0 >pkt-buf		\ read (10) command
+1A3FD74 	58 41 A0  1 
+1A3FD78 	28  0  0  0 70 6F A0  1 
+1A3FD80 	B0 FB A3  1 
+      1 pkt-buf 7 + 2c!		( #read addr block# ) ( R: block# addr )
+1A3FD84 	80 6F A0  1 
+1A3FD88 	20 FB A3  1 E0 6F A0  1 
+1A3FD90 	 4 45 A0  1 54 FB A3  1 
+      pkt-buf 2 + 4c!		( #read addr ) ( R: block# addr )
+1A3FD98 	20 FB A3  1 90 6F A0  1 
+1A3FDA0 	 4 45 A0  1 7C FB A3  1 
+      /block@ retry-command  0=  if  r> r> leave  then  ( #read count )
+1A3FDA8 	6C EB A3  1 B4 FC A3  1 
+1A3FDB0 	24 47 A0  1 DC 41 A0  1 
+1A3FDB8 	10  0  0  0 D0 45 A0  1 
+1A3FDC0 	D0 45 A0  1 18 43 A0  1 
+      swap 1+ swap		( #read' count )
+1A3FDC8 	68 49 A0  1 30 4B A0  1 
+1A3FDD0 	68 49 A0  1 
+      r> r> 1+			( #read' count addr block#' )
+1A3FDD4 	D0 45 A0  1 
+1A3FDD8 	D0 45 A0  1 30 4B A0  1 
+      -rot + swap		( #read' addr' block#' )
+1A3FDE0 	94 49 A0  1  4 45 A0  1 
+1A3FDE8 	68 49 A0  1 
+   loop  2drop			( #read )
+1A3FDEC 	F8 41 A0  1 
+1A3FDF0 	74 FF FF FF AC 49 A0  1 
+;
+1A3FDF8 	58 46 A0  1 
+
+: atapi-write  ( addr block# #blocks -- #write )
+1A3FDFC 	61 74 61 70 
+1A3FE00 	69 2D 77 72 69 74 65 8B 
+1A3FE08 	34 FD A3  1 20 40 A0  1 
+   ['] pio-wblock to pio-rwblock
+1A3FE10 	60 53 A0  1 3C F4 A3  1 
+1A3FE18 	98 40 A0  1 D4 FB A3  1 
+   >r  0 -rot  r>		( #write addr block# #blocks )
+1A3FE20 	BC 45 A0  1 70 6F A0  1 
+1A3FE28 	94 49 A0  1 D0 45 A0  1 
+   0 ?do			( #write addr block# )
+1A3FE30 	70 6F A0  1 50 42 A0  1 
+1A3FE38 	94  0  0  0 
+      2dup >r >r		( #write addr block# ) ( R: block# addr )
+1A3FE3C 	C0 49 A0  1 
+1A3FE40 	BC 45 A0  1 BC 45 A0  1 
+      clear-pkt-buf		( #write addr block# ) ( R: block# addr )
+1A3FE48 	64 FC A3  1 
+      h# 2a 0 >pkt-buf		\ write (10) command
+1A3FE4C 	58 41 A0  1 
+1A3FE50 	2A  0  0  0 70 6F A0  1 
+1A3FE58 	B0 FB A3  1 
+      1 pkt-buf 7 + 2c!		( #write addr block# ) ( R: block# addr )
+1A3FE5C 	80 6F A0  1 
+1A3FE60 	20 FB A3  1 E0 6F A0  1 
+1A3FE68 	 4 45 A0  1 54 FB A3  1 
+      pkt-buf 2 + 4c!		( #write addr ) ( R: block# addr )
+1A3FE70 	20 FB A3  1 90 6F A0  1 
+1A3FE78 	 4 45 A0  1 7C FB A3  1 
+      /block@ retry-command  0=  if  r> r> leave  then  ( #write count )
+1A3FE80 	6C EB A3  1 B4 FC A3  1 
+1A3FE88 	24 47 A0  1 DC 41 A0  1 
+1A3FE90 	10  0  0  0 D0 45 A0  1 
+1A3FE98 	D0 45 A0  1 18 43 A0  1 
+      swap 1+ swap		( #write' count )
+1A3FEA0 	68 49 A0  1 30 4B A0  1 
+1A3FEA8 	68 49 A0  1 
+      r> r> 1+			( #write' count addr block#' )
+1A3FEAC 	D0 45 A0  1 
+1A3FEB0 	D0 45 A0  1 30 4B A0  1 
+      -rot + swap		( #write' addr' block#' )
+1A3FEB8 	94 49 A0  1  4 45 A0  1 
+1A3FEC0 	68 49 A0  1 
+   loop  2drop			( #write )
+1A3FEC4 	F8 41 A0  1 
+1A3FEC8 	74 FF FF FF AC 49 A0  1 
+;
+1A3FED0 	58 46 A0  1 
+
+: be-l@  ( adr -- l )
+1A3FED4 	 0  0 62 65 
+1A3FED8 	2D 6C 40 85  C FE A3  1 
+1A3FEE0 	20 40 A0  1 
+   >r  r@ 3 + c@  r@ 2+ c@  r@ 1+ c@  r> c@  bljoin
+1A3FEE4 	BC 45 A0  1 
+1A3FEE8 	E4 45 A0  1 A0 6F A0  1 
+1A3FEF0 	 4 45 A0  1 C4 4C A0  1 
+1A3FEF8 	E4 45 A0  1 40 4B A0  1 
+1A3FF00 	C4 4C A0  1 E4 45 A0  1 
+1A3FF08 	30 4B A0  1 C4 4C A0  1 
+1A3FF10 	D0 45 A0  1 C4 4C A0  1 
+1A3FF18 	DC FB A0  1 
+;
+1A3FF1C 	58 46 A0  1 
+
+: atapi-capacity  ( -- n )
+1A3FF20 	 0 61 74 61 70 69 2D 63 
+1A3FF28 	61 70 61 63 69 74 79 8E 
+1A3FF30 	E0 FE A3  1 20 40 A0  1 
+   ['] pio-rblock to pio-rwblock
+1A3FF38 	60 53 A0  1 4C F3 A3  1 
+1A3FF40 	98 40 A0  1 D4 FB A3  1 
+   clear-pkt-buf
+1A3FF48 	64 FC A3  1 
+   h# 25 0 >pkt-buf
+1A3FF4C 	58 41 A0  1 
+1A3FF50 	25  0  0  0 70 6F A0  1 
+1A3FF58 	B0 FB A3  1 
+   scratchbuf 8 retry-command  if  drop scratchbuf be-l@  else  0  then
+1A3FF5C 	F4 F5 A3  1 
+1A3FF60 	F0 6F A0  1 B4 FC A3  1 
+1A3FF68 	DC 41 A0  1 18  0  0  0 
+1A3FF70 	30 49 A0  1 F4 F5 A3  1 
+1A3FF78 	E0 FE A3  1 C8 41 A0  1 
+1A3FF80 	 8  0  0  0 70 6F A0  1 
+;
+1A3FF88 	58 46 A0  1 

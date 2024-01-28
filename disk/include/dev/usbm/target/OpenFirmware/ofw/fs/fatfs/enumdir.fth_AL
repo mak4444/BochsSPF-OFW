@@ -1,0 +1,107 @@
+purpose: Enumerate directory entries
+
+\ mmo private
+
+\ Convert DOS file attributes to the firmware encoding
+\ see showdir.fth for a description of the firmware encoding
+: >canonical-attrs  ( dos-attrs -- canon-attrs )
+1A302AC 	 0  0  0 3E 
+1A302B0 	63 61 6E 6F 6E 69 63 61 
+1A302B8 	6C 2D 61 74 74 72 73 90 
+1A302C0 	EC  1 A3  1 20 40 A0  1 
+   >r
+1A302C8 	BC 45 A0  1 
+   \ Access permissions
+   r@     1 and  if  o# 666  else  o# 777  then \ rwxrwxrwx
+1A302CC 	E4 45 A0  1 
+1A302D0 	80 6F A0  1 5C 44 A0  1 
+1A302D8 	DC 41 A0  1 14  0  0  0 
+1A302E0 	58 41 A0  1 B6  1  0  0 
+1A302E8 	C8 41 A0  1  C  0  0  0 
+1A302F0 	58 41 A0  1 FF  1  0  0 
+
+   \ Bits that are independent of one another
+   r@     2 and  if  h# 10000 or  then		\ hidden
+1A302F8 	E4 45 A0  1 90 6F A0  1 
+1A30300 	5C 44 A0  1 DC 41 A0  1 
+1A30308 	10  0  0  0 58 41 A0  1 
+1A30310 	 0  0  1  0 70 44 A0  1 
+   r@     4 and  if  h# 20000 or  then		\ system
+1A30318 	E4 45 A0  1 B0 6F A0  1 
+1A30320 	5C 44 A0  1 DC 41 A0  1 
+1A30328 	10  0  0  0 58 41 A0  1 
+1A30330 	 0  0  2  0 70 44 A0  1 
+   r@ h# 20 and  if  h# 40000 or  then		\ archive
+1A30338 	E4 45 A0  1 58 41 A0  1 
+1A30340 	20  0  0  0 5C 44 A0  1 
+1A30348 	DC 41 A0  1 10  0  0  0 
+1A30350 	58 41 A0  1  0  0  4  0 
+1A30358 	70 44 A0  1 
+
+   \ Mutually-exclusive file types
+   r@     8 and  if  h#  3000 or  then		\ Volume label
+1A3035C 	E4 45 A0  1 
+1A30360 	F0 6F A0  1 5C 44 A0  1 
+1A30368 	DC 41 A0  1 10  0  0  0 
+1A30370 	58 41 A0  1  0 30  0  0 
+1A30378 	70 44 A0  1 
+   r> h# 10 and  if  h#  4000 or  then		\ Subdirectory
+1A3037C 	D0 45 A0  1 
+1A30380 	58 41 A0  1 10  0  0  0 
+1A30388 	5C 44 A0  1 DC 41 A0  1 
+1A30390 	10  0  0  0 58 41 A0  1 
+1A30398 	 0 40  0  0 70 44 A0  1 
+   dup h# f000 and  0=  if  h# 8000 or  then	\ Ordinary file	
+1A303A0 	40 49 A0  1 58 41 A0  1 
+1A303A8 	 0 F0  0  0 5C 44 A0  1 
+1A303B0 	24 47 A0  1 DC 41 A0  1 
+1A303B8 	10  0  0  0 58 41 A0  1 
+1A303C0 	 0 80  0  0 70 44 A0  1 
+;
+1A303C8 	58 46 A0  1 
+
+\ mmo public
+: file-info  ( -- s m h d m y len attributes name$ )
+1A303CC 	 0  0 66 69 
+1A303D0 	6C 65 2D 69 6E 66 6F 89 
+1A303D8 	C4  2 A3  1 20 40 A0  1 
+   file-time  file-date  file-size  file-attributes >canonical-attrs
+1A303E0 	24 C2 A2  1  0 C2 A2  1 
+1A303E8 	E0 C1 A2  1 4C C2 A2  1 
+1A303F0 	C4  2 A3  1 
+   file-name
+1A303F4 	7C C1 A2  1 
+;
+1A303F8 	58 46 A0  1 
+
+: next-file-info  ( id -- false | id' s m h d m y len attributes name$ true )
+1A303FC 	 0 6E 65 78 
+1A30400 	74 2D 66 69 6C 65 2D 69 
+1A30408 	6E 66 6F 8E DC  3 A3  1 
+1A30410 	20 40 A0  1 
+   dup 0=  if  0 0 0 set-search  then  ( id )
+1A30414 	40 49 A0  1 
+1A30418 	24 47 A0  1 DC 41 A0  1 
+1A30420 	14  0  0  0 70 6F A0  1 
+1A30428 	70 6F A0  1 70 6F A0  1 
+1A30430 	98 E2 A2  1 
+   next-file  if                       ( id )
+1A30434 	4C E1 A2  1 
+1A30438 	DC 41 A0  1 18  0  0  0 
+      1+  file-info  true
+1A30440 	30 4B A0  1 DC  3 A3  1 
+1A30448 	 4 70 A0  1 
+   else
+1A3044C 	C8 41 A0  1 
+1A30450 	 C  0  0  0 
+      drop false
+1A30454 	30 49 A0  1 
+1A30458 	18 70 A0  1 
+   then
+;
+1A3045C 	58 46 A0  1 
+: $create  ( adr len -- error? )  h# 20 dos-create  ;  \ Set archive bit
+1A30460 	24 63 72 65 61 74 65 87 
+1A30468 	10  4 A3  1 20 40 A0  1 
+1A30470 	58 41 A0  1 20  0  0  0 
+1A30478 	10 F5 A2  1 58 46 A0  1 

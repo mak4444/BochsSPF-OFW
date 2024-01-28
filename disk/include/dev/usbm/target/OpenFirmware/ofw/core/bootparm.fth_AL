@@ -1,0 +1,4 @@
+\needs load-base 0  value load-base	\ The default value can be changed later
+1A2A3B8 	 0  0 6C 6F 61 64 2D 62 
+1A2A3C0 	61 73 65 89 80 A3 A2  1 
+1A2A3C8 	50 40 A0  1 80  8  0  0 

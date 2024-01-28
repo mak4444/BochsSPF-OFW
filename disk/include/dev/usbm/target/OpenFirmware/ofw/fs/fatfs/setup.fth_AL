@@ -1,0 +1,97 @@
+purpose: Setup for FAT file system
+
+support-package: fat-file-system
+1A2B2E4 	E0 B6 A0  1 
+1A2B2E8 	D8  8  0  0 C8 50 A2  1 
+1A2B2F0 	E0 B6 A0  1 F8  8  0  0 
+1A2B2F8 	66 61 74 2D 66 69 6C 65 
+1A2B300 	2D 73 79 73 74 65 6D  0 
+1A2B308 	 0  0  0 6E 61 6D 65 84 
+1A2B310 	 0  0 A0  1 BC 13 A2  1 
+1A2B318 	20  0  0  0 10  0  0  0 
+
+0 0  " support" property
+1A2B320 	73 75 70 70 6F 72 74 87 
+1A2B328 	14 B3 A2  1 BC 13 A2  1 
+1A2B330 	30 B3 A2  1  0  0  0  0 
+
+transient
+\ mmo : private  headerless  ;
+\ mmo : internal headerless  ;
+\ mmo : public   headers     ;
+resident
+
+\ mmo private
+/fd instance buffer: dos-fd		\ Forthmacs file descriptor
+1A2B338 	 0 64 6F 73 2D 66 64 86 
+1A2B340 	 0  0 A0  1 4C  0 A2  1 
+1A2B348 	4C FF FF FF 
+
+: 1+!  1 swap +!  ;
+1A2B34C 	31 2B 21 83 
+1A2B350 	44 B3 A2  1 20 40 A0  1 
+1A2B358 	80 6F A0  1 68 49 A0  1 
+1A2B360 	 C 4C A0  1 58 46 A0  1 
+
+create "cao ,"  Can't open "
+1A2B368 	 0  0  0 22 63 61 6F 84 
+1A2B370 	54 B3 A2  1 30 40 A0  1 
+1A2B378 	 C 20 43 61 6E 27 74 20 
+1A2B380 	6F 70 65 6E 20  0  0  0 
+create "cac ,"  Can't create "
+1A2B388 	 0  0  0 22 63 61 63 84 
+1A2B390 	74 B3 A2  1 30 40 A0  1 
+1A2B398 	 E 20 43 61 6E 27 74 20 
+1A2B3A0 	63 72 65 61 74 65 20  0 
+create "car ,"  Can't read "
+1A2B3A8 	 0  0  0 22 63 61 72 84 
+1A2B3B0 	94 B3 A2  1 30 40 A0  1 
+1A2B3B8 	 C 20 43 61 6E 27 74 20 
+1A2B3C0 	72 65 61 64 20  0  0  0 
+create "caw ,"  Can't write "
+1A2B3C8 	 0  0  0 22 63 61 77 84 
+1A2B3D0 	B4 B3 A2  1 30 40 A0  1 
+1A2B3D8 	 D 20 43 61 6E 27 74 20 
+1A2B3E0 	77 72 69 74 65 20  0  0 
+create "cad ,"  Can't delete "
+1A2B3E8 	 0  0  0 22 63 61 64 84 
+1A2B3F0 	D4 B3 A2  1 30 40 A0  1 
+1A2B3F8 	 E 20 43 61 6E 27 74 20 
+1A2B400 	64 65 6C 65 74 65 20  0 
+create "cof ,"  Couldn't find "
+1A2B408 	 0  0  0 22 63 6F 66 84 
+1A2B410 	F4 B3 A2  1 30 40 A0  1 
+1A2B418 	 F 20 43 6F 75 6C 64 6E 
+1A2B420 	27 74 20 66 69 6E 64 20 
+1A2B428 	 0  0  0  0 
+create "dir ," directory "
+1A2B42C 	 0  0  0 22 
+1A2B430 	64 69 72 84 14 B4 A2  1 
+1A2B438 	30 40 A0  1  A 64 69 72 
+1A2B440 	65 63 74 6F 72 79 20  0 
+
+[ifdef] dos-ui
+alias \40 \
+alias \20 \
+
+\ Display management
+: (dark ;  : (light ;
+
+
+\ For floppy formatting
+
+: 2ed-den ;	\ Select 2.88 MB density for formatting
+: 2hd-den ;	\ Select 1.44 MB density for formatting
+: init-floppy  ;
+: track-format  ( track# -- )  ." Trying to format track " . (cr  ;
+[then]
+
+alias dos-lock   noop
+1A2B448 	 0  0  0 64 6F 73 2D 6C 
+1A2B450 	6F 63 6B A8 38 B4 A2  1 
+1A2B458 	64 4F A0  1 
+alias dos-unlock noop
+1A2B45C 	 0 64 6F 73 
+1A2B460 	2D 75 6E 6C 6F 63 6B AA 
+1A2B468 	58 B4 A2  1 64 4F A0  1 
+\

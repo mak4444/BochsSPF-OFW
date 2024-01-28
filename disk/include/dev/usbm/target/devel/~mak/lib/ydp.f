@@ -1,0 +1,37 @@
+\ REQUIRE REPLACE-WORD lib/ext/patch.f
+
+VARIABLE YDP
+VARIABLE YDP0
+0 VALUE YDP_FL
+
+: YDP><DP
+  YDP @ DP @
+  YDP ! DP ! ;
+
+: ?YDP><DP
+ YDP_FL IS-TEMP-WL 0= AND
+ IF  YDP><DP
+ THEN ;
+
+: YSHEADER ( addr u -- )
+  ?YDP><DP
+  HERE 0 , ( cfa )
+  DUP LAST-CFA !
+  0 C,     ( flags )
+  -ROT WARNING @
+  IF 2DUP GET-CURRENT SEARCH-WORDLIST
+    IF DROP 2DUP TYPE ."  isn't unique (" SOURCE-NAME TYPE ." )" CR THEN
+  THEN
+  CURRENT @ +SWORD
+  ?YDP><DP
+  ALIGN
+  HERE SWAP !
+;
+
+
+
+0x100000 ALLOCATE THROW DUP YDP0  ! YDP !
+
+
+' YSHEADER TO SHEADER
+

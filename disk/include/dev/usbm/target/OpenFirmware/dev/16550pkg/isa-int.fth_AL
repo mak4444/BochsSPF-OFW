@@ -1,0 +1,32 @@
+purpose: Extract actual interrupt value from property
+
+hex
+external
+: irq#  ( -- irq )
+1A3B8F4 	 0  0  0 69 
+1A3B8F8 	72 71 23 84 6C B8 A3  1 
+1A3B900 	20 40 A0  1 
+   " interrupts" get-my-property  if
+1A3B904 	9C 53 A0  1 
+1A3B908 	 A 69 6E 74 65 72 72 75 
+1A3B910 	70 74 73  0 1C 34 A2  1 
+1A3B918 	DC 41 A0  1 34  0  0  0 
+      ." Missing interrupts property" cr
+1A3B920 	20 7C A0  1 1B 4D 69 73 
+1A3B928 	73 69 6E 67 20 69 6E 74 
+1A3B930 	65 72 72 75 70 74 73 20 
+1A3B938 	70 72 6F 70 65 72 74 79 
+1A3B940 	 0  0  0  0 80 6D A0  1 
+      0 exit
+1A3B948 	70 6F A0  1 40 46 A0  1 
+   then                ( adr len )
+   get-encoded-int     ( irq )
+1A3B950 	A0 F7 A1  1 
+;
+1A3B954 	58 46 A0  1 
+headers
+end-package
+1A3B958 	F8  2  0  0  0  0  0  0 
+1A3B960 	 0  0  0  0  1  0  0  0 
+1A3B968 	 0  0  0  0  0  0  0  0 
+1A3B970 	 0  0  0  0  0  0  0  0 

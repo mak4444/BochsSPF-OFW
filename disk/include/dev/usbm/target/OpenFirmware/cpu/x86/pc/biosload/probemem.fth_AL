@@ -1,0 +1,103 @@
+purpose: Create memory node properties and lists
+
+dev /memory
+
+: cmos@   ( offset -- byte )  h# 70 pc!  h# 71 pc@  ;
+1A335D4 	 0  0 63 6D 
+1A335D8 	6F 73 40 85  0 32 A3  1 
+1A335E0 	20 40 A0  1 58 41 A0  1 
+1A335E8 	70  0  0  0 E8 81 A2  1 
+1A335F0 	58 41 A0  1 71  0  0  0 
+1A335F8 	AC 81 A2  1 58 46 A0  1 
+: /ram  ( -- #bytes )
+1A33600 	 0  0  0 2F 72 61 6D 84 
+1A33608 	E0 35 A3  1 20 40 A0  1 
+   mem-info-pa la1+ l@ 
+1A33610 	FC 24 A3  1 B4 50 A0  1 
+1A33618 	6C 4C A0  1 
+
+\   \ The BIOS puts the number of kilobytes of extended memory in CMOS memory
+\   \ locations 30,31. The total memory is that plus the low meg.
+\   h# 30 cmos@  h# 31 cmos@  bwjoin    ( #kbytes-extended )
+\   d# 1024 +                           ( #kbytes-total )
+\   d# 1024 *                           ( #bytes )
+;
+1A3361C 	58 46 A0  1 
+
+: release-range  ( start-adr end-adr -- )  over - release  ;
+1A33620 	 0  0 72 65 6C 65 61 73 
+1A33628 	65 2D 72 61 6E 67 65 8D 
+1A33630 	 C 36 A3  1 20 40 A0  1 
+1A33638 	54 49 A0  1 18 45 A0  1 
+1A33640 	5C 31 A3  1 58 46 A0  1 
+
+: probe  ( -- )
+1A33648 	 0  0 70 72 6F 62 65 85 
+1A33650 	34 36 A3  1 20 40 A0  1 
+   0 /ram  reg   \ Report extant memory
+1A33658 	70 6F A0  1  C 36 A3  1 
+1A33660 	C8 B2 A2  1 
+
+   \ Put h# 10.0000-1f.ffff and 28.0000-memsize in pool,
+   \ reserving 0..10.0000 for the firmware
+   \ and 20.0000-27.ffff for the "flash"
+
+\   h#  0.0000  h# 02.0000  release   \ A little bit of DMA space, we hope
+\   h# 10.0000  h# 0f.ffff  release
+\   h# 28.0000  h# 80.0000 h# 28.0000 -  release
+
+\ Release some of the first meg, between the page tables and the DOS hole,
+\ for use as DMA memory.
+   mem-info-pa 2 la+ l@   h# a.0000  release-range  \ Below DOS hole
+1A33664 	FC 24 A3  1 
+1A33668 	90 6F A0  1 30 50 A0  1 
+1A33670 	6C 4C A0  1 58 41 A0  1 
+1A33678 	 0  0  A  0 34 36 A3  1 
+
+[ifdef] virtual-mode
+   h# 10.0000  dropin-base over -  release
+   dropin-base dropin-size +  mem-info-pa la1+ l@  over -  release
+
+[else]
+   fw-pa h# 10.0000 u>  if
+1A33680 	28 24 A3  1 58 41 A0  1 
+1A33688 	 0  0 10  0 64 48 A0  1 
+1A33690 	DC 41 A0  1 40  0  0  0 
+      h# 10.0000   fw-pa over -  release
+1A33698 	58 41 A0  1  0  0 10  0 
+1A336A0 	28 24 A3  1 54 49 A0  1 
+1A336A8 	18 45 A0  1 5C 31 A3  1 
+      fw-pa /fw-ram +  heap-base heap-size +  umax  /ram  release
+1A336B0 	28 24 A3  1 3C 24 A3  1 
+1A336B8 	 4 45 A0  1 54 24 A3  1 
+1A336C0 	6C 24 A3  1  4 45 A0  1 
+1A336C8 	C8 4A A0  1  C 36 A3  1 
+1A336D0 	5C 31 A3  1 
+   then
+
+\   dropin-base /ram u<  if
+\      dropin-base dropin-size +  /ram over -  release
+\   then
+[then]
+;
+1A336D4 	58 46 A0  1 
+
+device-end
+
+also forth definitions
+stand-init: Probing memory
+1A336D8 	 0 73 74 61 6E 64 2D 69 
+1A336E0 	6E 69 74 8A A4 32 A3  1 
+1A336E8 	20 40 A0  1 30 32 A3  1 
+1A336F0 	9C 53 A0  1  E 50 72 6F 
+1A336F8 	62 69 6E 67 20 6D 65 6D 
+1A33700 	6F 72 79  0 80 6D A0  1 
+1A33708 	 4 6C A0  1 
+   " probe" memory-node @ $call-method  
+1A3370C 	9C 53 A0  1 
+1A33710 	 5 70 72 6F 62 65  0  0 
+1A33718 	58 7E A2  1 5C 4C A0  1 
+1A33720 	B4 31 A2  1 
+;
+1A33724 	58 46 A0  1 
+previous definitions

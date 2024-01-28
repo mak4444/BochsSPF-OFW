@@ -1,0 +1,106 @@
+purpose: Internet checksum (one's complement of 16-bit words) primitive
+
+\ The complete checksum calculation consists of:
+\ a) add together all the 16-bit big-endian words in the buffer, with
+\    wrap-around carry (i.e. a carry out of the high bit is added back
+\    in at the low bit).
+\ b) Take the one's complement of the result, preserving only the
+\    least-significant 16 bits.
+\ c) If the result is 0, change it to ffff.
+
+\ The process of computing a checksum for UDP packets involves the
+\ creation of a "pseudo header" containing selected information
+\ from the IP header, and checksumming the combination of that pseudo
+\ header and the UDP packet.  To do so, it is convenient to perform
+\ step (a) of the calculation separately on the two pieces (pseudo header
+\ and UDP packet).  Thus we factor the checksum calculation code with
+\ a separate primitive "(oc-checksum)" that performs step (a).  That
+\ primitive is worth optimizing; steps (b) and (c) are typically not.
+
+headerless
+\ This computation depends on some properties of one's complement
+\ summation.  The computation can be done in either endianness,
+\ so we do it in little-endian, swapping at the end, to save time
+\ on x86.  We also do it 32 bits at a time, folding the result
+\ at the end.
+
+code (oc-checksum)  ( accum adr len -- checksum )
+1A1DF11 	 0 28 6F 63 2D 63 68 
+1A1DF18 	65 63 6B 73 75 6D 29 8D 
+1A1DF20 	 8 DF A1  1 28 DF A1  1 
+   bx          pop     \ bx: len
+1A1DF28 	5B 
+   ax          pop     \ ax: adr
+1A1DF29 	58 
+   dx          pop     \ dx: accum
+1A1DF2A 	5A 
+   si          push    \ save si
+1A1DF2B 	56 
+   ax   si     mov     \ si: adr  ax: dead
+1A1DF2C 	8B F0 
+   bx   cx     mov     \ cx:len
+1A1DF2E 	8B CB 
+   2 #  cx     shr     \ cx:#shortwords
+1A1DF30 	C1 E9  2 
+
+   dl dh xchg  \ Byte swap into LE form
+1A1DF33 	86 F2 
+   clc         \ Initial carry is 0
+1A1DF35 	F8 
+   cx cx or  0<>  if
+1A1DF36 	 9 C9 
+1A1DF38 	74  5 
+      begin
+         ax lods
+1A1DF3A 	AD 
+         ax dx adc
+1A1DF3B 	11 C2 
+      loopa
+1A1DF3D 	E2 FB 
+   then
+
+   0 # dx adc   \ Final carry
+1A1DF3F 	83 
+1A1DF40 	D2  0 
+
+   2 # bx test  0<>  if      \ Leftover short?
+1A1DF42 	F7 C3  2  0  0  0 
+1A1DF48 	74  9 
+      ax ax xor
+1A1DF4A 	31 C0 
+      op: ax lods
+1A1DF4C 	66 AD 
+      ax dx add
+1A1DF4E 	 1 C2 
+      0 # dx adc  \ Possible carry
+1A1DF50 	83 D2  0 
+   then
+
+   1 # bx test  0<>  if      \ Leftover byte?
+1A1DF53 	F7 C3  1  0  0 
+1A1DF58 	 0 74  8 
+      ax ax xor
+1A1DF5B 	31 C0 
+      al lodsb
+1A1DF5D 	AC 
+      ax dx add
+1A1DF5E 	 1 C2 
+      0 # dx adc  \ Possible carry
+1A1DF60 	83 D2  0 
+   then
+
+   dx ax mov  d# 16 # ax shr  h# ffff # dx and  ax dx add  \ Add two halves
+1A1DF63 	8B C2 C1 E8 10 
+1A1DF68 	81 E2 FF FF  0  0  1 C2 
+   dx ax mov  d# 16 # ax shr  h# ffff # dx and  ax dx add  \ Again for carry
+1A1DF70 	8B C2 C1 E8 10 81 E2 FF 
+1A1DF78 	FF  0  0  1 C2 
+   dl dh xchg   \ Byte swap
+1A1DF7D 	86 F2 
+
+   si pop
+1A1DF7F 	5E 
+   dx push
+1A1DF80 	52 
+c;
+1A1DF81 	FF E7 

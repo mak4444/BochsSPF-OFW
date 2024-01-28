@@ -1,0 +1,107 @@
+h# 400 constant /regs
+1A4FF58 	 0  0 2F 72 65 67 73 85 
+1A4FF60 	BC FE A4  1 68 40 A0  1 
+1A4FF68 	 0  4  0  0 
+
+
+: my-b@  ( offset -- b )  my-space +  " config-b@" $call-parent  ;
+1A4FF6C 	 0  0 6D 79 
+1A4FF70 	2D 62 40 85 64 FF A4  1 
+1A4FF78 	20 40 A0  1 AC  3 A2  1 
+1A4FF80 	 4 45 A0  1 9C 53 A0  1 
+1A4FF88 	 9 63 6F 6E 66 69 67 2D 
+1A4FF90 	62 40  0  0 DC 31 A2  1 
+1A4FF98 	58 46 A0  1 
+: my-b!  ( b offset -- )  my-space +  " config-b!" $call-parent  ;
+1A4FF9C 	 0  0 6D 79 
+1A4FFA0 	2D 62 21 85 78 FF A4  1 
+1A4FFA8 	20 40 A0  1 AC  3 A2  1 
+1A4FFB0 	 4 45 A0  1 9C 53 A0  1 
+1A4FFB8 	 9 63 6F 6E 66 69 67 2D 
+1A4FFC0 	62 21  0  0 DC 31 A2  1 
+1A4FFC8 	58 46 A0  1 
+
+: my-w@  ( offset -- w )  my-space +  " config-w@" $call-parent  ;
+1A4FFCC 	 0  0 6D 79 
+1A4FFD0 	2D 77 40 85 A8 FF A4  1 
+1A4FFD8 	20 40 A0  1 AC  3 A2  1 
+1A4FFE0 	 4 45 A0  1 9C 53 A0  1 
+1A4FFE8 	 9 63 6F 6E 66 69 67 2D 
+1A4FFF0 	77 40  0  0 DC 31 A2  1 
+1A4FFF8 	58 46 A0  1 
+: my-w!  ( w offset -- )  my-space +  " config-w!" $call-parent  ;
+1A4FFFC 	 0  0 6D 79 
+1A50000 	2D 77 21 85 D8 FF A4  1 
+1A50008 	20 40 A0  1 AC  3 A2  1 
+1A50010 	 4 45 A0  1 9C 53 A0  1 
+1A50018 	 9 63 6F 6E 66 69 67 2D 
+1A50020 	77 21  0  0 DC 31 A2  1 
+1A50028 	58 46 A0  1 
+
+: my-l@  ( offset -- l )  my-space +  " config-l@" $call-parent  ;
+1A5002C 	 0  0 6D 79 
+1A50030 	2D 6C 40 85  8  0 A5  1 
+1A50038 	20 40 A0  1 AC  3 A2  1 
+1A50040 	 4 45 A0  1 9C 53 A0  1 
+1A50048 	 9 63 6F 6E 66 69 67 2D 
+1A50050 	6C 40  0  0 DC 31 A2  1 
+1A50058 	58 46 A0  1 
+: my-l!  ( l offset -- )  my-space +  " config-l!" $call-parent  ;
+1A5005C 	 0  0 6D 79 
+1A50060 	2D 6C 21 85 38  0 A5  1 
+1A50068 	20 40 A0  1 AC  3 A2  1 
+1A50070 	 4 45 A0  1 9C 53 A0  1 
+1A50078 	 9 63 6F 6E 66 69 67 2D 
+1A50080 	6C 21  0  0 DC 31 A2  1 
+1A50088 	58 46 A0  1 
+
+
+: my-map-in  ( len -- adr )
+1A5008C 	 0  0 6D 79 
+1A50090 	2D 6D 61 70 2D 69 6E 89 
+1A50098 	68  0 A5  1 20 40 A0  1 
+   >r
+1A500A0 	BC 45 A0  1 
+   0 0 my-space h# 01000020 +  r>  " map-in" $call-parent  ( adr )
+1A500A4 	70 6F A0  1 
+1A500A8 	70 6F A0  1 AC  3 A2  1 
+1A500B0 	58 41 A0  1 20  0  0  1 
+1A500B8 	 4 45 A0  1 D0 45 A0  1 
+1A500C0 	9C 53 A0  1  6 6D 61 70 
+1A500C8 	2D 69 6E  0 DC 31 A2  1 
+   4 my-w@  h# 17 or  4 my-w!                               ( adr )
+1A500D0 	B0 6F A0  1 D8 FF A4  1 
+1A500D8 	58 41 A0  1 17  0  0  0 
+1A500E0 	70 44 A0  1 B0 6F A0  1 
+1A500E8 	 8  0 A5  1 
+;
+1A500EC 	58 46 A0  1 
+: my-map-out  ( adr len -- )
+1A500F0 	 0 6D 79 2D 6D 61 70 2D 
+1A500F8 	6F 75 74 8A 9C  0 A5  1 
+1A50100 	20 40 A0  1 
+   4 my-w@  7 invert and  4 my-w!   ( adr len )
+1A50104 	B0 6F A0  1 
+1A50108 	D8 FF A4  1 E0 6F A0  1 
+1A50110 	30 45 A0  1 5C 44 A0  1 
+1A50118 	B0 6F A0  1  8  0 A5  1 
+   " map-out" $call-parent          ( )
+1A50120 	9C 53 A0  1  7 6D 61 70 
+1A50128 	2D 6F 75 74  0  0  0  0 
+1A50130 	DC 31 A2  1 
+;
+1A50134 	58 46 A0  1 
+
+: ?disable-smis  ( -- )
+1A50138 	 0  0 3F 64 69 73 61 62 
+1A50140 	6C 65 2D 73 6D 69 73 8D 
+1A50148 	 0  1 A5  1 20 40 A0  1 
+   0 my-l@ h# 27c88086 =  if   h# af00 h# 80 my-w!  then
+1A50150 	70 6F A0  1 38  0 A5  1 
+1A50158 	58 41 A0  1 86 80 C8 27 
+1A50160 	24 48 A0  1 DC 41 A0  1 
+1A50168 	18  0  0  0 58 41 A0  1 
+1A50170 	 0 AF  0  0 58 41 A0  1 
+1A50178 	80  0  0  0  8  0 A5  1 
+;
+1A50180 	58 46 A0  1 

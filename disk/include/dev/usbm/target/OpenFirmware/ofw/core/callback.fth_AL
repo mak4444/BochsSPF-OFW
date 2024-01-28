@@ -1,0 +1,136 @@
+
+headerless
+
+nuser vector     0 vector !
+1A2A3D0 	 0 76 65 63 74 6F 72 86 
+1A2A3D8 	C8 A3 A2  1 48 40 A0  1 
+1A2A3E0 	84  8  0  0 
+
+\ Max#rets (6) + max#args (20) + service + n_args + n_returns
+6 d# 20 + 3 + /n* buffer: cb-array
+1A2A3E4 	 0  0  0 63 
+1A2A3E8 	62 2D 61 72 72 61 79 88 
+1A2A3F0 	DC A3 A2  1 B4 A9 A0  1 
+1A2A3F8 	88  8  0  0 74  0  0  0 
+1A2A400 	D8 73 A2  1 
+
+\ #rets (1) + #args (1) + service + n_args + n_returns
+1 1 + 3 + /n* buffer: int-cb-array
+1A2A404 	 0  0  0 69 
+1A2A408 	6E 74 2D 63 62 2D 61 72 
+1A2A410 	72 61 79 8C F4 A3 A2  1 
+1A2A418 	B4 A9 A0  1 8C  8  0  0 
+1A2A420 	14  0  0  0 F4 A3 A2  1 
+
+/n negate constant -/n
+1A2A428 	2D 2F 6E 83 18 A4 A2  1 
+1A2A430 	68 40 A0  1 FC FF FF FF 
+: !+  ( n adr -- adr' )  tuck ! na1+  ;
+1A2A438 	 0 21 2B 82 30 A4 A2  1 
+1A2A440 	20 40 A0  1 E8 46 A0  1 
+1A2A448 	54 4D A0  1 CC 50 A0  1 
+1A2A450 	58 46 A0  1 
+
+headers
+
+\ This version is for the special case where there is one argument, we
+\ have already checked the vector, and we don't care about the result.
+\ It uses a private copy of the callback array so it can be used for
+\ timer tick callbacks, which may happen during the execution of other
+\ callbacks.
+: ($callback1)  ( arg1 adr len -- )
+1A2A454 	 0  0  0 28 
+1A2A458 	24 63 61 6C 6C 62 61 63 
+1A2A460 	6B 31 29 8C 40 A4 A2  1 
+1A2A468 	20 40 A0  1 
+   vector @  0=  if  3drop exit  then
+1A2A46C 	DC A3 A2  1 
+1A2A470 	5C 4C A0  1 24 47 A0  1 
+1A2A478 	DC 41 A0  1  C  0  0  0 
+1A2A480 	90 52 A0  1 40 46 A0  1 
+;
+1A2A488 	58 46 A0  1 
+
+
+
+: ($callback)
+1A2A48C 	28 24 63 61 
+1A2A490 	6C 6C 62 61 63 6B 29 8B 
+1A2A498 	68 A4 A2  1 20 40 A0  1 
+   ( argn .. arg1 nargs adr len -- [ retn .. ret2 Nreturns-1 ] ret1  )
+   vector @  0=  if
+1A2A4A0 	DC A3 A2  1 5C 4C A0  1 
+1A2A4A8 	24 47 A0  1 DC 41 A0  1 
+1A2A4B0 	28  0  0  0 
+      2drop  0  ?do  drop  loop  true exit
+1A2A4B4 	AC 49 A0  1 
+1A2A4B8 	70 6F A0  1 50 42 A0  1 
+1A2A4C0 	10  0  0  0 30 49 A0  1 
+1A2A4C8 	F8 41 A0  1 F8 FF FF FF 
+1A2A4D0 	 4 70 A0  1 40 46 A0  1 
+   then
+;
+1A2A4D8 	58 46 A0  1 
+: $callback  ( argn .. arg1 nargs adr len -- retn .. ret2 Nreturns-1 )
+1A2A4DC 	 0  0 24 63 
+1A2A4E0 	61 6C 6C 62 61 63 6B 89 
+1A2A4E8 	9C A4 A2  1 20 40 A0  1 
+   ($callback)  throw
+1A2A4F0 	9C A4 A2  1 74 7F A0  1 
+;
+1A2A4F8 	58 46 A0  1 
+: sync  ( -- )  0 " sync" $callback drop  ;
+1A2A4FC 	 0  0  0 73 
+1A2A500 	79 6E 63 84 EC A4 A2  1 
+1A2A508 	20 40 A0  1 70 6F A0  1 
+1A2A510 	9C 53 A0  1  4 73 79 6E 
+1A2A518 	63  0  0  0 EC A4 A2  1 
+1A2A520 	30 49 A0  1 58 46 A0  1 
+: callback  \ service-name  rest of line  ( -- )
+1A2A528 	 0  0  0 63 61 6C 6C 62 
+1A2A530 	61 63 6B 88  8 A5 A2  1 
+1A2A538 	20 40 A0  1 
+   parse-word  -1 parse  dup over + 0 swap c!  ( adr len arg-adr )
+1A2A53C 	34 93 A0  1 
+1A2A540 	58 41 A0  1 FF FF FF FF 
+1A2A548 	E4 85 A0  1 40 49 A0  1 
+1A2A550 	54 49 A0  1  4 45 A0  1 
+1A2A558 	70 6F A0  1 68 49 A0  1 
+1A2A560 	B8 4D A0  1 
+   -rot 1 -rot  $callback
+1A2A564 	94 49 A0  1 
+1A2A568 	80 6F A0  1 94 49 A0  1 
+1A2A570 	EC A4 A2  1 
+;
+1A2A574 	58 46 A0  1 
+
+also client-services definitions
+: interpret  ( arg-P .. arg1 cstr -- res-Q ... res-1 catch-result )
+1A2A578 	 0  0 69 6E 74 65 72 70 
+1A2A580 	72 65 74 89  0  0 A0  1 
+1A2A588 	20 40 A0  1 
+   cscount  ['] interpret-string  catch  dup  if  nip nip  then
+1A2A58C 	AC DF A0  1 
+1A2A590 	60 53 A0  1 1C E5 A1  1 
+1A2A598 	14 7F A0  1 40 49 A0  1 
+1A2A5A0 	DC 41 A0  1  C  0  0  0 
+1A2A5A8 	FC 46 A0  1 FC 46 A0  1 
+;
+1A2A5B0 	58 46 A0  1 
+
+: set-callback  ( newfunc -- oldfunc )
+1A2A5B4 	 0  0  0 73 
+1A2A5B8 	65 74 2D 63 61 6C 6C 62 
+1A2A5C0 	61 63 6B 8C 88 A5 A2  1 
+1A2A5C8 	20 40 A0  1 
+   vector @  swap vector !
+1A2A5CC 	DC A3 A2  1 
+1A2A5D0 	5C 4C A0  1 68 49 A0  1 
+1A2A5D8 	DC A3 A2  1 54 4D A0  1 
+   cb-array drop		\ Force allocation now
+1A2A5E0 	F4 A3 A2  1 30 49 A0  1 
+   int-cb-array drop
+1A2A5E8 	18 A4 A2  1 30 49 A0  1 
+;
+1A2A5F0 	58 46 A0  1 
+previous definitions

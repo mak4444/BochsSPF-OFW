@@ -1,0 +1,109 @@
+
+\ Display the WORDS in the Context Vocabulary
+
+decimal
+
+only forth also definitions
+
+: over-vocabulary  (s acf-of-word-to-execute voc-acf -- )
+1A11DD8 	6F 76 65 72 2D 76 6F 63 
+1A11DE0 	61 62 75 6C 61 72 79 8F 
+1A11DE8 	50 1D A1  1 20 40 A0  1 
+   follow  begin  another?  while   ( acf anf )
+1A11DF0 	38 BC A0  1 68 BC A0  1 
+1A11DF8 	DC 41 A0  1 18  0  0  0 
+      n>link over execute           ( acf )
+1A11E00 	8C 73 A0  1 54 49 A0  1 
+1A11E08 	98 41 A0  1 
+   repeat  ( acf )  drop
+1A11E0C 	C8 41 A0  1 
+1A11E10 	E4 FF FF FF 30 49 A0  1 
+;
+1A11E18 	58 46 A0  1 
+: +words   (s -- )
+1A11E1C 	 0 2B 77 6F 
+1A11E20 	72 64 73 86 EC 1D A1  1 
+1A11E28 	20 40 A0  1 
+   0 lmargin !  td 64 rmargin !  td 14 tabstops !
+1A11E2C 	70 6F A0  1 
+1A11E30 	80 13 A1  1 54 4D A0  1 
+1A11E38 	58 41 A0  1 40  0  0  0 
+1A11E40 	94 13 A1  1 54 4D A0  1 
+1A11E48 	58 41 A0  1  E  0  0  0 
+1A11E50 	38 14 A1  1 54 4D A0  1 
+   ??cr
+1A11E58 	 0 A1 A0  1 
+   begin  another?  while      ( anf )
+1A11E5C 	68 BC A0  1 
+1A11E60 	DC 41 A0  1 30  0  0  0 
+     dup name>string nip .tab  ( anf )
+1A11E68 	40 49 A0  1 58 74 A0  1 
+1A11E70 	FC 46 A0  1 AC 14 A1  1 
+     .id                       ( )
+1A11E78 	A8 9A A0  1 
+     exit? if  exit  then      ( )
+1A11E7C 	34  D A1  1 
+1A11E80 	DC 41 A0  1  8  0  0  0 
+1A11E88 	40 46 A0  1 
+   repeat                      ( )
+1A11E8C 	C8 41 A0  1 
+1A11E90 	CC FF FF FF 
+;
+1A11E94 	58 46 A0  1 
+: follow-to  (s adr voc-acf -- error? )
+1A11E98 	 0  0 66 6F 6C 6C 6F 77 
+1A11EA0 	2D 74 6F 89 28 1E A1  1 
+1A11EA8 	20 40 A0  1 
+   follow  begin  another?  while         ( adr anf )
+1A11EAC 	38 BC A0  1 
+1A11EB0 	68 BC A0  1 DC 41 A0  1 
+1A11EB8 	28  0  0  0 
+      over u<  if  drop false exit  then  ( adr )
+1A11EBC 	54 49 A0  1 
+1A11EC0 	A8 48 A0  1 DC 41 A0  1 
+1A11EC8 	10  0  0  0 30 49 A0  1 
+1A11ED0 	18 70 A0  1 40 46 A0  1 
+   repeat                                 ( adr )
+1A11ED8 	C8 41 A0  1 D4 FF FF FF 
+   drop true
+1A11EE0 	30 49 A0  1  4 70 A0  1 
+;
+1A11EE8 	58 46 A0  1 
+: prior-words  (s adr -- )
+1A11EEC 	70 72 69 6F 
+1A11EF0 	72 2D 77 6F 72 64 73 8B 
+1A11EF8 	A8 1E A1  1 20 40 A0  1 
+   context token@ follow-to  if
+1A11F00 	DC A3 A0  1  C 54 A0  1 
+1A11F08 	A8 1E A1  1 DC 41 A0  1 
+1A11F10 	40  0  0  0 
+      ." There are no words prior to this address." cr
+1A11F14 	20 7C A0  1 
+1A11F18 	29 54 68 65 72 65 20 61 
+1A11F20 	72 65 20 6E 6F 20 77 6F 
+1A11F28 	72 64 73 20 70 72 69 6F 
+1A11F30 	72 20 74 6F 20 74 68 69 
+1A11F38 	73 20 61 64 64 72 65 73 
+1A11F40 	73 2E  0  0 80 6D A0  1 
+   else
+1A11F48 	C8 41 A0  1  8  0  0  0 
+      +words
+1A11F50 	28 1E A1  1 
+   then
+;
+1A11F54 	58 46 A0  1 
+
+: words  (s -- )  context token@ follow  +words  ;
+1A11F58 	 0  0 77 6F 72 64 73 85 
+1A11F60 	FC 1E A1  1 20 40 A0  1 
+1A11F68 	DC A3 A0  1  C 54 A0  1 
+1A11F70 	38 BC A0  1 28 1E A1  1 
+1A11F78 	58 46 A0  1 
+
+only definitions forth also
+: words    words ;  \ Version for 'root' vocabulary
+1A11F7C 	 0  0 77 6F 
+1A11F80 	72 64 73 85  8 C5 A0  1 
+1A11F88 	20 40 A0  1 64 1F A1  1 
+1A11F90 	58 46 A0  1 
+only forth also definitions

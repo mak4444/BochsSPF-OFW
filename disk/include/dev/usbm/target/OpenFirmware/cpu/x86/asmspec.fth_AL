@@ -1,0 +1,240 @@
+purpose: Forth access words for special 386 registers
+
+decimal
+
+only forth also definitions
+
+\ Descriptor table registers and task register
+code idtr@  ( -- base limit )
+1A175E4 	 0  0 69 64 
+1A175E8 	74 72 40 85 90 75 A1  1 
+1A175F0 	F4 75 A1  1 
+   ax ax sub   ax push   ax push	\ Make room on stack
+1A175F4 	29 C0 50 50 
+   sp ax mov   0 [ax] sidt		\ Read onto stack
+1A175F8 	8B C4  F  1  8 
+   2 [ax] bx mov  bx 4 [ax] mov		\ Move base up
+1A175FD 	8B 58  2 
+1A17600 	89 58  4 
+   bx bx sub  op: bx 2 [ax] mov		\ Insert 0 in high half of limit
+1A17603 	29 DB 66 89 58 
+1A17608 	 2 
+c;
+1A17609 	FF E7 
+code gdtr@  ( -- base limit )
+1A1760B 	 0  0  0 67 64 
+1A17610 	74 72 40 85 F0 75 A1  1 
+1A17618 	1C 76 A1  1 
+   ax ax sub   ax push   ax push	\ Make room on stack
+1A1761C 	29 C0 50 50 
+   sp ax mov   0 [ax] sgdt		\ Read onto stack
+1A17620 	8B C4  F  1  0 
+   2 [ax] bx mov  bx 4 [ax] mov		\ Move base up
+1A17625 	8B 58  2 
+1A17628 	89 58  4 
+   bx bx sub  op: bx 2 [ax] mov		\ Insert 0 in high half of limit
+1A1762B 	29 DB 66 89 58 
+1A17630 	 2 
+c;
+1A17631 	FF E7 
+code idtr!  ( base limit -- )
+1A17633 	 0  0  0 69 64 
+1A17638 	74 72 21 85 18 76 A1  1 
+1A17640 	44 76 A1  1 
+   sp ax mov
+1A17644 	8B C4 
+   4 [ax] bx mov  bx 2 [ax] mov		\ Move base down
+1A17646 	8B 58 
+1A17648 	 4 89 58  2 
+   0 [ax] lidt				\ Load from stack
+1A1764C 	 F  1 18 
+   ax pop   ax pop			\ Clean up stack
+1A1764F 	58 
+1A17650 	58 
+c;
+1A17651 	FF E7 
+code gdtr!  ( base limit -- )
+1A17653 	 0  0  0 67 64 
+1A17658 	74 72 21 85 40 76 A1  1 
+1A17660 	64 76 A1  1 
+   sp ax mov
+1A17664 	8B C4 
+   4 [ax] bx mov  bx 2 [ax] mov		\ Move base down
+1A17666 	8B 58 
+1A17668 	 4 89 58  2 
+   0 [ax] lgdt				\ Load from stack
+1A1766C 	 F  1 10 
+   ax pop   ax pop			\ Clean up stack
+1A1766F 	58 
+1A17670 	58 
+c;
+1A17671 	FF E7 
+
+code tr@   ( -- tr  )   ax str    1push c;
+1A17673 	 0 74 72 40 83 
+1A17678 	60 76 A1  1 80 76 A1  1 
+1A17680 	 F  0 C8 50 FF E7 
+code ldtr@  ( -- ldt )   ax sldt   1push c;
+1A17686 	6C 64 
+1A17688 	74 72 40 85 7C 76 A1  1 
+1A17690 	94 76 A1  1  F  0 C0 50 
+1A17698 	FF E7 
+code tr!   ( tr -- )    ax pop    ax ltr   c;
+1A1769A 	 0  0 74 72 21 83 
+1A176A0 	90 76 A1  1 A8 76 A1  1 
+1A176A8 	58  F  0 D8 FF E7 
+code ldtr!  ( ldt -- )   ax pop    ax lldt  c;
+1A176AE 	6C 64 
+1A176B0 	74 72 21 85 A4 76 A1  1 
+1A176B8 	BC 76 A1  1 58  F  0 D0 
+1A176C0 	FF E7 
+
+\ Control registers
+code cr0@  ( -- n )  cr0 ax mov  1push c;
+1A176C2 	 0 63 72 30 40 84 
+1A176C8 	B8 76 A1  1 D0 76 A1  1 
+1A176D0 	 F 20 C0 50 FF E7 
+code cr2@  ( -- n )  cr2 ax mov  1push c;
+1A176D6 	 0 63 
+1A176D8 	72 32 40 84 CC 76 A1  1 
+1A176E0 	E4 76 A1  1  F 20 D0 50 
+1A176E8 	FF E7 
+code cr3@  ( -- n )  cr3 ax mov  1push c;
+1A176EA 	 0 63 72 33 40 84 
+1A176F0 	E0 76 A1  1 F8 76 A1  1 
+1A176F8 	 F 20 D8 50 FF E7 
+code cr4@  ( -- n )  cr4 ax mov  1push c;
+1A176FE 	 0 63 
+1A17700 	72 34 40 84 F4 76 A1  1 
+1A17708 	 C 77 A1  1  F 20 E0 50 
+1A17710 	FF E7 
+
+code cr0!  ( n -- )  ax pop  ax cr0 mov  c;
+1A17712 	 0 63 72 30 21 84 
+1A17718 	 8 77 A1  1 20 77 A1  1 
+1A17720 	58  F 22 C0 FF E7 
+code cr2!  ( n -- )  ax pop  ax cr2 mov  c;
+1A17726 	 0 63 
+1A17728 	72 32 21 84 1C 77 A1  1 
+1A17730 	34 77 A1  1 58  F 22 D0 
+1A17738 	FF E7 
+code cr3!  ( n -- )  ax pop  ax cr3 mov  c;
+1A1773A 	 0 63 72 33 21 84 
+1A17740 	30 77 A1  1 48 77 A1  1 
+1A17748 	58  F 22 D8 FF E7 
+code cr4!  ( n -- )  ax pop  ax cr4 mov  c;
+1A1774E 	 0 63 
+1A17750 	72 34 21 84 44 77 A1  1 
+1A17758 	5C 77 A1  1 58  F 22 E0 
+1A17760 	FF E7 
+
+\ Debug registers
+code dr0@  ( -- n )  dr0 ax mov  1push c;
+1A17762 	 0 64 72 30 40 84 
+1A17768 	58 77 A1  1 70 77 A1  1 
+1A17770 	 F 21 C0 50 FF E7 
+code dr1@  ( -- n )  dr1 ax mov  1push c;
+1A17776 	 0 64 
+1A17778 	72 31 40 84 6C 77 A1  1 
+1A17780 	84 77 A1  1  F 21 C8 50 
+1A17788 	FF E7 
+code dr2@  ( -- n )  dr2 ax mov  1push c;
+1A1778A 	 0 64 72 32 40 84 
+1A17790 	80 77 A1  1 98 77 A1  1 
+1A17798 	 F 21 D0 50 FF E7 
+code dr3@  ( -- n )  dr3 ax mov  1push c;
+1A1779E 	 0 64 
+1A177A0 	72 33 40 84 94 77 A1  1 
+1A177A8 	AC 77 A1  1  F 21 D8 50 
+1A177B0 	FF E7 
+code dr6@  ( -- n )  dr6 ax mov  1push c;
+1A177B2 	 0 64 72 36 40 84 
+1A177B8 	A8 77 A1  1 C0 77 A1  1 
+1A177C0 	 F 21 F0 50 FF E7 
+code dr7@  ( -- n )  dr7 ax mov  1push c;
+1A177C6 	 0 64 
+1A177C8 	72 37 40 84 BC 77 A1  1 
+1A177D0 	D4 77 A1  1  F 21 F8 50 
+1A177D8 	FF E7 
+
+code dr0!  ( n -- )  ax pop  ax dr0 mov  c;
+1A177DA 	 0 64 72 30 21 84 
+1A177E0 	D0 77 A1  1 E8 77 A1  1 
+1A177E8 	58  F 23 C0 FF E7 
+code dr1!  ( n -- )  ax pop  ax dr1 mov  c;
+1A177EE 	 0 64 
+1A177F0 	72 31 21 84 E4 77 A1  1 
+1A177F8 	FC 77 A1  1 58  F 23 C8 
+1A17800 	FF E7 
+code dr2!  ( n -- )  ax pop  ax dr2 mov  c;
+1A17802 	 0 64 72 32 21 84 
+1A17808 	F8 77 A1  1 10 78 A1  1 
+1A17810 	58  F 23 D0 FF E7 
+code dr3!  ( n -- )  ax pop  ax dr3 mov  c;
+1A17816 	 0 64 
+1A17818 	72 33 21 84  C 78 A1  1 
+1A17820 	24 78 A1  1 58  F 23 D8 
+1A17828 	FF E7 
+code dr6!  ( n -- )  ax pop  ax dr6 mov  c;
+1A1782A 	 0 64 72 36 21 84 
+1A17830 	20 78 A1  1 38 78 A1  1 
+1A17838 	58  F 23 F0 FF E7 
+code dr7!  ( n -- )  ax pop  ax dr7 mov  c;
+1A1783E 	 0 64 
+1A17840 	72 37 21 84 34 78 A1  1 
+1A17848 	4C 78 A1  1 58  F 23 F8 
+1A17850 	FF E7 
+
+\ Test registers
+code tr6@  ( -- n )  tr6 ax mov  1push c;
+1A17852 	 0 74 72 36 40 84 
+1A17858 	48 78 A1  1 60 78 A1  1 
+1A17860 	 F 24 F0 50 FF E7 
+code tr7@  ( -- n )  tr7 ax mov  1push c;
+1A17866 	 0 74 
+1A17868 	72 37 40 84 5C 78 A1  1 
+1A17870 	74 78 A1  1  F 24 F8 50 
+1A17878 	FF E7 
+
+code tr6!  ( n -- )  ax pop  ax tr6 mov  c;
+1A1787A 	 0 74 72 36 21 84 
+1A17880 	70 78 A1  1 88 78 A1  1 
+1A17888 	58  F 26 F0 FF E7 
+code tr7!  ( n -- )  ax pop  ax tr7 mov  c;
+1A1788E 	 0 74 
+1A17890 	72 37 21 84 84 78 A1  1 
+1A17898 	9C 78 A1  1 58  F 26 F8 
+1A178A0 	FF E7 
+
+code clts  ( -- )  h# 0f asm8,  h# 06 asm8,  c;
+1A178A2 	 0 63 6C 74 73 84 
+1A178A8 	98 78 A1  1 B0 78 A1  1 
+1A178B0 	 F  6 FF E7 
+
+code ds@  ( -- sel )  ax ax xor  ds ax mov  ax push  c;
+1A178B4 	64 73 40 83 
+1A178B8 	AC 78 A1  1 C0 78 A1  1 
+1A178C0 	31 C0 8C D8 50 FF E7 
+code cs@  ( -- sel )  ax ax xor  cs ax mov  ax push  c;
+1A178C7 	 0 
+1A178C8 	63 73 40 83 BC 78 A1  1 
+1A178D0 	D4 78 A1  1 31 C0 8C C8 
+1A178D8 	50 FF E7 
+code ss@  ( -- sel )  ax ax xor  ss ax mov  ax push  c;
+1A178DB 	 0 73 73 40 83 
+1A178E0 	D0 78 A1  1 E8 78 A1  1 
+1A178E8 	31 C0 8C D0 50 FF E7 
+code es@  ( -- sel )  ax ax xor  es ax mov  ax push  c;
+1A178EF 	 0 
+1A178F0 	65 73 40 83 E4 78 A1  1 
+1A178F8 	FC 78 A1  1 31 C0 8C C0 
+1A17900 	50 FF E7 
+code fs@  ( -- sel )  ax ax xor  fs ax mov  ax push  c;
+1A17903 	 0 66 73 40 83 
+1A17908 	F8 78 A1  1 10 79 A1  1 
+1A17910 	31 C0 8C E0 50 FF E7 
+code gs@  ( -- sel )  ax ax xor  gs ax mov  ax push  c;
+1A17917 	 0 
+1A17918 	67 73 40 83  C 79 A1  1 
+1A17920 	24 79 A1  1 31 C0 8C E8 
+1A17928 	50 FF E7 

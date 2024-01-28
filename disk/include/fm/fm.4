@@ -1,0 +1,388 @@
+.( FM )
+
+: SETX ( x -- )  GETXY NIP SETXY ;
+
+0 VALUE IDFCOPY
+0 VALUE FCOPY-SIZE
+0 VALUE FCOPY_BUF
+
+1 VALUE CUR_FM
+0 VALUE BIG_FM
+
+1 VALUE CUR_FM_SAVE
+0 VALUE BIG_FM_SAVE
+
+0x1B VALUE FM_COLOR 
+
+0 VALUE FM_X_BASE
+0 VALUE FM_Y_BASE
+3 VALUE FM_COLS
+9 VALUE FM_ROWS
+0 VALUE FM_CUR
+0 VALUE FM_BASE
+d# 12 VALUE FM_NAMESIZE
+
+d# 14 CONSTANT MAXFNM
+
+\- MAXDIR  $ff  constant MAXDIR
+
+CREATE COUNT_NAME MAXFNM 1+ ALLOT
+CREATE DIR_NAME_S MAXDIR 1+ ALLOT
+CREATE DIR_NAME_V MAXDIR MAXFNM + 1+ ALLOT
+
+' c: value current-volume_s
+
+0 value COUNT_attr
+
+: |EMITS
+ BEGIN DUP GETXY DROP U>
+ WHILE OVER EMIT
+ REPEAT 2DROP ;
+
+: ||EMITS FM_X_BASE  FM_NAMESIZE 1+ FM_COLS * +   |EMITS ;
+
+0x30 VALUE FMSETCOLOR
+
+\  10 TO FM_CUR   1 TO  FM_BASE DIR_DRAW
+
+0 VALUE TST1V
+0 VALUE TST2V
+
+: FM_CAP_DRAW
+  FM_COLOR COLOR!
+  FM_X_BASE
+  FM_Y_BASE SETXY
+   0xC9 EMIT 	SPACE  CUR_DIR@ TYPE  SPACE
+\ TST1V .  TST2V . 
+ 0xCD ||EMITS
+;
+
+: EMITBK  >R  GETXY  R> EMIT  SETXY ;
+
+: FRAME_DRAW
+  COLOR@ >R
+  GETXY 2>R
+  FM_CAP_DRAW  0xBB EMITBK
+
+\  FM_ROWS 0 DO  CR FM_X_BASE SETX 0xBA EMIT 0xB3 ||EMITS 0xBA EMITBK LOOP
+\		CR FM_X_BASE SETX 0xC8 EMIT 0xCD ||EMITS 0xBC EMIT
+
+  FM_ROWS 0 DO  CR
+       FM_X_BASE SETX 0xBA EMIT
+   FM_NAMESIZE spaces 0xB3 EMIT
+   FM_NAMESIZE spaces 0xB3 EMIT
+   FM_NAMESIZE spaces 0xBA EMITBK
+ LOOP
+		CR FM_X_BASE SETX 0xC8 EMIT 0xCD ||EMITS 0xBC EMIT
+
+  2R> SETXY
+  R>  COLOR!
+;
+
+: file_skip
+ search-ih 0= if break
+ another-match?
+ if 2drop  drop-attributes
+ else 0 to search-ih
+ then
+;
+
+0 value FM_CURi
+
+: file_type
+ search-ih 0= if FM_NAMESIZE spaces break
+ FM_CURi FM_CUR =
+ FMSETCOLOR AND  FM_COLOR  XOR 
+\  FFBLKBUF ff_attrib W@ FA_DIREC AND IF 0x4 XOR THEN
+ COLOR!
+ another-match? 
+ if
+	2dup s" ." $=
+	if	2drop drop-attributes
+		another-match?
+	ELSE -1
+	then
+ ELSE 0
+ then
+ if
+
+	FM_CURi FM_CUR = if 2dup COUNT_NAME $! 2 pick to COUNT_attr then
+	2 pick dir-attr? IF COLOR@ 0xf OR COLOR! THEN
+	tuck type FM_NAMESIZE - negate spaces drop-attributes
+ else	FM_NAMESIZE spaces 0 to search-ih 
+ then
+;
+
+: DIR_DRAW_i
+
+ FM_CUR FM_COLS FM_ROWS * +
+ FM_BASE - FM_ROWS   FM_COLS *  /  1-  FM_ROWS *
+ FM_BASE + 0 MAX TO FM_BASE
+ FM_CUR    0 MAX TO FM_CUR
+
+\ S" *.*" FIRSTFILE
+\ s" c:"
+ CUR_DIR@
+   dup  if   ?add\  separator?  else  true  then        ( pattern$ no-name? )
+
+   if  string2 pack  " *" rot $cat  string2 count  then
+  begin-search
+
+
+\ FFBLKBUF ff_name W@ [CHAR] . =
+\  IF DROP NEXTFILE THEN
+
+  FM_BASE 0 ?DO file_skip LOOP
+
+    FM_X_BASE 1+ FM_Y_BASE 1+ SETXY
+;
+
+: DIR_DRAW
+  DIR_DRAW_i
+
+ FM_COLS FM_ROWS * 0
+ DO
+	I FM_ROWS /MOD  FM_NAMESIZE 1+ * FM_X_BASE + 1+
+		SWAP  FM_Y_BASE + 1+ SETXY 
+	I FM_BASE + to FM_CURi
+	file_type
+ LOOP
+;
+
+: FM_HOME  0 TO FM_CUR 0 TO FM_BASE ;
+
+: DO_FM_0KEY
+ KEY
+  CASE
+	[CHAR] M OF FM_CUR  FM_ROWS + TO FM_CUR   ENDOF  \
+	[CHAR] K OF FM_CUR  FM_ROWS - TO FM_CUR   ENDOF  \ left
+	[CHAR] P OF FM_CUR  1+ TO FM_CUR
+		    FM_CUR  FM_BASE -  FM_COLS FM_ROWS * =
+			IF FM_BASE 1+ TO FM_BASE THEN
+		 ENDOF
+	[CHAR] H OF FM_CUR  FM_BASE - 0=
+			IF FM_BASE 1- 0 MAX  TO FM_BASE THEN
+			FM_CUR  1- TO FM_CUR
+		 ENDOF
+	[CHAR] G OF  FM_HOME ENDOF \ HOME
+	[CHAR] O OF	 ENDOF \ end
+
+	0x49 OF FM_BASE FM_COLS FM_ROWS * - 0 MAX TO FM_BASE
+		FM_CUR FM_COLS FM_ROWS * - 0 MAX TO FM_CUR
+	     ENDOF \ PAGE UP
+	0x51 OF FM_BASE FM_COLS FM_ROWS * + TO FM_BASE
+		FM_CUR	FM_COLS FM_ROWS * + TO FM_CUR
+	     ENDOF \ PAGE DOWN
+	0x3D OF COUNT_NAME COUNT $VIEW FRAME_DRAW ENDOF \ F3
+	0x3E OF COUNT_NAME COUNT $EDIT FRAME_DRAW ENDOF \ F4
+ ENDCASE
+
+
+;
+
+  
+:  FMENU
+  COLOR@ >R
+  GETXY 2>R
+	FRAME_DRAW
+	BEGIN DIR_DRAW KEY	DUP 0x1B <>
+	WHILE
+	        CASE
+	0	OF DO_FM_0KEY   ENDOF
+	0xD	OF COUNT_NAME COUNT $CHDIR FM_HOME FM_CAP_DRAW  ENDOF
+		ENDCASE
+
+	REPEAT
+
+	DROP
+  2R> SETXY
+  R>  COLOR!
+;
+
+
+0 VALUE FM_CUR_S
+0 VALUE FM_BASE_S
+CUR_DIR@ DIR_NAME_S $!
+
+: FMTABDO
+	0 TO FMSETCOLOR     DIR_DRAW
+	0x30 TO FMSETCOLOR
+	FM_CUR_S	FM_CUR
+ TO	FM_CUR_S TO	FM_CUR
+	FM_BASE_S	FM_BASE
+ TO	FM_BASE_S TO	FM_BASE
+
+    DIR_NAME_S COUNT DIR_NAME_V $!
+	CUR_DIR@
+ DUP MAXDIR U> IF CR ." YYY="  2DUP TYPE ABORT THEN
+  DIR_NAME_S $!
+
+	current-volume @    current-volume_s
+	current-volume ! to current-volume_s
+
+    DIR_NAME_V COUNT $CHDIR
+  FM_X_BASE 0x28 XOR TO FM_X_BASE
+         FRAME_DRAW  DIR_DRAW
+;
+
+
+-1 value fm-flg
+
+only forth also command-completion also hidden also keys-forth definitions
+
+
+: esc-[B \ UP
+  fm-flg if
+
+	FM_CUR  1+ TO FM_CUR
+	FM_CUR  FM_BASE -  FM_COLS FM_ROWS * =
+	IF FM_BASE 1+ TO FM_BASE THEN
+	['] DIR_DRAW fm-exec break
+	esc-[B
+;
+
+
+: esc-[A  \ DOWN
+  fm-flg if
+
+	FM_CUR  FM_BASE - 0=
+	IF FM_BASE 1- 0 MAX  TO FM_BASE THEN
+	FM_CUR  1- TO FM_CUR
+
+
+ ['] DIR_DRAW fm-exec
+ break
+
+ esc-[A
+ ;
+
+
+\	[CHAR] M OF NC_CUR  NC_ROWS + TO NC_CUR   ENDOF  \
+\	[CHAR] K OF NC_CUR  NC_ROWS - TO NC_CUR   ENDOF  \ left
+
+
+: esc-[C   fm-flg if
+  FM_CUR  FM_ROWS + TO FM_CUR
+ ['] DIR_DRAW fm-exec
+ break
+
+ esc-[C
+
+  ;
+
+: esc-[D   fm-flg if
+  FM_CUR  FM_ROWS - TO FM_CUR
+ ['] DIR_DRAW fm-exec
+ break
+
+ esc-[D
+
+  ;
+
+: esc-[H
+  beginning-of-line
+
+;
+
+: esc-[K
+  end-of-line
+;
+
+
+: ^r  fm-flg 0= to fm-flg 
+    debug-me
+;
+
+
+\ TAB expands, TAB-TAB shows completions
+: ^i    \ tab
+  fm-flg
+	if   ['] FMTABDO fm-exec
+	break
+	^i
+;
+
+: ^o
+    fm-flg 0= to fm-flg
+
+ fm-flg
+  IF	['] FMTABDO fm-exec
+	['] FMTABDO fm-exec
+  else
+   FM_COLOR >r
+   FM_COLOR $33 xor to FM_COLOR
+   ['] DIR_DRAW fm-exec
+   r> to FM_COLOR 
+  then
+ 
+;
+
+: ^m
+  KBD_CTRL?
+ if  COUNT_NAME count insert-characters
+ break
+
+\  #after
+ linelen 0=   fm-flg AND
+ IF COUNT_attr dir-attr? 
+	IF  COUNT_NAME count $chdir
+		0 TO	FM_CUR
+		0 TO	FM_BASE
+		['] FRAME_DRAW fm-exec
+		['] DIR_DRAW fm-exec
+	BREAK
+ THEN
+
+  ^m ;
+
+
+: esc-[O
+\    debug-me
+ key  $57 = if
+  COUNT_attr  dir-attr? IF BREAK
+  CUR_DIR@ DIR_NAME_V $!
+  COUNT_NAME count DIR_NAME_V $+!
+
+  DIR_NAME_V count $view
+  ['] FMTABDO fm-exec
+  ['] FMTABDO fm-exec
+ then
+  ;
+
+
+: ^f
+  CUR_DIR@ insert-characters
+  COUNT_NAME count insert-characters
+
+;
+
+: fm_accept
+
+  fm-flg
+	if	['] FMTABDO fm-exec
+		['] FMTABDO fm-exec
+	then
+
+ xaccept ;
+
+ ' fm_accept	is accept
+
+also forth definitions
+
+: kkttt
+
+ skey lastchar ! ;
+
+
+only forth also definitions
+
+: kkk begin key \ dup emit
+ dup .h bl = until ;
+
+: kkkk begin key  dup emit
+ dup .h bl = until ;
+
+: fmt	['] FRAME_DRAW fm-exec ;
+: fmt0	['] DIR_DRAW fm-exec ;
+: fmt1  ['] FMTABDO fm-exec ;
+: fmct  CUR_DIR@ TYPE ;

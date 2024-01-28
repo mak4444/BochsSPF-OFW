@@ -1,0 +1,1219 @@
+purpose: USB Hub Probing Code
+
+hex
+
+: probehubfth
+1A48310 	70 72 6F 62 65 68 75 62 
+1A48318 	66 74 68 8B A4 78 A4  1 
+1A48320 	20 40 A0  1 
+
+s" set-usb20-char" $find ?dup
+1A48324 	9C 53 A0  1 
+1A48328 	 E 73 65 74 2D 75 73 62 
+1A48330 	32 30 2D 63 68 61 72  0 
+1A48338 	C4 93 A0  1 B4 70 A0  1 
+if s" : set-usb20-char ( port dev -- ) 2drop  ;" eval then
+1A48340 	DC 41 A0  1 38  0  0  0 
+1A48348 	9C 53 A0  1 29 3A 20 73 
+1A48350 	65 74 2D 75 73 62 32 30 
+1A48358 	2D 63 68 61 72 20 28 20 
+1A48360 	70 6F 72 74 20 64 65 76 
+1A48368 	20 2D 2D 20 29 20 32 64 
+1A48370 	72 6F 70 20 20 3B  0  0 
+1A48378 	D8 E5 A0  1 
+2drop
+1A4837C 	AC 49 A0  1 
+
+s" 8 buffer: hub-buf" eval   \ For hub probing
+1A48380 	9C 53 A0  1 11 38 20 62 
+1A48388 	75 66 66 65 72 3A 20 68 
+1A48390 	75 62 2D 62 75 66  0  0 
+1A48398 	D8 E5 A0  1 
+
+ " : power-hub-port   ( port -- )  PORT_POWER  DR_PORT "" set-feature"" $call-parent drop  ;" eval
+1A4839C 	9C 53 A0  1 
+1A483A0 	57 3A 20 70 6F 77 65 72 
+1A483A8 	2D 68 75 62 2D 70 6F 72 
+1A483B0 	74 20 20 20 28 20 70 6F 
+1A483B8 	72 74 20 2D 2D 20 29 20 
+1A483C0 	20 50 4F 52 54 5F 50 4F 
+1A483C8 	57 45 52 20 20 44 52 5F 
+1A483D0 	50 4F 52 54 20 22 20 73 
+1A483D8 	65 74 2D 66 65 61 74 75 
+1A483E0 	72 65 22 20 24 63 61 6C 
+1A483E8 	6C 2D 70 61 72 65 6E 74 
+1A483F0 	20 64 72 6F 70 20 20 3B 
+1A483F8 	 0  0  0  0 D8 E5 A0  1 
+ " : reset-hub-port   ( port -- )  PORT_RESET  DR_PORT "" set-feature"" $call-parent drop  d# 20 ms  ;" eval
+1A48400 	9C 53 A0  1 61 3A 20 72 
+1A48408 	65 73 65 74 2D 68 75 62 
+1A48410 	2D 70 6F 72 74 20 20 20 
+1A48418 	28 20 70 6F 72 74 20 2D 
+1A48420 	2D 20 29 20 20 50 4F 52 
+1A48428 	54 5F 52 45 53 45 54 20 
+1A48430 	20 44 52 5F 50 4F 52 54 
+1A48438 	20 22 20 73 65 74 2D 66 
+1A48440 	65 61 74 75 72 65 22 20 
+1A48448 	24 63 61 6C 6C 2D 70 61 
+1A48450 	72 65 6E 74 20 64 72 6F 
+1A48458 	70 20 20 64 23 20 32 30 
+1A48460 	20 6D 73 20 20 3B  0  0 
+1A48468 	D8 E5 A0  1 
+\ Test modes: 1:J 2:K 3:SE0_NAK 4:Packet 5:ForceEnable
+ " : test-hub-port    ( port test-mode -- )  wljoin  PORT_TEST   DR_PORT "" set-feature"" $call-parent drop  ;" eval
+1A4846C 	9C 53 A0  1 
+1A48470 	69 3A 20 74 65 73 74 2D 
+1A48478 	68 75 62 2D 70 6F 72 74 
+1A48480 	20 20 20 20 28 20 70 6F 
+1A48488 	72 74 20 74 65 73 74 2D 
+1A48490 	6D 6F 64 65 20 2D 2D 20 
+1A48498 	29 20 20 77 6C 6A 6F 69 
+1A484A0 	6E 20 20 50 4F 52 54 5F 
+1A484A8 	54 45 53 54 20 20 20 44 
+1A484B0 	52 5F 50 4F 52 54 20 22 
+1A484B8 	20 73 65 74 2D 66 65 61 
+1A484C0 	74 75 72 65 22 20 24 63 
+1A484C8 	61 6C 6C 2D 70 61 72 65 
+1A484D0 	6E 74 20 64 72 6F 70 20 
+1A484D8 	20 3B  0  0 D8 E5 A0  1 
+ " : untest-hub-port  ( port -- )  PORT_TEST   DR_PORT "" clear-feature"" $call-parent drop  ;" eval
+1A484E0 	9C 53 A0  1 59 3A 20 75 
+1A484E8 	6E 74 65 73 74 2D 68 75 
+1A484F0 	62 2D 70 6F 72 74 20 20 
+1A484F8 	28 20 70 6F 72 74 20 2D 
+1A48500 	2D 20 29 20 20 50 4F 52 
+1A48508 	54 5F 54 45 53 54 20 20 
+1A48510 	20 44 52 5F 50 4F 52 54 
+1A48518 	20 22 20 63 6C 65 61 72 
+1A48520 	2D 66 65 61 74 75 72 65 
+1A48528 	22 20 24 63 61 6C 6C 2D 
+1A48530 	70 61 72 65 6E 74 20 64 
+1A48538 	72 6F 70 20 20 3B  0  0 
+1A48540 	D8 E5 A0  1 
+ " : clear-status-change  ( port -- )  C_PORT_CONNECTION  DR_PORT "" clear-feature"" $call-parent drop  ;" eval
+1A48544 	9C 53 A0  1 
+1A48548 	64 3A 20 63 6C 65 61 72 
+1A48550 	2D 73 74 61 74 75 73 2D 
+1A48558 	63 68 61 6E 67 65 20 20 
+1A48560 	28 20 70 6F 72 74 20 2D 
+1A48568 	2D 20 29 20 20 43 5F 50 
+1A48570 	4F 52 54 5F 43 4F 4E 4E 
+1A48578 	45 43 54 49 4F 4E 20 20 
+1A48580 	44 52 5F 50 4F 52 54 20 
+1A48588 	22 20 63 6C 65 61 72 2D 
+1A48590 	66 65 61 74 75 72 65 22 
+1A48598 	20 24 63 61 6C 6C 2D 70 
+1A485A0 	61 72 65 6E 74 20 64 72 
+1A485A8 	6F 70 20 20 3B  0  0  0 
+1A485B0 	D8 E5 A0  1 
+ " : parent-set-target  ( dev -- )  "" set-target"" $call-parent  ;" eval
+1A485B4 	9C 53 A0  1 
+1A485B8 	3E 3A 20 70 61 72 65 6E 
+1A485C0 	74 2D 73 65 74 2D 74 61 
+1A485C8 	72 67 65 74 20 20 28 20 
+1A485D0 	64 65 76 20 2D 2D 20 29 
+1A485D8 	20 20 22 20 73 65 74 2D 
+1A485E0 	74 61 72 67 65 74 22 20 
+1A485E8 	24 63 61 6C 6C 2D 70 61 
+1A485F0 	72 65 6E 74 20 20 3B  0 
+1A485F8 	D8 E5 A0  1 
+s" : hub-error?" eval  ( -- error? )
+1A485FC 	9C 53 A0  1 
+1A48600 	 C 3A 20 68 75 62 2D 65 
+1A48608 	72 72 6F 72 3F  0  0  0 
+1A48610 	D8 E5 A0  1 
+ "    hub-buf 4  0  DR_HUB "" get-status"" $call-parent" eval    ( actual usberror )
+1A48614 	9C 53 A0  1 
+1A48618 	32 20 20 20 68 75 62 2D 
+1A48620 	62 75 66 20 34 20 20 30 
+1A48628 	20 20 44 52 5F 48 55 42 
+1A48630 	20 22 20 67 65 74 2D 73 
+1A48638 	74 61 74 75 73 22 20 24 
+1A48640 	63 61 6C 6C 2D 70 61 72 
+1A48648 	65 6E 74  0 D8 E5 A0  1 
+s"    nip  if" eval                                   ( )
+1A48650 	9C 53 A0  1  A 20 20 20 
+1A48658 	6E 69 70 20 20 69 66  0 
+1A48660 	D8 E5 A0  1 
+ "       ."" Failed to get hub status"" cr" eval
+1A48664 	9C 53 A0  1 
+1A48668 	25 20 20 20 20 20 20 2E 
+1A48670 	22 20 46 61 69 6C 65 64 
+1A48678 	20 74 6F 20 67 65 74 20 
+1A48680 	68 75 62 20 73 74 61 74 
+1A48688 	75 73 22 20 63 72  0  0 
+1A48690 	D8 E5 A0  1 
+s"       true" eval                                   ( true )
+1A48694 	9C 53 A0  1 
+1A48698 	 A 20 20 20 20 20 20 74 
+1A486A0 	72 75 65  0 D8 E5 A0  1 
+s"    else" eval                                      ( )
+1A486A8 	9C 53 A0  1  7 20 20 20 
+1A486B0 	65 6C 73 65  0  0  0  0 
+1A486B8 	D8 E5 A0  1 
+s"       hub-buf 2+ c@ 2 and  if" eval                ( )
+1A486BC 	9C 53 A0  1 
+1A486C0 	1D 20 20 20 20 20 20 68 
+1A486C8 	75 62 2D 62 75 66 20 32 
+1A486D0 	2B 20 63 40 20 32 20 61 
+1A486D8 	6E 64 20 20 69 66  0  0 
+1A486E0 	D8 E5 A0  1 
+ "          ."" USB Hub shut down due to over-current"" cr" eval
+1A486E4 	9C 53 A0  1 
+1A486E8 	35 20 20 20 20 20 20 20 
+1A486F0 	20 20 2E 22 20 55 53 42 
+1A486F8 	20 48 75 62 20 73 68 75 
+1A48700 	74 20 64 6F 77 6E 20 64 
+1A48708 	75 65 20 74 6F 20 6F 76 
+1A48710 	65 72 2D 63 75 72 72 65 
+1A48718 	6E 74 22 20 63 72  0  0 
+1A48720 	D8 E5 A0  1 
+s"          true" eval                                ( true )
+1A48724 	9C 53 A0  1 
+1A48728 	 D 20 20 20 20 20 20 20 
+1A48730 	20 20 74 72 75 65  0  0 
+1A48738 	D8 E5 A0  1 
+s"       else" eval                                   ( )
+1A4873C 	9C 53 A0  1 
+1A48740 	 A 20 20 20 20 20 20 65 
+1A48748 	6C 73 65  0 D8 E5 A0  1 
+s"          false" eval                               ( false )
+1A48750 	9C 53 A0  1  E 20 20 20 
+1A48758 	20 20 20 20 20 20 66 61 
+1A48760 	6C 73 65  0 D8 E5 A0  1 
+s"       then" eval                                   ( error? )
+1A48768 	9C 53 A0  1  A 20 20 20 
+1A48770 	20 20 20 74 68 65 6E  0 
+1A48778 	D8 E5 A0  1 
+s"    then ;" eval                                     ( error? )
+1A4877C 	9C 53 A0  1 
+1A48780 	 9 20 20 20 74 68 65 6E 
+1A48788 	20 3B  0  0 D8 E5 A0  1 
+
+
+s" : get-port-status" eval  ( port -- error? )
+1A48790 	9C 53 A0  1 11 3A 20 67 
+1A48798 	65 74 2D 70 6F 72 74 2D 
+1A487A0 	73 74 61 74 75 73  0  0 
+1A487A8 	D8 E5 A0  1 
+ "    hub-buf 4  2 pick   DR_PORT "" get-status"" $call-parent" eval    ( port actual usberror )
+1A487AC 	9C 53 A0  1 
+1A487B0 	39 20 20 20 68 75 62 2D 
+1A487B8 	62 75 66 20 34 20 20 32 
+1A487C0 	20 70 69 63 6B 20 20 20 
+1A487C8 	44 52 5F 50 4F 52 54 20 
+1A487D0 	22 20 67 65 74 2D 73 74 
+1A487D8 	61 74 75 73 22 20 24 63 
+1A487E0 	61 6C 6C 2D 70 61 72 65 
+1A487E8 	6E 74  0  0 D8 E5 A0  1 
+s"    nip  if" eval                                   ( port )
+1A487F0 	9C 53 A0  1  A 20 20 20 
+1A487F8 	6E 69 70 20 20 69 66  0 
+1A48800 	D8 E5 A0  1 
+ "       ."" Failed to get port status for port "" u. cr" eval
+1A48804 	9C 53 A0  1 
+1A48808 	33 20 20 20 20 20 20 2E 
+1A48810 	22 20 46 61 69 6C 65 64 
+1A48818 	20 74 6F 20 67 65 74 20 
+1A48820 	70 6F 72 74 20 73 74 61 
+1A48828 	74 75 73 20 66 6F 72 20 
+1A48830 	70 6F 72 74 20 22 20 75 
+1A48838 	2E 20 63 72  0  0  0  0 
+1A48840 	D8 E5 A0  1 
+s"       true" eval                                   ( true )
+1A48844 	9C 53 A0  1 
+1A48848 	 A 20 20 20 20 20 20 74 
+1A48850 	72 75 65  0 D8 E5 A0  1 
+s"    else" eval                                      ( port )
+1A48858 	9C 53 A0  1  7 20 20 20 
+1A48860 	65 6C 73 65  0  0  0  0 
+1A48868 	D8 E5 A0  1 
+s"       drop false" eval                             ( false )
+1A4886C 	9C 53 A0  1 
+1A48870 	10 20 20 20 20 20 20 64 
+1A48878 	72 6F 70 20 66 61 6C 73 
+1A48880 	65  0  0  0 D8 E5 A0  1 
+s"    then ;" eval
+1A48888 	9C 53 A0  1  9 20 20 20 
+1A48890 	74 68 65 6E 20 3B  0  0 
+1A48898 	D8 E5 A0  1 
+
+s" : port-status-changed?" eval  ( hub-dev port -- false | connected? true )
+1A4889C 	9C 53 A0  1 
+1A488A0 	16 3A 20 70 6F 72 74 2D 
+1A488A8 	73 74 61 74 75 73 2D 63 
+1A488B0 	68 61 6E 67 65 64 3F  0 
+1A488B8 	D8 E5 A0  1 
+s"    swap parent-set-target" eval       ( port )
+1A488BC 	9C 53 A0  1 
+1A488C0 	19 20 20 20 73 77 61 70 
+1A488C8 	20 70 61 72 65 6E 74 2D 
+1A488D0 	73 65 74 2D 74 61 72 67 
+1A488D8 	65 74  0  0 D8 E5 A0  1 
+s"    dup get-port-status  if" eval      ( port )
+1A488E0 	9C 53 A0  1 1A 20 20 20 
+1A488E8 	64 75 70 20 67 65 74 2D 
+1A488F0 	70 6F 72 74 2D 73 74 61 
+1A488F8 	74 75 73 20 20 69 66  0 
+1A48900 	D8 E5 A0  1 
+s"       drop false exit" eval           ( -- false )
+1A48904 	9C 53 A0  1 
+1A48908 	15 20 20 20 20 20 20 64 
+1A48910 	72 6F 70 20 66 61 6C 73 
+1A48918 	65 20 65 78 69 74  0  0 
+1A48920 	D8 E5 A0  1 
+s"    then" eval                         ( port )
+1A48924 	9C 53 A0  1 
+1A48928 	 7 20 20 20 74 68 65 6E 
+1A48930 	 0  0  0  0 D8 E5 A0  1 
+ 
+s"    hub-buf c@ 8 and  if" eval         ( port )
+1A48938 	9C 53 A0  1 17 20 20 20 
+1A48940 	68 75 62 2D 62 75 66 20 
+1A48948 	63 40 20 38 20 61 6E 64 
+1A48950 	20 20 69 66  0  0  0  0 
+1A48958 	D8 E5 A0  1 
+ "       ."" Hub port "" . ."" is over current"" cr" eval
+1A4895C 	9C 53 A0  1 
+1A48960 	2C 20 20 20 20 20 20 2E 
+1A48968 	22 20 48 75 62 20 70 6F 
+1A48970 	72 74 20 22 20 2E 20 2E 
+1A48978 	22 20 69 73 20 6F 76 65 
+1A48980 	72 20 63 75 72 72 65 6E 
+1A48988 	74 22 20 63 72  0  0  0 
+1A48990 	D8 E5 A0  1 
+s"       false  exit" eval               ( -- false )
+1A48994 	9C 53 A0  1 
+1A48998 	11 20 20 20 20 20 20 66 
+1A489A0 	61 6C 73 65 20 20 65 78 
+1A489A8 	69 74  0  0 D8 E5 A0  1 
+s"   then" eval
+1A489B0 	9C 53 A0  1  6 20 20 74 
+1A489B8 	68 65 6E  0 D8 E5 A0  1 
+
+s"    hub-buf 2+ c@  1 and  if" eval     ( port )
+1A489C0 	9C 53 A0  1 1B 20 20 20 
+1A489C8 	68 75 62 2D 62 75 66 20 
+1A489D0 	32 2B 20 63 40 20 20 31 
+1A489D8 	20 61 6E 64 20 20 69 66 
+1A489E0 	 0  0  0  0 D8 E5 A0  1 
+       \ Status changed
+s"       clear-status-change" eval
+1A489E8 	9C 53 A0  1 19 20 20 20 
+1A489F0 	20 20 20 63 6C 65 61 72 
+1A489F8 	2D 73 74 61 74 75 73 2D 
+1A48A00 	63 68 61 6E 67 65  0  0 
+1A48A08 	D8 E5 A0  1 
+s"       hub-buf c@ 1 and  0<>" eval     ( connected? )
+1A48A0C 	9C 53 A0  1 
+1A48A10 	1B 20 20 20 20 20 20 68 
+1A48A18 	75 62 2D 62 75 66 20 63 
+1A48A20 	40 20 31 20 61 6E 64 20 
+1A48A28 	20 30 3C 3E  0  0  0  0 
+1A48A30 	D8 E5 A0  1 
+s"       true" eval                      ( connected? true )
+1A48A34 	9C 53 A0  1 
+1A48A38 	 A 20 20 20 20 20 20 74 
+1A48A40 	72 75 65  0 D8 E5 A0  1 
+s"    else" eval                         ( port )
+1A48A48 	9C 53 A0  1  7 20 20 20 
+1A48A50 	65 6C 73 65  0  0  0  0 
+1A48A58 	D8 E5 A0  1 
+s"       drop false" eval                ( false )
+1A48A5C 	9C 53 A0  1 
+1A48A60 	10 20 20 20 20 20 20 64 
+1A48A68 	72 6F 70 20 66 61 6C 73 
+1A48A70 	65  0  0  0 D8 E5 A0  1 
+s"    then ;" eval
+1A48A78 	9C 53 A0  1  9 20 20 20 
+1A48A80 	74 68 65 6E 20 3B  0  0 
+1A48A88 	D8 E5 A0  1 
+
+s" : probe-hub-port" eval  ( hub-dev port -- )
+1A48A8C 	9C 53 A0  1 
+1A48A90 	10 3A 20 70 72 6F 62 65 
+1A48A98 	2D 68 75 62 2D 70 6F 72 
+1A48AA0 	74  0  0  0 D8 E5 A0  1 
+    \ Reset the port to determine the speed
+s"    swap parent-set-target" eval			( port )
+1A48AA8 	9C 53 A0  1 19 20 20 20 
+1A48AB0 	73 77 61 70 20 70 61 72 
+1A48AB8 	65 6E 74 2D 73 65 74 2D 
+1A48AC0 	74 61 72 67 65 74  0  0 
+1A48AC8 	D8 E5 A0  1 
+s"    dup reset-hub-port" eval				( port )
+1A48ACC 	9C 53 A0  1 
+1A48AD0 	15 20 20 20 64 75 70 20 
+1A48AD8 	72 65 73 65 74 2D 68 75 
+1A48AE0 	62 2D 70 6F 72 74  0  0 
+1A48AE8 	D8 E5 A0  1 
+ 
+    \ get-port-status fills hub-buf with connection status, speed, and other information
+s"    dup get-port-status" eval  			( port error? )
+1A48AEC 	9C 53 A0  1 
+1A48AF0 	16 20 20 20 64 75 70 20 
+1A48AF8 	67 65 74 2D 70 6F 72 74 
+1A48B00 	2D 73 74 61 74 75 73  0 
+1A48B08 	D8 E5 A0  1 
+s"    over clear-status-change" eval              	( port error? )
+1A48B0C 	9C 53 A0  1 
+1A48B10 	1B 20 20 20 6F 76 65 72 
+1A48B18 	20 63 6C 65 61 72 2D 73 
+1A48B20 	74 61 74 75 73 2D 63 68 
+1A48B28 	61 6E 67 65  0  0  0  0 
+1A48B30 	D8 E5 A0  1 
+s"    if  drop exit  then" eval				( port )
+1A48B34 	9C 53 A0  1 
+1A48B38 	16 20 20 20 69 66 20 20 
+1A48B40 	64 72 6F 70 20 65 78 69 
+1A48B48 	74 20 20 74 68 65 6E  0 
+1A48B50 	D8 E5 A0  1 
+
+s"    dup disable-old-nodes" eval			( port ) 
+1A48B54 	9C 53 A0  1 
+1A48B58 	18 20 20 20 64 75 70 20 
+1A48B60 	64 69 73 61 62 6C 65 2D 
+1A48B68 	6F 6C 64 2D 6E 6F 64 65 
+1A48B70 	73  0  0  0 D8 E5 A0  1 
+s"    hub-buf c@ 1 and 0=  if  drop exit  then" eval	( port )  \ No device connected
+1A48B78 	9C 53 A0  1 2B 20 20 20 
+1A48B80 	68 75 62 2D 62 75 66 20 
+1A48B88 	63 40 20 31 20 61 6E 64 
+1A48B90 	20 30 3D 20 20 69 66 20 
+1A48B98 	20 64 72 6F 70 20 65 78 
+1A48BA0 	69 74 20 20 74 68 65 6E 
+1A48BA8 	 0  0  0  0 D8 E5 A0  1 
+s"    hub-buf le-w@ h# 600 and 9 >>" eval  		( port speed )
+1A48BB0 	9C 53 A0  1 20 20 20 20 
+1A48BB8 	68 75 62 2D 62 75 66 20 
+1A48BC0 	6C 65 2D 77 40 20 68 23 
+1A48BC8 	20 36 30 30 20 61 6E 64 
+1A48BD0 	20 39 20 3E 3E  0  0  0 
+1A48BD8 	D8 E5 A0  1 
+
+   \ hub-port and hub-dev route USB 1.1 transactions through USB 2.0 hubs
+s"    over get-hub20-port  get-hub20-dev" eval		( port speed hub-port hub-dev )
+1A48BDC 	9C 53 A0  1 
+1A48BE0 	25 20 20 20 6F 76 65 72 
+1A48BE8 	20 67 65 74 2D 68 75 62 
+1A48BF0 	32 30 2D 70 6F 72 74 20 
+1A48BF8 	20 67 65 74 2D 68 75 62 
+1A48C00 	32 30 2D 64 65 76  0  0 
+1A48C08 	D8 E5 A0  1 
+
+ \ Execute setup-new-node in root context and make-device-node in hub node context
+ "   "" setup-new-node"" $call-parent  if  execute  then ;" eval
+1A48C0C 	9C 53 A0  1 
+1A48C10 	35 20 20 22 20 73 65 74 
+1A48C18 	75 70 2D 6E 65 77 2D 6E 
+1A48C20 	6F 64 65 22 20 24 63 61 
+1A48C28 	6C 6C 2D 70 61 72 65 6E 
+1A48C30 	74 20 20 69 66 20 20 65 
+1A48C38 	78 65 63 75 74 65 20 20 
+1A48C40 	74 68 65 6E 20 3B  0  0 
+1A48C48 	D8 E5 A0  1 
+
+s" : hub-#ports" eval  ( -- #ports )
+1A48C4C 	9C 53 A0  1 
+1A48C50 	 C 3A 20 68 75 62 2D 23 
+1A48C58 	70 6F 72 74 73  0  0  0 
+1A48C60 	D8 E5 A0  1 
+ "    hub-buf 8 0 0 HUB DR_HUB "" get-desc"" $call-parent nip  if" eval
+1A48C64 	9C 53 A0  1 
+1A48C68 	3C 20 20 20 68 75 62 2D 
+1A48C70 	62 75 66 20 38 20 30 20 
+1A48C78 	30 20 48 55 42 20 44 52 
+1A48C80 	5F 48 55 42 20 22 20 67 
+1A48C88 	65 74 2D 64 65 73 63 22 
+1A48C90 	20 24 63 61 6C 6C 2D 70 
+1A48C98 	61 72 65 6E 74 20 6E 69 
+1A48CA0 	70 20 20 69 66  0  0  0 
+1A48CA8 	D8 E5 A0  1 
+ "       ."" Failed to get hub descriptor"" cr" eval
+1A48CAC 	9C 53 A0  1 
+1A48CB0 	29 20 20 20 20 20 20 2E 
+1A48CB8 	22 20 46 61 69 6C 65 64 
+1A48CC0 	20 74 6F 20 67 65 74 20 
+1A48CC8 	68 75 62 20 64 65 73 63 
+1A48CD0 	72 69 70 74 6F 72 22 20 
+1A48CD8 	63 72  0  0 D8 E5 A0  1 
+s"       0 exit" eval
+1A48CE0 	9C 53 A0  1  C 20 20 20 
+1A48CE8 	20 20 20 30 20 65 78 69 
+1A48CF0 	74  0  0  0 D8 E5 A0  1 
+s"    then" eval
+1A48CF8 	9C 53 A0  1  7 20 20 20 
+1A48D00 	74 68 65 6E  0  0  0  0 
+1A48D08 	D8 E5 A0  1 
+s"    hub-buf 2 + c@ ;" eval 		( #ports )
+1A48D0C 	9C 53 A0  1 
+1A48D10 	13 20 20 20 68 75 62 2D 
+1A48D18 	62 75 66 20 32 20 2B 20 
+1A48D20 	63 40 20 3B  0  0  0  0 
+1A48D28 	D8 E5 A0  1 
+
+s" : hub-delay  ( -- #2ms )  hub-buf 5 + c@  ;" eval
+1A48D2C 	9C 53 A0  1 
+1A48D30 	2B 3A 20 68 75 62 2D 64 
+1A48D38 	65 6C 61 79 20 20 28 20 
+1A48D40 	2D 2D 20 23 32 6D 73 20 
+1A48D48 	29 20 20 68 75 62 2D 62 
+1A48D50 	75 66 20 35 20 2B 20 63 
+1A48D58 	40 20 20 3B  0  0  0  0 
+1A48D60 	D8 E5 A0  1 
+
+s" : power-hub-ports" eval  ( #ports -- )
+1A48D64 	9C 53 A0  1 
+1A48D68 	11 3A 20 70 6F 77 65 72 
+1A48D70 	2D 68 75 62 2D 70 6F 72 
+1A48D78 	74 73  0  0 D8 E5 A0  1 
+s"    1+  1  ?do  i power-hub-port  loop" eval
+1A48D80 	9C 53 A0  1 25 20 20 20 
+1A48D88 	31 2B 20 20 31 20 20 3F 
+1A48D90 	64 6F 20 20 69 20 70 6F 
+1A48D98 	77 65 72 2D 68 75 62 2D 
+1A48DA0 	70 6F 72 74 20 20 6C 6F 
+1A48DA8 	6F 70  0  0 D8 E5 A0  1 
+
+s"    hub-delay 2* ms" eval
+1A48DB0 	9C 53 A0  1 12 20 20 20 
+1A48DB8 	68 75 62 2D 64 65 6C 61 
+1A48DC0 	79 20 32 2A 20 6D 73  0 
+1A48DC8 	D8 E5 A0  1 
+
+ "    "" usb-delay"" ['] evaluate catch  if" eval      ( )
+1A48DCC 	9C 53 A0  1 
+1A48DD0 	26 20 20 20 22 20 75 73 
+1A48DD8 	62 2D 64 65 6C 61 79 22 
+1A48DE0 	20 5B 27 5D 20 65 76 61 
+1A48DE8 	6C 75 61 74 65 20 63 61 
+1A48DF0 	74 63 68 20 20 69 66  0 
+1A48DF8 	D8 E5 A0  1 
+s"       2drop  d# 100" eval                         ( ms )
+1A48DFC 	9C 53 A0  1 
+1A48E00 	13 20 20 20 20 20 20 32 
+1A48E08 	64 72 6F 70 20 20 64 23 
+1A48E10 	20 31 30 30  0  0  0  0 
+1A48E18 	D8 E5 A0  1 
+s"    then" eval                                     ( ms )
+1A48E1C 	9C 53 A0  1 
+1A48E20 	 7 20 20 20 74 68 65 6E 
+1A48E28 	 0  0  0  0 D8 E5 A0  1 
+s"    ms ;" eval
+1A48E30 	9C 53 A0  1  7 20 20 20 
+1A48E38 	6D 73 20 3B  0  0  0  0 
+1A48E40 	D8 E5 A0  1 
+
+s" : safe-probe-hub-port" eval  ( hub-dev port -- )
+1A48E44 	9C 53 A0  1 
+1A48E48 	15 3A 20 73 61 66 65 2D 
+1A48E50 	70 72 6F 62 65 2D 68 75 
+1A48E58 	62 2D 70 6F 72 74  0  0 
+1A48E60 	D8 E5 A0  1 
+s"    tuck ['] probe-hub-port catch  if" eval    ( port x x )
+1A48E64 	9C 53 A0  1 
+1A48E68 	24 20 20 20 74 75 63 6B 
+1A48E70 	20 5B 27 5D 20 70 72 6F 
+1A48E78 	62 65 2D 68 75 62 2D 70 
+1A48E80 	6F 72 74 20 63 61 74 63 
+1A48E88 	68 20 20 69 66  0  0  0 
+1A48E90 	D8 E5 A0  1 
+ "       2drop  ."" Failed to probe hub port "" . cr" eval
+1A48E94 	9C 53 A0  1 
+1A48E98 	2F 20 20 20 20 20 20 32 
+1A48EA0 	64 72 6F 70 20 20 2E 22 
+1A48EA8 	20 46 61 69 6C 65 64 20 
+1A48EB0 	74 6F 20 70 72 6F 62 65 
+1A48EB8 	20 68 75 62 20 70 6F 72 
+1A48EC0 	74 20 22 20 2E 20 63 72 
+1A48EC8 	 0  0  0  0 D8 E5 A0  1 
+s"    else" eval                                 ( port )
+1A48ED0 	9C 53 A0  1  7 20 20 20 
+1A48ED8 	65 6C 73 65  0  0  0  0 
+1A48EE0 	D8 E5 A0  1 
+s"       drop" eval
+1A48EE4 	9C 53 A0  1 
+1A48EE8 	 A 20 20 20 20 20 20 64 
+1A48EF0 	72 6F 70  0 D8 E5 A0  1 
+s"    then ;" eval
+1A48EF8 	9C 53 A0  1  9 20 20 20 
+1A48F00 	74 68 65 6E 20 3B  0  0 
+1A48F08 	D8 E5 A0  1 
+
+s" : probe-hub" eval  ( dev -- )
+1A48F0C 	9C 53 A0  1 
+1A48F10 	 B 3A 20 70 72 6F 62 65 
+1A48F18 	2D 68 75 62  0  0  0  0 
+1A48F20 	D8 E5 A0  1 
+s"    dup parent-set-target" eval		( hub-dev )
+1A48F24 	9C 53 A0  1 
+1A48F28 	18 20 20 20 64 75 70 20 
+1A48F30 	70 61 72 65 6E 74 2D 73 
+1A48F38 	65 74 2D 74 61 72 67 65 
+1A48F40 	74  0  0  0 D8 E5 A0  1 
+s"    hub-#ports  dup  0=  if" eval		( hub-dev #ports )
+1A48F48 	9C 53 A0  1 1A 20 20 20 
+1A48F50 	68 75 62 2D 23 70 6F 72 
+1A48F58 	74 73 20 20 64 75 70 20 
+1A48F60 	20 30 3D 20 20 69 66  0 
+1A48F68 	D8 E5 A0  1 
+s"       2drop exit" eval			( -- )
+1A48F6C 	9C 53 A0  1 
+1A48F70 	10 20 20 20 20 20 20 32 
+1A48F78 	64 72 6F 70 20 65 78 69 
+1A48F80 	74  0  0  0 D8 E5 A0  1 
+s"    then" eval					( hub-dev #ports )
+1A48F88 	9C 53 A0  1  7 20 20 20 
+1A48F90 	74 68 65 6E  0  0  0  0 
+1A48F98 	D8 E5 A0  1 
+
+ "    "" configuration#"" get-int-property" eval	( hub-dev #ports config# )
+1A48F9C 	9C 53 A0  1 
+1A48FA0 	25 20 20 20 22 20 63 6F 
+1A48FA8 	6E 66 69 67 75 72 61 74 
+1A48FB0 	69 6F 6E 23 22 20 67 65 
+1A48FB8 	74 2D 69 6E 74 2D 70 72 
+1A48FC0 	6F 70 65 72 74 79  0  0 
+1A48FC8 	D8 E5 A0  1 
+ "    "" set-config"" $call-parent" eval           ( hub-dev #ports usberr )
+1A48FCC 	9C 53 A0  1 
+1A48FD0 	1D 20 20 20 22 20 73 65 
+1A48FD8 	74 2D 63 6F 6E 66 69 67 
+1A48FE0 	22 20 24 63 61 6C 6C 2D 
+1A48FE8 	70 61 72 65 6E 74  0  0 
+1A48FF0 	D8 E5 A0  1 
+ "    if  drop  ."" Failed to set config for hub at "" u. cr exit  then" eval  ( hub-dev #ports )
+1A48FF4 	9C 53 A0  1 
+1A48FF8 	42 20 20 20 69 66 20 20 
+1A49000 	64 72 6F 70 20 20 2E 22 
+1A49008 	20 46 61 69 6C 65 64 20 
+1A49010 	74 6F 20 73 65 74 20 63 
+1A49018 	6F 6E 66 69 67 20 66 6F 
+1A49020 	72 20 68 75 62 20 61 74 
+1A49028 	20 22 20 75 2E 20 63 72 
+1A49030 	20 65 78 69 74 20 20 74 
+1A49038 	68 65 6E  0 D8 E5 A0  1 
+
+s"    dup power-hub-ports" eval			( hub-dev #ports )
+1A49040 	9C 53 A0  1 16 20 20 20 
+1A49048 	64 75 70 20 70 6F 77 65 
+1A49050 	72 2D 68 75 62 2D 70 6F 
+1A49058 	72 74 73  0 D8 E5 A0  1 
+
+s"   hub-error?  if  2drop exit  then" eval	( hub-dev #ports )
+1A49060 	9C 53 A0  1 22 20 20 68 
+1A49068 	75 62 2D 65 72 72 6F 72 
+1A49070 	3F 20 20 69 66 20 20 32 
+1A49078 	64 72 6F 70 20 65 78 69 
+1A49080 	74 20 20 74 68 65 6E  0 
+1A49088 	D8 E5 A0  1 
+
+s"    1+ 1  ?do" eval				( hub-dev )
+1A4908C 	9C 53 A0  1 
+1A49090 	 C 20 20 20 31 2B 20 31 
+1A49098 	20 20 3F 64 6F  0  0  0 
+1A490A0 	D8 E5 A0  1 
+s"       dup i safe-probe-hub-port" eval		( hub-dev )
+1A490A4 	9C 53 A0  1 
+1A490A8 	1F 20 20 20 20 20 20 64 
+1A490B0 	75 70 20 69 20 73 61 66 
+1A490B8 	65 2D 70 72 6F 62 65 2D 
+1A490C0 	68 75 62 2D 70 6F 72 74 
+1A490C8 	 0  0  0  0 D8 E5 A0  1 
+s"    loop" eval					( hub-dev )
+1A490D0 	9C 53 A0  1  7 20 20 20 
+1A490D8 	6C 6F 6F 70  0  0  0  0 
+1A490E0 	D8 E5 A0  1 
+s"    drop ;" eval
+1A490E4 	9C 53 A0  1 
+1A490E8 	 9 20 20 20 64 72 6F 70 
+1A490F0 	20 3B  0  0 D8 E5 A0  1 
+
+s" : probe-hub-xt  ( -- adr )  ['] probe-hub  ;" eval
+1A490F8 	9C 53 A0  1 2C 3A 20 70 
+1A49100 	72 6F 62 65 2D 68 75 62 
+1A49108 	2D 78 74 20 20 28 20 2D 
+1A49110 	2D 20 61 64 72 20 29 20 
+1A49118 	20 5B 27 5D 20 70 72 6F 
+1A49120 	62 65 2D 68 75 62 20 20 
+1A49128 	3B  0  0  0 D8 E5 A0  1 
+
+s" : do-reprobe-hub" eval  ( dev -- )
+1A49130 	9C 53 A0  1 10 3A 20 64 
+1A49138 	6F 2D 72 65 70 72 6F 62 
+1A49140 	65 2D 68 75 62  0  0  0 
+1A49148 	D8 E5 A0  1 
+s"    dup parent-set-target" eval			( hub-dev )
+1A4914C 	9C 53 A0  1 
+1A49150 	18 20 20 20 64 75 70 20 
+1A49158 	70 61 72 65 6E 74 2D 73 
+1A49160 	65 74 2D 74 61 72 67 65 
+1A49168 	74  0  0  0 D8 E5 A0  1 
+   
+s"    hub-#ports  dup 0=  if" eval                       ( hub-dev #ports )
+1A49170 	9C 53 A0  1 19 20 20 20 
+1A49178 	68 75 62 2D 23 70 6F 72 
+1A49180 	74 73 20 20 64 75 70 20 
+1A49188 	30 3D 20 20 69 66  0  0 
+1A49190 	D8 E5 A0  1 
+s"       2drop exit" eval                                ( -- )
+1A49194 	9C 53 A0  1 
+1A49198 	10 20 20 20 20 20 20 32 
+1A491A0 	64 72 6F 70 20 65 78 69 
+1A491A8 	74  0  0  0 D8 E5 A0  1 
+s"    then" eval                                         ( hub-dev #ports )
+1A491B0 	9C 53 A0  1  7 20 20 20 
+1A491B8 	74 68 65 6E  0  0  0  0 
+1A491C0 	D8 E5 A0  1 
+
+s"    hub-error?  if  2drop exit  then" eval		( hub-dev #ports )
+1A491C4 	9C 53 A0  1 
+1A491C8 	23 20 20 20 68 75 62 2D 
+1A491D0 	65 72 72 6F 72 3F 20 20 
+1A491D8 	69 66 20 20 32 64 72 6F 
+1A491E0 	70 20 65 78 69 74 20 20 
+1A491E8 	74 68 65 6E  0  0  0  0 
+1A491F0 	D8 E5 A0  1 
+
+s"    1+  1  ?do" eval                                   ( hub-dev )
+1A491F4 	9C 53 A0  1 
+1A491F8 	 D 20 20 20 31 2B 20 20 
+1A49200 	31 20 20 3F 64 6F  0  0 
+1A49208 	D8 E5 A0  1 
+s"       dup i port-status-changed?  if" eval            ( hub-dev connected? )
+1A4920C 	9C 53 A0  1 
+1A49210 	24 20 20 20 20 20 20 64 
+1A49218 	75 70 20 69 20 70 6F 72 
+1A49220 	74 2D 73 74 61 74 75 73 
+1A49228 	2D 63 68 61 6E 67 65 64 
+1A49230 	3F 20 20 69 66  0  0  0 
+1A49238 	D8 E5 A0  1 
+s"          i disable-old-nodes" eval                    ( hub-dev connected? )
+1A4923C 	9C 53 A0  1 
+1A49240 	1C 20 20 20 20 20 20 20 
+1A49248 	20 20 69 20 64 69 73 61 
+1A49250 	62 6C 65 2D 6F 6C 64 2D 
+1A49258 	6E 6F 64 65 73  0  0  0 
+1A49260 	D8 E5 A0  1 
+s"          if" eval                                     ( hub-dev )
+1A49264 	9C 53 A0  1 
+1A49268 	 B 20 20 20 20 20 20 20 
+1A49270 	20 20 69 66  0  0  0  0 
+1A49278 	D8 E5 A0  1 
+s"             d# 100 ms" eval                           ( hub-dev )  \ Time for device to wake up
+1A4927C 	9C 53 A0  1 
+1A49280 	15 20 20 20 20 20 20 20 
+1A49288 	20 20 20 20 20 64 23 20 
+1A49290 	31 30 30 20 6D 73  0  0 
+1A49298 	D8 E5 A0  1 
+s"             dup i safe-probe-hub-port" eval           ( hub-dev )
+1A4929C 	9C 53 A0  1 
+1A492A0 	25 20 20 20 20 20 20 20 
+1A492A8 	20 20 20 20 20 64 75 70 
+1A492B0 	20 69 20 73 61 66 65 2D 
+1A492B8 	70 72 6F 62 65 2D 68 75 
+1A492C0 	62 2D 70 6F 72 74  0  0 
+1A492C8 	D8 E5 A0  1 
+s"          then" eval                                   ( hub-dev )
+1A492CC 	9C 53 A0  1 
+1A492D0 	 D 20 20 20 20 20 20 20 
+1A492D8 	20 20 74 68 65 6E  0  0 
+1A492E0 	D8 E5 A0  1 
+s"       else" eval                                      ( hub-dev )
+1A492E4 	9C 53 A0  1 
+1A492E8 	 A 20 20 20 20 20 20 65 
+1A492F0 	6C 73 65  0 D8 E5 A0  1 
+s"          i port-is-hub?  if" eval                     ( hub-dev phandle )
+1A492F8 	9C 53 A0  1 1B 20 20 20 
+1A49300 	20 20 20 20 20 20 69 20 
+1A49308 	70 6F 72 74 2D 69 73 2D 
+1A49310 	68 75 62 3F 20 20 69 66 
+1A49318 	 0  0  0  0 D8 E5 A0  1 
+s"             reprobe-hub-node" eval                    ( hub-dev )
+1A49320 	9C 53 A0  1 1C 20 20 20 
+1A49328 	20 20 20 20 20 20 20 20 
+1A49330 	20 72 65 70 72 6F 62 65 
+1A49338 	2D 68 75 62 2D 6E 6F 64 
+1A49340 	65  0  0  0 D8 E5 A0  1 
+s"          then" eval                                   ( hub-dev )
+1A49348 	9C 53 A0  1  D 20 20 20 
+1A49350 	20 20 20 20 20 20 74 68 
+1A49358 	65 6E  0  0 D8 E5 A0  1 
+s"       then" eval                                      ( hub-dev )
+1A49360 	9C 53 A0  1  A 20 20 20 
+1A49368 	20 20 20 74 68 65 6E  0 
+1A49370 	D8 E5 A0  1 
+s"    loop" eval                                         ( hub-dev )
+1A49374 	9C 53 A0  1 
+1A49378 	 7 20 20 20 6C 6F 6F 70 
+1A49380 	 0  0  0  0 D8 E5 A0  1 
+s"    drop ;" eval                                        ( )
+1A49388 	9C 53 A0  1  9 20 20 20 
+1A49390 	64 72 6F 70 20 3B  0  0 
+1A49398 	D8 E5 A0  1 
+
+
+s" : reprobe-hub-xt  ( -- adr )  ['] do-reprobe-hub  ;" eval
+1A4939C 	9C 53 A0  1 
+1A493A0 	33 3A 20 72 65 70 72 6F 
+1A493A8 	62 65 2D 68 75 62 2D 78 
+1A493B0 	74 20 20 28 20 2D 2D 20 
+1A493B8 	61 64 72 20 29 20 20 5B 
+1A493C0 	27 5D 20 64 6F 2D 72 65 
+1A493C8 	70 72 6F 62 65 2D 68 75 
+1A493D0 	62 20 20 3B  0  0  0  0 
+1A493D8 	D8 E5 A0  1 
+
+s" : hub-port-connected?" eval  ( port# -- flag )
+1A493DC 	9C 53 A0  1 
+1A493E0 	15 3A 20 68 75 62 2D 70 
+1A493E8 	6F 72 74 2D 63 6F 6E 6E 
+1A493F0 	65 63 74 65 64 3F  0  0 
+1A493F8 	D8 E5 A0  1 
+s"    get-port-status  if  false exit  then" eval
+1A493FC 	9C 53 A0  1 
+1A49400 	28 20 20 20 67 65 74 2D 
+1A49408 	70 6F 72 74 2D 73 74 61 
+1A49410 	74 75 73 20 20 69 66 20 
+1A49418 	20 66 61 6C 73 65 20 65 
+1A49420 	78 69 74 20 20 74 68 65 
+1A49428 	6E  0  0  0 D8 E5 A0  1 
+s"    hub-buf c@ 1 and  0<> ;" eval
+1A49430 	9C 53 A0  1 1A 20 20 20 
+1A49438 	68 75 62 2D 62 75 66 20 
+1A49440 	63 40 20 31 20 61 6E 64 
+1A49448 	20 20 30 3C 3E 20 3B  0 
+1A49450 	D8 E5 A0  1 
+s" 0 value hub-dev" eval
+1A49454 	9C 53 A0  1 
+1A49458 	 F 30 20 76 61 6C 75 65 
+1A49460 	20 68 75 62 2D 64 65 76 
+1A49468 	 0  0  0  0 D8 E5 A0  1 
+s" : wait-hub-connect" eval  ( port# -- error? )
+1A49470 	9C 53 A0  1 12 3A 20 77 
+1A49478 	61 69 74 2D 68 75 62 2D 
+1A49480 	63 6F 6E 6E 65 63 74  0 
+1A49488 	D8 E5 A0  1 
+s"    begin" eval                            ( port# )
+1A4948C 	9C 53 A0  1 
+1A49490 	 8 20 20 20 62 65 67 69 
+1A49498 	6E  0  0  0 D8 E5 A0  1 
+s"       dup hub-port-connected?  0=" eval   ( port# unconnected? )
+1A494A0 	9C 53 A0  1 21 20 20 20 
+1A494A8 	20 20 20 64 75 70 20 68 
+1A494B0 	75 62 2D 70 6F 72 74 2D 
+1A494B8 	63 6F 6E 6E 65 63 74 65 
+1A494C0 	64 3F 20 20 30 3D  0  0 
+1A494C8 	D8 E5 A0  1 
+s"    while" eval                            ( port# )
+1A494CC 	9C 53 A0  1 
+1A494D0 	 8 20 20 20 77 68 69 6C 
+1A494D8 	65  0  0  0 D8 E5 A0  1 
+s"       key?  if" eval                      ( port# )
+1A494E0 	9C 53 A0  1  E 20 20 20 
+1A494E8 	20 20 20 6B 65 79 3F 20 
+1A494F0 	20 69 66  0 D8 E5 A0  1 
+s"          key h# 1b =  if" eval            ( port# )   \ ESC aborts
+1A494F8 	9C 53 A0  1 18 20 20 20 
+1A49500 	20 20 20 20 20 20 6B 65 
+1A49508 	79 20 68 23 20 31 62 20 
+1A49510 	3D 20 20 69 66  0  0  0 
+1A49518 	D8 E5 A0  1 
+s"             drop true exit" eval          ( -- true )
+1A4951C 	9C 53 A0  1 
+1A49520 	1A 20 20 20 20 20 20 20 
+1A49528 	20 20 20 20 20 64 72 6F 
+1A49530 	70 20 74 72 75 65 20 65 
+1A49538 	78 69 74  0 D8 E5 A0  1 
+s"          then" eval                       ( port# )
+1A49540 	9C 53 A0  1  D 20 20 20 
+1A49548 	20 20 20 20 20 20 74 68 
+1A49550 	65 6E  0  0 D8 E5 A0  1 
+s"       then" eval                          ( port# )
+1A49558 	9C 53 A0  1  A 20 20 20 
+1A49560 	20 20 20 74 68 65 6E  0 
+1A49568 	D8 E5 A0  1 
+s"    repeat" eval                           ( port# )
+1A4956C 	9C 53 A0  1 
+1A49570 	 9 20 20 20 72 65 70 65 
+1A49578 	61 74  0  0 D8 E5 A0  1 
+ "    ."" Device connected - probing ... "" " eval
+1A49580 	9C 53 A0  1 27 20 20 20 
+1A49588 	2E 22 20 44 65 76 69 63 
+1A49590 	65 20 63 6F 6E 6E 65 63 
+1A49598 	74 65 64 20 2D 20 70 72 
+1A495A0 	6F 62 69 6E 67 20 2E 2E 
+1A495A8 	2E 20 22 20  0  0  0  0 
+1A495B0 	D8 E5 A0  1 
+s"    d# 150 ms" eval                        ( port# )   \ Wakeup time
+1A495B4 	9C 53 A0  1 
+1A495B8 	 C 20 20 20 64 23 20 31 
+1A495C0 	35 30 20 6D 73  0  0  0 
+1A495C8 	D8 E5 A0  1 
+s"    probe-setup" eval                      ( port# )
+1A495CC 	9C 53 A0  1 
+1A495D0 	 E 20 20 20 70 72 6F 62 
+1A495D8 	65 2D 73 65 74 75 70  0 
+1A495E0 	D8 E5 A0  1 
+s"    hub-dev swap ['] probe-hub-port  catch  if" eval  ( x x  )
+1A495E4 	9C 53 A0  1 
+1A495E8 	2D 20 20 20 68 75 62 2D 
+1A495F0 	64 65 76 20 73 77 61 70 
+1A495F8 	20 5B 27 5D 20 70 72 6F 
+1A49600 	62 65 2D 68 75 62 2D 70 
+1A49608 	6F 72 74 20 20 63 61 74 
+1A49610 	63 68 20 20 69 66  0  0 
+1A49618 	D8 E5 A0  1 
+s"       2drop" eval                         ( )
+1A4961C 	9C 53 A0  1 
+1A49620 	 B 20 20 20 20 20 20 32 
+1A49628 	64 72 6F 70  0  0  0  0 
+1A49630 	D8 E5 A0  1 
+ "      ."" Failed"" cr" eval                 ( )
+1A49634 	9C 53 A0  1 
+1A49638 	12 20 20 20 20 20 2E 22 
+1A49640 	20 46 61 69 6C 65 64 22 
+1A49648 	20 63 72  0 D8 E5 A0  1 
+s"      true" eval                          ( true )
+1A49650 	9C 53 A0  1  9 20 20 20 
+1A49658 	20 20 74 72 75 65  0  0 
+1A49660 	D8 E5 A0  1 
+s"   else" eval                             ( )
+1A49664 	9C 53 A0  1 
+1A49668 	 6 20 20 65 6C 73 65  0 
+1A49670 	D8 E5 A0  1 
+ "      ."" Done"" cr" eval                   ( )
+1A49674 	9C 53 A0  1 
+1A49678 	10 20 20 20 20 20 2E 22 
+1A49680 	20 44 6F 6E 65 22 20 63 
+1A49688 	72  0  0  0 D8 E5 A0  1 
+s"      false" eval                         ( false )
+1A49690 	9C 53 A0  1  A 20 20 20 
+1A49698 	20 20 66 61 6C 73 65  0 
+1A496A0 	D8 E5 A0  1 
+s"   then" eval                             ( error? )
+1A496A4 	9C 53 A0  1 
+1A496A8 	 6 20 20 74 68 65 6E  0 
+1A496B0 	D8 E5 A0  1 
+s"   probe-teardown ;" eval                  ( error? )
+1A496B4 	9C 53 A0  1 
+1A496B8 	12 20 20 70 72 6F 62 65 
+1A496C0 	2D 74 65 61 72 64 6F 77 
+1A496C8 	6E 20 3B  0 D8 E5 A0  1 
+
+s" : (hub-selftest)" eval  ( port -- stop? )
+1A496D0 	9C 53 A0  1 10 3A 20 28 
+1A496D8 	68 75 62 2D 73 65 6C 66 
+1A496E0 	74 65 73 74 29  0  0  0 
+1A496E8 	D8 E5 A0  1 
+s"    >r" eval
+1A496EC 	9C 53 A0  1 
+1A496F0 	 5 20 20 20 3E 72  0  0 
+1A496F8 	D8 E5 A0  1 
+s"    hub-dev parent-set-target" eval              ( )
+1A496FC 	9C 53 A0  1 
+1A49700 	1C 20 20 20 68 75 62 2D 
+1A49708 	64 65 76 20 70 61 72 65 
+1A49710 	6E 74 2D 73 65 74 2D 74 
+1A49718 	61 72 67 65 74  0  0  0 
+1A49720 	D8 E5 A0  1 
+s"    r@ get-port-status  if" eval                 ( )
+1A49724 	9C 53 A0  1 
+1A49728 	19 20 20 20 72 40 20 67 
+1A49730 	65 74 2D 70 6F 72 74 2D 
+1A49738 	73 74 61 74 75 73 20 20 
+1A49740 	69 66  0  0 D8 E5 A0  1 
+ "       ."" Get-port-status failed for hub port "" r@ u. cr" eval
+1A49748 	9C 53 A0  1 37 20 20 20 
+1A49750 	20 20 20 2E 22 20 47 65 
+1A49758 	74 2D 70 6F 72 74 2D 73 
+1A49760 	74 61 74 75 73 20 66 61 
+1A49768 	69 6C 65 64 20 66 6F 72 
+1A49770 	20 68 75 62 20 70 6F 72 
+1A49778 	74 20 22 20 72 40 20 75 
+1A49780 	2E 20 63 72  0  0  0  0 
+1A49788 	D8 E5 A0  1 
+s"       r> drop true exit" eval                   ( -- true )
+1A4978C 	9C 53 A0  1 
+1A49790 	17 20 20 20 20 20 20 72 
+1A49798 	3E 20 64 72 6F 70 20 74 
+1A497A0 	72 75 65 20 65 78 69 74 
+1A497A8 	 0  0  0  0 D8 E5 A0  1 
+s"    then" eval                                   ( )
+1A497B0 	9C 53 A0  1  7 20 20 20 
+1A497B8 	74 68 65 6E  0  0  0  0 
+1A497C0 	D8 E5 A0  1 
+ "    ."" Hub port "" r@ u. ."" : "" " eval            ( )
+1A497C4 	9C 53 A0  1 
+1A497C8 	1E 20 20 20 2E 22 20 48 
+1A497D0 	75 62 20 70 6F 72 74 20 
+1A497D8 	22 20 72 40 20 75 2E 20 
+1A497E0 	2E 22 20 3A 20 22 20  0 
+1A497E8 	D8 E5 A0  1 
+s"    hub-buf c@ 8 and  if" eval   \ Connected     ( )
+1A497EC 	9C 53 A0  1 
+1A497F0 	17 20 20 20 68 75 62 2D 
+1A497F8 	62 75 66 20 63 40 20 38 
+1A49800 	20 61 6E 64 20 20 69 66 
+1A49808 	 0  0  0  0 D8 E5 A0  1 
+ "       ."" In over current"" cr" eval              ( )
+1A49810 	9C 53 A0  1 1C 20 20 20 
+1A49818 	20 20 20 2E 22 20 49 6E 
+1A49820 	20 6F 76 65 72 20 63 75 
+1A49828 	72 72 65 6E 74 22 20 63 
+1A49830 	72  0  0  0 D8 E5 A0  1 
+s"       r> drop true exit" eval                   ( -- true )
+1A49838 	9C 53 A0  1 17 20 20 20 
+1A49840 	20 20 20 72 3E 20 64 72 
+1A49848 	6F 70 20 74 72 75 65 20 
+1A49850 	65 78 69 74  0  0  0  0 
+1A49858 	D8 E5 A0  1 
+s"    then" eval                                   ( )
+1A4985C 	9C 53 A0  1 
+1A49860 	 7 20 20 20 74 68 65 6E 
+1A49868 	 0  0  0  0 D8 E5 A0  1 
+s"    hub-buf c@ 1 and  if" eval   \ Connected     ( )
+1A49870 	9C 53 A0  1 17 20 20 20 
+1A49878 	68 75 62 2D 62 75 66 20 
+1A49880 	63 40 20 31 20 61 6E 64 
+1A49888 	20 20 69 66  0  0  0  0 
+1A49890 	D8 E5 A0  1 
+ "       ."" In use - "" " eval                      ( )
+1A49894 	9C 53 A0  1 
+1A49898 	14 20 20 20 20 20 20 2E 
+1A498A0 	22 20 49 6E 20 75 73 65 
+1A498A8 	20 2D 20 22 20  0  0  0 
+1A498B0 	D8 E5 A0  1 
+s"       r@ .usb-device cr" eval                   ( )
+1A498B4 	9C 53 A0  1 
+1A498B8 	17 20 20 20 20 20 20 72 
+1A498C0 	40 20 2E 75 73 62 2D 64 
+1A498C8 	65 76 69 63 65 20 63 72 
+1A498D0 	 0  0  0  0 D8 E5 A0  1 
+s"    else" eval                                   ( )
+1A498D8 	9C 53 A0  1  7 20 20 20 
+1A498E0 	65 6C 73 65  0  0  0  0 
+1A498E8 	D8 E5 A0  1 
+s"       diagnostic-mode?  if" eval                ( )
+1A498EC 	9C 53 A0  1 
+1A498F0 	1A 20 20 20 20 20 20 64 
+1A498F8 	69 61 67 6E 6F 73 74 69 
+1A49900 	63 2D 6D 6F 64 65 3F 20 
+1A49908 	20 69 66  0 D8 E5 A0  1 
+ "          ."" Please connect a device""  cr" eval  ( )
+1A49910 	9C 53 A0  1 28 20 20 20 
+1A49918 	20 20 20 20 20 20 2E 22 
+1A49920 	20 50 6C 65 61 73 65 20 
+1A49928 	63 6F 6E 6E 65 63 74 20 
+1A49930 	61 20 64 65 76 69 63 65 
+1A49938 	22 20 20 63 72  0  0  0 
+1A49940 	D8 E5 A0  1 
+s"          r@ wait-hub-connect  if  r> drop true exit  then" eval   ( )
+1A49944 	9C 53 A0  1 
+1A49948 	39 20 20 20 20 20 20 20 
+1A49950 	20 20 72 40 20 77 61 69 
+1A49958 	74 2D 68 75 62 2D 63 6F 
+1A49960 	6E 6E 65 63 74 20 20 69 
+1A49968 	66 20 20 72 3E 20 64 72 
+1A49970 	6F 70 20 74 72 75 65 20 
+1A49978 	65 78 69 74 20 20 74 68 
+1A49980 	65 6E  0  0 D8 E5 A0  1 
+s"          r@ .usb-device cr" eval                                  ( )
+1A49988 	9C 53 A0  1 1A 20 20 20 
+1A49990 	20 20 20 20 20 20 72 40 
+1A49998 	20 2E 75 73 62 2D 64 65 
+1A499A0 	76 69 63 65 20 63 72  0 
+1A499A8 	D8 E5 A0  1 
+s"       else" eval                                                  ( )
+1A499AC 	9C 53 A0  1 
+1A499B0 	 A 20 20 20 20 20 20 65 
+1A499B8 	6C 73 65  0 D8 E5 A0  1 
+ "          "" fisheye?"" $call-parent  if" eval                       ( )
+1A499C0 	9C 53 A0  1 25 20 20 20 
+1A499C8 	20 20 20 20 20 20 22 20 
+1A499D0 	66 69 73 68 65 79 65 3F 
+1A499D8 	22 20 24 63 61 6C 6C 2D 
+1A499E0 	70 61 72 65 6E 74 20 20 
+1A499E8 	69 66  0  0 D8 E5 A0  1 
+ "             ."" Fisheye pattern"" cr" eval                          ( )
+1A499F0 	9C 53 A0  1 22 20 20 20 
+1A499F8 	20 20 20 20 20 20 20 20 
+1A49A00 	20 2E 22 20 46 69 73 68 
+1A49A08 	65 79 65 20 70 61 74 74 
+1A49A10 	65 72 6E 22 20 63 72  0 
+1A49A18 	D8 E5 A0  1 
+s"             r@ 4 test-hub-port" eval                              ( )
+1A49A1C 	9C 53 A0  1 
+1A49A20 	1E 20 20 20 20 20 20 20 
+1A49A28 	20 20 20 20 20 72 40 20 
+1A49A30 	34 20 74 65 73 74 2D 68 
+1A49A38 	75 62 2D 70 6F 72 74  0 
+1A49A40 	D8 E5 A0  1 
+s"             d# 2,000 ms" eval                                     ( )
+1A49A44 	9C 53 A0  1 
+1A49A48 	17 20 20 20 20 20 20 20 
+1A49A50 	20 20 20 20 20 64 23 20 
+1A49A58 	32 2C 30 30 30 20 6D 73 
+1A49A60 	 0  0  0  0 D8 E5 A0  1 
+s"             r@ untest-hub-port" eval                              ( )
+1A49A68 	9C 53 A0  1 1E 20 20 20 
+1A49A70 	20 20 20 20 20 20 20 20 
+1A49A78 	20 72 40 20 75 6E 74 65 
+1A49A80 	73 74 2D 68 75 62 2D 70 
+1A49A88 	6F 72 74  0 D8 E5 A0  1 
+s"             r@ reset-hub-port  r@ power-hub-port" eval            ( )
+1A49A90 	9C 53 A0  1 30 20 20 20 
+1A49A98 	20 20 20 20 20 20 20 20 
+1A49AA0 	20 72 40 20 72 65 73 65 
+1A49AA8 	74 2D 68 75 62 2D 70 6F 
+1A49AB0 	72 74 20 20 72 40 20 70 
+1A49AB8 	6F 77 65 72 2D 68 75 62 
+1A49AC0 	2D 70 6F 72 74  0  0  0 
+1A49AC8 	D8 E5 A0  1 
+s"          else" eval                                               ( )
+1A49ACC 	9C 53 A0  1 
+1A49AD0 	 D 20 20 20 20 20 20 20 
+1A49AD8 	20 20 65 6C 73 65  0  0 
+1A49AE0 	D8 E5 A0  1 
+ "             ."" Empty"" cr" eval                                 ( )
+1A49AE4 	9C 53 A0  1 
+1A49AE8 	18 20 20 20 20 20 20 20 
+1A49AF0 	20 20 20 20 20 2E 22 20 
+1A49AF8 	45 6D 70 74 79 22 20 63 
+1A49B00 	72  0  0  0 D8 E5 A0  1 
+s"          then" eval                                               ( )
+1A49B08 	9C 53 A0  1  D 20 20 20 
+1A49B10 	20 20 20 20 20 20 74 68 
+1A49B18 	65 6E  0  0 D8 E5 A0  1 
+s"       then" eval                                                  ( )
+1A49B20 	9C 53 A0  1  A 20 20 20 
+1A49B28 	20 20 20 74 68 65 6E  0 
+1A49B30 	D8 E5 A0  1 
+s"    then" eval                                                     ( )
+1A49B34 	9C 53 A0  1 
+1A49B38 	 7 20 20 20 74 68 65 6E 
+1A49B40 	 0  0  0  0 D8 E5 A0  1 
+s"    r> drop false ;" eval
+1A49B48 	9C 53 A0  1 12 20 20 20 
+1A49B50 	72 3E 20 64 72 6F 70 20 
+1A49B58 	66 61 6C 73 65 20 3B  0 
+1A49B60 	D8 E5 A0  1 
+
+s" : hub-selftest" eval  ( hub-dev -- error? )
+1A49B64 	9C 53 A0  1 
+1A49B68 	 E 3A 20 68 75 62 2D 73 
+1A49B70 	65 6C 66 74 65 73 74  0 
+1A49B78 	D8 E5 A0  1 
+s"    to hub-dev" eval                                           ( )
+1A49B7C 	9C 53 A0  1 
+1A49B80 	 D 20 20 20 74 6F 20 68 
+1A49B88 	75 62 2D 64 65 76  0  0 
+1A49B90 	D8 E5 A0  1 
+
+ "    "" usb-hub-test-list"" get-inherited-property  if" eval      ( )
+1A49B94 	9C 53 A0  1 
+1A49B98 	32 20 20 20 22 20 75 73 
+1A49BA0 	62 2D 68 75 62 2D 74 65 
+1A49BA8 	73 74 2D 6C 69 73 74 22 
+1A49BB0 	20 67 65 74 2D 69 6E 68 
+1A49BB8 	65 72 69 74 65 64 2D 70 
+1A49BC0 	72 6F 70 65 72 74 79 20 
+1A49BC8 	20 69 66  0 D8 E5 A0  1 
+s"       hub-#ports 1+  1  ?do" eval                             ( )
+1A49BD0 	9C 53 A0  1 1B 20 20 20 
+1A49BD8 	20 20 20 68 75 62 2D 23 
+1A49BE0 	70 6F 72 74 73 20 31 2B 
+1A49BE8 	20 20 31 20 20 3F 64 6F 
+1A49BF0 	 0  0  0  0 D8 E5 A0  1 
+s"          i (hub-selftest)  if  true unloop exit  then" eval   ( )
+1A49BF8 	9C 53 A0  1 35 20 20 20 
+1A49C00 	20 20 20 20 20 20 69 20 
+1A49C08 	28 68 75 62 2D 73 65 6C 
+1A49C10 	66 74 65 73 74 29 20 20 
+1A49C18 	69 66 20 20 74 72 75 65 
+1A49C20 	20 75 6E 6C 6F 6F 70 20 
+1A49C28 	65 78 69 74 20 20 74 68 
+1A49C30 	65 6E  0  0 D8 E5 A0  1 
+s"       loop" eval                                              ( )
+1A49C38 	9C 53 A0  1  A 20 20 20 
+1A49C40 	20 20 20 6C 6F 6F 70  0 
+1A49C48 	D8 E5 A0  1 
+s"    else" eval                                                 ( propval$ )
+1A49C4C 	9C 53 A0  1 
+1A49C50 	 7 20 20 20 65 6C 73 65 
+1A49C58 	 0  0  0  0 D8 E5 A0  1 
+s"       decode-string 2swap 2drop" eval                         ( list$ )
+1A49C60 	9C 53 A0  1 1F 20 20 20 
+1A49C68 	20 20 20 64 65 63 6F 64 
+1A49C70 	65 2D 73 74 72 69 6E 67 
+1A49C78 	20 32 73 77 61 70 20 32 
+1A49C80 	64 72 6F 70  0  0  0  0 
+1A49C88 	D8 E5 A0  1 
+s"       begin  dup  while" eval                                 ( list$ )
+1A49C8C 	9C 53 A0  1 
+1A49C90 	17 20 20 20 20 20 20 62 
+1A49C98 	65 67 69 6E 20 20 64 75 
+1A49CA0 	70 20 20 77 68 69 6C 65 
+1A49CA8 	 0  0  0  0 D8 E5 A0  1 
+s"          ascii , left-parse-string" eval                      ( list$' dev#$ )
+1A49CB0 	9C 53 A0  1 22 20 20 20 
+1A49CB8 	20 20 20 20 20 20 61 73 
+1A49CC0 	63 69 69 20 2C 20 6C 65 
+1A49CC8 	66 74 2D 70 61 72 73 65 
+1A49CD0 	2D 73 74 72 69 6E 67  0 
+1A49CD8 	D8 E5 A0  1 
+s"          base @ >r decimal" eval                              ( list$' dev#$ )
+1A49CDC 	9C 53 A0  1 
+1A49CE0 	1A 20 20 20 20 20 20 20 
+1A49CE8 	20 20 62 61 73 65 20 40 
+1A49CF0 	20 3E 72 20 64 65 63 69 
+1A49CF8 	6D 61 6C  0 D8 E5 A0  1 
+s"          $number  if  0  then" eval                           ( list$' port# )
+1A49D00 	9C 53 A0  1 1D 20 20 20 
+1A49D08 	20 20 20 20 20 20 24 6E 
+1A49D10 	75 6D 62 65 72 20 20 69 
+1A49D18 	66 20 20 30 20 20 74 68 
+1A49D20 	65 6E  0  0 D8 E5 A0  1 
+s"          r> base !" eval                                      ( list$ port# )
+1A49D28 	9C 53 A0  1 12 20 20 20 
+1A49D30 	20 20 20 20 20 20 72 3E 
+1A49D38 	20 62 61 73 65 20 21  0 
+1A49D40 	D8 E5 A0  1 
+s"          (hub-selftest)  if  2drop true exit  then" eval      ( list$ )
+1A49D44 	9C 53 A0  1 
+1A49D48 	32 20 20 20 20 20 20 20 
+1A49D50 	20 20 28 68 75 62 2D 73 
+1A49D58 	65 6C 66 74 65 73 74 29 
+1A49D60 	20 20 69 66 20 20 32 64 
+1A49D68 	72 6F 70 20 74 72 75 65 
+1A49D70 	20 65 78 69 74 20 20 74 
+1A49D78 	68 65 6E  0 D8 E5 A0  1 
+s"       repeat" eval                                            ( list$ )
+1A49D80 	9C 53 A0  1  C 20 20 20 
+1A49D88 	20 20 20 72 65 70 65 61 
+1A49D90 	74  0  0  0 D8 E5 A0  1 
+s"       2drop" eval                                             ( )
+1A49D98 	9C 53 A0  1  B 20 20 20 
+1A49DA0 	20 20 20 32 64 72 6F 70 
+1A49DA8 	 0  0  0  0 D8 E5 A0  1 
+s"    then" eval                                                 ( )
+1A49DB0 	9C 53 A0  1  7 20 20 20 
+1A49DB8 	74 68 65 6E  0  0  0  0 
+1A49DC0 	D8 E5 A0  1 
+
+    \ Maybe need to reset the entire hub here
+s"    false ;" eval                                               ( false )
+1A49DC4 	9C 53 A0  1 
+1A49DC8 	 A 20 20 20 66 61 6C 73 
+1A49DD0 	65 20 3B  0 D8 E5 A0  1 
+s" : hub-selftest-xt  ( -- xt )  ['] hub-selftest  ;" eval
+1A49DD8 	9C 53 A0  1 31 3A 20 68 
+1A49DE0 	75 62 2D 73 65 6C 66 74 
+1A49DE8 	65 73 74 2D 78 74 20 20 
+1A49DF0 	28 20 2D 2D 20 78 74 20 
+1A49DF8 	29 20 20 5B 27 5D 20 68 
+1A49E00 	75 62 2D 73 65 6C 66 74 
+1A49E08 	65 73 74 20 20 3B  0  0 
+1A49E10 	D8 E5 A0  1 
+;
+1A49E14 	58 46 A0  1 

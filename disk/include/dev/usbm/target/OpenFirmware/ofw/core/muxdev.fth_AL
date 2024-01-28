@@ -1,0 +1,544 @@
+purpose: Multiplexor device collects input and distributes I/O
+
+dev /packages
+new-device
+1A41664 	E0 B6 A0  1 
+1A41668 	88  D  0  0 C8 50 A2  1 
+1A41670 	E0 B6 A0  1 A8  D  0  0 
+" mux" device-name
+1A41678 	6D 75 78  0  0  0  0 6E 
+1A41680 	61 6D 65 84  0  0 A0  1 
+1A41688 	BC 13 A2  1 14  0  0  0 
+1A41690 	 4  0  0  0 
+
+instance variable first-device
+1A41694 	 0  0  0 66 
+1A41698 	69 72 73 74 2D 64 65 76 
+1A416A0 	69 63 65 8C  0  0 A0  1 
+1A416A8 	40  1 A2  1 18  0  0  0 
+0 first-device !
+
+struct
+   /n field >link
+1A416B0 	 0  0 3E 6C 69 6E 6B 85 
+1A416B8 	A8 16 A4  1 50 EE A0  1 
+1A416C0 	 0  0  0  0 
+   /n field >ihandle
+1A416C4 	 0  0  0 3E 
+1A416C8 	69 68 61 6E 64 6C 65 88 
+1A416D0 	BC 16 A4  1 50 EE A0  1 
+1A416D8 	 4  0  0  0 
+   /n field >read
+1A416DC 	 0  0 3E 72 
+1A416E0 	65 61 64 85 D4 16 A4  1 
+1A416E8 	50 EE A0  1  8  0  0  0 
+   /n field >write
+1A416F0 	 0 3E 77 72 69 74 65 86 
+1A416F8 	E8 16 A4  1 50 EE A0  1 
+1A41700 	 C  0  0  0 
+   /n field >bell
+1A41704 	 0  0 3E 62 
+1A41708 	65 6C 6C 85 FC 16 A4  1 
+1A41710 	50 EE A0  1 10  0  0  0 
+constant /list-node
+1A41718 	 0 2F 6C 69 73 74 2D 6E 
+1A41720 	6F 64 65 8A 10 17 A4  1 
+1A41728 	68 40 A0  1 14  0  0  0 
+
+: read  ( adr len -- actual )
+1A41730 	 0  0  0 72 65 61 64 84 
+1A41738 	28 17 A4  1 20 40 A0  1 
+   first-device @
+1A41740 	A8 16 A4  1 5C 4C A0  1 
+   begin  dup  while        ( adr len listnode )
+1A41748 	40 49 A0  1 DC 41 A0  1 
+1A41750 	78  0  0  0 
+      >r                                            ( adr len )
+1A41754 	BC 45 A0  1 
+      r@ >read @  ?dup  if                          ( adr len xt )
+1A41758 	E4 45 A0  1 E8 16 A4  1 
+1A41760 	5C 4C A0  1 B4 70 A0  1 
+1A41768 	DC 41 A0  1 48  0  0  0 
+         >r 2dup r>                                 ( adr len adr len xt )
+1A41770 	BC 45 A0  1 C0 49 A0  1 
+1A41778 	D0 45 A0  1 
+         r@ >ihandle @  call-package                ( adr len actual )
+1A4177C 	E4 45 A0  1 
+1A41780 	D4 16 A4  1 5C 4C A0  1 
+1A41788 	8C 31 A2  1 
+         dup 0>  if  nip nip  r> drop  exit  then   ( adr len actual )
+1A4178C 	40 49 A0  1 
+1A41790 	A4 47 A0  1 DC 41 A0  1 
+1A41798 	18  0  0  0 FC 46 A0  1 
+1A417A0 	FC 46 A0  1 D0 45 A0  1 
+1A417A8 	30 49 A0  1 40 46 A0  1 
+         drop                                       ( adr len )
+1A417B0 	30 49 A0  1 
+      then                                          ( adr len )
+      r> >link @            ( adr len listnode' )
+1A417B4 	D0 45 A0  1 
+1A417B8 	BC 16 A4  1 5C 4C A0  1 
+   repeat                   ( adr len listnode )
+1A417C0 	C8 41 A0  1 84 FF FF FF 
+   3drop -2
+1A417C8 	90 52 A0  1 58 41 A0  1 
+1A417D0 	FE FF FF FF 
+;
+1A417D4 	58 46 A0  1 
+: write  ( adr len -- len )
+1A417D8 	 0  0 77 72 69 74 65 85 
+1A417E0 	3C 17 A4  1 20 40 A0  1 
+   first-device @
+1A417E8 	A8 16 A4  1 5C 4C A0  1 
+   begin  dup  while        ( adr len listnode )
+1A417F0 	40 49 A0  1 DC 41 A0  1 
+1A417F8 	54  0  0  0 
+      >r                                    ( adr len )
+1A417FC 	BC 45 A0  1 
+      r@ >write @  ?dup  if                 ( adr len xt )
+1A41800 	E4 45 A0  1 FC 16 A4  1 
+1A41808 	5C 4C A0  1 B4 70 A0  1 
+1A41810 	DC 41 A0  1 24  0  0  0 
+         >r 2dup r>                         ( adr len adr len xt )
+1A41818 	BC 45 A0  1 C0 49 A0  1 
+1A41820 	D0 45 A0  1 
+         r@ >ihandle @  call-package  drop  ( adr len )
+1A41824 	E4 45 A0  1 
+1A41828 	D4 16 A4  1 5C 4C A0  1 
+1A41830 	8C 31 A2  1 30 49 A0  1 
+      then                                  ( adr len )
+      r> >link @            ( adr len listnode' )
+1A41838 	D0 45 A0  1 BC 16 A4  1 
+1A41840 	5C 4C A0  1 
+   repeat                   ( adr len listnode )
+1A41844 	C8 41 A0  1 
+1A41848 	A8 FF FF FF 
+   drop nip
+1A4184C 	30 49 A0  1 
+1A41850 	FC 46 A0  1 
+;
+1A41854 	58 46 A0  1 
+: ring-bell  ( -- )
+1A41858 	 0  0 72 69 6E 67 2D 62 
+1A41860 	65 6C 6C 89 E4 17 A4  1 
+1A41868 	20 40 A0  1 
+   first-device @
+1A4186C 	A8 16 A4  1 
+1A41870 	5C 4C A0  1 
+   begin  dup  while        ( listnode )
+1A41874 	40 49 A0  1 
+1A41878 	DC 41 A0  1 44  0  0  0 
+      >r                               ( )
+1A41880 	BC 45 A0  1 
+      r@ >bell @  ?dup  if             ( xt )
+1A41884 	E4 45 A0  1 
+1A41888 	10 17 A4  1 5C 4C A0  1 
+1A41890 	B4 70 A0  1 DC 41 A0  1 
+1A41898 	14  0  0  0 
+         r@ >ihandle @  call-package   ( )
+1A4189C 	E4 45 A0  1 
+1A418A0 	D4 16 A4  1 5C 4C A0  1 
+1A418A8 	8C 31 A2  1 
+      then                             ( )
+      r> >link @            ( listnode' )
+1A418AC 	D0 45 A0  1 
+1A418B0 	BC 16 A4  1 5C 4C A0  1 
+   repeat                   ( listnode )
+1A418B8 	C8 41 A0  1 B8 FF FF FF 
+   drop                
+1A418C0 	30 49 A0  1 
+;
+1A418C4 	58 46 A0  1 
+
+: show-devices  ( -- )
+1A418C8 	 0  0  0 73 68 6F 77 2D 
+1A418D0 	64 65 76 69 63 65 73 8C 
+1A418D8 	68 18 A4  1 20 40 A0  1 
+   first-device @
+1A418E0 	A8 16 A4  1 5C 4C A0  1 
+   begin  dup  while        ( listnode )
+1A418E8 	40 49 A0  1 DC 41 A0  1 
+1A418F0 	98  0  0  0 
+      >r                    ( )
+1A418F4 	BC 45 A0  1 
+      r@ >read  @  if  ." R"  else  ."  "  then
+1A418F8 	E4 45 A0  1 E8 16 A4  1 
+1A41900 	5C 4C A0  1 DC 41 A0  1 
+1A41908 	14  0  0  0 20 7C A0  1 
+1A41910 	 1 52  0  0 C8 41 A0  1 
+1A41918 	 C  0  0  0 20 7C A0  1 
+1A41920 	 1 20  0  0 
+      r@ >write @  if  ." W"  else  ."  "  then
+1A41924 	E4 45 A0  1 
+1A41928 	FC 16 A4  1 5C 4C A0  1 
+1A41930 	DC 41 A0  1 14  0  0  0 
+1A41938 	20 7C A0  1  1 57  0  0 
+1A41940 	C8 41 A0  1  C  0  0  0 
+1A41948 	20 7C A0  1  1 20  0  0 
+      space
+1A41950 	CC 71 A0  1 
+      r@ >ihandle @  dup .  iselect  pwd  iunselect
+1A41954 	E4 45 A0  1 
+1A41958 	D4 16 A4  1 5C 4C A0  1 
+1A41960 	40 49 A0  1 94 7A A0  1 
+1A41968 	3C 40 A2  1 D0 2B A2  1 
+1A41970 	94 40 A2  1 
+      r> >link @            ( listnode' )
+1A41974 	D0 45 A0  1 
+1A41978 	BC 16 A4  1 5C 4C A0  1 
+   repeat                   ( listnode )
+1A41980 	C8 41 A0  1 64 FF FF FF 
+   drop                     ( )
+1A41988 	30 49 A0  1 
+;
+1A4198C 	58 46 A0  1 
+
+: add-device  ( ihandle -- )
+1A41990 	 0 61 64 64 2D 64 65 76 
+1A41998 	69 63 65 8A DC 18 A4  1 
+1A419A0 	20 40 A0  1 
+   ?dup  0=  if  exit  then                      ( ihandle )
+1A419A4 	B4 70 A0  1 
+1A419A8 	24 47 A0  1 DC 41 A0  1 
+1A419B0 	 8  0  0  0 40 46 A0  1 
+
+   /list-node alloc-mem >r                       ( ihandle r: listnode )
+1A419B8 	28 17 A4  1 F0 6C A0  1 
+1A419C0 	BC 45 A0  1 
+
+   dup r@ >ihandle !                             ( ihandle r: listnode )
+1A419C4 	40 49 A0  1 
+1A419C8 	E4 45 A0  1 D4 16 A4  1 
+1A419D0 	54 4D A0  1 
+
+   ihandle>phandle                               ( phandle r: listnode )
+1A419D4 	 0 32 A2  1 
+
+   " read"  third find-method  0=  if  0  then   ( phandle xt r: listnode )
+1A419D8 	9C 53 A0  1  4 72 65 61 
+1A419E0 	64  0  0  0 CC 1D A3  1 
+1A419E8 	A0 2F A2  1 24 47 A0  1 
+1A419F0 	DC 41 A0  1  8  0  0  0 
+1A419F8 	70 6F A0  1 
+   r@ >read !
+1A419FC 	E4 45 A0  1 
+1A41A00 	E8 16 A4  1 54 4D A0  1 
+
+   " write" third find-method  0=  if  0  then   ( phandle xt r: listnode )
+1A41A08 	9C 53 A0  1  5 77 72 69 
+1A41A10 	74 65  0  0 CC 1D A3  1 
+1A41A18 	A0 2F A2  1 24 47 A0  1 
+1A41A20 	DC 41 A0  1  8  0  0  0 
+1A41A28 	70 6F A0  1 
+   r@ >write !                                   ( phandle r: listnode )
+1A41A2C 	E4 45 A0  1 
+1A41A30 	FC 16 A4  1 54 4D A0  1 
+   
+   " ring-bell" third find-method  0=  if  0  then  ( phandle xt r: listnode )
+1A41A38 	9C 53 A0  1  9 72 69 6E 
+1A41A40 	67 2D 62 65 6C 6C  0  0 
+1A41A48 	CC 1D A3  1 A0 2F A2  1 
+1A41A50 	24 47 A0  1 DC 41 A0  1 
+1A41A58 	 8  0  0  0 70 6F A0  1 
+   r@ >bell !                                    ( phandle r: listnode )
+1A41A60 	E4 45 A0  1 10 17 A4  1 
+1A41A68 	54 4D A0  1 
+   
+   " install-abort" third find-method  if        ( phandle xt r: listnode )
+1A41A6C 	9C 53 A0  1 
+1A41A70 	 D 69 6E 73 74 61 6C 6C 
+1A41A78 	2D 61 62 6F 72 74  0  0 
+1A41A80 	CC 1D A3  1 A0 2F A2  1 
+1A41A88 	DC 41 A0  1 14  0  0  0 
+      r@ >ihandle @ call-package                 ( phandle r: listnode )
+1A41A90 	E4 45 A0  1 D4 16 A4  1 
+1A41A98 	5C 4C A0  1 8C 31 A2  1 
+   then                                          ( phandle r: listnode )
+   
+   drop
+1A41AA0 	30 49 A0  1 
+
+   first-device @  r@ >link !                    ( r: listnode )
+1A41AA4 	A8 16 A4  1 
+1A41AA8 	5C 4C A0  1 E4 45 A0  1 
+1A41AB0 	BC 16 A4  1 54 4D A0  1 
+   r> first-device !                             ( )
+1A41AB8 	D0 45 A0  1 A8 16 A4  1 
+1A41AC0 	54 4D A0  1 
+;
+1A41AC4 	58 46 A0  1 
+
+: open  ( -- true )  true  ;
+1A41AC8 	 0  0  0 6F 70 65 6E 84 
+1A41AD0 	A0 19 A4  1 20 40 A0  1 
+1A41AD8 	 4 70 A0  1 58 46 A0  1 
+
+: close  ( -- )
+1A41AE0 	 0  0 63 6C 6F 73 65 85 
+1A41AE8 	D4 1A A4  1 20 40 A0  1 
+   first-device @
+1A41AF0 	A8 16 A4  1 5C 4C A0  1 
+   begin  dup  while                    ( listnode )
+1A41AF8 	40 49 A0  1 DC 41 A0  1 
+1A41B00 	78  0  0  0 
+      >r                                ( r: listnode )
+1A41B04 	BC 45 A0  1 
+      " remove-abort"  r@ >ihandle @    ( $ ihandle r: listnode )
+1A41B08 	9C 53 A0  1  C 72 65 6D 
+1A41B10 	6F 76 65 2D 61 62 6F 72 
+1A41B18 	74  0  0  0 E4 45 A0  1 
+1A41B20 	D4 16 A4  1 5C 4C A0  1 
+      ihandle>phandle  find-method  if  ( xt r: listnode )
+1A41B28 	 0 32 A2  1 A0 2F A2  1 
+1A41B30 	DC 41 A0  1 14  0  0  0 
+         r> >ihandle @ call-package     ( r: listnode )
+1A41B38 	D0 45 A0  1 D4 16 A4  1 
+1A41B40 	5C 4C A0  1 8C 31 A2  1 
+      then                              ( r: listnode )
+
+      r@ >ihandle @  close-dev          ( r: listnode )
+1A41B48 	E4 45 A0  1 D4 16 A4  1 
+1A41B50 	5C 4C A0  1 5C 37 A2  1 
+      r@ >link @                        ( next r: listnode )
+1A41B58 	E4 45 A0  1 BC 16 A4  1 
+1A41B60 	5C 4C A0  1 
+      r> /list-node free-mem            ( next )
+1A41B64 	D0 45 A0  1 
+1A41B68 	28 17 A4  1  8 6D A0  1 
+   repeat                               ( 0 )
+1A41B70 	C8 41 A0  1 84 FF FF FF 
+   drop
+1A41B78 	30 49 A0  1 
+;
+1A41B7C 	58 46 A0  1 
+
+: remove-device  ( ihandle -- )
+1A41B80 	 0  0 72 65 6D 6F 76 65 
+1A41B88 	2D 64 65 76 69 63 65 8D 
+1A41B90 	EC 1A A4  1 20 40 A0  1 
+   ?dup  0=  if  exit  then             ( ihandle )
+1A41B98 	B4 70 A0  1 24 47 A0  1 
+1A41BA0 	DC 41 A0  1  8  0  0  0 
+1A41BA8 	40 46 A0  1 
+
+   >r  first-device                     ( prev r: ihandle )
+1A41BAC 	BC 45 A0  1 
+1A41BB0 	A8 16 A4  1 
+
+   begin  dup >link @  dup  while       ( prev this  r: ihandle )
+1A41BB4 	40 49 A0  1 
+1A41BB8 	BC 16 A4  1 5C 4C A0  1 
+1A41BC0 	40 49 A0  1 DC 41 A0  1 
+1A41BC8 	88  0  0  0 
+      dup >ihandle @  r@ =  if          ( prev this  r: ihandle )
+1A41BCC 	40 49 A0  1 
+1A41BD0 	D4 16 A4  1 5C 4C A0  1 
+1A41BD8 	E4 45 A0  1 24 48 A0  1 
+1A41BE0 	DC 41 A0  1 60  0  0  0 
+
+         " remove-abort"  r@ ihandle>phandle  find-method  if  ( prev this xt r: ihandle )
+1A41BE8 	9C 53 A0  1  C 72 65 6D 
+1A41BF0 	6F 76 65 2D 61 62 6F 72 
+1A41BF8 	74  0  0  0 E4 45 A0  1 
+1A41C00 	 0 32 A2  1 A0 2F A2  1 
+1A41C08 	DC 41 A0  1  C  0  0  0 
+            r@ call-package             ( prev this  r: ihandle )
+1A41C10 	E4 45 A0  1 8C 31 A2  1 
+         then                           ( prev this  r: ihandle )
+         r> drop                        ( prev this )
+1A41C18 	D0 45 A0  1 30 49 A0  1 
+
+         dup >link @                    ( prev this next )
+1A41C20 	40 49 A0  1 BC 16 A4  1 
+1A41C28 	5C 4C A0  1 
+         rot >link !                    ( this )
+1A41C2C 	7C 49 A0  1 
+1A41C30 	BC 16 A4  1 54 4D A0  1 
+         /list-node free-mem            ( )
+1A41C38 	28 17 A4  1  8 6D A0  1 
+         exit                           ( )
+1A41C40 	40 46 A0  1 
+      then                              ( prev this r: ihandle )
+      nip                               ( prev'     r: ihandle )
+1A41C44 	FC 46 A0  1 
+   repeat                               ( prev next r: ihandle )
+1A41C48 	C8 41 A0  1 68 FF FF FF 
+   r> 3drop
+1A41C50 	D0 45 A0  1 90 52 A0  1 
+;
+1A41C58 	58 46 A0  1 
+
+: install-abort  ( -- )  ;
+1A41C5C 	 0  0 69 6E 
+1A41C60 	73 74 61 6C 6C 2D 61 62 
+1A41C68 	6F 72 74 8D 94 1B A4  1 
+1A41C70 	20 40 A0  1 58 46 A0  1 
+: remove-abort  ( -- )  ;
+1A41C78 	 0  0  0 72 65 6D 6F 76 
+1A41C80 	65 2D 61 62 6F 72 74 8C 
+1A41C88 	70 1C A4  1 20 40 A0  1 
+1A41C90 	58 46 A0  1 
+
+finish-device
+1A41C94 	 0  0  0  0 
+1A41C98 	 0  0  0  0  0  0  0  0 
+1A41CA0 	 0  0  0  0  0  0  0  0 
+1A41CA8 	 0  0  0  0  0  0  0  0 
+device-end
+
+0 value in-mux-ih
+1A41CB0 	 0  0 69 6E 2D 6D 75 78 
+1A41CB8 	2D 69 68 89 5C 16 A4  1 
+1A41CC0 	50 40 A0  1 AC  D  0  0 
+0 value out-mux-ih
+1A41CC8 	 0 6F 75 74 2D 6D 75 78 
+1A41CD0 	2D 69 68 8A C0 1C A4  1 
+1A41CD8 	50 40 A0  1 B0  D  0  0 
+
+: new-mux  ( -- ih )
+1A41CE0 	6E 65 77 2D 6D 75 78 87 
+1A41CE8 	D8 1C A4  1 20 40 A0  1 
+   " "  " mux" $open-package
+1A41CF0 	9C 53 A0  1  0  0  0  0 
+1A41CF8 	9C 53 A0  1  3 6D 75 78 
+1A41D00 	 0  0  0  0 80 3A A2  1 
+   dup 0= abort" Can't open mux package"
+1A41D08 	40 49 A0  1 24 47 A0  1 
+1A41D10 	 8 81 A0  1 16 43 61 6E 
+1A41D18 	27 74 20 6F 70 65 6E 20 
+1A41D20 	6D 75 78 20 70 61 63 6B 
+1A41D28 	61 67 65  0 
+;
+1A41D2C 	58 46 A0  1 
+
+: add-mux   ( ih mux-ih -- )
+1A41D30 	61 64 64 2D 6D 75 78 87 
+1A41D38 	EC 1C A4  1 20 40 A0  1 
+   over  if  >r " add-device" r>  $call-method  else  2drop  then
+1A41D40 	54 49 A0  1 DC 41 A0  1 
+1A41D48 	28  0  0  0 BC 45 A0  1 
+1A41D50 	9C 53 A0  1  A 61 64 64 
+1A41D58 	2D 64 65 76 69 63 65  0 
+1A41D60 	D0 45 A0  1 B4 31 A2  1 
+1A41D68 	C8 41 A0  1  8  0  0  0 
+1A41D70 	AC 49 A0  1 
+;
+1A41D74 	58 46 A0  1 
+
+: remove-mux  ( ih mux-ih -- )  >r " remove-device" r> $call-method  ;
+1A41D78 	 0 72 65 6D 6F 76 65 2D 
+1A41D80 	6D 75 78 8A 3C 1D A4  1 
+1A41D88 	20 40 A0  1 BC 45 A0  1 
+1A41D90 	9C 53 A0  1  D 72 65 6D 
+1A41D98 	6F 76 65 2D 64 65 76 69 
+1A41DA0 	63 65  0  0 D0 45 A0  1 
+1A41DA8 	B4 31 A2  1 58 46 A0  1 
+
+: add-output  ( ih -- )  out-mux-ih add-mux  ;
+1A41DB0 	 0 61 64 64 2D 6F 75 74 
+1A41DB8 	70 75 74 8A 88 1D A4  1 
+1A41DC0 	20 40 A0  1 D8 1C A4  1 
+1A41DC8 	3C 1D A4  1 58 46 A0  1 
+: remove-output  ( ih -- )  out-mux-ih remove-mux  ;
+1A41DD0 	 0  0 72 65 6D 6F 76 65 
+1A41DD8 	2D 6F 75 74 70 75 74 8D 
+1A41DE0 	C0 1D A4  1 20 40 A0  1 
+1A41DE8 	D8 1C A4  1 88 1D A4  1 
+1A41DF0 	58 46 A0  1 
+: add-input  ( ih -- )  in-mux-ih add-mux  ;
+1A41DF4 	 0  0 61 64 
+1A41DF8 	64 2D 69 6E 70 75 74 89 
+1A41E00 	E4 1D A4  1 20 40 A0  1 
+1A41E08 	C0 1C A4  1 3C 1D A4  1 
+1A41E10 	58 46 A0  1 
+: remove-input  ( ih -- )  in-mux-ih remove-mux  ;
+1A41E14 	 0  0  0 72 
+1A41E18 	65 6D 6F 76 65 2D 69 6E 
+1A41E20 	70 75 74 8C  4 1E A4  1 
+1A41E28 	20 40 A0  1 C0 1C A4  1 
+1A41E30 	88 1D A4  1 58 46 A0  1 
+
+: .mux  ( -- )
+1A41E38 	 0  0  0 2E 6D 75 78 84 
+1A41E40 	28 1E A4  1 20 40 A0  1 
+   in-mux-ih  if
+1A41E48 	C0 1C A4  1 DC 41 A0  1 
+1A41E50 	34  0  0  0 
+      ." Input mux:" cr
+1A41E54 	20 7C A0  1 
+1A41E58 	 A 49 6E 70 75 74 20 6D 
+1A41E60 	75 78 3A  0 80 6D A0  1 
+      " show-devices" in-mux-ih $call-method
+1A41E68 	9C 53 A0  1  C 73 68 6F 
+1A41E70 	77 2D 64 65 76 69 63 65 
+1A41E78 	73  0  0  0 C0 1C A4  1 
+1A41E80 	B4 31 A2  1 
+   then
+   out-mux-ih  if
+1A41E84 	D8 1C A4  1 
+1A41E88 	DC 41 A0  1 38  0  0  0 
+      ." Output mux:" cr
+1A41E90 	20 7C A0  1  B 4F 75 74 
+1A41E98 	70 75 74 20 6D 75 78 3A 
+1A41EA0 	 0  0  0  0 80 6D A0  1 
+      " show-devices" out-mux-ih $call-method
+1A41EA8 	9C 53 A0  1  C 73 68 6F 
+1A41EB0 	77 2D 64 65 76 69 63 65 
+1A41EB8 	73  0  0  0 D8 1C A4  1 
+1A41EC0 	B4 31 A2  1 
+   then
+;
+1A41EC4 	58 46 A0  1 
+
+0 value fallback-in-ih
+1A41EC8 	 0 66 61 6C 6C 62 61 63 
+1A41ED0 	6B 2D 69 6E 2D 69 68 8E 
+1A41ED8 	44 1E A4  1 50 40 A0  1 
+1A41EE0 	B4  D  0  0 
+0 value fallback-out-ih
+1A41EE4 	66 61 6C 6C 
+1A41EE8 	62 61 63 6B 2D 6F 75 74 
+1A41EF0 	2D 69 68 8F DC 1E A4  1 
+1A41EF8 	50 40 A0  1 B8  D  0  0 
+
+: install-mux-io  ( -- )
+1A41F00 	 0 69 6E 73 74 61 6C 6C 
+1A41F08 	2D 6D 75 78 2D 69 6F 8E 
+1A41F10 	F8 1E A4  1 20 40 A0  1 
+   new-mux to in-mux-ih
+1A41F18 	EC 1C A4  1 B8 40 A0  1 
+1A41F20 	C0 1C A4  1 
+   new-mux to out-mux-ih
+1A41F24 	EC 1C A4  1 
+1A41F28 	B8 40 A0  1 D8 1C A4  1 
+
+   fallback-device open-dev  dup to fallback-in-ih   add-input
+1A41F30 	EC E3 A1  1 FC 3E A2  1 
+1A41F38 	40 49 A0  1 B8 40 A0  1 
+1A41F40 	DC 1E A4  1  4 1E A4  1 
+   fallback-device open-dev  dup to fallback-out-ih  add-output
+1A41F48 	EC E3 A1  1 FC 3E A2  1 
+1A41F50 	40 49 A0  1 B8 40 A0  1 
+1A41F58 	F8 1E A4  1 C0 1D A4  1 
+
+   screen open-dev to screen-ih
+1A41F60 	B4 5C A2  1 FC 3E A2  1 
+1A41F68 	B8 40 A0  1 5C 16 A4  1 
+   screen-ih add-output
+1A41F70 	5C 16 A4  1 C0 1D A4  1 
+
+   keyboard open-dev to keyboard-ih
+1A41F78 	90 5C A2  1 FC 3E A2  1 
+1A41F80 	B8 40 A0  1 44 16 A4  1 
+   keyboard-ih add-input
+1A41F88 	44 16 A4  1  4 1E A4  1 
+
+   in-mux-ih set-stdin  out-mux-ih set-stdout
+1A41F90 	C0 1C A4  1 AC 58 A2  1 
+1A41F98 	D8 1C A4  1  4 5B A2  1 
+
+   console-io
+1A41FA0 	18 5D A2  1 
+;
+1A41FA4 	58 46 A0  1 
+

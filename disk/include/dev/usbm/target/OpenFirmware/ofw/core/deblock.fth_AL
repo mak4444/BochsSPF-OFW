@@ -1,0 +1,394 @@
+
+headerless
+decimal
+
+packages-device push-device \ mmo " /packages" find-device
+new-device
+1A2A5F4 	E0 B6 A0  1 
+1A2A5F8 	90  8  0  0 C8 50 A2  1 
+1A2A600 	E0 B6 A0  1 B0  8  0  0 
+
+0 invert 1 >> constant maxint	\ Assumes 2's complement, I suppose
+1A2A608 	 0 6D 61 78 69 6E 74 86 
+1A2A610 	 0  0 A0  1 68 40 A0  1 
+1A2A618 	FF FF FF 7F 
+
+0 instance value block#         \ Internal state; holds offset from last seek
+1A2A61C 	 0 62 6C 6F 
+1A2A620 	63 6B 23 86 14 A6 A2  1 
+1A2A628 	C0 FE A1  1 18  0  0  0 
+0 instance value buffer         \ Buffer we use for file I/O
+1A2A630 	 0 62 75 66 66 65 72 86 
+1A2A638 	28 A6 A2  1 C0 FE A1  1 
+1A2A640 	1C  0  0  0 
+0 instance value bufsize 	\ Size of buffer
+1A2A644 	62 75 66 73 
+1A2A648 	69 7A 65 87 3C A6 A2  1 
+1A2A650 	C0 FE A1  1 20  0  0  0 
+0 instance value blocksize	\ Sector size of underlying device
+1A2A658 	 0  0 62 6C 6F 63 6B 73 
+1A2A660 	69 7A 65 89 50 A6 A2  1 
+1A2A668 	C0 FE A1  1 24  0  0  0 
+0 instance value #blocks	\ The maximum number of blocks on the device
+1A2A670 	23 62 6C 6F 63 6B 73 87 
+1A2A678 	68 A6 A2  1 C0 FE A1  1 
+1A2A680 	28  0  0  0 
+/fd instance buffer: deblock-fd
+1A2A684 	 0 64 65 62 
+1A2A688 	6C 6F 63 6B 2D 66 64 8A 
+1A2A690 	7C A6 A2  1 4C  0 A2  1 
+1A2A698 	4C FF FF FF 
+
+\ Closes an open file, freeing its descriptor for reuse.
+
+: block-fclose  ( fid -- )
+1A2A69C 	 0  0  0 62 
+1A2A6A0 	6C 6F 63 6B 2D 66 63 6C 
+1A2A6A8 	6F 73 65 8C 94 A6 A2  1 
+1A2A6B0 	20 40 A0  1 
+   drop   buffer  if
+1A2A6B4 	30 49 A0  1 
+1A2A6B8 	3C A6 A2  1 DC 41 A0  1 
+1A2A6C0 	40  0  0  0 
+      buffer  bufsize " dma-free" ['] $call-parent catch  if
+1A2A6C4 	3C A6 A2  1 
+1A2A6C8 	50 A6 A2  1 9C 53 A0  1 
+1A2A6D0 	 8 64 6D 61 2D 66 72 65 
+1A2A6D8 	65  0  0  0 60 53 A0  1 
+1A2A6E0 	DC 31 A2  1 14 7F A0  1 
+1A2A6E8 	DC 41 A0  1 14  0  0  0 
+         \ If dma-free method doesn't exist, we fall back on the
+         \ system free-virtual function.  This is a hack, and can
+         \ probably be eliminated in future systems.
+         4drop  buffer bufsize free-virtual
+1A2A6F0 	38 53 A0  1 3C A6 A2  1 
+1A2A6F8 	50 A6 A2  1 88 76 A2  1 
+      then
+   then
+;
+1A2A700 	58 46 A0  1 
+
+\ Reduce #blocks if necessary to ensure that block# + #blocks does not
+\ exceed the size of the device.
+
+: clip-#blocks  ( block# #blocks -- block# #blocks' )
+1A2A704 	 0  0  0 63 
+1A2A708 	6C 69 70 2D 23 62 6C 6F 
+1A2A710 	63 6B 73 8C B0 A6 A2  1 
+1A2A718 	20 40 A0  1 
+   #blocks  if                   ( block# #blocks )
+1A2A71C 	7C A6 A2  1 
+1A2A720 	DC 41 A0  1 1C  0  0  0 
+      over +  #blocks umin       ( block# top-block# )
+1A2A728 	54 49 A0  1  4 45 A0  1 
+1A2A730 	7C A6 A2  1 4C 4A A0  1 
+      over -                     ( block# #blocks' )
+1A2A738 	54 49 A0  1 18 45 A0  1 
+   then
+;
+1A2A740 	58 46 A0  1 
+
+\ Writes "count" bytes from the buffer at address "adr" to a file.
+\ Returns the number of bytes actually written.
+
+: block-fwrite  ( adr #bytes fid -- #written )
+1A2A744 	 0  0  0 62 
+1A2A748 	6C 6F 63 6B 2D 66 77 72 
+1A2A750 	69 74 65 8C 18 A7 A2  1 
+1A2A758 	20 40 A0  1 
+   drop  block#                  ( adr #bytes block# )
+1A2A75C 	30 49 A0  1 
+1A2A760 	28 A6 A2  1 
+   swap blocksize  /             ( adr #blocks block# )
+1A2A764 	68 49 A0  1 
+1A2A768 	68 A6 A2  1 98 5F A0  1 
+   clip-#blocks                  ( adr block# #blocks' )
+1A2A770 	18 A7 A2  1 
+   " write-blocks" $call-parent  ( actual-#blocks )
+1A2A774 	9C 53 A0  1 
+1A2A778 	 C 77 72 69 74 65 2D 62 
+1A2A780 	6C 6F 63 6B 73  0  0  0 
+1A2A788 	DC 31 A2  1 
+   blocksize *                   ( #bytes-written )
+1A2A78C 	68 A6 A2  1 
+1A2A790 	1C 5F A0  1 
+;
+1A2A794 	58 46 A0  1 
+
+\ Reads at most "count" bytes into the buffer at address "adr" from a file.
+\ Returns the number of bytes actually read.
+
+: block-fread  ( adr #bytes fid -- #read )
+1A2A798 	62 6C 6F 63 6B 2D 66 72 
+1A2A7A0 	65 61 64 8B 58 A7 A2  1 
+1A2A7A8 	20 40 A0  1 
+   drop  block#                  ( adr #bytes block# )
+1A2A7AC 	30 49 A0  1 
+1A2A7B0 	28 A6 A2  1 
+   swap blocksize  /             ( adr block# #blocks )
+1A2A7B4 	68 49 A0  1 
+1A2A7B8 	68 A6 A2  1 98 5F A0  1 
+   clip-#blocks                  ( adr block# #blocks' )
+1A2A7C0 	18 A7 A2  1 
+   " read-blocks" $call-parent   ( actual-#blocks )
+1A2A7C4 	9C 53 A0  1 
+1A2A7C8 	 B 72 65 61 64 2D 62 6C 
+1A2A7D0 	6F 63 6B 73  0  0  0  0 
+1A2A7D8 	DC 31 A2  1 
+   blocksize  *                  ( #bytes-read )
+1A2A7DC 	68 A6 A2  1 
+1A2A7E0 	1C 5F A0  1 
+;
+1A2A7E4 	58 46 A0  1 
+
+
+\ Positions to byte number "d.byte#" in a file
+
+: block-fseek  ( d.byte# fid -- )
+1A2A7E8 	62 6C 6F 63 6B 2D 66 73 
+1A2A7F0 	65 65 6B 8B A8 A7 A2  1 
+1A2A7F8 	20 40 A0  1 
+   drop  blocksize um/mod nip        ( block# )
+1A2A7FC 	30 49 A0  1 
+1A2A800 	68 A6 A2  1 7C 5D A0  1 
+1A2A808 	FC 46 A0  1 
+   #blocks  if  #blocks umin  then   ( block#' )
+1A2A80C 	7C A6 A2  1 
+1A2A810 	DC 41 A0  1  C  0  0  0 
+1A2A818 	7C A6 A2  1 4C 4A A0  1 
+   to block#
+1A2A820 	48 B8 A1  1 28 A6 A2  1 
+;
+1A2A828 	58 46 A0  1 
+
+
+\ Returns the current size "d.size" of a file
+
+: block-fsize  ( fid -- d.size )
+1A2A82C 	62 6C 6F 63 
+1A2A830 	6B 2D 66 73 69 7A 65 8B 
+1A2A838 	F8 A7 A2  1 20 40 A0  1 
+   drop                                             ( )
+1A2A840 	30 49 A0  1 
+   " current-#blocks" ['] $call-parent catch  if    ( x x )
+1A2A844 	9C 53 A0  1 
+1A2A848 	 F 63 75 72 72 65 6E 74 
+1A2A850 	2D 23 62 6C 6F 63 6B 73 
+1A2A858 	 0  0  0  0 60 53 A0  1 
+1A2A860 	DC 31 A2  1 14 7F A0  1 
+1A2A868 	DC 41 A0  1 3C  0  0  0 
+      2drop                                         ( )
+1A2A870 	AC 49 A0  1 
+      #blocks  if  #blocks blocksize um*  else  -1 maxint  then  ( d.size )
+1A2A874 	7C A6 A2  1 
+1A2A878 	DC 41 A0  1 18  0  0  0 
+1A2A880 	7C A6 A2  1 68 A6 A2  1 
+1A2A888 	50 5D A0  1 C8 41 A0  1 
+1A2A890 	10  0  0  0 58 41 A0  1 
+1A2A898 	FF FF FF FF 14 A6 A2  1 
+   else                                             ( #blocks )
+1A2A8A0 	C8 41 A0  1  C  0  0  0 
+      blocksize um*                                 ( d.size )
+1A2A8A8 	68 A6 A2  1 50 5D A0  1 
+   then
+;
+1A2A8B0 	58 46 A0  1 
+
+
+\ Aligns a number to a block boundary.
+
+: block-falign  ( d.byte# fid -- d.aligned-byte# )
+1A2A8B4 	 0  0  0 62 
+1A2A8B8 	6C 6F 63 6B 2D 66 61 6C 
+1A2A8C0 	69 67 6E 8C 3C A8 A2  1 
+1A2A8C8 	20 40 A0  1 
+   drop  blocksize um/mod nip  blocksize um*
+1A2A8CC 	30 49 A0  1 
+1A2A8D0 	68 A6 A2  1 7C 5D A0  1 
+1A2A8D8 	FC 46 A0  1 68 A6 A2  1 
+1A2A8E0 	50 5D A0  1 
+;
+1A2A8E4 	58 46 A0  1 
+
+: block-size    ( -- n )
+1A2A8E8 	 0 62 6C 6F 63 6B 2D 73 
+1A2A8F0 	69 7A 65 8A C8 A8 A2  1 
+1A2A8F8 	20 40 A0  1 
+   " block-size"  ['] $call-parent catch  if  2drop d# 512  then
+1A2A8FC 	9C 53 A0  1 
+1A2A900 	 A 62 6C 6F 63 6B 2D 73 
+1A2A908 	69 7A 65  0 60 53 A0  1 
+1A2A910 	DC 31 A2  1 14 7F A0  1 
+1A2A918 	DC 41 A0  1 10  0  0  0 
+1A2A920 	AC 49 A0  1 58 41 A0  1 
+1A2A928 	 0  2  0  0 
+;
+1A2A92C 	58 46 A0  1 
+
+: buffer-size  ( -- n )
+1A2A930 	62 75 66 66 65 72 2D 73 
+1A2A938 	69 7A 65 8B F8 A8 A2  1 
+1A2A940 	20 40 A0  1 
+   " max-transfer"  ['] $call-parent catch  if  2drop  h# 10000  then  ( max )
+1A2A944 	9C 53 A0  1 
+1A2A948 	 C 6D 61 78 2D 74 72 61 
+1A2A950 	6E 73 66 65 72  0  0  0 
+1A2A958 	60 53 A0  1 DC 31 A2  1 
+1A2A960 	14 7F A0  1 DC 41 A0  1 
+1A2A968 	10  0  0  0 AC 49 A0  1 
+1A2A970 	58 41 A0  1  0  0  1  0 
+
+   \ For fixed-length devices, block-size is greater than 1.  In that
+   \ case, we use a buffer that is at least the size of a block, and
+   \ preferably somewhat larger, to avoid blowing disk revs.  We don't
+   \ want it to be too large though, or we will lose performance when
+   \ accessing files, which may require accessing relatively-small index
+   \ or directory blocks.
+   \ For variable-length devices, block-size is 1.  In that case, we
+   \ use a buffer the size of max-transfer.  If we use a smaller one,
+   \ the device may try to map too much space.
+   block-size 1 >  if  h# 4000 min  block-size max  then
+1A2A978 	F8 A8 A2  1 80 6F A0  1 
+1A2A980 	 4 48 A0  1 DC 41 A0  1 
+1A2A988 	18  0  0  0 58 41 A0  1 
+1A2A990 	 0 40  0  0 74 4A A0  1 
+1A2A998 	F8 A8 A2  1 9C 4A A0  1 
+;
+1A2A9A0 	58 46 A0  1 
+
+headers
+\ Externally-visible routines follow.
+
+" deblocker" device-name
+1A2A9A4 	64 65 62 6C 
+1A2A9A8 	6F 63 6B 65 72  0  0 6E 
+1A2A9B0 	61 6D 65 84  0  0 A0  1 
+1A2A9B8 	BC 13 A2  1 18  0  0  0 
+1A2A9C0 	 A  0  0  0 
+
+\ This property indicates that bug 1074409 has been fixed.
+\ If this property is not present, client programs must install a patch.
+0 0 " disk-write-fix" property
+1A2A9C4 	 0 64 69 73 
+1A2A9C8 	6B 2D 77 72 69 74 65 2D 
+1A2A9D0 	66 69 78 8E B8 A9 A2  1 
+1A2A9D8 	BC 13 A2  1 DC A9 A2  1 
+1A2A9E0 	 0  0  0  0 
+: open  ( -- okay? )
+1A2A9E4 	 0  0  0 6F 
+1A2A9E8 	70 65 6E 84 40 A9 A2  1 
+1A2A9F0 	20 40 A0  1 
+
+   0 to block#                          ( )
+1A2A9F4 	70 6F A0  1 
+1A2A9F8 	48 B8 A1  1 28 A6 A2  1 
+   0 to buffer                          ( )
+1A2AA00 	70 6F A0  1 48 B8 A1  1 
+1A2AA08 	3C A6 A2  1 
+
+   block-size   to blocksize            ( )
+1A2AA0C 	F8 A8 A2  1 
+1A2AA10 	48 B8 A1  1 68 A6 A2  1 
+   buffer-size  to bufsize              ( )
+1A2AA18 	40 A9 A2  1 48 B8 A1  1 
+1A2AA20 	50 A6 A2  1 
+
+   bufsize  " dma-alloc"                ( size adr len )
+1A2AA24 	50 A6 A2  1 
+1A2AA28 	9C 53 A0  1  9 64 6D 61 
+1A2AA30 	2D 61 6C 6C 6F 63  0  0 
+   ['] $call-parent  catch  if          ( x y z )
+1A2AA38 	60 53 A0  1 DC 31 A2  1 
+1A2AA40 	14 7F A0  1 DC 41 A0  1 
+1A2AA48 	24  0  0  0 
+      3drop  bufsize allocate-dma       ( dma-addr|0 )
+1A2AA4C 	90 52 A0  1 
+1A2AA50 	50 A6 A2  1 1C E1 A1  1 
+      dup 0=  if  exit  then            ( dma-addr )
+1A2AA58 	40 49 A0  1 24 47 A0  1 
+1A2AA60 	DC 41 A0  1  8  0  0  0 
+1A2AA68 	40 46 A0  1 
+   then                                 ( dma-addr )
+   to buffer                            ( )
+1A2AA6C 	48 B8 A1  1 
+1A2AA70 	3C A6 A2  1 
+
+   " #blocks" ['] $call-parent  catch  if  ( x x )
+1A2AA74 	9C 53 A0  1 
+1A2AA78 	 7 23 62 6C 6F 63 6B 73 
+1A2AA80 	 0  0  0  0 60 53 A0  1 
+1A2AA88 	DC 31 A2  1 14 7F A0  1 
+1A2AA90 	DC 41 A0  1 10  0  0  0 
+      2drop
+1A2AA98 	AC 49 A0  1 
+   else                                 ( true | n false )
+1A2AA9C 	C8 41 A0  1 
+1A2AAA0 	 C  0  0  0 
+      to #blocks                        ( )
+1A2AAA4 	48 B8 A1  1 
+1A2AAA8 	7C A6 A2  1 
+   then
+
+
+   file @ >r  deblock-fd file !         ( )
+1A2AAAC 	84 AB A0  1 
+1A2AAB0 	5C 4C A0  1 BC 45 A0  1 
+1A2AAB8 	94 A6 A2  1 84 AB A0  1 
+1A2AAC0 	54 4D A0  1 
+
+   buffer  bufsize  initbuf             ( )
+1A2AAC4 	3C A6 A2  1 
+1A2AAC8 	50 A6 A2  1 F4 CA A0  1 
+
+   my-self  modify                      ( fid mode )
+1A2AAD0 	EC 7E A0  1 10 CA A0  1 
+   ['] block-fsize   ['] block-falign   ( fid mode ops.. )
+1A2AAD8 	60 53 A0  1 3C A8 A2  1 
+1A2AAE0 	60 53 A0  1 C8 A8 A2  1 
+   ['] block-fclose  ['] block-fseek    ( fid mode ops.. )
+1A2AAE8 	60 53 A0  1 B0 A6 A2  1 
+1A2AAF0 	60 53 A0  1 F8 A7 A2  1 
+   ['] block-fwrite  ['] block-fread    ( fid mode ops.. )
+1A2AAF8 	60 53 A0  1 58 A7 A2  1 
+1A2AB00 	60 53 A0  1 A8 A7 A2  1 
+   setupfd                              ( )
+1A2AB08 	64 C9 A0  1 
+
+   true                                 ( true )
+1A2AB0C 	 4 70 A0  1 
+   r> file !
+1A2AB10 	D0 45 A0  1 84 AB A0  1 
+1A2AB18 	54 4D A0  1 
+;
+1A2AB1C 	58 46 A0  1 
+
+: seek   ( offset.low offset.high -- error? )
+1A2AB20 	 0  0  0 73 65 65 6B 84 
+1A2AB28 	F0 A9 A2  1 20 40 A0  1 
+   deblock-fd  ['] dfseek catch  if  3drop true  else  false  then
+1A2AB30 	94 A6 A2  1 60 53 A0  1 
+1A2AB38 	F8 D1 A0  1 14 7F A0  1 
+1A2AB40 	DC 41 A0  1 14  0  0  0 
+1A2AB48 	90 52 A0  1  4 70 A0  1 
+1A2AB50 	C8 41 A0  1  8  0  0  0 
+1A2AB58 	18 70 A0  1 
+;
+1A2AB5C 	58 46 A0  1 
+: read   ( adr len -- actual-len )
+1A2AB60 	 0  0  0 72 65 61 64 84 
+1A2AB68 	2C AB A2  1 20 40 A0  1 
+   deblock-fd  ['] fgets catch  if  3drop 0  then
+1A2AB70 	94 A6 A2  1 60 53 A0  1 
+1A2AB78 	1C D4 A0  1 14 7F A0  1 
+1A2AB80 	DC 41 A0  1  C  0  0  0 
+1A2AB88 	90 52 A0  1 70 6F A0  1 
+;
+1A2AB90 	58 46 A0  1 
+finish-device
+1A2AB94 	 0  0  0  0 
+1A2AB98 	 0  0  0  0  0  0  0  0 
+1A2ABA0 	 0  0  0  0  0  0  0  0 
+1A2ABA8 	 0  0  0  0  0  0  0  0 
+1A2ABB0 	 0  0  0  0  0  0  0  0 
+1A2ABB8 	 0  0  0  0  0  0  0  0 
+device-end

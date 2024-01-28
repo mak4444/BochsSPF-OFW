@@ -1,0 +1,23 @@
+
+REQUIRE [IF] ~mak/CompIF1.f
+~ygrek/lib/linux/readline.f
+REQUIRE CASE-INS        lib/ext/caseins.f
+
+REQUIRE CASE ~mak/case.f
+REQUIRE [IFNDEF] ~nn/lib/ifdef.f
+
+[IFNDEF] IMAGE-BEGIN :  IMAGE-BEGIN ['] DUP 1000 - ; [THEN]
+[IFNDEF] F7_ED : F7_ED ; [THEN]
+[IFNDEF] DUP>R : DUP>R S" DUP >R" EVALUATE ; IMMEDIATE [THEN]
+[IFNDEF] /STRING : /STRING DUP >R - SWAP R> + SWAP ; [THEN]
+
+REQUIRE $!  ~mak/place.f
+: H. BASE @ HEX SWAP U. BASE ! ;
+: MBYE BYE ;
+
+ REQUIRE SEE lib/ext/disasm.f
+~mak/lib/spf_literal.f
+REQUIRE YDP><DP ~mak/lib/ydp.f
+WORDLIST TO NON-OPT-WL
+
+~mak/MWF/src.f

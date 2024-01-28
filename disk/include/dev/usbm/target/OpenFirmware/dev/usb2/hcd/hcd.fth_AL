@@ -1,0 +1,290 @@
+purpose: Generic HCD Driver
+
+hex
+
+
+d#  50 constant nodata-timeout
+1A43AE4 	 0 6E 6F 64 
+1A43AE8 	61 74 61 2D 74 69 6D 65 
+1A43AF0 	6F 75 74 8E D4 3A A4  1 
+1A43AF8 	68 40 A0  1 32  0  0  0 
+d# 500 constant data-timeout
+1A43B00 	 0  0  0 64 61 74 61 2D 
+1A43B08 	74 69 6D 65 6F 75 74 8C 
+1A43B10 	F8 3A A4  1 68 40 A0  1 
+1A43B18 	F4  1  0  0 
+
+: int-property  ( n name$ -- )     rot encode-int  2swap property  ;
+1A43B1C 	 0  0  0 69 
+1A43B20 	6E 74 2D 70 72 6F 70 65 
+1A43B28 	72 74 79 8C 14 3B A4  1 
+1A43B30 	20 40 A0  1 7C 49 A0  1 
+1A43B38 	40 F7 A1  1 F4 49 A0  1 
+1A43B40 	BC 14 A2  1 58 46 A0  1 
+: str-property  ( str$ name$ -- )  2swap encode-string 2swap  property  ;
+1A43B48 	 0  0  0 73 74 72 2D 70 
+1A43B50 	72 6F 70 65 72 74 79 8C 
+1A43B58 	30 3B A4  1 20 40 A0  1 
+1A43B60 	F4 49 A0  1 A0 F6 A1  1 
+1A43B68 	F4 49 A0  1 BC 14 A2  1 
+1A43B70 	58 46 A0  1 
+
+
+\ ---------------------------------------------------------------------------
+\ Common variables
+\ ---------------------------------------------------------------------------
+
+false value debug?
+1A43B74 	 0 64 65 62 
+1A43B78 	75 67 3F 86 5C 3B A4  1 
+1A43B80 	50 40 A0  1 C8  D  0  0 
+
+\ Setup and descriptor DMA data buffers
+0 value setup-buf			\ SETUP packet buffer
+1A43B88 	 0  0 73 65 74 75 70 2D 
+1A43B90 	62 75 66 89 80 3B A4  1 
+1A43B98 	50 40 A0  1 CC  D  0  0 
+0 value setup-buf-phys
+1A43BA0 	 0 73 65 74 75 70 2D 62 
+1A43BA8 	75 66 2D 70 68 79 73 8E 
+1A43BB0 	98 3B A4  1 50 40 A0  1 
+1A43BB8 	D0  D  0  0 
+0 value cfg-buf				\ Descriptor packet buffer
+1A43BBC 	63 66 67 2D 
+1A43BC0 	62 75 66 87 B4 3B A4  1 
+1A43BC8 	50 40 A0  1 D4  D  0  0 
+0 value cfg-buf-phys
+1A43BD0 	 0  0  0 63 66 67 2D 62 
+1A43BD8 	75 66 2D 70 68 79 73 8C 
+1A43BE0 	C8 3B A4  1 50 40 A0  1 
+1A43BE8 	D8  D  0  0 
+
+: alloc-dma-buf  ( -- )
+1A43BEC 	 0  0 61 6C 
+1A43BF0 	6C 6F 63 2D 64 6D 61 2D 
+1A43BF8 	62 75 66 8D E4 3B A4  1 
+1A43C00 	20 40 A0  1 
+   setup-buf 0=  if
+1A43C04 	98 3B A4  1 
+1A43C08 	24 47 A0  1 DC 41 A0  1 
+1A43C10 	2C  0  0  0 
+      /dr dma-alloc dup to setup-buf
+1A43C14 	58 2F A4  1 
+1A43C18 	60 36 A4  1 40 49 A0  1 
+1A43C20 	B8 40 A0  1 98 3B A4  1 
+      /dr true dma-map-in to setup-buf-phys
+1A43C28 	58 2F A4  1  4 70 A0  1 
+1A43C30 	B8 36 A4  1 B8 40 A0  1 
+1A43C38 	B4 3B A4  1 
+   then
+   cfg-buf 0=  if
+1A43C3C 	C8 3B A4  1 
+1A43C40 	24 47 A0  1 DC 41 A0  1 
+1A43C48 	2C  0  0  0 
+      /cfg dma-alloc dup to cfg-buf
+1A43C4C 	C0 2E A4  1 
+1A43C50 	60 36 A4  1 40 49 A0  1 
+1A43C58 	B8 40 A0  1 C8 3B A4  1 
+      /cfg true dma-map-in to cfg-buf-phys
+1A43C60 	C0 2E A4  1  4 70 A0  1 
+1A43C68 	B8 36 A4  1 B8 40 A0  1 
+1A43C70 	E4 3B A4  1 
+   then
+;
+1A43C74 	58 46 A0  1 
+: free-dma-buf  ( -- )
+1A43C78 	 0  0  0 66 72 65 65 2D 
+1A43C80 	64 6D 61 2D 62 75 66 8C 
+1A43C88 	 0 3C A4  1 20 40 A0  1 
+   setup-buf  if
+1A43C90 	98 3B A4  1 DC 41 A0  1 
+1A43C98 	38  0  0  0 
+      setup-buf setup-buf-phys /dr dma-map-out
+1A43C9C 	98 3B A4  1 
+1A43CA0 	B4 3B A4  1 58 2F A4  1 
+1A43CA8 	E4 36 A4  1 
+      setup-buf /dr dma-free
+1A43CAC 	98 3B A4  1 
+1A43CB0 	58 2F A4  1 8C 36 A4  1 
+      0 to setup-buf 0 to setup-buf-phys
+1A43CB8 	70 6F A0  1 B8 40 A0  1 
+1A43CC0 	98 3B A4  1 70 6F A0  1 
+1A43CC8 	B8 40 A0  1 B4 3B A4  1 
+   then
+   cfg-buf  if
+1A43CD0 	C8 3B A4  1 DC 41 A0  1 
+1A43CD8 	38  0  0  0 
+      cfg-buf cfg-buf-phys /cfg dma-map-out
+1A43CDC 	C8 3B A4  1 
+1A43CE0 	E4 3B A4  1 C0 2E A4  1 
+1A43CE8 	E4 36 A4  1 
+      cfg-buf /cfg dma-free
+1A43CEC 	C8 3B A4  1 
+1A43CF0 	C0 2E A4  1 8C 36 A4  1 
+      0 to cfg-buf 0 to cfg-buf-phys
+1A43CF8 	70 6F A0  1 B8 40 A0  1 
+1A43D00 	C8 3B A4  1 70 6F A0  1 
+1A43D08 	B8 40 A0  1 E4 3B A4  1 
+   then
+;
+1A43D10 	58 46 A0  1 
+
+
+
+0 value locked?  \ Interrupt lockout for USB keyboard get-data?
+1A43D14 	6C 6F 63 6B 
+1A43D18 	65 64 3F 87 8C 3C A4  1 
+1A43D20 	50 40 A0  1 DC  D  0  0 
+: lock    ( -- )  true  to locked?  ;
+1A43D28 	 0  0  0 6C 6F 63 6B 84 
+1A43D30 	20 3D A4  1 20 40 A0  1 
+1A43D38 	 4 70 A0  1 B8 40 A0  1 
+1A43D40 	20 3D A4  1 58 46 A0  1 
+: unlock  ( -- )  false to locked?  ;
+1A43D48 	 0 75 6E 6C 6F 63 6B 86 
+1A43D50 	34 3D A4  1 20 40 A0  1 
+1A43D58 	18 70 A0  1 B8 40 A0  1 
+1A43D60 	20 3D A4  1 58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Common routines
+\ ---------------------------------------------------------------------------
+
+\ XXX Room for improvement: keep tab of hcd-map-in's to improve performance.
+: hcd-map-in   ( virt size -- phys )  false dma-map-in  ;
+1A43D68 	 0 68 63 64 2D 6D 61 70 
+1A43D70 	2D 69 6E 8A 54 3D A4  1 
+1A43D78 	20 40 A0  1 18 70 A0  1 
+1A43D80 	B8 36 A4  1 58 46 A0  1 
+: hcd-map-out  ( virt phys size -- )  dma-map-out  ;
+1A43D88 	68 63 64 2D 6D 61 70 2D 
+1A43D90 	6F 75 74 8B 78 3D A4  1 
+1A43D98 	20 40 A0  1 E4 36 A4  1 
+1A43DA0 	58 46 A0  1 
+
+
+: $=  ( adr len adr len -- =? )
+1A43DA4 	 0 24 3D 82 
+1A43DA8 	98 3D A4  1 20 40 A0  1 
+   rot tuck <> if    
+1A43DB0 	7C 49 A0  1 E8 46 A0  1 
+1A43DB8 	44 48 A0  1 DC 41 A0  1 
+1A43DC0 	10  0  0  0 
+      3drop false exit 
+1A43DC4 	90 52 A0  1 
+1A43DC8 	18 70 A0  1 40 46 A0  1 
+   then  comp 0= 
+1A43DD0 	38 52 A0  1 24 47 A0  1 
+; 
+1A43DD8 	58 46 A0  1 
+
+: log2  ( n -- log2-of-n )
+1A43DDC 	 0  0  0 6C 
+1A43DE0 	6F 67 32 84 AC 3D A4  1 
+1A43DE8 	20 40 A0  1 
+   0  begin        ( n log )
+1A43DEC 	70 6F A0  1 
+      swap  2/     ( log n' )
+1A43DF0 	68 49 A0  1 78 4B A0  1 
+   ?dup  while     ( log n' )
+1A43DF8 	B4 70 A0  1 DC 41 A0  1 
+1A43E00 	14  0  0  0 
+      swap 1+      ( n' log' )
+1A43E04 	68 49 A0  1 
+1A43E08 	30 4B A0  1 
+   repeat          ( log )
+1A43E0C 	C8 41 A0  1 
+1A43E10 	E0 FF FF FF 
+;
+1A43E14 	58 46 A0  1 
+: exp2  ( n -- 2**n )  1 swap 0 ?do  2*  loop  ;
+1A43E18 	 0  0  0 65 78 70 32 84 
+1A43E20 	E8 3D A4  1 20 40 A0  1 
+1A43E28 	80 6F A0  1 68 49 A0  1 
+1A43E30 	70 6F A0  1 50 42 A0  1 
+1A43E38 	10  0  0  0 A0 4B A0  1 
+1A43E40 	F8 41 A0  1 F8 FF FF FF 
+1A43E48 	58 46 A0  1 
+: interval  ( interval -- interval' )  log2 exp2  ;
+1A43E4C 	 0  0  0 69 
+1A43E50 	6E 74 65 72 76 61 6C 88 
+1A43E58 	24 3E A4  1 20 40 A0  1 
+1A43E60 	E8 3D A4  1 24 3E A4  1 
+1A43E68 	58 46 A0  1 
+
+: 3dup   ( n1 n2 n3 -- n1 n2 n3 n1 n2 n3 )  2 pick 2 pick 2 pick  ;
+1A43E6C 	 0  0  0 33 
+1A43E70 	64 75 70 84 5C 3E A4  1 
+1A43E78 	20 40 A0  1 90 6F A0  1 
+1A43E80 	 C 4A A0  1 90 6F A0  1 
+1A43E88 	 C 4A A0  1 90 6F A0  1 
+1A43E90 	 C 4A A0  1 58 46 A0  1 
+: 3drop  ( n1 n2 n3 -- )  2drop drop  ;
+1A43E98 	 0  0 33 64 72 6F 70 85 
+1A43EA0 	78 3E A4  1 20 40 A0  1 
+1A43EA8 	AC 49 A0  1 30 49 A0  1 
+1A43EB0 	58 46 A0  1 
+
+: 4dup   ( n1 n2 n3 n4 -- n1 n2 n3 n4 n1 n2 n3 n4 )  2over 2over  ;
+1A43EB4 	 0  0  0 34 
+1A43EB8 	64 75 70 84 A4 3E A4  1 
+1A43EC0 	20 40 A0  1 D8 49 A0  1 
+1A43EC8 	D8 49 A0  1 58 46 A0  1 
+: 4drop  ( n1 n2 n3 n4 -- )  2drop 2drop  ;
+1A43ED0 	 0  0 34 64 72 6F 70 85 
+1A43ED8 	C0 3E A4  1 20 40 A0  1 
+1A43EE0 	AC 49 A0  1 AC 49 A0  1 
+1A43EE8 	58 46 A0  1 
+
+: 5dup   ( n1 n2 n3 n4 n5 -- n1 n2 n3 n4 n5 n1 n2 n3 n4 n5 )
+1A43EEC 	 0  0  0 35 
+1A43EF0 	64 75 70 84 DC 3E A4  1 
+1A43EF8 	20 40 A0  1 
+   4 pick 4 pick 4 pick 4 pick 4 pick
+1A43EFC 	B0 6F A0  1 
+1A43F00 	 C 4A A0  1 B0 6F A0  1 
+1A43F08 	 C 4A A0  1 B0 6F A0  1 
+1A43F10 	 C 4A A0  1 B0 6F A0  1 
+1A43F18 	 C 4A A0  1 B0 6F A0  1 
+1A43F20 	 C 4A A0  1 
+;
+1A43F24 	58 46 A0  1 
+: 5drop  ( n1 n2 n3 n4 n5 -- )  2drop 3drop  ;
+1A43F28 	 0  0 35 64 72 6F 70 85 
+1A43F30 	F8 3E A4  1 20 40 A0  1 
+1A43F38 	AC 49 A0  1 A4 3E A4  1 
+1A43F40 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ Exported methods
+\ ---------------------------------------------------------------------------
+
+external
+
+
+: debug-on  ( -- )  true to debug?  ;
+1A43F44 	 0  0  0 64 
+1A43F48 	65 62 75 67 2D 6F 6E 88 
+1A43F50 	34 3F A4  1 20 40 A0  1 
+1A43F58 	 4 70 A0  1 B8 40 A0  1 
+1A43F60 	80 3B A4  1 58 46 A0  1 
+
+: decode-unit-m  ( addr len -- interface port )  parse-2int  ;
+1A43F68 	 0  0 64 65 63 6F 64 65 
+1A43F70 	2D 75 6E 69 74 2D 6D 8D 
+1A43F78 	54 3F A4  1 20 40 A0  1 
+1A43F80 	 8 4B A2  1 58 46 A0  1 
+: encode-unit-m  ( interface port -- adr len )
+1A43F88 	 0  0 65 6E 63 6F 64 65 
+1A43F90 	2D 75 6E 69 74 2D 6D 8D 
+1A43F98 	7C 3F A4  1 20 40 A0  1 
+   >r <# u#s drop ascii , hold r> u#s u#>	\ " port,interface"
+1A43FA0 	BC 45 A0  1  8 76 A0  1 
+1A43FA8 	BC 76 A0  1 30 49 A0  1 
+1A43FB0 	58 41 A0  1 2C  0  0  0 
+1A43FB8 	DC 75 A0  1 D0 45 A0  1 
+1A43FC0 	BC 76 A0  1 E0 76 A0  1 
+;
+1A43FC8 	58 46 A0  1 
+
+

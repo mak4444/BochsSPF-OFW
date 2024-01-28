@@ -1,0 +1,297 @@
+\ See license at end of file
+purpose: Driver for cascaded Intel 8259 interrupt controllers
+
+internal
+: ctl0!   ( -- )  h# 20 pc!  ;
+1A39A90 	 0  0 63 74 6C 30 21 85 
+1A39A98 	 0  0 A0  1 20 40 A0  1 
+1A39AA0 	58 41 A0  1 20  0  0  0 
+1A39AA8 	E8 81 A2  1 58 46 A0  1 
+: data0!  ( -- )  h# 21 pc!  ;
+1A39AB0 	 0 64 61 74 61 30 21 86 
+1A39AB8 	9C 9A A3  1 20 40 A0  1 
+1A39AC0 	58 41 A0  1 21  0  0  0 
+1A39AC8 	E8 81 A2  1 58 46 A0  1 
+: ctl1!   ( -- )  h# a0 pc!  ;
+1A39AD0 	 0  0 63 74 6C 31 21 85 
+1A39AD8 	BC 9A A3  1 20 40 A0  1 
+1A39AE0 	58 41 A0  1 A0  0  0  0 
+1A39AE8 	E8 81 A2  1 58 46 A0  1 
+: data1!  ( -- )  h# a1 pc!  ;
+1A39AF0 	 0 64 61 74 61 31 21 86 
+1A39AF8 	DC 9A A3  1 20 40 A0  1 
+1A39B00 	58 41 A0  1 A1  0  0  0 
+1A39B08 	E8 81 A2  1 58 46 A0  1 
+
+h# 08 value vector-base0
+1A39B10 	 0  0  0 76 65 63 74 6F 
+1A39B18 	72 2D 62 61 73 65 30 8C 
+1A39B20 	FC 9A A3  1 50 40 A0  1 
+1A39B28 	EC  C  0  0 
+h# 70 value vector-base1
+1A39B2C 	 0  0  0 76 
+1A39B30 	65 63 74 6F 72 2D 62 61 
+1A39B38 	73 65 31 8C 24 9B A3  1 
+1A39B40 	50 40 A0  1 F0  C  0  0 
+h# 11 value int-mode	\ Change to h# 19 for level-triggered
+1A39B48 	 0  0  0 69 6E 74 2D 6D 
+1A39B50 	6F 64 65 88 40 9B A3  1 
+1A39B58 	50 40 A0  1 F4  C  0  0 
+
+external
+
+: init  ( -- )
+1A39B60 	 0  0  0 69 6E 69 74 84 
+1A39B68 	58 9B A3  1 20 40 A0  1 
+   \ init-code   vector-base          cascade    mode
+   int-mode  ctl0!  vector-base0 data0!  4 data0!  1 data0!
+1A39B70 	58 9B A3  1 9C 9A A3  1 
+1A39B78 	24 9B A3  1 BC 9A A3  1 
+1A39B80 	B0 6F A0  1 BC 9A A3  1 
+1A39B88 	80 6F A0  1 BC 9A A3  1 
+   int-mode  ctl1!  vector-base1 data1!  2 data1!  1 data1!
+1A39B90 	58 9B A3  1 DC 9A A3  1 
+1A39B98 	40 9B A3  1 FC 9A A3  1 
+1A39BA0 	90 6F A0  1 FC 9A A3  1 
+1A39BA8 	80 6F A0  1 FC 9A A3  1 
+
+   \ Turn off all interrupts
+   h# ff  data1!
+1A39BB0 	58 41 A0  1 FF  0  0  0 
+1A39BB8 	FC 9A A3  1 
+   h# fb  data0!	\ Enable cascade
+1A39BBC 	58 41 A0  1 
+1A39BC0 	FB  0  0  0 BC 9A A3  1 
+;
+1A39BC8 	58 46 A0  1 
+[ifdef] tokenizing  init  [then]
+
+\ It is okay to acknowledge an unspecific interrupt because the
+\ interrupt controller only issues one interrupt at a time.
+: iack  ( -- )  h# 20 ctl1!  h# 20 ctl0!  ;
+1A39BCC 	 0  0  0 69 
+1A39BD0 	61 63 6B 84 6C 9B A3  1 
+1A39BD8 	20 40 A0  1 58 41 A0  1 
+1A39BE0 	20  0  0  0 DC 9A A3  1 
+1A39BE8 	58 41 A0  1 20  0  0  0 
+1A39BF0 	9C 9A A3  1 58 46 A0  1 
+
+internal
+: >mask  ( irq# -- port old-value mask )
+1A39BF8 	 0  0 3E 6D 61 73 6B 85 
+1A39C00 	D8 9B A3  1 20 40 A0  1 
+   dup 7 and 1 swap lshift   ( irq# mask )
+1A39C08 	40 49 A0  1 E0 6F A0  1 
+1A39C10 	5C 44 A0  1 80 6F A0  1 
+1A39C18 	68 49 A0  1 9C 44 A0  1 
+   swap 8 and  if  h# a1  else  h# 21  then  ( mask port )
+1A39C20 	68 49 A0  1 F0 6F A0  1 
+1A39C28 	5C 44 A0  1 DC 41 A0  1 
+1A39C30 	14  0  0  0 58 41 A0  1 
+1A39C38 	A1  0  0  0 C8 41 A0  1 
+1A39C40 	 C  0  0  0 58 41 A0  1 
+1A39C48 	21  0  0  0 
+   dup pc@  rot
+1A39C4C 	40 49 A0  1 
+1A39C50 	AC 81 A2  1 7C 49 A0  1 
+;
+1A39C58 	58 46 A0  1 
+
+external
+: enable-irq   ( irq# -- )  >mask  invert and  swap pc!  ;
+1A39C5C 	 0 65 6E 61 
+1A39C60 	62 6C 65 2D 69 72 71 8A 
+1A39C68 	 4 9C A3  1 20 40 A0  1 
+1A39C70 	 4 9C A3  1 30 45 A0  1 
+1A39C78 	5C 44 A0  1 68 49 A0  1 
+1A39C80 	E8 81 A2  1 58 46 A0  1 
+: disable-irq  ( irq# -- )  >mask  or          swap pc!  ;
+1A39C88 	64 69 73 61 62 6C 65 2D 
+1A39C90 	69 72 71 8B 6C 9C A3  1 
+1A39C98 	20 40 A0  1  4 9C A3  1 
+1A39CA0 	70 44 A0  1 68 49 A0  1 
+1A39CA8 	E8 81 A2  1 58 46 A0  1 
+
+: ocw3@  ( cmd 20|a0 -- result )  tuck pc!  pc@  ;
+1A39CB0 	 0  0 6F 63 77 33 40 85 
+1A39CB8 	98 9C A3  1 20 40 A0  1 
+1A39CC0 	E8 46 A0  1 E8 81 A2  1 
+1A39CC8 	AC 81 A2  1 58 46 A0  1 
+
+\ Write bits in 20/a0 register:
+\ 0a means set the mode for subsequent reads of the 20/a0 register
+\ 01 bit = 0  means set it to read the IRR
+\ 01 bit = 1  means set it to read the ISR
+\ 04 bit = 1  means "poll mode", i.e. ISR reads are treated like
+\   interrupt acknowledge cycles, instead of using the INTA* input pin.
+\
+\ In poll mode, the high (80) bit of the returned ISR value is 0 if
+\ no interrupt is pending, 1 otherwise.
+
+\ isr@ returns a number encoded as follows:
+\ v00lllll where "v" is 1 if an interrupt is pending, 0 otherwise.
+\ If v is 1, lllll is a binary number from 0-15, indicating which interrupt
+\ is being serviced.
+: polled-iack  ( -- valid/level )
+1A39CD0 	70 6F 6C 6C 65 64 2D 69 
+1A39CD8 	61 63 6B 8B BC 9C A3  1 
+1A39CE0 	20 40 A0  1 
+   h# f h# 20  ocw3@  dup h# 82 =  if       ( low-code )
+1A39CE4 	58 41 A0  1 
+1A39CE8 	 F  0  0  0 58 41 A0  1 
+1A39CF0 	20  0  0  0 BC 9C A3  1 
+1A39CF8 	40 49 A0  1 58 41 A0  1 
+1A39D00 	82  0  0  0 24 48 A0  1 
+1A39D08 	DC 41 A0  1 44  0  0  0 
+      \ The interrupt came from the cascade channel, so we read the
+      \ ISR from the high bank and add 8 to its interrupt level.
+      drop  h# f h# a0 ocw3@                ( high-code )
+1A39D10 	30 49 A0  1 58 41 A0  1 
+1A39D18 	 F  0  0  0 58 41 A0  1 
+1A39D20 	A0  0  0  0 BC 9C A3  1 
+      dup h# 80 and swap                    ( 80-bit high-code )
+1A39D28 	40 49 A0  1 58 41 A0  1 
+1A39D30 	80  0  0  0 5C 44 A0  1 
+1A39D38 	68 49 A0  1 
+      7 and  8 +  or                        ( n )
+1A39D3C 	E0 6F A0  1 
+1A39D40 	5C 44 A0  1 F0 6F A0  1 
+1A39D48 	 4 45 A0  1 70 44 A0  1 
+   then
+;
+1A39D50 	58 46 A0  1 
+: irr@  ( -- w )
+1A39D54 	 0  0  0 69 
+1A39D58 	72 72 40 84 E0 9C A3  1 
+1A39D60 	20 40 A0  1 
+   h# a h# 20 ocw3@  dup 4 and  if   h# a h# a0 ocw3@  bwjoin  then
+1A39D64 	58 41 A0  1 
+1A39D68 	 A  0  0  0 58 41 A0  1 
+1A39D70 	20  0  0  0 BC 9C A3  1 
+1A39D78 	40 49 A0  1 B0 6F A0  1 
+1A39D80 	5C 44 A0  1 DC 41 A0  1 
+1A39D88 	1C  0  0  0 58 41 A0  1 
+1A39D90 	 A  0  0  0 58 41 A0  1 
+1A39D98 	A0  0  0  0 BC 9C A3  1 
+1A39DA0 	84 FB A0  1 
+;
+1A39DA4 	58 46 A0  1 
+
+: isr@  ( -- w )
+1A39DA8 	 0  0  0 69 73 72 40 84 
+1A39DB0 	60 9D A3  1 20 40 A0  1 
+   h# b h# 20 ocw3@  dup 4 and  if   h# b h# a0 ocw3@  bwjoin  then
+1A39DB8 	58 41 A0  1  B  0  0  0 
+1A39DC0 	58 41 A0  1 20  0  0  0 
+1A39DC8 	BC 9C A3  1 40 49 A0  1 
+1A39DD0 	B0 6F A0  1 5C 44 A0  1 
+1A39DD8 	DC 41 A0  1 1C  0  0  0 
+1A39DE0 	58 41 A0  1  B  0  0  0 
+1A39DE8 	58 41 A0  1 A0  0  0  0 
+1A39DF0 	BC 9C A3  1 84 FB A0  1 
+;
+1A39DF8 	58 46 A0  1 
+
+\ This is only needed when operating in rotating priority mode
+\ : iack#  ( irq# -- )
+\    dup 7 and  h# 60 or  swap 8 and  if  h# a0  else  h# 20  then  pc!
+\ ;
+
+code this-interrupt
+1A39DFC 	 0 74 68 69 
+1A39E00 	73 2D 69 6E 74 65 72 72 
+1A39E08 	75 70 74 8E B4 9D A3  1 
+1A39E10 	14 9E A3  1 
+   ax ax xor
+1A39E14 	31 C0 
+   h# f # al mov
+1A39E16 	B0  F 
+   al h# 20 # out
+1A39E18 	E6 20 
+   h# 20 # in
+1A39E1A 	EC 
+   h# 80 # al test  0=  if
+1A39E1B 	A8 80 75  5 
+      ax ax xor
+1A39E1F 	31 
+1A39E20 	C0 
+      ax push
+1A39E21 	50 
+      next
+1A39E22 	FF E7 
+   then
+   h# 7 # al and
+1A39E24 	24  7 
+   h# 2 # al cmp  <>  if   \ Not cascaded
+1A39E26 	3C  2 
+1A39E28 	74  7 
+      ax push
+1A39E2A 	50 
+      ax ax xor  ax dec  ax push
+1A39E2B 	31 C0 48 50 
+      next
+1A39E2F 	FF 
+1A39E30 	E7 
+   then
+   h# f # al mov
+1A39E31 	B0  F 
+   al h# a0 # out
+1A39E33 	E6 A0 
+   h# a0 # in
+1A39E35 	EC 
+   h# 80 # al test  0=  if
+1A39E36 	A8 80 
+1A39E38 	75  5 
+      ax ax xor  ax push
+1A39E3A 	31 C0 50 
+      next
+1A39E3D 	FF E7 
+   then
+   h# 7 # al and
+1A39E3F 	24 
+1A39E40 	 7 
+   h# 8 # al add
+1A39E41 	 4  8 
+   ax push
+1A39E43 	50 
+   ax ax xor  ax dec  ax push
+1A39E44 	31 C0 48 50 
+c;
+1A39E48 	FF E7 
+code eoi
+1A39E4A 	 0  0 65 6F 69 83 
+1A39E50 	10 9E A3  1 58 9E A3  1 
+   h# b # al mov
+1A39E58 	B0  B 
+   al h# 20 # out
+1A39E5A 	E6 20 
+   h# 20 # in
+1A39E5C 	EC 
+   h# 04 # al test \ Test slave bit
+1A39E5D 	A8  4 
+   h# 20 # al mov
+1A39E5F 	B0 
+1A39E60 	20 
+   al h# 20 # out  \ EOI to master
+1A39E61 	E6 20 
+   0<>  if
+1A39E63 	74  2 
+      al h# a0 # out  \ EOI to cascaded slave
+1A39E65 	E6 A0 
+   then
+c;
+1A39E67 	FF 
+1A39E68 	E7 
+alias interrupt-done eoi
+1A39E69 	69 6E 74 65 72 72 75 
+1A39E70 	70 74 2D 64 6F 6E 65 AE 
+1A39E78 	54 9E A3  1 54 9E A3  1 
+\ XXX we really should map the registers
+: open  ( -- flag? )  true  ;
+1A39E80 	 0  0  0 6F 70 65 6E 84 
+1A39E88 	7C 9E A3  1 20 40 A0  1 
+1A39E90 	 4 70 A0  1 58 46 A0  1 
+: close  ( -- )  ;
+1A39E98 	 0  0 63 6C 6F 73 65 85 
+1A39EA0 	8C 9E A3  1 20 40 A0  1 
+1A39EA8 	58 46 A0  1 

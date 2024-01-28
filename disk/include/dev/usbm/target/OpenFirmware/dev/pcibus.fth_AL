@@ -1,0 +1,4156 @@
+purpose: PCI bus package
+
+hex
+headerless
+
+defer prsnt@
+1A33A8C 	 0 70 72 73 
+1A33A90 	6E 74 40 86 78 3A A3  1 
+1A33A98 	5C 40 A0  1 98  A  0  0 
+
+\ Many systems have no way to read the PRSNT bits, so the default 
+\ implementation returns the worst-case information.
+: (prsnt@)  ( phys.hi -- false | prsnt-bits true )  drop 2 true  ;
+1A33AA0 	 0  0  0 28 70 72 73 6E 
+1A33AA8 	74 40 29 88 98 3A A3  1 
+1A33AB0 	20 40 A0  1 30 49 A0  1 
+1A33AB8 	90 6F A0  1  4 70 A0  1 
+1A33AC0 	58 46 A0  1 
+' (prsnt@) to prsnt@
+
+defer setup-fcodes   ( -- )  ' noop to setup-fcodes
+1A33AC4 	 0  0  0 73 
+1A33AC8 	65 74 75 70 2D 66 63 6F 
+1A33AD0 	64 65 73 8C B0 3A A3  1 
+1A33AD8 	5C 40 A0  1 9C  A  0  0 
+defer restore-fcodes ( -- )  ' noop to restore-fcodes
+1A33AE0 	 0 72 65 73 74 6F 72 65 
+1A33AE8 	2D 66 63 6F 64 65 73 8E 
+1A33AF0 	D8 3A A3  1 5C 40 A0  1 
+1A33AF8 	A0  A  0  0 
+
+false value pcimsg?	\ Optional Debug Msgs
+1A33AFC 	70 63 69 6D 
+1A33B00 	73 67 3F 87 F4 3A A3  1 
+1A33B08 	50 40 A0  1 A4  A  0  0 
+-1 value probemsg?	\ Optional Probing Msgs
+1A33B10 	 0  0 70 72 6F 62 65 6D 
+1A33B18 	73 67 3F 89  8 3B A3  1 
+1A33B20 	50 40 A0  1 A8  A  0  0 
+
+\ The default value for first-io skips the area where built-in ISA
+\ devices normally live, but stays below 64K, in order to work with
+\ 16-bit PCI-PCI bridges like the DEC 21050
+\ XXX we should maintain a separate I/O space allocation pointer
+\ for I/O devices with "large" region sizes (e.g. some versions of
+\ IBM's MPIC chip), so they do not eat up all the available space
+\ below 64K.
+headers		\ These headers are for debugging convenience
+h# 00001000 package value first-io       \ Avoid on-board ISA I/O devices
+1A33B28 	 0  0  0 66 69 72 73 74 
+1A33B30 	2D 69 6F 88 20 3B A3  1 
+1A33B38 	74  5 A2  1 18  0  0  0 
+h# 00010000 package value io-space-top   \ Stay below 64K for 16-bit bridges
+1A33B40 	 0  0  0 69 6F 2D 73 70 
+1A33B48 	61 63 65 2D 74 6F 70 8C 
+1A33B50 	38 3B A3  1 74  5 A2  1 
+1A33B58 	1C  0  0  0 
+
+h# 01000000 package value first-mem      \ Default: reserve 16M for ISA memory
+1A33B5C 	 0  0 66 69 
+1A33B60 	72 73 74 2D 6D 65 6D 89 
+1A33B68 	54 3B A3  1 74  5 A2  1 
+1A33B70 	20  0  0  0 
+h# 3f000000 package value mem-space-top
+1A33B74 	 0  0 6D 65 
+1A33B78 	6D 2D 73 70 61 63 65 2D 
+1A33B80 	74 6F 70 8D 6C 3B A3  1 
+1A33B88 	74  5 A2  1 24  0  0  0 
+headerless
+
+h# 40 buffer: string1
+1A33B90 	73 74 72 69 6E 67 31 87 
+1A33B98 	88 3B A3  1 B4 A9 A0  1 
+1A33BA0 	AC  A  0  0 40  0  0  0 
+1A33BA8 	60 F9 A2  1 
+h# 40 buffer: string2
+1A33BAC 	73 74 72 69 
+1A33BB0 	6E 67 32 87 9C 3B A3  1 
+1A33BB8 	B4 A9 A0  1 B0  A  0  0 
+1A33BC0 	40  0  0  0 9C 3B A3  1 
+h# 40 buffer: string3
+1A33BC8 	73 74 72 69 6E 67 33 87 
+1A33BD0 	B8 3B A3  1 B4 A9 A0  1 
+1A33BD8 	B4  A  0  0 40  0  0  0 
+1A33BE0 	B8 3B A3  1 
+h# 40 buffer: string4
+1A33BE4 	73 74 72 69 
+1A33BE8 	6E 67 34 87 D4 3B A3  1 
+1A33BF0 	B4 A9 A0  1 B8  A  0  0 
+1A33BF8 	40  0  0  0 D4 3B A3  1 
+
+headers
+" pci"  encode-string  " name"  property
+1A33C00 	70 63 69  0  0  0  0 6E 
+1A33C08 	61 6D 65 84  0  0 A0  1 
+1A33C10 	BC 13 A2  1 14  0  0  0 
+1A33C18 	 4  0  0  0 
+
+\ There are no visible PCI registers
+\ my-address encode-int  /pci-regs encode-int encode+  " reg" property
+
+" pci" encode-string  " device_type"  property
+1A33C1C 	70 63 69  0 
+1A33C20 	64 65 76 69 63 65 5F 74 
+1A33C28 	79 70 65 8B 10 3C A3  1 
+1A33C30 	BC 13 A2  1 18  0  0  0 
+1A33C38 	 4  0  0  0 
+
+3 encode-int  " #address-cells" property
+1A33C3C 	 0  0  0  3 
+1A33C40 	 0 23 61 64 64 72 65 73 
+1A33C48 	73 2D 63 65 6C 6C 73 8E 
+1A33C50 	30 3C A3  1 BC 13 A2  1 
+1A33C58 	1C  0  0  0  4  0  0  0 
+2 encode-int  " #size-cells"    property
+1A33C60 	 0  0  0  2 23 73 69 7A 
+1A33C68 	65 2D 63 65 6C 6C 73 8B 
+1A33C70 	54 3C A3  1 BC 13 A2  1 
+1A33C78 	18  0  0  0  4  0  0  0 
+
+headerless
+false instance value apple-hack?
+1A33C80 	61 70 70 6C 65 2D 68 61 
+1A33C88 	63 6B 3F 8B F0 3B A3  1 
+1A33C90 	C0 FE A1  1 28  0  0  0 
+false value probe-state?
+1A33C98 	 0  0  0 70 72 6F 62 65 
+1A33CA0 	2D 73 74 61 74 65 3F 8C 
+1A33CA8 	90 3C A3  1 50 40 A0  1 
+1A33CB0 	BC  A  0  0 
+
+headers		\ These headers are for debugging convenience
+0 value current-bus#
+1A33CB4 	 0  0  0 63 
+1A33CB8 	75 72 72 65 6E 74 2D 62 
+1A33CC0 	75 73 23 8C AC 3C A3  1 
+1A33CC8 	50 40 A0  1 C0  A  0  0 
+
+: have-property?  ( propname$ -- flag )
+1A33CD0 	 0 68 61 76 65 2D 70 72 
+1A33CD8 	6F 70 65 72 74 79 3F 8E 
+1A33CE0 	C8 3C A3  1 20 40 A0  1 
+   get-my-property  if  false  else  2drop true  then
+1A33CE8 	1C 34 A2  1 DC 41 A0  1 
+1A33CF0 	10  0  0  0 18 70 A0  1 
+1A33CF8 	C8 41 A0  1  C  0  0  0 
+1A33D00 	AC 49 A0  1  4 70 A0  1 
+;
+1A33D08 	58 46 A0  1 
+: assign-addresses?  ( -- flag )  " addresses-preassigned" have-property? 0=  ;
+1A33D0C 	 0  0 61 73 
+1A33D10 	73 69 67 6E 2D 61 64 64 
+1A33D18 	72 65 73 73 65 73 3F 91 
+1A33D20 	E4 3C A3  1 20 40 A0  1 
+1A33D28 	9C 53 A0  1 15 61 64 64 
+1A33D30 	72 65 73 73 65 73 2D 70 
+1A33D38 	72 65 61 73 73 69 67 6E 
+1A33D40 	65 64  0  0 E4 3C A3  1 
+1A33D48 	24 47 A0  1 58 46 A0  1 
+: parent-assign-addresses?  ( -- flag )
+1A33D50 	 0  0  0 70 61 72 65 6E 
+1A33D58 	74 2D 61 73 73 69 67 6E 
+1A33D60 	2D 61 64 64 72 65 73 73 
+1A33D68 	65 73 3F 98 24 3D A3  1 
+1A33D70 	20 40 A0  1 
+   " addresses-preassigned" get-inherited-property  if  ( )
+1A33D74 	9C 53 A0  1 
+1A33D78 	15 61 64 64 72 65 73 73 
+1A33D80 	65 73 2D 70 72 65 61 73 
+1A33D88 	73 69 67 6E 65 64  0  0 
+1A33D90 	20 36 A2  1 DC 41 A0  1 
+1A33D98 	10  0  0  0 
+      true
+1A33D9C 	 4 70 A0  1 
+   else                     ( propval$ )
+1A33DA0 	C8 41 A0  1  C  0  0  0 
+      2drop false
+1A33DA8 	AC 49 A0  1 18 70 A0  1 
+   then
+;
+1A33DB0 	58 46 A0  1 
+
+\ These cannot be package values because some words that use them are called
+\ directly from different contexts - both from the root of the PCI domain
+\ and also from child nodes and subordinate PCI-PCI bridge nodes.  They need
+\ not be package values because they contain no long-term information;
+\ between invocations of master-probe, the allocation pointers are stored
+\ in first-io and first-mem.
+first-io  value next-io
+1A33DB4 	6E 65 78 74 
+1A33DB8 	2D 69 6F 87 70 3D A3  1 
+1A33DC0 	50 40 A0  1 C4  A  0  0 
+first-mem value next-mem
+1A33DC8 	 0  0  0 6E 65 78 74 2D 
+1A33DD0 	6D 65 6D 88 C0 3D A3  1 
+1A33DD8 	50 40 A0  1 C8  A  0  0 
+headerless
+
+: set-next-io   ( adr -- )  to next-io   ;
+1A33DE0 	73 65 74 2D 6E 65 78 74 
+1A33DE8 	2D 69 6F 8B D8 3D A3  1 
+1A33DF0 	20 40 A0  1 B8 40 A0  1 
+1A33DF8 	C0 3D A3  1 58 46 A0  1 
+: set-next-mem  ( adr -- )  to next-mem  ;
+1A33E00 	 0  0  0 73 65 74 2D 6E 
+1A33E08 	65 78 74 2D 6D 65 6D 8C 
+1A33E10 	F0 3D A3  1 20 40 A0  1 
+1A33E18 	B8 40 A0  1 D8 3D A3  1 
+1A33E20 	58 46 A0  1 
+
+h# 00000fff constant pci-pagemask
+1A33E24 	 0  0  0 70 
+1A33E28 	63 69 2D 70 61 67 65 6D 
+1A33E30 	61 73 6B 8C 14 3E A3  1 
+1A33E38 	68 40 A0  1 FF  F  0  0 
+
+\ XXX we need a sophisticated IO space allocator that accounts for
+\ hardwired devices
+
+: self-b@  ( phys.hi -- l )  h# ffffff and  " config-b@" $call-self  ;
+1A33E40 	73 65 6C 66 2D 62 40 87 
+1A33E48 	38 3E A3  1 20 40 A0  1 
+1A33E50 	58 41 A0  1 FF FF FF  0 
+1A33E58 	5C 44 A0  1 9C 53 A0  1 
+1A33E60 	 9 63 6F 6E 66 69 67 2D 
+1A33E68 	62 40  0  0 B4 30 A2  1 
+1A33E70 	58 46 A0  1 
+: self-l@  ( phys.hi -- l )  h# ffffff and  " config-l@" $call-self  ;
+1A33E74 	73 65 6C 66 
+1A33E78 	2D 6C 40 87 4C 3E A3  1 
+1A33E80 	20 40 A0  1 58 41 A0  1 
+1A33E88 	FF FF FF  0 5C 44 A0  1 
+1A33E90 	9C 53 A0  1  9 63 6F 6E 
+1A33E98 	66 69 67 2D 6C 40  0  0 
+1A33EA0 	B4 30 A2  1 58 46 A0  1 
+: self-l!  ( l phys.hi -- )  h# ffffff and  " config-l!" $call-self  ;
+1A33EA8 	73 65 6C 66 2D 6C 21 87 
+1A33EB0 	80 3E A3  1 20 40 A0  1 
+1A33EB8 	58 41 A0  1 FF FF FF  0 
+1A33EC0 	5C 44 A0  1 9C 53 A0  1 
+1A33EC8 	 9 63 6F 6E 66 69 67 2D 
+1A33ED0 	6C 21  0  0 B4 30 A2  1 
+1A33ED8 	58 46 A0  1 
+: 64mem?  ( phys.hi -- flag ) self-l@  7 and 4 = ;
+1A33EDC 	 0 36 34 6D 
+1A33EE0 	65 6D 3F 86 B4 3E A3  1 
+1A33EE8 	20 40 A0  1 80 3E A3  1 
+1A33EF0 	E0 6F A0  1 5C 44 A0  1 
+1A33EF8 	B0 6F A0  1 24 48 A0  1 
+1A33F00 	58 46 A0  1 
+: io?  ( phys.hi -- flag )
+1A33F04 	69 6F 3F 83 
+1A33F08 	E8 3E A3  1 20 40 A0  1 
+   \ For expansion ROM base address registers, the LSB is an enable bit,
+   \ not an I/O space indicator.  Expansion ROM base address registers
+   \ are at 30 or 38; the register number portion of our phys.hi argument
+   \ will always be in the range 10-24 (inclusive), 30, or 38.
+   dup h# 30 and  h# 30 =  if  drop false  else  self-l@  1 and  0<>  then
+1A33F10 	40 49 A0  1 58 41 A0  1 
+1A33F18 	30  0  0  0 5C 44 A0  1 
+1A33F20 	58 41 A0  1 30  0  0  0 
+1A33F28 	24 48 A0  1 DC 41 A0  1 
+1A33F30 	14  0  0  0 30 49 A0  1 
+1A33F38 	18 70 A0  1 C8 41 A0  1 
+1A33F40 	14  0  0  0 80 3E A3  1 
+1A33F48 	80 6F A0  1 5C 44 A0  1 
+1A33F50 	44 47 A0  1 
+;
+1A33F54 	58 46 A0  1 
+: probe-base-reg  ( phys.hi -- value )
+1A33F58 	 0 70 72 6F 62 65 2D 62 
+1A33F60 	61 73 65 2D 72 65 67 8E 
+1A33F68 	 C 3F A3  1 20 40 A0  1 
+   dup self-l@ over                   ( phys.hi old-value phys.hi )
+1A33F70 	40 49 A0  1 80 3E A3  1 
+1A33F78 	54 49 A0  1 
+   h# ffffffff over self-l! self-l@  ( phys.hi old-value new-value )
+1A33F7C 	58 41 A0  1 
+1A33F80 	FF FF FF FF 54 49 A0  1 
+1A33F88 	B4 3E A3  1 80 3E A3  1 
+   -rot swap self-l!
+1A33F90 	94 49 A0  1 68 49 A0  1 
+1A33F98 	B4 3E A3  1 
+;
+1A33F9C 	58 46 A0  1 
+: mask-low-bits  ( phys.hi regval -- regval' )
+1A33FA0 	 0  0 6D 61 73 6B 2D 6C 
+1A33FA8 	6F 77 2D 62 69 74 73 8D 
+1A33FB0 	6C 3F A3  1 20 40 A0  1 
+   swap io?  if  3  else  h# f  then  invert and   ( regval' )
+1A33FB8 	68 49 A0  1  C 3F A3  1 
+1A33FC0 	DC 41 A0  1 10  0  0  0 
+1A33FC8 	A0 6F A0  1 C8 41 A0  1 
+1A33FD0 	 C  0  0  0 58 41 A0  1 
+1A33FD8 	 F  0  0  0 30 45 A0  1 
+1A33FE0 	5C 44 A0  1 
+;
+1A33FE4 	58 46 A0  1 
+\ Some devices neglect to implement the upper 16 bits of the IO base
+\ address register!
+: fix-io16  ( high-mask -- high-mask' )
+1A33FE8 	 0  0  0 66 69 78 2D 69 
+1A33FF0 	6F 31 36 88 B4 3F A3  1 
+1A33FF8 	20 40 A0  1 
+   dup h# 18000 and  h# 08000 =  if  h# ffff0000 or  then
+1A33FFC 	40 49 A0  1 
+1A34000 	58 41 A0  1  0 80  1  0 
+1A34008 	5C 44 A0  1 58 41 A0  1 
+1A34010 	 0 80  0  0 24 48 A0  1 
+1A34018 	DC 41 A0  1 10  0  0  0 
+1A34020 	58 41 A0  1  0  0 FF FF 
+1A34028 	70 44 A0  1 
+;
+1A3402C 	58 46 A0  1 
+: find-boundary  ( phys.hi -- low-mask )
+1A34030 	 0  0 66 69 6E 64 2D 62 
+1A34038 	6F 75 6E 64 61 72 79 8D 
+1A34040 	F8 3F A3  1 20 40 A0  1 
+   dup dup probe-base-reg			( phys.hi phys-hi regval )
+1A34048 	40 49 A0  1 40 49 A0  1 
+1A34050 	6C 3F A3  1 
+   mask-low-bits  fix-io16  invert		( phys.hi low-mask )
+1A34054 	B4 3F A3  1 
+1A34058 	F8 3F A3  1 30 45 A0  1 
+   swap 64mem?  0=  if  n->l  then              ( low-mask )
+1A34060 	68 49 A0  1 E8 3E A3  1 
+1A34068 	24 47 A0  1 DC 41 A0  1 
+1A34070 	 8  0  0  0 74 4F A0  1 
+;
+1A34078 	58 46 A0  1 
+: mask-up  ( n mask -- n' )  tuck + swap invert and  ;
+1A3407C 	6D 61 73 6B 
+1A34080 	2D 75 70 87 44 40 A3  1 
+1A34088 	20 40 A0  1 E8 46 A0  1 
+1A34090 	 4 45 A0  1 68 49 A0  1 
+1A34098 	30 45 A0  1 5C 44 A0  1 
+1A340A0 	58 46 A0  1 
+
+: ?p  ( adr len phys -- adr' len' phys' )
+1A340A4 	 0 3F 70 82 
+1A340A8 	88 40 A3  1 20 40 A0  1 
+   over 1 >=  if                            ( adr len phys )
+1A340B0 	54 49 A0  1 80 6F A0  1 
+1A340B8 	EC 48 A0  1 DC 41 A0  1 
+1A340C0 	44  0  0  0 
+      2 pick c@  upc  ascii P =  if         ( adr len phys )
+1A340C4 	90 6F A0  1 
+1A340C8 	 C 4A A0  1 C4 4C A0  1 
+1A340D0 	D0 51 A0  1 58 41 A0  1 
+1A340D8 	50  0  0  0 24 48 A0  1 
+1A340E0 	DC 41 A0  1 20  0  0  0 
+         h# 40000000 +  >r  1 /string  r>  ( adr' len' phys' )
+1A340E8 	58 41 A0  1  0  0  0 40 
+1A340F0 	 4 45 A0  1 BC 45 A0  1 
+1A340F8 	80 6F A0  1 3C 85 A0  1 
+1A34100 	D0 45 A0  1 
+      then
+   then
+;
+1A34104 	58 46 A0  1 
+: ?t  ( adr len phys -- adr' len' phys' )
+1A34108 	 0 3F 74 82 AC 40 A3  1 
+1A34110 	20 40 A0  1 
+   over 1 >=  if                            ( adr len phys )
+1A34114 	54 49 A0  1 
+1A34118 	80 6F A0  1 EC 48 A0  1 
+1A34120 	DC 41 A0  1 44  0  0  0 
+      2 pick c@  upc  ascii T =  if         ( adr len phys )
+1A34128 	90 6F A0  1  C 4A A0  1 
+1A34130 	C4 4C A0  1 D0 51 A0  1 
+1A34138 	58 41 A0  1 54  0  0  0 
+1A34140 	24 48 A0  1 DC 41 A0  1 
+1A34148 	20  0  0  0 
+         h# 20000000 +  >r  1 /string  r>  ( adr' len' phys' )
+1A3414C 	58 41 A0  1 
+1A34150 	 0  0  0 20  4 45 A0  1 
+1A34158 	BC 45 A0  1 80 6F A0  1 
+1A34160 	3C 85 A0  1 D0 45 A0  1 
+      then
+   then
+;
+1A34168 	58 46 A0  1 
+
+: $hnumber  ( adr len -- true | n false )  push-hex  $number  pop-base  ;
+1A3416C 	 0  0  0 24 
+1A34170 	68 6E 75 6D 62 65 72 88 
+1A34178 	10 41 A3  1 20 40 A0  1 
+1A34180 	5C F4 A0  1 40 FE A0  1 
+1A34188 	9C F4 A0  1 58 46 A0  1 
+: $hdnumber?  ( adr len -- true | d false )
+1A34190 	 0 24 68 64 6E 75 6D 62 
+1A34198 	65 72 3F 8A 7C 41 A3  1 
+1A341A0 	20 40 A0  1 
+   push-hex  $dnumber?  pop-base
+1A341A4 	5C F4 A0  1 
+1A341A8 	9C 9C A0  1 9C F4 A0  1 
+;
+1A341B0 	58 46 A0  1 
+
+headers
+
+: decode-unit  ( adr len -- phys.lo phys.mid phys.hi )
+1A341B4 	64 65 63 6F 
+1A341B8 	64 65 2D 75 6E 69 74 8B 
+1A341C0 	A0 41 A3  1 20 40 A0  1 
+   dup 0=  if  2drop 0 0 0  exit  then        ( adr len )
+1A341C8 	40 49 A0  1 24 47 A0  1 
+1A341D0 	DC 41 A0  1 18  0  0  0 
+1A341D8 	AC 49 A0  1 70 6F A0  1 
+1A341E0 	70 6F A0  1 70 6F A0  1 
+1A341E8 	40 46 A0  1 
+   0 >r
+1A341EC 	70 6F A0  1 
+1A341F0 	BC 45 A0  1 
+   over c@  upc  ascii N =  if  r> h# 80000000 + >r  1 /string  then  ( adr len )
+1A341F4 	54 49 A0  1 
+1A341F8 	C4 4C A0  1 D0 51 A0  1 
+1A34200 	58 41 A0  1 4E  0  0  0 
+1A34208 	24 48 A0  1 DC 41 A0  1 
+1A34210 	20  0  0  0 D0 45 A0  1 
+1A34218 	58 41 A0  1  0  0  0 80 
+1A34220 	 4 45 A0  1 BC 45 A0  1 
+1A34228 	80 6F A0  1 3C 85 A0  1 
+   over c@  upc  case
+1A34230 	54 49 A0  1 C4 4C A0  1 
+1A34238 	D0 51 A0  1 
+      ascii I  of  r> h# 01000000 + >r  1 /string  r> ?t    >r  endof
+1A3423C 	58 41 A0  1 
+1A34240 	49  0  0  0 48 43 A0  1 
+1A34248 	34  0  0  0 D0 45 A0  1 
+1A34250 	58 41 A0  1  0  0  0  1 
+1A34258 	 4 45 A0  1 BC 45 A0  1 
+1A34260 	80 6F A0  1 3C 85 A0  1 
+1A34268 	D0 45 A0  1 10 41 A3  1 
+1A34270 	BC 45 A0  1 6C 43 A0  1 
+1A34278 	8C  0  0  0 
+      ascii M  of  r> h# 02000000 + >r  1 /string  r> ?t ?p >r  endof
+1A3427C 	58 41 A0  1 
+1A34280 	4D  0  0  0 48 43 A0  1 
+1A34288 	38  0  0  0 D0 45 A0  1 
+1A34290 	58 41 A0  1  0  0  0  2 
+1A34298 	 4 45 A0  1 BC 45 A0  1 
+1A342A0 	80 6F A0  1 3C 85 A0  1 
+1A342A8 	D0 45 A0  1 10 41 A3  1 
+1A342B0 	AC 40 A3  1 BC 45 A0  1 
+1A342B8 	6C 43 A0  1 48  0  0  0 
+      ascii X  of  r> h# 03000000 + >r  1 /string  r>    ?p >r  endof
+1A342C0 	58 41 A0  1 58  0  0  0 
+1A342C8 	48 43 A0  1 34  0  0  0 
+1A342D0 	D0 45 A0  1 58 41 A0  1 
+1A342D8 	 0  0  0  3  4 45 A0  1 
+1A342E0 	BC 45 A0  1 80 6F A0  1 
+1A342E8 	3C 85 A0  1 D0 45 A0  1 
+1A342F0 	AC 40 A3  1 BC 45 A0  1 
+1A342F8 	6C 43 A0  1  8  0  0  0 
+      ( default )
+   endcase
+1A34300 	84 43 A0  1 
+
+   \ XX do range checks
+
+   ascii , left-parse-string                            ( rem$ DD$ )
+1A34304 	58 41 A0  1 
+1A34308 	2C  0  0  0 44 D7 A0  1 
+   $hnumber  if  0  then  h# 1f and d# 11 <<  r> + >r   ( rem$ )
+1A34310 	7C 41 A3  1 DC 41 A0  1 
+1A34318 	 8  0  0  0 70 6F A0  1 
+1A34320 	58 41 A0  1 1F  0  0  0 
+1A34328 	5C 44 A0  1 58 41 A0  1 
+1A34330 	 B  0  0  0 C8 44 A0  1 
+1A34338 	D0 45 A0  1  4 45 A0  1 
+1A34340 	BC 45 A0  1 
+   dup 0=  if  2drop  0 0 r>  exit  then                ( rem$ )
+1A34344 	40 49 A0  1 
+1A34348 	24 47 A0  1 DC 41 A0  1 
+1A34350 	18  0  0  0 AC 49 A0  1 
+1A34358 	70 6F A0  1 70 6F A0  1 
+1A34360 	D0 45 A0  1 40 46 A0  1 
+
+   ascii , left-parse-string                            ( rem$ F$ )
+1A34368 	58 41 A0  1 2C  0  0  0 
+1A34370 	44 D7 A0  1 
+   $hnumber  if  0  then  h#  f and d#  8 <<  r> + >r   ( rem$ )
+1A34374 	7C 41 A3  1 
+1A34378 	DC 41 A0  1  8  0  0  0 
+1A34380 	70 6F A0  1 58 41 A0  1 
+1A34388 	 F  0  0  0 5C 44 A0  1 
+1A34390 	58 41 A0  1  8  0  0  0 
+1A34398 	C8 44 A0  1 D0 45 A0  1 
+1A343A0 	 4 45 A0  1 BC 45 A0  1 
+   dup 0=  if  2drop  0 0 r>  exit  then                ( rem$ )
+1A343A8 	40 49 A0  1 24 47 A0  1 
+1A343B0 	DC 41 A0  1 18  0  0  0 
+1A343B8 	AC 49 A0  1 70 6F A0  1 
+1A343C0 	70 6F A0  1 D0 45 A0  1 
+1A343C8 	40 46 A0  1 
+
+   ascii , left-parse-string                            ( rem$ RR$ )
+1A343CC 	58 41 A0  1 
+1A343D0 	2C  0  0  0 44 D7 A0  1 
+   $hnumber  if  0  then  h# ff and           r> + >r   ( rem$ )
+1A343D8 	7C 41 A3  1 DC 41 A0  1 
+1A343E0 	 8  0  0  0 70 6F A0  1 
+1A343E8 	58 41 A0  1 FF  0  0  0 
+1A343F0 	5C 44 A0  1 D0 45 A0  1 
+1A343F8 	 4 45 A0  1 BC 45 A0  1 
+   dup 0=  if  2drop  0 0 r>  exit  then                ( rem$ )
+1A34400 	40 49 A0  1 24 47 A0  1 
+1A34408 	DC 41 A0  1 18  0  0  0 
+1A34410 	AC 49 A0  1 70 6F A0  1 
+1A34418 	70 6F A0  1 D0 45 A0  1 
+1A34420 	40 46 A0  1 
+
+   \ Parse the remaining digits as a number, forcing the result to
+   \ be a double number by pushing zeroes as needed
+   $hdnumber?  ( 0 | n 1 | d 2 )  2 swap  ?do  0  loop  r>
+1A34424 	A0 41 A3  1 
+1A34428 	90 6F A0  1 68 49 A0  1 
+1A34430 	50 42 A0  1 10  0  0  0 
+1A34438 	70 6F A0  1 F8 41 A0  1 
+1A34440 	F8 FF FF FF D0 45 A0  1 
+;
+1A34448 	58 46 A0  1 
+headerless
+: convert-device  ( phys.hi -- phys.hi )
+1A3444C 	 0 63 6F 6E 
+1A34450 	76 65 72 74 2D 64 65 76 
+1A34458 	69 63 65 8E C4 41 A3  1 
+1A34460 	20 40 A0  1 
+   dup d# 11 >>  h# 1f and  u#s  drop
+1A34464 	40 49 A0  1 
+1A34468 	58 41 A0  1  B  0  0  0 
+1A34470 	DC 44 A0  1 58 41 A0  1 
+1A34478 	1F  0  0  0 5C 44 A0  1 
+1A34480 	BC 76 A0  1 30 49 A0  1 
+;
+1A34488 	58 46 A0  1 
+: convert-function  ( phys.hi -- phys.hi )
+1A3448C 	 0  0  0 63 
+1A34490 	6F 6E 76 65 72 74 2D 66 
+1A34498 	75 6E 63 74 69 6F 6E 90 
+1A344A0 	60 44 A3  1 20 40 A0  1 
+   dup 8 >>  7 and  u#  ascii , hold  drop
+1A344A8 	40 49 A0  1 F0 6F A0  1 
+1A344B0 	DC 44 A0  1 E0 6F A0  1 
+1A344B8 	5C 44 A0  1 94 76 A0  1 
+1A344C0 	58 41 A0  1 2C  0  0  0 
+1A344C8 	DC 75 A0  1 30 49 A0  1 
+;
+1A344D0 	58 46 A0  1 
+: convert-high  ( phys.hi -- phys.hi )
+1A344D4 	 0  0  0 63 
+1A344D8 	6F 6E 76 65 72 74 2D 68 
+1A344E0 	69 67 68 8C A4 44 A3  1 
+1A344E8 	20 40 A0  1 
+   dup h# 700 and  if  convert-function  then
+1A344EC 	40 49 A0  1 
+1A344F0 	58 41 A0  1  0  7  0  0 
+1A344F8 	5C 44 A0  1 DC 41 A0  1 
+1A34500 	 8  0  0  0 A4 44 A3  1 
+   convert-device
+1A34508 	60 44 A3  1 
+;
+1A3450C 	58 46 A0  1 
+: convert-rr  ( phys.hi -- phys.hi )
+1A34510 	 0 63 6F 6E 76 65 72 74 
+1A34518 	2D 72 72 8A E8 44 A3  1 
+1A34520 	20 40 A0  1 
+   ascii , hold
+1A34524 	58 41 A0  1 
+1A34528 	2C  0  0  0 DC 75 A0  1 
+   dup h# ff and  u# u#s  drop   ( phys.hi )  \ RR field
+1A34530 	40 49 A0  1 58 41 A0  1 
+1A34538 	FF  0  0  0 5C 44 A0  1 
+1A34540 	94 76 A0  1 BC 76 A0  1 
+1A34548 	30 49 A0  1 
+   ascii , hold
+1A3454C 	58 41 A0  1 
+1A34550 	2C  0  0  0 DC 75 A0  1 
+   convert-function convert-device
+1A34558 	A4 44 A3  1 60 44 A3  1 
+;
+1A34560 	58 46 A0  1 
+: ?tpn  ( phys.hi char -- 0 )
+1A34564 	 0  0  0 3F 
+1A34568 	74 70 6E 84 20 45 A3  1 
+1A34570 	20 40 A0  1 
+   over  h# 20000000 and  if  ascii t hold  then
+1A34574 	54 49 A0  1 
+1A34578 	58 41 A0  1  0  0  0 20 
+1A34580 	5C 44 A0  1 DC 41 A0  1 
+1A34588 	10  0  0  0 58 41 A0  1 
+1A34590 	74  0  0  0 DC 75 A0  1 
+   over  h# 40000000 and  if  ascii p hold  then
+1A34598 	54 49 A0  1 58 41 A0  1 
+1A345A0 	 0  0  0 40 5C 44 A0  1 
+1A345A8 	DC 41 A0  1 10  0  0  0 
+1A345B0 	58 41 A0  1 70  0  0  0 
+1A345B8 	DC 75 A0  1 
+   hold
+1A345BC 	DC 75 A0  1 
+   h# 80000000 and  if  ascii n hold  then
+1A345C0 	58 41 A0  1  0  0  0 80 
+1A345C8 	5C 44 A0  1 DC 41 A0  1 
+1A345D0 	10  0  0  0 58 41 A0  1 
+1A345D8 	6E  0  0  0 DC 75 A0  1 
+;
+1A345E0 	58 46 A0  1 
+
+headers
+: encode-unit  ( phys.lo phys.mid phys.hi -- adr len )
+1A345E4 	65 6E 63 6F 
+1A345E8 	64 65 2D 75 6E 69 74 8B 
+1A345F0 	70 45 A3  1 20 40 A0  1 
+   push-hex
+1A345F8 	5C F4 A0  1 
+   <#
+1A345FC 	 8 76 A0  1 
+   dup  d# 24 >>  3 and  case                   ( phys.low phys.mid phys.hi )
+1A34600 	40 49 A0  1 58 41 A0  1 
+1A34608 	18  0  0  0 DC 44 A0  1 
+1A34610 	A0 6F A0  1 5C 44 A0  1 
+      0  of  nip nip  convert-high  drop  endof  \ Configuration space
+1A34618 	70 6F A0  1 48 43 A0  1 
+1A34620 	1C  0  0  0 FC 46 A0  1 
+1A34628 	FC 46 A0  1 E8 44 A3  1 
+1A34630 	30 49 A0  1 6C 43 A0  1 
+1A34638 	AC  0  0  0 
+      1  of                                      \ I/O space
+1A3463C 	80 6F A0  1 
+1A34640 	48 43 A0  1 30  0  0  0 
+             nip swap            ( phys.hi phys.low )
+1A34648 	FC 46 A0  1 68 49 A0  1 
+	     u# u#s  drop        ( phys.hi )
+1A34650 	94 76 A0  1 BC 76 A0  1 
+1A34658 	30 49 A0  1 
+             convert-rr          ( phys.hi )
+1A3465C 	20 45 A3  1 
+             ascii i  ?tpn       ( )
+1A34660 	58 41 A0  1 69  0  0  0 
+1A34668 	70 45 A3  1 
+      endof
+1A3466C 	6C 43 A0  1 
+1A34670 	74  0  0  0 
+      2  of					 \ Memory-32 space
+1A34674 	90 6F A0  1 
+1A34678 	48 43 A0  1 30  0  0  0 
+             nip swap            ( phys.hi phys.low )
+1A34680 	FC 46 A0  1 68 49 A0  1 
+	     u# u#s  drop        ( phys.hi )
+1A34688 	94 76 A0  1 BC 76 A0  1 
+1A34690 	30 49 A0  1 
+             convert-rr          ( phys.hi )
+1A34694 	20 45 A3  1 
+             ascii m  ?tpn       ( )
+1A34698 	58 41 A0  1 6D  0  0  0 
+1A346A0 	70 45 A3  1 
+      endof
+1A346A4 	6C 43 A0  1 
+1A346A8 	3C  0  0  0 
+      3  of					 \ Memory-64 space
+1A346AC 	A0 6F A0  1 
+1A346B0 	48 43 A0  1 2C  0  0  0 
+             -rot                ( phys.hi phys.low phys.mid )
+1A346B8 	94 49 A0  1 
+	     # #s  2drop         ( phys.hi )
+1A346BC 	40 77 A0  1 
+1A346C0 	68 77 A0  1 AC 49 A0  1 
+             convert-rr          ( phys.hi )
+1A346C8 	20 45 A3  1 
+	     ascii x  ?tpn       ( )
+1A346CC 	58 41 A0  1 
+1A346D0 	78  0  0  0 70 45 A3  1 
+      endof
+1A346D8 	6C 43 A0  1  8  0  0  0 
+   endcase
+1A346E0 	84 43 A0  1 
+   0 u#> string1 $save
+1A346E4 	70 6F A0  1 
+1A346E8 	E0 76 A0  1 9C 3B A3  1 
+1A346F0 	68 7E A0  1 
+   pop-base
+1A346F4 	9C F4 A0  1 
+;
+1A346F8 	58 46 A0  1 
+headerless
+
+\ Configuration space
+
+\ [ifdef] example-ranges-property
+\ : +i  ( adr len n -- adr' len' )  encode-int encode+  ;
+\ : 0+i  ( adr len -- adr' len' )  0 +i  ;
+\ 
+\ \  ---PCI Address---     ---Host Address----    --- size ---
+\ \ phys.hi    .mid .low   phys.hi   .lo          .hi    .lo
+\ 0000.0000 encode-int
+\               0+i  0+i    1 +i  0000.0800 +i    0+i   800 +i  \ Slot 0
+\ 0000.0800 +i  0+i  0+i    1 +i  0000.1000 +i    0+i   800 +i  \ Slot 1
+\ 0000.1000 +i  0+i  0+i    1 +i  0000.2000 +i    0+i   800 +i  \ Slot 2
+\ 0000.1800 +i  0+i  0+i    1 +i  0000.4000 +i    0+i   800 +i  \ Slot 3
+\ 0100.0000 +i  0+i  0+i    2 +i  0000.0000 +i   1 +i      0+i  \ I/O
+\ 0200.0000 +i  0+i  0+i    3 +i  0000.0000 +i   1 +i      0+i  \ Mem
+\ 
+\    " ranges" property
+\ 
+\ : map-pci-phys  ( paddr size io? -- vaddr )
+\    if  2  else  3  then              ( paddr size parent-space )
+\    swap " map-in" $call-parent       ( vaddr )
+\ ;
+\ 
+\ [then]
+
+\ : mapped?  ( phys.hi -- flag )
+\ \ [ifdef] clear-to-f
+\ \    dup config-l@ swap             ( old phys.hi )
+\ \    h# ffffffff over config-l!    ( old phys.hi )
+\ \    \ Ignore the low-order bits because the low bit of the expansion ROM
+\ \    \ base address register is writeable
+\ \    2dup config-l@                 ( old phys.hi old unmapped-value )
+\ \    swap 3 invert and  swap 3 invert and  <>  ( old phys.hi flag )
+\ \    -rot config-l!                 ( flag )
+\ \ [else]
+\    config-l@ 3 invert and  0<>      ( old phys.hi )
+\ \ [then]
+\ ;
+
+: +i  ( adr len n -- adr' len' )  encode-int encode+  ;
+1A346FC 	 0 2B 69 82 
+1A34700 	F4 45 A3  1 20 40 A0  1 
+1A34708 	40 F7 A1  1 F0 F5 A1  1 
+1A34710 	58 46 A0  1 
+: 0+i  ( adr len -- adr' len' )  0 +i  ;
+1A34714 	30 2B 69 83 
+1A34718 	 4 47 A3  1 20 40 A0  1 
+1A34720 	70 6F A0  1  4 47 A3  1 
+1A34728 	58 46 A0  1 
+
+: special-!  ( data bus# -- )
+1A3472C 	 0  0 73 70 
+1A34730 	65 63 69 61 6C 2D 21 89 
+1A34738 	1C 47 A3  1 20 40 A0  1 
+   h# ff and		\ isolate bus number
+1A34740 	58 41 A0  1 FF  0  0  0 
+1A34748 	5C 44 A0  1 
+   d# 16 lshift		\ shift into Bus Number Field
+1A3474C 	58 41 A0  1 
+1A34750 	10  0  0  0 9C 44 A0  1 
+   h# 0000ff00 or	\ set Device/Function Bits to 1.  Register Bits = 0
+1A34758 	58 41 A0  1  0 FF  0  0 
+1A34760 	70 44 A0  1 
+   self-l!
+1A34764 	B4 3E A3  1 
+;
+1A34768 	58 46 A0  1 
+
+: get-address  ( phys.low phys.mid phys.hi -- phys.hi paddr )
+1A3476C 	67 65 74 2D 
+1A34770 	61 64 64 72 65 73 73 8B 
+1A34778 	3C 47 A3  1 20 40 A0  1 
+   apple-hack?  if  2 pick  if  nip swap exit  then  then
+1A34780 	90 3C A3  1 DC 41 A0  1 
+1A34788 	20  0  0  0 90 6F A0  1 
+1A34790 	 C 4A A0  1 DC 41 A0  1 
+1A34798 	10  0  0  0 FC 46 A0  1 
+1A347A0 	68 49 A0  1 40 46 A0  1 
+   dup dup self-l@                    ( low mid hi hi base+type )
+1A347A8 	40 49 A0  1 40 49 A0  1 
+1A347B0 	80 3E A3  1 
+   mask-low-bits                      ( low mid hi base )
+1A347B4 	B4 3F A3  1 
+   2swap drop +                       ( phys.hi paddr )
+1A347B8 	F4 49 A0  1 30 49 A0  1 
+1A347C0 	 4 45 A0  1 
+;
+1A347C4 	58 46 A0  1 
+: not-relocatable?  ( phys.hi -- flag )  h# 80000000 and  0<>  ;
+1A347C8 	 0  0  0 6E 6F 74 2D 72 
+1A347D0 	65 6C 6F 63 61 74 61 62 
+1A347D8 	6C 65 3F 90 7C 47 A3  1 
+1A347E0 	20 40 A0  1 58 41 A0  1 
+1A347E8 	 0  0  0 80 5C 44 A0  1 
+1A347F0 	44 47 A0  1 58 46 A0  1 
+
+\ As described in the PCI binding document, we must avoid I/O addresses
+\ with a "1" in either the h# 100 bit or the h# 200 bit.  Such addresses
+\ have special meaning in ISA systems.  When an I/O address allocation
+\ attempt generates such an address, we bump the address past the bad range.
+
+: avoid-hard-decode  ( base -- base' )
+1A347F8 	 0  0 61 76 6F 69 64 2D 
+1A34800 	68 61 72 64 2D 64 65 63 
+1A34808 	6F 64 65 91 E0 47 A3  1 
+1A34810 	20 40 A0  1 
+   dup h# 300 and  if  h# 3ff invert and  h# 400 +  then
+1A34814 	40 49 A0  1 
+1A34818 	58 41 A0  1  0  3  0  0 
+1A34820 	5C 44 A0  1 DC 41 A0  1 
+1A34828 	20  0  0  0 58 41 A0  1 
+1A34830 	FF  3  0  0 30 45 A0  1 
+1A34838 	5C 44 A0  1 58 41 A0  1 
+1A34840 	 0  4  0  0  4 45 A0  1 
+;
+1A34848 	58 46 A0  1 
+
+: power-of-2?  ( n -- flag )  dup 1- and 0=  ;
+1A3484C 	70 6F 77 65 
+1A34850 	72 2D 6F 66 2D 32 3F 8B 
+1A34858 	10 48 A3  1 20 40 A0  1 
+1A34860 	40 49 A0  1 54 4B A0  1 
+1A34868 	5C 44 A0  1 24 47 A0  1 
+1A34870 	58 46 A0  1 
+
+: >sizemask  ( n -- mask )
+1A34874 	 0  0 3E 73 
+1A34878 	69 7A 65 6D 61 73 6B 89 
+1A34880 	5C 48 A3  1 20 40 A0  1 
+   \ Mask is one less than the smallest power of two >= n.
+   ?dup  if                                 ( n )
+1A34888 	B4 70 A0  1 DC 41 A0  1 
+1A34890 	7C  0  0  0 
+      dup power-of-2?  if                   ( n )
+1A34894 	40 49 A0  1 
+1A34898 	5C 48 A3  1 DC 41 A0  1 
+1A348A0 	10  0  0  0 
+         1-                                 ( mask )
+1A348A4 	54 4B A0  1 
+      else                                  ( n )
+1A348A8 	C8 41 A0  1 58  0  0  0 
+         0                                  ( n #bits )
+1A348B0 	70 6F A0  1 
+         \ Shift left until the leftmost 1
+         \ bit is in the msb of the cell
+         begin  swap 2* dup 0>=  while      ( #bits n' )
+1A348B4 	68 49 A0  1 
+1A348B8 	A0 4B A0  1 40 49 A0  1 
+1A348C0 	C4 47 A0  1 DC 41 A0  1 
+1A348C8 	14  0  0  0 
+            swap 1+                         ( n' #bits' )
+1A348CC 	68 49 A0  1 
+1A348D0 	30 4B A0  1 
+         repeat                             ( #bits x )
+1A348D4 	C8 41 A0  1 
+1A348D8 	DC FF FF FF 
+
+         \ Starting with all ones, shift
+         \ right the same number of times
+         drop  -1 swap 0  do  u2/  loop     ( mask )
+1A348DC 	30 49 A0  1 
+1A348E0 	58 41 A0  1 FF FF FF FF 
+1A348E8 	68 49 A0  1 70 6F A0  1 
+1A348F0 	88 42 A0  1 10  0  0  0 
+1A348F8 	8C 4B A0  1 F8 41 A0  1 
+1A34900 	F8 FF FF FF 
+      then                                  ( mask )
+   else                                    
+1A34904 	C8 41 A0  1 
+1A34908 	 8  0  0  0 
+      1                                     ( mask )
+1A3490C 	80 6F A0  1 
+   then                                     ( mask )
+;
+1A34910 	58 46 A0  1 
+
+headers
+external
+
+: assign-pci-addr  ( phys.lo phys.mid phys.hi len | -1 -- phys.hi paddr size )
+1A34914 	61 73 73 69 
+1A34918 	67 6E 2D 70 63 69 2D 61 
+1A34920 	64 64 72 8F 84 48 A3  1 
+1A34928 	20 40 A0  1 
+   \ If len is -1, reset any temporary allocations
+   dup -1 =  if  first-io set-next-io  first-mem set-next-mem  drop exit  then
+1A3492C 	40 49 A0  1 
+1A34930 	58 41 A0  1 FF FF FF FF 
+1A34938 	24 48 A0  1 DC 41 A0  1 
+1A34940 	1C  0  0  0 38 3B A3  1 
+1A34948 	F0 3D A3  1 6C 3B A3  1 
+1A34950 	14 3E A3  1 30 49 A0  1 
+1A34958 	40 46 A0  1 
+
+   probemsg?  if  ??cr ." Assigning PCI Space of length " dup 8 u.r  cr  then
+1A3495C 	20 3B A3  1 
+1A34960 	DC 41 A0  1 3C  0  0  0 
+1A34968 	 0 A1 A0  1 20 7C A0  1 
+1A34970 	1E 41 73 73 69 67 6E 69 
+1A34978 	6E 67 20 50 43 49 20 53 
+1A34980 	70 61 63 65 20 6F 66 20 
+1A34988 	6C 65 6E 67 74 68 20  0 
+1A34990 	40 49 A0  1 F0 6F A0  1 
+1A34998 	E4 77 A0  1 80 6D A0  1 
+
+   >r nip                                           ( phys.lo phys.hi )
+1A349A0 	BC 45 A0  1 FC 46 A0  1 
+   dup find-boundary                                ( phys.lo phys.hi mask )
+1A349A8 	40 49 A0  1 44 40 A3  1 
+   over io?  if                                     ( phys.lo phys.hi mask )
+1A349B0 	54 49 A0  1  C 3F A3  1 
+1A349B8 	DC 41 A0  1 7C  0  0  0 
+      probemsg?  if  ." I/O Space..." cr  then
+1A349C0 	20 3B A3  1 DC 41 A0  1 
+1A349C8 	1C  0  0  0 20 7C A0  1 
+1A349D0 	 C 49 2F 4F 20 53 70 61 
+1A349D8 	63 65 2E 2E 2E  0  0  0 
+1A349E0 	80 6D A0  1 
+      \ Use the maximum of the requested size and the
+      \ size implied by the register.
+      2 pick r> +  >sizemask or   dup 1+ >r         ( phys.lo phys.hi mask'' )
+1A349E4 	90 6F A0  1 
+1A349E8 	 C 4A A0  1 D0 45 A0  1 
+1A349F0 	 4 45 A0  1 84 48 A3  1 
+1A349F8 	70 44 A0  1 40 49 A0  1 
+1A34A00 	30 4B A0  1 BC 45 A0  1 
+
+      next-io  swap mask-up  avoid-hard-decode      ( phys.lo phys.hi base )
+1A34A08 	C0 3D A3  1 68 49 A0  1 
+1A34A10 	88 40 A3  1 10 48 A3  1 
+      dup r> +  set-next-io                         ( phys.lo phys.hi base )
+1A34A18 	40 49 A0  1 D0 45 A0  1 
+1A34A20 	 4 45 A0  1 F0 3D A3  1 
+      next-io >r                                    ( ... r: next-io )
+1A34A28 	C0 3D A3  1 BC 45 A0  1 
+   else	                                            ( phys.lo phys.hi mask )
+1A34A30 	C8 41 A0  1 7C  0  0  0 
+      probemsg?  if  ." Memory Space..." cr  then
+1A34A38 	20 3B A3  1 DC 41 A0  1 
+1A34A40 	20  0  0  0 20 7C A0  1 
+1A34A48 	 F 4D 65 6D 6F 72 79 20 
+1A34A50 	53 70 61 63 65 2E 2E 2E 
+1A34A58 	 0  0  0  0 80 6D A0  1 
+      \ Force memory space resources to page granularity
+      pci-pagemask or				    ( phys.lo phys.hi mask' )
+1A34A60 	38 3E A3  1 70 44 A0  1 
+
+      \ Some PCI devices (e.g. S3 928) lie about
+      \ the mapping granularity by having writeable
+      \ base address register bits that are not in
+      \ fact decoded, so we use the maximum of the
+      \ sizes implied by the base address register
+      \ and the reg property entry.
+      2 pick r> +  >sizemask or   dup 1+ >r         ( phys.lo phys.hi mask'' )
+1A34A68 	90 6F A0  1  C 4A A0  1 
+1A34A70 	D0 45 A0  1  4 45 A0  1 
+1A34A78 	84 48 A3  1 70 44 A0  1 
+1A34A80 	40 49 A0  1 30 4B A0  1 
+1A34A88 	BC 45 A0  1 
+
+      next-mem swap mask-up  dup r> + set-next-mem  ( phys.lo phys.hi base )
+1A34A8C 	D8 3D A3  1 
+1A34A90 	68 49 A0  1 88 40 A3  1 
+1A34A98 	40 49 A0  1 D0 45 A0  1 
+1A34AA0 	 4 45 A0  1 14 3E A3  1 
+      next-mem >r                                   ( ... r: next-mem )
+1A34AA8 	D8 3D A3  1 BC 45 A0  1 
+   then                                             ( phys.lo phys.hi base )
+   probemsg?  if  2dup swap ."   Base Reg: " . ."  = " . cr  then
+1A34AB0 	20 3B A3  1 DC 41 A0  1 
+1A34AB8 	38  0  0  0 C0 49 A0  1 
+1A34AC0 	68 49 A0  1 20 7C A0  1 
+1A34AC8 	 C 20 20 42 61 73 65 20 
+1A34AD0 	52 65 67 3A 20  0  0  0 
+1A34AD8 	94 7A A0  1 20 7C A0  1 
+1A34AE0 	 3 20 3D 20  0  0  0  0 
+1A34AE8 	94 7A A0  1 80 6D A0  1 
+   2dup swap self-l!                                ( phys.lo phys.hi base )
+1A34AF0 	C0 49 A0  1 68 49 A0  1 
+1A34AF8 	B4 3E A3  1 
+\ M
+   over 64mem?  if  over 4 + 0 swap self-l!  then
+1A34AFC 	54 49 A0  1 
+1A34B00 	E8 3E A3  1 DC 41 A0  1 
+1A34B08 	1C  0  0  0 54 49 A0  1 
+1A34B10 	B0 6F A0  1  4 45 A0  1 
+1A34B18 	70 6F A0  1 68 49 A0  1 
+1A34B20 	B4 3E A3  1 
+\ M
+   rot +                                            ( phys.hi paddr )
+1A34B24 	7C 49 A0  1 
+1A34B28 	 4 45 A0  1 
+   r> over -                                        ( phys.hi paddr size )
+1A34B2C 	D0 45 A0  1 
+1A34B30 	54 49 A0  1 18 45 A0  1 
+;
+1A34B38 	58 46 A0  1 
+
+\ XXX What if a stateful bridge needs to have its registers mapped
+\ in order to probe its children, thus it has a probe-state mapping,
+\ then during the probe long-term addresses get assigned, then the
+\ subordinate probe finishes and the bridge registers are unmapped,
+\ ostensibly in probe state.
+\ XXX we should stipulate that, after mapping out, devices must set
+\ their command registers to disable memory and I/O response.
+
+: enable-apple-hack  ( -- )  true to apple-hack?   ;
+1A34B3C 	 0  0 65 6E 
+1A34B40 	61 62 6C 65 2D 61 70 70 
+1A34B48 	6C 65 2D 68 61 63 6B 91 
+1A34B50 	28 49 A3  1 20 40 A0  1 
+1A34B58 	 4 70 A0  1 48 B8 A1  1 
+1A34B60 	90 3C A3  1 58 46 A0  1 
+
+: ?map-in-msg  ( phys.lo..hi -- phys.lo..hi )
+1A34B68 	3F 6D 61 70 2D 69 6E 2D 
+1A34B70 	6D 73 67 8B 54 4B A3  1 
+1A34B78 	20 40 A0  1 
+   pcimsg?  if
+1A34B7C 	 8 3B A3  1 
+1A34B80 	DC 41 A0  1 EC  0  0  0 
+      ??cr ." PCI-MAP-IN: Bus: " dup d# 16 rshift  h# ff and   . ." , "
+1A34B88 	 0 A1 A0  1 20 7C A0  1 
+1A34B90 	11 50 43 49 2D 4D 41 50 
+1A34B98 	2D 49 4E 3A 20 42 75 73 
+1A34BA0 	3A 20  0  0 40 49 A0  1 
+1A34BA8 	58 41 A0  1 10  0  0  0 
+1A34BB0 	B4 44 A0  1 58 41 A0  1 
+1A34BB8 	FF  0  0  0 5C 44 A0  1 
+1A34BC0 	94 7A A0  1 20 7C A0  1 
+1A34BC8 	 2 2C 20  0 
+      dup h# 3000000 and
+1A34BCC 	40 49 A0  1 
+1A34BD0 	58 41 A0  1  0  0  0  3 
+1A34BD8 	5C 44 A0  1 
+      case
+         h# 00000000  of  ." CONFIG, "  endof	( phys.lo..hi )
+1A34BDC 	58 41 A0  1 
+1A34BE0 	 0  0  0  0 48 43 A0  1 
+1A34BE8 	1C  0  0  0 20 7C A0  1 
+1A34BF0 	 8 43 4F 4E 46 49 47 2C 
+1A34BF8 	20  0  0  0 6C 43 A0  1 
+1A34C00 	38  0  0  0 
+         h# 01000000  of  ." I/O, "     endof	( phys.lo..hi )
+1A34C04 	58 41 A0  1 
+1A34C08 	 0  0  0  1 48 43 A0  1 
+1A34C10 	18  0  0  0 20 7C A0  1 
+1A34C18 	 5 49 2F 4F 2C 20  0  0 
+1A34C20 	6C 43 A0  1 14  0  0  0 
+         ( default )	   ." MEM, "
+1A34C28 	20 7C A0  1  5 4D 45 4D 
+1A34C30 	2C 20  0  0 
+      endcase
+1A34C34 	84 43 A0  1 
+      ." PCI PHYS.HI..LO = " 3dup .x space .x space .x  4 spaces
+1A34C38 	20 7C A0  1 12 50 43 49 
+1A34C40 	20 50 48 59 53 2E 48 49 
+1A34C48 	2E 2E 4C 4F 20 3D 20  0 
+1A34C50 	A4 52 A0  1 2C  E A1  1 
+1A34C58 	CC 71 A0  1 2C  E A1  1 
+1A34C60 	CC 71 A0  1 2C  E A1  1 
+1A34C68 	B0 6F A0  1 E8 71 A0  1 
+   then
+;
+1A34C70 	58 46 A0  1 
+: map-in  ( phys.low phys.mid phys.hi len -- vaddr )
+1A34C74 	 0 6D 61 70 
+1A34C78 	2D 69 6E 86 78 4B A3  1 
+1A34C80 	20 40 A0  1 
+   >r                                               ( phys.lo..hi )
+1A34C84 	BC 45 A0  1 
+   ?map-in-msg                                      ( phys.lo..hi )
+1A34C88 	78 4B A3  1 
+\ XXX handle "t" bit
+   \ In most systems, map-in won't be called for config space addresses,
+   \ but some systems require it, so we check this case, letting
+   \ map-pci-phys do most of the work.
+   dup h# 3000000 and  0=  if	\ Config Space      ( phys.lo..hi )
+1A34C8C 	40 49 A0  1 
+1A34C90 	58 41 A0  1  0  0  0  3 
+1A34C98 	5C 44 A0  1 24 47 A0  1 
+1A34CA0 	DC 41 A0  1 18  0  0  0 
+      nip tuck false                                ( phys.hi phys.lo io? )
+1A34CA8 	FC 46 A0  1 E8 46 A0  1 
+1A34CB0 	18 70 A0  1 
+   else  dup not-relocatable?  if                   ( phys.lo..hi )
+1A34CB4 	C8 41 A0  1 
+1A34CB8 	68  0  0  0 40 49 A0  1 
+1A34CC0 	E0 47 A3  1 DC 41 A0  1 
+1A34CC8 	2C  0  0  0 
+      nip tuck  h# 3000000 and h# 1000000 =       ( phys.hi phys.lo io? )
+1A34CCC 	FC 46 A0  1 
+1A34CD0 	E8 46 A0  1 58 41 A0  1 
+1A34CD8 	 0  0  0  3 5C 44 A0  1 
+1A34CE0 	58 41 A0  1  0  0  0  1 
+1A34CE8 	24 48 A0  1 
+   else                                             ( phys.lo..hi )
+1A34CEC 	C8 41 A0  1 
+1A34CF0 	30  0  0  0 
+      probe-state?  if                              ( phys.lo..hi )
+1A34CF4 	AC 3C A3  1 
+1A34CF8 	DC 41 A0  1 18  0  0  0 
+         r@ assign-pci-addr drop                    ( phys.hi paddr )
+1A34D00 	E4 45 A0  1 28 49 A3  1 
+1A34D08 	30 49 A0  1 
+      else                                          ( phys.lo..hi)
+1A34D0C 	C8 41 A0  1 
+1A34D10 	 8  0  0  0 
+         get-address                                ( phys.hi paddr )
+1A34D14 	7C 47 A3  1 
+      then                                          ( phys.hi paddr )
+      over io?                                      ( phys.hi paddr io? )
+1A34D18 	54 49 A0  1  C 3F A3  1 
+   then then                                        ( phys.hi paddr io? )
+   \ The PCI bus physical base address has been assigned.
+   \ Now determine the virtual address.
+   rot r> map-pci-phys                              ( vaddr )
+1A34D20 	7C 49 A0  1 D0 45 A0  1 
+1A34D28 	FC 39 A3  1 
+;
+1A34D2C 	58 46 A0  1 
+
+: open  ( -- )  true  ;
+1A34D30 	 0  0  0 6F 70 65 6E 84 
+1A34D38 	80 4C A3  1 20 40 A0  1 
+1A34D40 	 4 70 A0  1 58 46 A0  1 
+: close  ;
+1A34D48 	 0  0 63 6C 6F 73 65 85 
+1A34D50 	3C 4D A3  1 20 40 A0  1 
+1A34D58 	58 46 A0  1 
+
+headerless
+
+\ The my-X@ words are executed in the child instance
+: my-b@  ( offset -- b )  my-space +  " config-b@" $call-parent  ;
+1A34D5C 	 0  0 6D 79 
+1A34D60 	2D 62 40 85 54 4D A3  1 
+1A34D68 	20 40 A0  1 AC  3 A2  1 
+1A34D70 	 4 45 A0  1 9C 53 A0  1 
+1A34D78 	 9 63 6F 6E 66 69 67 2D 
+1A34D80 	62 40  0  0 DC 31 A2  1 
+1A34D88 	58 46 A0  1 
+: my-b!  ( b offset -- )  my-space +  " config-b!" $call-parent  ;
+1A34D8C 	 0  0 6D 79 
+1A34D90 	2D 62 21 85 68 4D A3  1 
+1A34D98 	20 40 A0  1 AC  3 A2  1 
+1A34DA0 	 4 45 A0  1 9C 53 A0  1 
+1A34DA8 	 9 63 6F 6E 66 69 67 2D 
+1A34DB0 	62 21  0  0 DC 31 A2  1 
+1A34DB8 	58 46 A0  1 
+: my-w@  ( offset -- w )  my-space +  " config-w@" $call-parent  ;
+1A34DBC 	 0  0 6D 79 
+1A34DC0 	2D 77 40 85 98 4D A3  1 
+1A34DC8 	20 40 A0  1 AC  3 A2  1 
+1A34DD0 	 4 45 A0  1 9C 53 A0  1 
+1A34DD8 	 9 63 6F 6E 66 69 67 2D 
+1A34DE0 	77 40  0  0 DC 31 A2  1 
+1A34DE8 	58 46 A0  1 
+: my-w!  ( w offset -- )  my-space +  " config-w!" $call-parent  ;
+1A34DEC 	 0  0 6D 79 
+1A34DF0 	2D 77 21 85 C8 4D A3  1 
+1A34DF8 	20 40 A0  1 AC  3 A2  1 
+1A34E00 	 4 45 A0  1 9C 53 A0  1 
+1A34E08 	 9 63 6F 6E 66 69 67 2D 
+1A34E10 	77 21  0  0 DC 31 A2  1 
+1A34E18 	58 46 A0  1 
+: my-l@  ( offset -- l )  my-space +  " config-l@" $call-parent  ;
+1A34E1C 	 0  0 6D 79 
+1A34E20 	2D 6C 40 85 F8 4D A3  1 
+1A34E28 	20 40 A0  1 AC  3 A2  1 
+1A34E30 	 4 45 A0  1 9C 53 A0  1 
+1A34E38 	 9 63 6F 6E 66 69 67 2D 
+1A34E40 	6C 40  0  0 DC 31 A2  1 
+1A34E48 	58 46 A0  1 
+: my-l!  ( l offset -- )  my-space +  " config-l!" $call-parent  ;
+1A34E4C 	 0  0 6D 79 
+1A34E50 	2D 6C 21 85 28 4E A3  1 
+1A34E58 	20 40 A0  1 AC  3 A2  1 
+1A34E60 	 4 45 A0  1 9C 53 A0  1 
+1A34E68 	 9 63 6F 6E 66 69 67 2D 
+1A34E70 	6C 21  0  0 DC 31 A2  1 
+1A34E78 	58 46 A0  1 
+
+\ Create an integer-valued property with name "name$" and value "n".
+
+: int-property  ( n name$ -- )  rot encode-int  2swap property  ;
+1A34E7C 	 0  0  0 69 
+1A34E80 	6E 74 2D 70 72 6F 70 65 
+1A34E88 	72 74 79 8C 58 4E A3  1 
+1A34E90 	20 40 A0  1 7C 49 A0  1 
+1A34E98 	40 F7 A1  1 F4 49 A0  1 
+1A34EA0 	BC 14 A2  1 58 46 A0  1 
+
+\ Create an integer-valued property named "name$" from a 16-bit
+\ configuration space register.
+
+: int16-property  ( offset name$ -- )
+1A34EA8 	 0 69 6E 74 31 36 2D 70 
+1A34EB0 	72 6F 70 65 72 74 79 8E 
+1A34EB8 	90 4E A3  1 20 40 A0  1 
+   >r >r  my-w@  encode-int  r> r> property
+1A34EC0 	BC 45 A0  1 BC 45 A0  1 
+1A34EC8 	C8 4D A3  1 40 F7 A1  1 
+1A34ED0 	D0 45 A0  1 D0 45 A0  1 
+1A34ED8 	BC 14 A2  1 
+;
+1A34EDC 	58 46 A0  1 
+
+\ Create an integer-valued property named "name$" from an 8-bit
+\ configuration space register.
+
+: int8-property  ( offset name$ -- )
+1A34EE0 	 0  0 69 6E 74 38 2D 70 
+1A34EE8 	72 6F 70 65 72 74 79 8D 
+1A34EF0 	BC 4E A3  1 20 40 A0  1 
+   >r >r  my-b@  encode-int  r> r> property
+1A34EF8 	BC 45 A0  1 BC 45 A0  1 
+1A34F00 	68 4D A3  1 40 F7 A1  1 
+1A34F08 	D0 45 A0  1 D0 45 A0  1 
+1A34F10 	BC 14 A2  1 
+;
+1A34F14 	58 46 A0  1 
+
+\ True if the header type indicates that the function is a PCI-PCI bridge
+: bridge?  ( -- flag )  h# 0e my-b@  h# 7f and  1 =   ;
+1A34F18 	62 72 69 64 67 65 3F 87 
+1A34F20 	F4 4E A3  1 20 40 A0  1 
+1A34F28 	58 41 A0  1  E  0  0  0 
+1A34F30 	68 4D A3  1 58 41 A0  1 
+1A34F38 	7F  0  0  0 5C 44 A0  1 
+1A34F40 	80 6F A0  1 24 48 A0  1 
+1A34F48 	58 46 A0  1 
+
+\ True if the header type indicates that the funtion is a PCI-Cardbus
+: card-bus? ( -- flag ) h# 0e my-b@  h# 7f and h# 2 =  ;
+1A34F4C 	 0  0 63 61 
+1A34F50 	72 64 2D 62 75 73 3F 89 
+1A34F58 	24 4F A3  1 20 40 A0  1 
+1A34F60 	58 41 A0  1  E  0  0  0 
+1A34F68 	68 4D A3  1 58 41 A0  1 
+1A34F70 	7F  0  0  0 5C 44 A0  1 
+1A34F78 	58 41 A0  1  2  0  0  0 
+1A34F80 	24 48 A0  1 58 46 A0  1 
+
+\ Create properties reflecting standard configuration header information
+
+: class-code  ( -- n )  8 my-l@ 8 rshift  ;
+1A34F88 	 0 63 6C 61 73 73 2D 63 
+1A34F90 	6F 64 65 8A 5C 4F A3  1 
+1A34F98 	20 40 A0  1 F0 6F A0  1 
+1A34FA0 	28 4E A3  1 F0 6F A0  1 
+1A34FA8 	B4 44 A0  1 58 46 A0  1 
+: make-child-properties  ( -- )
+1A34FB0 	 0  0 6D 61 6B 65 2D 63 
+1A34FB8 	68 69 6C 64 2D 70 72 6F 
+1A34FC0 	70 65 72 74 69 65 73 95 
+1A34FC8 	98 4F A3  1 20 40 A0  1 
+   h# 00     " vendor-id"   int16-property
+1A34FD0 	58 41 A0  1  0  0  0  0 
+1A34FD8 	9C 53 A0  1  9 76 65 6E 
+1A34FE0 	64 6F 72 2D 69 64  0  0 
+1A34FE8 	BC 4E A3  1 
+   h# 02     " device-id"   int16-property
+1A34FEC 	58 41 A0  1 
+1A34FF0 	 2  0  0  0 9C 53 A0  1 
+1A34FF8 	 9 64 65 76 69 63 65 2D 
+1A35000 	69 64  0  0 BC 4E A3  1 
+   h# 08     " revision-id" int8-property
+1A35008 	58 41 A0  1  8  0  0  0 
+1A35010 	9C 53 A0  1  B 72 65 76 
+1A35018 	69 73 69 6F 6E 2D 69 64 
+1A35020 	 0  0  0  0 F4 4E A3  1 
+ cr ." make-child-properties11 " here .h
+1A35028 	80 6D A0  1 20 7C A0  1 
+1A35030 	18 6D 61 6B 65 2D 63 68 
+1A35038 	69 6C 64 2D 70 72 6F 70 
+1A35040 	65 72 74 69 65 73 31 31 
+1A35048 	20  0  0  0 70 54 A0  1 
+1A35050 	10  E A1  1 
+   bridge?  card-bus? or 0=  dup .h if
+1A35054 	24 4F A3  1 
+1A35058 	5C 4F A3  1 70 44 A0  1 
+1A35060 	24 47 A0  1 40 49 A0  1 
+1A35068 	10  E A1  1 DC 41 A0  1 
+1A35070 	40  0  0  0 
+      h# 3e  " min-grant"   int8-property
+1A35074 	58 41 A0  1 
+1A35078 	3E  0  0  0 9C 53 A0  1 
+1A35080 	 9 6D 69 6E 2D 67 72 61 
+1A35088 	6E 74  0  0 F4 4E A3  1 
+      h# 3f  " max-latency" int8-property
+1A35090 	58 41 A0  1 3F  0  0  0 
+1A35098 	9C 53 A0  1  B 6D 61 78 
+1A350A0 	2D 6C 61 74 65 6E 63 79 
+1A350A8 	 0  0  0  0 F4 4E A3  1 
+   then
+ cr ." make-child-properties22 " here .h
+1A350B0 	80 6D A0  1 20 7C A0  1 
+1A350B8 	18 6D 61 6B 65 2D 63 68 
+1A350C0 	69 6C 64 2D 70 72 6F 70 
+1A350C8 	65 72 74 69 65 73 32 32 
+1A350D0 	20  0  0  0 70 54 A0  1 
+1A350D8 	10  E A1  1 
+\ mmo   h# 3d my-b@  ?dup dup .  if                       ( int )
+\ mmo      dup encode-int " interrupts" property    ( int )
+\ mmo      my-space swap  " assign-int-line" $call-parent  if  h# 3c my-b!  then
+\ mmo   then                                        ( )
+
+   h# 2e  " subsystem-id"         int16-property
+1A350DC 	58 41 A0  1 
+1A350E0 	2E  0  0  0 9C 53 A0  1 
+1A350E8 	 C 73 75 62 73 79 73 74 
+1A350F0 	65 6D 2D 69 64  0  0  0 
+1A350F8 	BC 4E A3  1 
+   h# 2c  " subsystem-vendor-id"  int16-property
+1A350FC 	58 41 A0  1 
+1A35100 	2C  0  0  0 9C 53 A0  1 
+1A35108 	13 73 75 62 73 79 73 74 
+1A35110 	65 6D 2D 76 65 6E 64 6F 
+1A35118 	72 2D 69 64  0  0  0  0 
+1A35120 	BC 4E A3  1 
+
+   class-code  encode-int  " class-code"  property
+1A35124 	98 4F A3  1 
+1A35128 	40 F7 A1  1 9C 53 A0  1 
+1A35130 	 A 63 6C 61 73 73 2D 63 
+1A35138 	6F 64 65  0 BC 14 A2  1 
+   6 my-w@
+1A35140 	D0 6F A0  1 C8 4D A3  1 
+      dup 9 rshift 3 and  " devsel-speed"       int-property
+1A35148 	40 49 A0  1 58 41 A0  1 
+1A35150 	 9  0  0  0 B4 44 A0  1 
+1A35158 	A0 6F A0  1 5C 44 A0  1 
+1A35160 	9C 53 A0  1  C 64 65 76 
+1A35168 	73 65 6C 2D 73 70 65 65 
+1A35170 	64  0  0  0 90 4E A3  1 
+ cr ." make-child-properties44 " here .h
+1A35178 	80 6D A0  1 20 7C A0  1 
+1A35180 	18 6D 61 6B 65 2D 63 68 
+1A35188 	69 6C 64 2D 70 72 6F 70 
+1A35190 	65 72 74 69 65 73 34 34 
+1A35198 	20  0  0  0 70 54 A0  1 
+1A351A0 	10  E A1  1 
+\ MMO      dup 7 rshift 1 and dup .  if  0 0  " fast-back-to-back"  property  then
+      dup 6 rshift 1 and dup .  if  0 0  " udf-supported"      property  then
+1A351A4 	40 49 A0  1 
+1A351A8 	D0 6F A0  1 B4 44 A0  1 
+1A351B0 	80 6F A0  1 5C 44 A0  1 
+1A351B8 	40 49 A0  1 94 7A A0  1 
+1A351C0 	DC 41 A0  1 24  0  0  0 
+1A351C8 	70 6F A0  1 70 6F A0  1 
+1A351D0 	9C 53 A0  1  D 75 64 66 
+1A351D8 	2D 73 75 70 70 6F 72 74 
+1A351E0 	65 64  0  0 BC 14 A2  1 
+          5 rshift 1 and dup .  if  0 0  " 66mhz-capable"      property  then
+1A351E8 	C0 6F A0  1 B4 44 A0  1 
+1A351F0 	80 6F A0  1 5C 44 A0  1 
+1A351F8 	40 49 A0  1 94 7A A0  1 
+1A35200 	DC 41 A0  1 24  0  0  0 
+1A35208 	70 6F A0  1 70 6F A0  1 
+1A35210 	9C 53 A0  1  D 36 36 6D 
+1A35218 	68 7A 2D 63 61 70 61 62 
+1A35220 	6C 65  0  0 BC 14 A2  1 
+
+   \ Find the cache line size, and put it (divided by 4) into the
+   \ cache-line-size register at offset 0x0c
+ cr ." make-child-properties55 " here .h
+1A35228 	80 6D A0  1 20 7C A0  1 
+1A35230 	18 6D 61 6B 65 2D 63 68 
+1A35238 	69 6C 64 2D 70 72 6F 70 
+1A35240 	65 72 74 69 65 73 35 35 
+1A35248 	20  0  0  0 70 54 A0  1 
+1A35250 	10  E A1  1 
+
+   cpu-node @ dup .  if
+1A35254 	FC E4 A1  1 
+1A35258 	5C 4C A0  1 40 49 A0  1 
+1A35260 	94 7A A0  1 DC 41 A0  1 
+1A35268 	60  0  0  0 
+      " d-cache-block-size" cpu-node @	( adr len ihandle )
+1A3526C 	9C 53 A0  1 
+1A35270 	12 64 2D 63 61 63 68 65 
+1A35278 	2D 62 6C 6F 63 6B 2D 73 
+1A35280 	69 7A 65  0 FC E4 A1  1 
+1A35288 	5C 4C A0  1 
+      ihandle>phandle			( adr len phandle )
+1A3528C 	 0 32 A2  1 
+      get-package-property		( adr len false | true )
+1A35290 	98 33 A2  1 
+      0= dup .  if				( adr len )
+1A35294 	24 47 A0  1 
+1A35298 	40 49 A0  1 94 7A A0  1 
+1A352A0 	DC 41 A0  1 24  0  0  0 
+         decode-int nip nip		( line-size )
+1A352A8 	68 F7 A1  1 FC 46 A0  1 
+1A352B0 	FC 46 A0  1 
+         4 / h# 0c			( size adr )
+1A352B4 	B0 6F A0  1 
+1A352B8 	98 5F A0  1 58 41 A0  1 
+1A352C0 	 C  0  0  0 
+         my-b!				(  )
+1A352C4 	98 4D A3  1 
+      then				(  )
+   then
+
+   \ Set the latency-timer to a default of 32
+   h# 20 h# 0d my-b!			( )
+1A352C8 	58 41 A0  1 20  0  0  0 
+1A352D0 	58 41 A0  1  D  0  0  0 
+1A352D8 	98 4D A3  1 
+;
+1A352DC 	58 46 A0  1 
+: make-function-properties  ( child-ihandle -- )
+1A352E0 	 0  0  0 6D 61 6B 65 2D 
+1A352E8 	66 75 6E 63 74 69 6F 6E 
+1A352F0 	2D 70 72 6F 70 65 72 74 
+1A352F8 	69 65 73 98 CC 4F A3  1 
+1A35300 	20 40 A0  1 
+   to my-self	\ Get back into child node
+1A35304 	B8 40 A0  1 
+1A35308 	EC 7E A0  1 
+   make-child-properties
+1A3530C 	CC 4F A3  1 
+;
+1A35310 	58 46 A0  1 
+
+\ Create a "name" property of the form "pciVVVV,DDDD", where VVVV and
+\ DDDD are the hexadecimal representations of the vendor ID and device
+\ ID, respectively.
+
+: $hold  ( adr len -- )
+1A35314 	 0  0 24 68 
+1A35318 	6F 6C 64 85  0 53 A3  1 
+1A35320 	20 40 A0  1 
+   dup  if  bounds swap 1-  ?do  i c@ hold  -1 +loop  else  2drop  then
+1A35324 	40 49 A0  1 
+1A35328 	DC 41 A0  1 3C  0  0  0 
+1A35330 	F0 6D A0  1 68 49 A0  1 
+1A35338 	54 4B A0  1 50 42 A0  1 
+1A35340 	20  0  0  0 B4 42 A0  1 
+1A35348 	C4 4C A0  1 DC 75 A0  1 
+1A35350 	58 41 A0  1 FF FF FF FF 
+1A35358 	1C 42 A0  1 E8 FF FF FF 
+1A35360 	C8 41 A0  1  8  0  0  0 
+1A35368 	AC 49 A0  1 
+;
+1A3536C 	58 46 A0  1 
+: ascii-vendor-id  ( device/vendor-id -- adr len )
+1A35370 	61 73 63 69 69 2D 76 65 
+1A35378 	6E 64 6F 72 2D 69 64 8F 
+1A35380 	20 53 A3  1 20 40 A0  1 
+   lwsplit
+1A35388 	A0 4F A0  1 
+   push-hex
+1A3538C 	5C F4 A0  1 
+   <# u#s drop ascii , hold u#s  " pci" $hold  u#> string2 $save
+1A35390 	 8 76 A0  1 BC 76 A0  1 
+1A35398 	30 49 A0  1 58 41 A0  1 
+1A353A0 	2C  0  0  0 DC 75 A0  1 
+1A353A8 	BC 76 A0  1 9C 53 A0  1 
+1A353B0 	 3 70 63 69  0  0  0  0 
+1A353B8 	20 53 A3  1 E0 76 A0  1 
+1A353C0 	B8 3B A3  1 68 7E A0  1 
+   pop-base
+1A353C8 	9C F4 A0  1 
+;
+1A353CC 	58 46 A0  1 
+: name-property-value  ( -- adr len )  0 my-l@ ascii-vendor-id  ;
+1A353D0 	6E 61 6D 65 2D 70 72 6F 
+1A353D8 	70 65 72 74 79 2D 76 61 
+1A353E0 	6C 75 65 93 84 53 A3  1 
+1A353E8 	20 40 A0  1 70 6F A0  1 
+1A353F0 	28 4E A3  1 84 53 A3  1 
+1A353F8 	58 46 A0  1 
+
+: class-name: ( code "name" --- )  ,  parse-word ",  align  ;
+1A353FC 	63 6C 61 73 
+1A35400 	73 2D 6E 61 6D 65 3A 8B 
+1A35408 	E8 53 A3  1 20 40 A0  1 
+1A35410 	98 55 A0  1 34 93 A0  1 
+1A35418 	24 89 A0  1 34 62 A0  1 
+1A35420 	58 46 A0  1 
+
+hex
+create class-names
+1A35424 	63 6C 61 73 
+1A35428 	73 2D 6E 61 6D 65 73 8B 
+1A35430 	 C 54 A3  1 30 40 A0  1 
+
+ffffff ,  \ Mask
+1A35438 	FF FF FF  0 
+000100 class-name: display
+1A3543C 	 0  1  0  0 
+1A35440 	 7 64 69 73 70 6C 61 79 
+1A35448 	 0  0  0  0 
+0 , 	  \ No more entries for this mask
+1A3544C 	 0  0  0  0 
+
+ff0000 ,  \ Mask
+1A35450 	 0  0 FF  0 
+030000 class-name: display
+1A35454 	 0  0  3  0 
+1A35458 	 7 64 69 73 70 6C 61 79 
+1A35460 	 0  0  0  0 
+0a0000 class-name: dock
+1A35464 	 0  0  A  0 
+1A35468 	 4 64 6F 63 6B  0  0  0 
+0b0000 class-name: cpu
+1A35470 	 0  0  B  0  3 63 70 75 
+1A35478 	 0  0  0  0 
+0 , 	  \ No more entries for this mask
+1A3547C 	 0  0  0  0 
+
+ffff00 ,  \ Mask
+1A35480 	 0 FF FF  0 
+010000 class-name: scsi
+1A35484 	 0  0  1  0 
+1A35488 	 4 73 63 73 69  0  0  0 
+010100 class-name: ide
+1A35490 	 0  1  1  0  3 69 64 65 
+1A35498 	 0  0  0  0 
+010200 class-name: fdc
+1A3549C 	 0  2  1  0 
+1A354A0 	 3 66 64 63  0  0  0  0 
+010300 class-name: ipi
+1A354A8 	 0  3  1  0  3 69 70 69 
+1A354B0 	 0  0  0  0 
+010400 class-name: raid
+1A354B4 	 0  4  1  0 
+1A354B8 	 4 72 61 69 64  0  0  0 
+020000 class-name: ethernet
+1A354C0 	 0  0  2  0  8 65 74 68 
+1A354C8 	65 72 6E 65 74  0  0  0 
+020100 class-name: token
+1A354D0 	 0  1  2  0  5 74 6F 6B 
+1A354D8 	65 6E  0  0 
+020200 class-name: fddi
+1A354DC 	 0  2  2  0 
+1A354E0 	 4 66 64 64 69  0  0  0 
+020300 class-name: atm
+1A354E8 	 0  3  2  0  3 61 74 6D 
+1A354F0 	 0  0  0  0 
+040000 class-name: video
+1A354F4 	 0  0  4  0 
+1A354F8 	 5 76 69 64 65 6F  0  0 
+040100 class-name: sound
+1A35500 	 0  1  4  0  5 73 6F 75 
+1A35508 	6E 64  0  0 
+050000 class-name: memory
+1A3550C 	 0  0  5  0 
+1A35510 	 6 6D 65 6D 6F 72 79  0 
+050100 class-name: flash
+1A35518 	 0  1  5  0  5 66 6C 61 
+1A35520 	73 68  0  0 
+060000 class-name: host
+1A35524 	 0  0  6  0 
+1A35528 	 4 68 6F 73 74  0  0  0 
+060100 class-name: isa
+1A35530 	 0  1  6  0  3 69 73 61 
+1A35538 	 0  0  0  0 
+060200 class-name: eisa
+1A3553C 	 0  2  6  0 
+1A35540 	 4 65 69 73 61  0  0  0 
+060300 class-name: mca
+1A35548 	 0  3  6  0  3 6D 63 61 
+1A35550 	 0  0  0  0 
+060400 class-name: pci
+1A35554 	 0  4  6  0 
+1A35558 	 3 70 63 69  0  0  0  0 
+060500 class-name: pcmcia
+1A35560 	 0  5  6  0  6 70 63 6D 
+1A35568 	63 69 61  0 
+060600 class-name: nubus
+1A3556C 	 0  6  6  0 
+1A35570 	 5 6E 75 62 75 73  0  0 
+060700 class-name: cardbus
+1A35578 	 0  7  6  0  7 63 61 72 
+1A35580 	64 62 75 73  0  0  0  0 
+070000 class-name: serial
+1A35588 	 0  0  7  0  6 73 65 72 
+1A35590 	69 61 6C  0 
+070100 class-name: parallel
+1A35594 	 0  1  7  0 
+1A35598 	 8 70 61 72 61 6C 6C 65 
+1A355A0 	6C  0  0  0 
+080000 class-name: interrupt
+1A355A4 	 0  0  8  0 
+1A355A8 	 9 69 6E 74 65 72 72 75 
+1A355B0 	70 74  0  0 
+080100 class-name: dma
+1A355B4 	 0  1  8  0 
+1A355B8 	 3 64 6D 61  0  0  0  0 
+080200 class-name: timer
+1A355C0 	 0  2  8  0  5 74 69 6D 
+1A355C8 	65 72  0  0 
+080300 class-name: rtc
+1A355CC 	 0  3  8  0 
+1A355D0 	 3 72 74 63  0  0  0  0 
+090000 class-name: keyboard
+1A355D8 	 0  0  9  0  8 6B 65 79 
+1A355E0 	62 6F 61 72 64  0  0  0 
+090100 class-name: pen
+1A355E8 	 0  1  9  0  3 70 65 6E 
+1A355F0 	 0  0  0  0 
+090200 class-name: mouse
+1A355F4 	 0  2  9  0 
+1A355F8 	 5 6D 6F 75 73 65  0  0 
+0c0000 class-name: firewire
+1A35600 	 0  0  C  0  8 66 69 72 
+1A35608 	65 77 69 72 65  0  0  0 
+0c0100 class-name: access
+1A35610 	 0  1  C  0  6 61 63 63 
+1A35618 	65 73 73  0 
+0c0200 class-name: ssa
+1A3561C 	 0  2  C  0 
+1A35620 	 3 73 73 61  0  0  0  0 
+0c0300 class-name: usb
+1A35628 	 0  3  C  0  3 75 73 62 
+1A35630 	 0  0  0  0 
+0c0300 class-name: fibre
+1A35634 	 0  3  C  0 
+1A35638 	 5 66 69 62 72 65  0  0 
+0 ,       \ No more entries for this mask
+1A35640 	 0  0  0  0 
+0 ,       \ End of table
+1A35644 	 0  0  0  0 
+
+: @+  ( adr -- adr' n )  dup na1+ swap @  ;
+1A35648 	 0 40 2B 82 34 54 A3  1 
+1A35650 	20 40 A0  1 40 49 A0  1 
+1A35658 	CC 50 A0  1 68 49 A0  1 
+1A35660 	5C 4C A0  1 58 46 A0  1 
+
+: unknown-class?  ( class-code -- true | class-name$ false )
+1A35668 	 0 75 6E 6B 6E 6F 77 6E 
+1A35670 	2D 63 6C 61 73 73 3F 8E 
+1A35678 	50 56 A3  1 20 40 A0  1 
+   \ The outer loop executes once for each distinct mask value
+   class-names  begin  @+  dup  while        ( code adr mask )
+1A35680 	34 54 A3  1 50 56 A3  1 
+1A35688 	40 49 A0  1 DC 41 A0  1 
+1A35690 	74  0  0  0 
+      2 pick and >r                          ( code adr r: masked-code )
+1A35694 	90 6F A0  1 
+1A35698 	 C 4A A0  1 5C 44 A0  1 
+1A356A0 	BC 45 A0  1 
+
+      \ The inner loop searches all entries with that mask value
+      begin  @+  dup  while                  ( code adr match )
+1A356A4 	50 56 A3  1 
+1A356A8 	40 49 A0  1 DC 41 A0  1 
+1A356B0 	44  0  0  0 
+
+         r@ =  if                            ( code adr )
+1A356B4 	E4 45 A0  1 
+1A356B8 	24 48 A0  1 DC 41 A0  1 
+1A356C0 	1C  0  0  0 
+            \ A match under the mask was found; return the string
+            r> drop nip  count false  exit   ( class-name$ false )
+1A356C4 	D0 45 A0  1 
+1A356C8 	30 49 A0  1 FC 46 A0  1 
+1A356D0 	BC 53 A0  1 18 70 A0  1 
+1A356D8 	40 46 A0  1 
+         then                                ( code adr )
+
+         \ Skip the string and proceed to the next entry
+         count + 1+ aligned
+1A356DC 	BC 53 A0  1 
+1A356E0 	 4 45 A0  1 30 4B A0  1 
+1A356E8 	EC 5C A0  1 
+      repeat                                 ( code adr 0 )
+1A356EC 	C8 41 A0  1 
+1A356F0 	B4 FF FF FF 
+
+      \ Proceed to the next mask value
+      r> 2drop                               ( code adr )
+1A356F4 	D0 45 A0  1 
+1A356F8 	AC 49 A0  1 
+   repeat                                    ( code adr 0 )
+1A356FC 	C8 41 A0  1 
+1A35700 	84 FF FF FF 
+
+   \ No match was found
+   3drop true                                ( true )
+1A35704 	90 52 A0  1 
+1A35708 	 4 70 A0  1 
+;
+1A3570C 	58 46 A0  1 
+: make-name-property  ( -- )
+1A35710 	 0 6D 61 6B 65 2D 6E 61 
+1A35718 	6D 65 2D 70 72 6F 70 65 
+1A35720 	72 74 79 92 7C 56 A3  1 
+1A35728 	20 40 A0  1 
+   class-code unknown-class?  if  name-property-value  then
+1A3572C 	98 4F A3  1 
+1A35730 	7C 56 A3  1 DC 41 A0  1 
+1A35738 	 8  0  0  0 E8 53 A3  1 
+   encode-string  " name" property
+1A35740 	A0 F6 A1  1 9C 53 A0  1 
+1A35748 	 4 6E 61 6D 65  0  0  0 
+1A35750 	BC 14 A2  1 
+;
+1A35754 	58 46 A0  1 
+: +string  ( prop-adr,len string-adr,len -- prop-adr,len' )
+1A35758 	2B 73 74 72 69 6E 67 87 
+1A35760 	28 57 A3  1 20 40 A0  1 
+   encode-string  encode+
+1A35768 	A0 F6 A1  1 F0 F5 A1  1 
+;
+1A35770 	58 46 A0  1 
+
+: <#class  ( -- arguments-to-u#> )
+1A35774 	3C 23 63 6C 
+1A35778 	61 73 73 87 64 57 A3  1 
+1A35780 	20 40 A0  1 
+   class-code  push-hex <# u# u# u# u# u# u#  pop-base
+1A35784 	98 4F A3  1 
+1A35788 	5C F4 A0  1  8 76 A0  1 
+1A35790 	94 76 A0  1 94 76 A0  1 
+1A35798 	94 76 A0  1 94 76 A0  1 
+1A357A0 	94 76 A0  1 94 76 A0  1 
+1A357A8 	9C F4 A0  1 
+;
+1A357AC 	58 46 A0  1 
+: class-property-value  ( -- adr len )
+1A357B0 	 0  0  0 63 6C 61 73 73 
+1A357B8 	2D 70 72 6F 70 65 72 74 
+1A357C0 	79 2D 76 61 6C 75 65 94 
+1A357C8 	80 57 A3  1 20 40 A0  1 
+   <#class " class" $hold u#> string3 $save
+1A357D0 	80 57 A3  1 9C 53 A0  1 
+1A357D8 	 5 63 6C 61 73 73  0  0 
+1A357E0 	20 53 A3  1 E0 76 A0  1 
+1A357E8 	D4 3B A3  1 68 7E A0  1 
+;
+1A357F0 	58 46 A0  1 
+headers
+: make-compatible-property  ( -- )
+1A357F4 	 0  0  0 6D 
+1A357F8 	61 6B 65 2D 63 6F 6D 70 
+1A35800 	61 74 69 62 6C 65 2D 70 
+1A35808 	72 6F 70 65 72 74 79 98 
+1A35810 	CC 57 A3  1 20 40 A0  1 
+   0 0 encode-bytes
+1A35818 	70 6F A0  1 70 6F A0  1 
+1A35820 	14 F6 A1  1 
+ cr ." make-compatible-property11 " here .h
+1A35824 	80 6D A0  1 
+1A35828 	20 7C A0  1 1B 6D 61 6B 
+1A35830 	65 2D 63 6F 6D 70 61 74 
+1A35838 	69 62 6C 65 2D 70 72 6F 
+1A35840 	70 65 72 74 79 31 31 20 
+1A35848 	 0  0  0  0 70 54 A0  1 
+1A35850 	10  E A1  1 
+\ mmo   h# 2c my-l@  ?dup dup .  if  ascii-vendor-id +string  then
+   name-property-value +string
+1A35854 	E8 53 A3  1 
+1A35858 	64 57 A3  1 
+   <#class " pciclass," $hold u#>  +string
+1A3585C 	80 57 A3  1 
+1A35860 	9C 53 A0  1  9 70 63 69 
+1A35868 	63 6C 61 73 73 2C  0  0 
+1A35870 	20 53 A3  1 E0 76 A0  1 
+1A35878 	64 57 A3  1 
+ cr ." make-compatible-property22 " here .h 2dup type
+1A3587C 	80 6D A0  1 
+1A35880 	20 7C A0  1 1B 6D 61 6B 
+1A35888 	65 2D 63 6F 6D 70 61 74 
+1A35890 	69 62 6C 65 2D 70 72 6F 
+1A35898 	70 65 72 74 79 32 32 20 
+1A358A0 	 0  0  0  0 70 54 A0  1 
+1A358A8 	10  E A1  1 C0 49 A0  1 
+1A358B0 	 4 6C A0  1 
+   " compatible" property
+1A358B4 	9C 53 A0  1 
+1A358B8 	 A 63 6F 6D 70 61 74 69 
+1A358C0 	62 6C 65  0 BC 14 A2  1 
+ cr ." make-compatible-property33 " here .h
+1A358C8 	80 6D A0  1 20 7C A0  1 
+1A358D0 	1B 6D 61 6B 65 2D 63 6F 
+1A358D8 	6D 70 61 74 69 62 6C 65 
+1A358E0 	2D 70 72 6F 70 65 72 74 
+1A358E8 	79 33 33 20  0  0  0  0 
+1A358F0 	70 54 A0  1 10  E A1  1 
+;
+1A358F8 	58 46 A0  1 
+headerless
+
+\ If the expansion ROM mapped at "virt" contains an FCode program,
+\ copy it into RAM and return its address
+
+: get-int-property  ( adr len -- n )
+1A358FC 	 0  0  0 67 
+1A35900 	65 74 2D 69 6E 74 2D 70 
+1A35908 	72 6F 70 65 72 74 79 90 
+1A35910 	14 58 A3  1 20 40 A0  1 
+   get-my-property  if  -1  else  decode-int nip nip  then
+1A35918 	1C 34 A2  1 DC 41 A0  1 
+1A35920 	14  0  0  0 58 41 A0  1 
+1A35928 	FF FF FF FF C8 41 A0  1 
+1A35930 	10  0  0  0 68 F7 A1  1 
+1A35938 	FC 46 A0  1 FC 46 A0  1 
+;
+1A35940 	58 46 A0  1 
+: fcode-image?  ( PCI-struct-adr -- flag )
+1A35944 	 0  0  0 66 
+1A35948 	63 6F 64 65 2D 69 6D 61 
+1A35950 	67 65 3F 8C 14 59 A3  1 
+1A35958 	20 40 A0  1 
+   dup " PCIR" comp  if  drop false exit  then
+1A3595C 	40 49 A0  1 
+1A35960 	9C 53 A0  1  4 50 43 49 
+1A35968 	52  0  0  0 38 52 A0  1 
+1A35970 	DC 41 A0  1 10  0  0  0 
+1A35978 	30 49 A0  1 18 70 A0  1 
+1A35980 	40 46 A0  1 
+
+   probemsg?  if
+1A35984 	20 3B A3  1 
+1A35988 	DC 41 A0  1 6C  0  0  0 
+      ??cr
+1A35990 	 0 A1 A0  1 
+      ."   Function:" " vendor-id" get-int-property 4 u.r
+1A35994 	20 7C A0  1 
+1A35998 	 B 20 20 46 75 6E 63 74 
+1A359A0 	69 6F 6E 3A  0  0  0  0 
+1A359A8 	9C 53 A0  1  9 76 65 6E 
+1A359B0 	64 6F 72 2D 69 64  0  0 
+1A359B8 	14 59 A3  1 B0 6F A0  1 
+1A359C0 	E4 77 A0  1 
+      ."   Function:" " device-id" get-int-property 4 u.r
+1A359C4 	20 7C A0  1 
+1A359C8 	 B 20 20 46 75 6E 63 74 
+1A359D0 	69 6F 6E 3A  0  0  0  0 
+1A359D8 	9C 53 A0  1  9 64 65 76 
+1A359E0 	69 63 65 2D 69 64  0  0 
+1A359E8 	14 59 A3  1 B0 6F A0  1 
+1A359F0 	E4 77 A0  1 
+      ??cr
+1A359F4 	 0 A1 A0  1 
+   then
+
+   \ always accept ROMs with vendor-id and device-id = ffff
+   dup h# 04 + le-w@  dup h# ffff <>  if             ( adr id )
+1A359F8 	40 49 A0  1 58 41 A0  1 
+1A35A00 	 4  0  0  0  4 45 A0  1 
+1A35A08 	80 4C A0  1 40 49 A0  1 
+1A35A10 	58 41 A0  1 FF FF  0  0 
+1A35A18 	44 48 A0  1 DC 41 A0  1 
+1A35A20 	D0  0  0  0 
+      " vendor-id" get-int-property  <>  if          ( adr )
+1A35A24 	9C 53 A0  1 
+1A35A28 	 9 76 65 6E 64 6F 72 2D 
+1A35A30 	69 64  0  0 14 59 A3  1 
+1A35A38 	44 48 A0  1 DC 41 A0  1 
+1A35A40 	A8  0  0  0 
+         probemsg?  if                               ( adr )
+1A35A44 	20 3B A3  1 
+1A35A48 	DC 41 A0  1 90  0  0  0 
+            ??cr
+1A35A50 	 0 A1 A0  1 
+            ."   Vendor IDs do not match ->  "
+1A35A54 	20 7C A0  1 
+1A35A58 	1E 20 20 56 65 6E 64 6F 
+1A35A60 	72 20 49 44 73 20 64 6F 
+1A35A68 	20 6E 6F 74 20 6D 61 74 
+1A35A70 	63 68 20 2D 3E 20 20  0 
+            ."   Function:" " vendor-id" get-int-property 4 u.r
+1A35A78 	20 7C A0  1  B 20 20 46 
+1A35A80 	75 6E 63 74 69 6F 6E 3A 
+1A35A88 	 0  0  0  0 9C 53 A0  1 
+1A35A90 	 9 76 65 6E 64 6F 72 2D 
+1A35A98 	69 64  0  0 14 59 A3  1 
+1A35AA0 	B0 6F A0  1 E4 77 A0  1 
+            ." /ROM Image:" dup h# 04 + le-w@ 4 u.r  cr
+1A35AA8 	20 7C A0  1  B 2F 52 4F 
+1A35AB0 	4D 20 49 6D 61 67 65 3A 
+1A35AB8 	 0  0  0  0 40 49 A0  1 
+1A35AC0 	58 41 A0  1  4  0  0  0 
+1A35AC8 	 4 45 A0  1 80 4C A0  1 
+1A35AD0 	B0 6F A0  1 E4 77 A0  1 
+1A35AD8 	80 6D A0  1 
+         then                                        ( adr )
+	 drop false exit                             ( false )
+1A35ADC 	30 49 A0  1 
+1A35AE0 	18 70 A0  1 40 46 A0  1 
+      then                                           ( adr )
+   else                                              ( adr id )
+1A35AE8 	C8 41 A0  1  8  0  0  0 
+      drop                                           ( adr )
+1A35AF0 	30 49 A0  1 
+   then                                              ( adr )
+
+   dup h# 06 + le-w@  dup h# ffff <>  if             ( adr id )
+1A35AF4 	40 49 A0  1 
+1A35AF8 	58 41 A0  1  6  0  0  0 
+1A35B00 	 4 45 A0  1 80 4C A0  1 
+1A35B08 	40 49 A0  1 58 41 A0  1 
+1A35B10 	FF FF  0  0 44 48 A0  1 
+1A35B18 	DC 41 A0  1 C0  0  0  0 
+      " device-id" get-int-property  <>  if          ( adr )
+1A35B20 	9C 53 A0  1  9 64 65 76 
+1A35B28 	69 63 65 2D 69 64  0  0 
+1A35B30 	14 59 A3  1 44 48 A0  1 
+1A35B38 	DC 41 A0  1 98  0  0  0 
+         probemsg?  if                               ( adr )
+1A35B40 	20 3B A3  1 DC 41 A0  1 
+1A35B48 	80  0  0  0 
+            ??cr ."   Function:" " device-id" get-int-property 4 u.r
+1A35B4C 	 0 A1 A0  1 
+1A35B50 	20 7C A0  1  B 20 20 46 
+1A35B58 	75 6E 63 74 69 6F 6E 3A 
+1A35B60 	 0  0  0  0 9C 53 A0  1 
+1A35B68 	 9 64 65 76 69 63 65 2D 
+1A35B70 	69 64  0  0 14 59 A3  1 
+1A35B78 	B0 6F A0  1 E4 77 A0  1 
+            ."   /ROM Image:" le-w@ 4 u.r  ."  Device IDs do not match... " cr
+1A35B80 	20 7C A0  1  D 20 20 2F 
+1A35B88 	52 4F 4D 20 49 6D 61 67 
+1A35B90 	65 3A  0  0 80 4C A0  1 
+1A35B98 	B0 6F A0  1 E4 77 A0  1 
+1A35BA0 	20 7C A0  1 1C 20 44 65 
+1A35BA8 	76 69 63 65 20 49 44 73 
+1A35BB0 	20 64 6F 20 6E 6F 74 20 
+1A35BB8 	6D 61 74 63 68 2E 2E 2E 
+1A35BC0 	20  0  0  0 80 6D A0  1 
+         then                                        ( adr )
+	 drop false exit                             ( false )
+1A35BC8 	30 49 A0  1 18 70 A0  1 
+1A35BD0 	40 46 A0  1 
+      then                                           ( adr )
+   else                                              ( adr id )
+1A35BD4 	C8 41 A0  1 
+1A35BD8 	 8  0  0  0 
+      drop                                           ( adr )
+1A35BDC 	30 49 A0  1 
+   then                                              ( adr )
+
+   h# 14 + c@  1 =                                   ( flag )
+1A35BE0 	58 41 A0  1 14  0  0  0 
+1A35BE8 	 4 45 A0  1 C4 4C A0  1 
+1A35BF0 	80 6F A0  1 24 48 A0  1 
+;
+1A35BF8 	58 46 A0  1 
+
+0 value rom-base
+1A35BFC 	 0  0  0 72 
+1A35C00 	6F 6D 2D 62 61 73 65 88 
+1A35C08 	58 59 A3  1 50 40 A0  1 
+1A35C10 	CC  A  0  0 
+: locate-fcode  ( rom-image-adr -- false | adr len true )
+1A35C14 	 0  0  0 6C 
+1A35C18 	6F 63 61 74 65 2D 66 63 
+1A35C20 	6F 64 65 8C  C 5C A3  1 
+1A35C28 	20 40 A0  1 
+   dup to rom-base
+1A35C2C 	40 49 A0  1 
+1A35C30 	B8 40 A0  1  C 5C A3  1 
+   begin
+      dup  le-w@  h# aa55 <>  if
+1A35C38 	40 49 A0  1 80 4C A0  1 
+1A35C40 	58 41 A0  1 55 AA  0  0 
+1A35C48 	44 48 A0  1 DC 41 A0  1 
+1A35C50 	54  0  0  0 
+         probemsg?  if
+1A35C54 	20 3B A3  1 
+1A35C58 	DC 41 A0  1 3C  0  0  0 
+            ??cr ."   Invalid ROM Header Format: " dup le-w@ . cr
+1A35C60 	 0 A1 A0  1 20 7C A0  1 
+1A35C68 	1D 20 20 49 6E 76 61 6C 
+1A35C70 	69 64 20 52 4F 4D 20 48 
+1A35C78 	65 61 64 65 72 20 46 6F 
+1A35C80 	72 6D 61 74 3A 20  0  0 
+1A35C88 	40 49 A0  1 80 4C A0  1 
+1A35C90 	94 7A A0  1 80 6D A0  1 
+         then
+         drop false exit
+1A35C98 	30 49 A0  1 18 70 A0  1 
+1A35CA0 	40 46 A0  1 
+      then                          ( rom-image-adr )
+
+      dup  h# 18 +  le-w@  over +   ( rom-image-adr PCI-struct-adr )
+1A35CA4 	40 49 A0  1 
+1A35CA8 	58 41 A0  1 18  0  0  0 
+1A35CB0 	 4 45 A0  1 80 4C A0  1 
+1A35CB8 	54 49 A0  1  4 45 A0  1 
+      dup fcode-image?  if          ( rom-image-adr PCI-struct-adr )
+1A35CC0 	40 49 A0  1 58 59 A3  1 
+1A35CC8 	DC 41 A0  1 BC  0  0  0 
+         probemsg?  if  ??cr ."   FCode ROM Image Found... " cr  then
+1A35CD0 	20 3B A3  1 DC 41 A0  1 
+1A35CD8 	30  0  0  0  0 A1 A0  1 
+1A35CE0 	20 7C A0  1 1B 20 20 46 
+1A35CE8 	43 6F 64 65 20 52 4F 4D 
+1A35CF0 	20 49 6D 61 67 65 20 46 
+1A35CF8 	6F 75 6E 64 2E 2E 2E 20 
+1A35D00 	 0  0  0  0 80 6D A0  1 
+         drop dup rom-base -        ( rom-image-adr offset )
+1A35D08 	30 49 A0  1 40 49 A0  1 
+1A35D10 	 C 5C A3  1 18 45 A0  1 
+         encode-int  " fcode-rom-offset" property
+1A35D18 	40 F7 A1  1 9C 53 A0  1 
+1A35D20 	10 66 63 6F 64 65 2D 72 
+1A35D28 	6F 6D 2D 6F 66 66 73 65 
+1A35D30 	74  0  0  0 BC 14 A2  1 
+         dup h# 02 + le-w@ +        ( FCode-image-adr )
+1A35D38 	40 49 A0  1 58 41 A0  1 
+1A35D40 	 2  0  0  0  4 45 A0  1 
+1A35D48 	80 4C A0  1  4 45 A0  1 
+	 dup >r  4 + be-l@          ( FCode-len )
+1A35D50 	40 49 A0  1 BC 45 A0  1 
+1A35D58 	B0 6F A0  1  4 45 A0  1 
+1A35D60 	30 FC A0  1 
+	 dup alloc-mem              ( FCode-len adr )
+1A35D64 	40 49 A0  1 
+1A35D68 	F0 6C A0  1 
+         swap 2dup r> -rot cmove    ( adr len )
+1A35D6C 	68 49 A0  1 
+1A35D70 	C0 49 A0  1 D0 45 A0  1 
+1A35D78 	94 49 A0  1 10 44 A0  1 
+         true exit
+1A35D80 	 4 70 A0  1 40 46 A0  1 
+      then
+      probemsg?  if  ??cr ."   Non FCode Format ROM Image. " cr  then
+1A35D88 	20 3B A3  1 DC 41 A0  1 
+1A35D90 	30  0  0  0  0 A1 A0  1 
+1A35D98 	20 7C A0  1 1E 20 20 4E 
+1A35DA0 	6F 6E 20 46 43 6F 64 65 
+1A35DA8 	20 46 6F 72 6D 61 74 20 
+1A35DB0 	52 4F 4D 20 49 6D 61 67 
+1A35DB8 	65 2E 20  0 80 6D A0  1 
+      dup h# 15 + c@  h# 80 and 0=  ( rom-image-adr PCI-struct-adr )
+1A35DC0 	40 49 A0  1 58 41 A0  1 
+1A35DC8 	15  0  0  0  4 45 A0  1 
+1A35DD0 	C4 4C A0  1 58 41 A0  1 
+1A35DD8 	80  0  0  0 5C 44 A0  1 
+1A35DE0 	24 47 A0  1 
+   while    \ More images           ( rom-image-adr PCI-struct-adr )
+1A35DE4 	DC 41 A0  1 
+1A35DE8 	2C  0  0  0 
+      h# 10 +  le-w@  9 <<  +       ( rom-image-adr' )
+1A35DEC 	58 41 A0  1 
+1A35DF0 	10  0  0  0  4 45 A0  1 
+1A35DF8 	80 4C A0  1 58 41 A0  1 
+1A35E00 	 9  0  0  0 C8 44 A0  1 
+1A35E08 	 4 45 A0  1 
+   repeat                           ( rom-image-adr' )
+1A35E0C 	C8 41 A0  1 
+1A35E10 	28 FE FF FF 
+   2drop false
+1A35E14 	AC 49 A0  1 
+1A35E18 	18 70 A0  1 
+;
+1A35E1C 	58 46 A0  1 
+
+\ READ orig base reg value.  write -1 and get new value. reset to orig value.
+: probe-own-base-reg  ( offset -- value )
+1A35E20 	 0 70 72 6F 62 65 2D 6F 
+1A35E28 	77 6E 2D 62 61 73 65 2D 
+1A35E30 	72 65 67 92 28 5C A3  1 
+1A35E38 	20 40 A0  1 
+   dup my-l@  over                   ( offset old-value offset )
+1A35E3C 	40 49 A0  1 
+1A35E40 	28 4E A3  1 54 49 A0  1 
+   h# ffffffff over my-l!  my-l@    ( offset old-value new-value )
+1A35E48 	58 41 A0  1 FF FF FF FF 
+1A35E50 	54 49 A0  1 58 4E A3  1 
+1A35E58 	28 4E A3  1 
+   -rot swap my-l!                   ( new-value )
+1A35E5C 	94 49 A0  1 
+1A35E60 	68 49 A0  1 58 4E A3  1 
+   l->n
+1A35E68 	88 61 A0  1 
+;
+1A35E6C 	58 46 A0  1 
+
+: own-64mem?  ( phys.hi -- flag )  my-l@  7 and 4 =  ;
+1A35E70 	 0 6F 77 6E 2D 36 34 6D 
+1A35E78 	65 6D 3F 8A 38 5E A3  1 
+1A35E80 	20 40 A0  1 28 4E A3  1 
+1A35E88 	E0 6F A0  1 5C 44 A0  1 
+1A35E90 	B0 6F A0  1 24 48 A0  1 
+1A35E98 	58 46 A0  1 
+: own-io?  ( phys.hi -- flag )
+1A35E9C 	6F 77 6E 2D 
+1A35EA0 	69 6F 3F 87 80 5E A3  1 
+1A35EA8 	20 40 A0  1 
+   \ For expansion ROM base address registers, the LSB is an enable bit,
+   \ not an I/O space indicator.  Expansion ROM base address registers
+   \ are at 30 or 38; the register number portion of our phys.hi argument
+   \ will always be in the range 10-24 (inclusive), 30, or 38.
+   dup h# 30 and  h# 30 =  if  drop false  else  my-l@  1 and  0<>  then
+1A35EAC 	40 49 A0  1 
+1A35EB0 	58 41 A0  1 30  0  0  0 
+1A35EB8 	5C 44 A0  1 58 41 A0  1 
+1A35EC0 	30  0  0  0 24 48 A0  1 
+1A35EC8 	DC 41 A0  1 14  0  0  0 
+1A35ED0 	30 49 A0  1 18 70 A0  1 
+1A35ED8 	C8 41 A0  1 14  0  0  0 
+1A35EE0 	28 4E A3  1 80 6F A0  1 
+1A35EE8 	5C 44 A0  1 44 47 A0  1 
+;
+1A35EF0 	58 46 A0  1 
+: mask-own-low-bits  ( phys.hi regval -- regval' )
+1A35EF4 	 0  0 6D 61 
+1A35EF8 	73 6B 2D 6F 77 6E 2D 6C 
+1A35F00 	6F 77 2D 62 69 74 73 91 
+1A35F08 	A8 5E A3  1 20 40 A0  1 
+   swap own-io?  if  3  else  7  then  invert and   ( regval' )
+1A35F10 	68 49 A0  1 A8 5E A3  1 
+1A35F18 	DC 41 A0  1 10  0  0  0 
+1A35F20 	A0 6F A0  1 C8 41 A0  1 
+1A35F28 	 8  0  0  0 E0 6F A0  1 
+1A35F30 	30 45 A0  1 5C 44 A0  1 
+;
+1A35F38 	58 46 A0  1 
+: own-size-mask  ( offset -- high-mask )
+1A35F3C 	 0  0 6F 77 
+1A35F40 	6E 2D 73 69 7A 65 2D 6D 
+1A35F48 	61 73 6B 8D  C 5F A3  1 
+1A35F50 	20 40 A0  1 
+   dup probe-own-base-reg        ( offset regval )
+1A35F54 	40 49 A0  1 
+1A35F58 	38 5E A3  1 
+   mask-own-low-bits             ( regval' )
+1A35F5C 	 C 5F A3  1 
+   fix-io16
+1A35F60 	F8 3F A3  1 
+;
+1A35F64 	58 46 A0  1 
+: find-own-size  ( offset -- size )
+1A35F68 	 0  0 66 69 6E 64 2D 6F 
+1A35F70 	77 6E 2D 73 69 7A 65 8D 
+1A35F78 	50 5F A3  1 20 40 A0  1 
+   dup own-size-mask invert  swap own-64mem?  0=  if  n->l  then  1+
+1A35F80 	40 49 A0  1 50 5F A3  1 
+1A35F88 	30 45 A0  1 68 49 A0  1 
+1A35F90 	80 5E A3  1 24 47 A0  1 
+1A35F98 	DC 41 A0  1  8  0  0  0 
+1A35FA0 	74 4F A0  1 30 4B A0  1 
+;
+1A35FA8 	58 46 A0  1 
+
+: expansion-rom  ( -- offset )
+1A35FAC 	 0  0 65 78 
+1A35FB0 	70 61 6E 73 69 6F 6E 2D 
+1A35FB8 	72 6F 6D 8D 7C 5F A3  1 
+1A35FC0 	20 40 A0  1 
+   bridge?  if  h# 38  else  h# 30   then
+1A35FC4 	24 4F A3  1 
+1A35FC8 	DC 41 A0  1 14  0  0  0 
+1A35FD0 	58 41 A0  1 38  0  0  0 
+1A35FD8 	C8 41 A0  1  C  0  0  0 
+1A35FE0 	58 41 A0  1 30  0  0  0 
+;
+1A35FE8 	58 46 A0  1 
+
+: base-register-bounds  ( -- high low )
+1A35FEC 	 0  0  0 62 
+1A35FF0 	61 73 65 2D 72 65 67 69 
+1A35FF8 	73 74 65 72 2D 62 6F 75 
+1A36000 	6E 64 73 94 C0 5F A3  1 
+1A36008 	20 40 A0  1 
+   bridge?  if  h# 18  else  card-bus?	if  h# 14  else  h# 28  then  then
+1A3600C 	24 4F A3  1 
+1A36010 	DC 41 A0  1 14  0  0  0 
+1A36018 	58 41 A0  1 18  0  0  0 
+1A36020 	C8 41 A0  1 28  0  0  0 
+1A36028 	5C 4F A3  1 DC 41 A0  1 
+1A36030 	14  0  0  0 58 41 A0  1 
+1A36038 	14  0  0  0 C8 41 A0  1 
+1A36040 	 C  0  0  0 58 41 A0  1 
+1A36048 	28  0  0  0 
+   h# 10
+1A3604C 	58 41 A0  1 
+1A36050 	10  0  0  0 
+;
+1A36054 	58 46 A0  1 
+
+\ Temporarily assign addresses for all the base address registers so they
+\ don't conflict with the expansion ROM address register.  Some boards do
+\ not disable the response of relocatable memory regions when the expansion
+\ ROM is turned on.
+
+: temp-assign-addresses  ( -- )
+1A36058 	 0  0 74 65 6D 70 2D 61 
+1A36060 	73 73 69 67 6E 2D 61 64 
+1A36068 	64 72 65 73 73 65 73 95 
+1A36070 	 8 60 A3  1 20 40 A0  1 
+   base-register-bounds  do
+1A36078 	 8 60 A3  1 88 42 A0  1 
+1A36080 	CC  0  0  0 
+      i probe-own-base-reg                               ( regval )
+1A36084 	B4 42 A0  1 
+1A36088 	38 5E A3  1 
+
+      dup 7 and 4 =  if      \ Skip mem64 regions        ( regval )
+1A3608C 	40 49 A0  1 
+1A36090 	E0 6F A0  1 5C 44 A0  1 
+1A36098 	B0 6F A0  1 24 48 A0  1 
+1A360A0 	DC 41 A0  1 14  0  0  0 
+         drop 8                                          ( increment )
+1A360A8 	30 49 A0  1 F0 6F A0  1 
+      else                                               ( regval )
+1A360B0 	C8 41 A0  1 90  0  0  0 
+         dup 1 and  over 0= or  if  \ Skip IO regions    ( regval )
+1A360B8 	40 49 A0  1 80 6F A0  1 
+1A360C0 	5C 44 A0  1 54 49 A0  1 
+1A360C8 	24 47 A0  1 70 44 A0  1 
+1A360D0 	DC 41 A0  1 14  0  0  0 
+            drop 4                                       ( increment )
+1A360D8 	30 49 A0  1 B0 6F A0  1 
+         else  			                         ( regval )
+1A360E0 	C8 41 A0  1 60  0  0  0 
+            7 invert and  invert                         ( low-mask )
+1A360E8 	E0 6F A0  1 30 45 A0  1 
+1A360F0 	5C 44 A0  1 30 45 A0  1 
+            i own-64mem?  0=  if  n->l  then             ( low-mask )
+1A360F8 	B4 42 A0  1 80 5E A3  1 
+1A36100 	24 47 A0  1 DC 41 A0  1 
+1A36108 	 8  0  0  0 74 4F A0  1 
+            pci-pagemask or                              ( low-mask )
+1A36110 	38 3E A3  1 70 44 A0  1 
+            next-mem over mask-up                        ( low-mask base )
+1A36118 	D8 3D A3  1 54 49 A0  1 
+1A36120 	88 40 A3  1 
+            tuck swap 1+ + set-next-mem                  ( base )
+1A36124 	E8 46 A0  1 
+1A36128 	68 49 A0  1 30 4B A0  1 
+1A36130 	 4 45 A0  1 14 3E A3  1 
+            i my-l!                                      ( )
+1A36138 	B4 42 A0  1 58 4E A3  1 
+            4                                            ( increment )
+1A36140 	B0 6F A0  1 
+         then                                            ( increment )
+      then                                               ( increment )
+   +loop                                                 ( )
+1A36144 	1C 42 A0  1 
+1A36148 	3C FF FF FF 
+;
+1A3614C 	58 46 A0  1 
+
+\ If the function at configuration space address "phys.hi.func" has an
+\ FCode program in its expansion ROM, evaluate that program and return
+\ true, otherwise return false.
+
+0 value save-mem
+1A36150 	 0  0  0 73 61 76 65 2D 
+1A36158 	6D 65 6D 88 74 60 A3  1 
+1A36160 	50 40 A0  1 D0  A  0  0 
+headers		\ find-fcode? doesn't have to be headered; it's just convenient
+: find-fcode?  ( -- false | adr len true )
+1A36168 	66 69 6E 64 2D 66 63 6F 
+1A36170 	64 65 3F 8B 60 61 A3  1 
+1A36178 	20 40 A0  1 
+
+   next-mem to save-mem
+1A3617C 	D8 3D A3  1 
+1A36180 	B8 40 A0  1 60 61 A3  1 
+   parent-assign-addresses?  if  temp-assign-addresses  then
+1A36188 	70 3D A3  1 DC 41 A0  1 
+1A36190 	 8  0  0  0 74 60 A3  1 
+   expansion-rom                                             ( offset )
+1A36198 	C0 5F A3  1 
+
+\   \ Map the expansion ROM at a high physical address that does not
+\   \ conflict with the base addresses that were zeroed above.
+\   mem-space-top 10.0000 - 1 or  over my-l!                  ( offset )
+
+   \ Some PCI cards (e.g. a SciTex bridge device) implement a writeable
+   \ enable bit for the expansion ROM base address register, but no other
+   \ writeable bits, so comparing to zero doesn't work.
+   dup probe-own-base-reg 2 u<  if  drop false  exit  then    ( offset )
+1A3619C 	40 49 A0  1 
+1A361A0 	38 5E A3  1 90 6F A0  1 
+1A361A8 	A8 48 A0  1 DC 41 A0  1 
+1A361B0 	10  0  0  0 30 49 A0  1 
+1A361B8 	18 70 A0  1 40 46 A0  1 
+
+\ Let map-in perform the address assignment, as we are in probe-state
+
+   0 0 2 pick  dup find-own-size    ( offset p.rom.lo,med offset size )
+1A361C0 	70 6F A0  1 70 6F A0  1 
+1A361C8 	90 6F A0  1  C 4A A0  1 
+1A361D0 	40 49 A0  1 7C 5F A3  1 
+
+   \ The following line is a bug workaround for a Sun device named
+   \  "Multi-Grain", whose expansion ROM decoder responds to a 16 Mbyte region.
+   dup h# 40000 >  if  drop h# 40000  then	\ Limit ROM size to 256K
+1A361D8 	40 49 A0  1 58 41 A0  1 
+1A361E0 	 0  0  4  0  4 48 A0  1 
+1A361E8 	DC 41 A0  1 10  0  0  0 
+1A361F0 	30 49 A0  1 58 41 A0  1 
+1A361F8 	 0  0  4  0 
+
+   >r  h# 2000000 or my-space +  r@ " map-in" $call-parent  ( offset virt )
+1A361FC 	BC 45 A0  1 
+1A36200 	58 41 A0  1  0  0  0  2 
+1A36208 	70 44 A0  1 AC  3 A2  1 
+1A36210 	 4 45 A0  1 E4 45 A0  1 
+1A36218 	9C 53 A0  1  6 6D 61 70 
+1A36220 	2D 69 6E  0 DC 31 A2  1 
+   tuck >r >r                       ( r: size virt offset )  ( virt )
+1A36228 	E8 46 A0  1 BC 45 A0  1 
+1A36230 	BC 45 A0  1 
+
+   \ Turn on address decode enable in Expansion ROM Base Address Register
+   r@ my-l@  1 or  r@ my-l!         ( r: size virt offset )  ( virt )
+1A36234 	E4 45 A0  1 
+1A36238 	28 4E A3  1 80 6F A0  1 
+1A36240 	70 44 A0  1 E4 45 A0  1 
+1A36248 	58 4E A3  1 
+
+   4 my-w@  2 or  4 my-w!	\ Turn on memory enable      ( virt )
+1A3624C 	B0 6F A0  1 
+1A36250 	C8 4D A3  1 90 6F A0  1 
+1A36258 	70 44 A0  1 B0 6F A0  1 
+1A36260 	F8 4D A3  1 
+
+   locate-fcode                ( r: size virt offset ) ( false | adr len true )
+1A36264 	28 5C A3  1 
+
+   \ Turn off memory enable
+   parent-assign-addresses?  if      ( r: size virt offset ) ( false | adr len true )
+1A36268 	70 3D A3  1 DC 41 A0  1 
+1A36270 	20  0  0  0 
+      4 my-w@  2 invert and   4 my-w!
+1A36274 	B0 6F A0  1 
+1A36278 	C8 4D A3  1 90 6F A0  1 
+1A36280 	30 45 A0  1 5C 44 A0  1 
+1A36288 	B0 6F A0  1 F8 4D A3  1 
+   then                       ( r: size virt offset ) ( false | adr len true )
+
+   \ Turn off address decode enable in Expansion ROM Base Address Register
+   r@ my-l@  1 invert and  r> my-l!  ( r: size virt ) ( false | adr len true )
+1A36290 	E4 45 A0  1 28 4E A3  1 
+1A36298 	80 6F A0  1 30 45 A0  1 
+1A362A0 	5C 44 A0  1 D0 45 A0  1 
+1A362A8 	58 4E A3  1 
+   save-mem set-next-mem
+1A362AC 	60 61 A3  1 
+1A362B0 	14 3E A3  1 
+
+   r> r>  " map-out" $call-parent                     ( false | adr len true )
+1A362B4 	D0 45 A0  1 
+1A362B8 	D0 45 A0  1 9C 53 A0  1 
+1A362C0 	 7 6D 61 70 2D 6F 75 74 
+1A362C8 	 0  0  0  0 DC 31 A2  1 
+;
+1A362D0 	58 46 A0  1 
+
+\ Set all base address registers to the highest possible address,
+\ thus (hopefully) avoiding contention with explicitly-assigned addresses.
+: clear-addresses  ( -- )
+1A362D4 	63 6C 65 61 
+1A362D8 	72 2D 61 64 64 72 65 73 
+1A362E0 	73 65 73 8F 78 61 A3  1 
+1A362E8 	20 40 A0  1 
+   base-register-bounds  do  -1 i my-l!  /l +loop
+1A362EC 	 8 60 A3  1 
+1A362F0 	88 42 A0  1 20  0  0  0 
+1A362F8 	58 41 A0  1 FF FF FF FF 
+1A36300 	B4 42 A0  1 58 4E A3  1 
+1A36308 	30 51 A0  1 1C 42 A0  1 
+1A36310 	E8 FF FF FF 
+;
+1A36314 	58 46 A0  1 
+
+\ Add the property encoding of the address range "phys.lo..hi size.lo..hi"
+\ to the property-encoded array "adr,len"
+
+: +reg-entry  ( adr len phys.lo..hi size.lo..hi -- adr' len' )
+1A36318 	 0 2B 72 65 67 2D 65 6E 
+1A36320 	74 72 79 8A E8 62 A3  1 
+1A36328 	20 40 A0  1 
+   swap >r >r  swap rot >r >r     ( adr len p.hi ) ( r: s.lo,hi p.lo,mid )
+1A3632C 	68 49 A0  1 
+1A36330 	BC 45 A0  1 BC 45 A0  1 
+1A36338 	68 49 A0  1 7C 49 A0  1 
+1A36340 	BC 45 A0  1 BC 45 A0  1 
+   +i r> +i r> +i r> +i r> +i
+1A36348 	 4 47 A3  1 D0 45 A0  1 
+1A36350 	 4 47 A3  1 D0 45 A0  1 
+1A36358 	 4 47 A3  1 D0 45 A0  1 
+1A36360 	 4 47 A3  1 D0 45 A0  1 
+1A36368 	 4 47 A3  1 
+;
+1A3636C 	58 46 A0  1 
+
+: get-prefetch-mask  ( reg-val -- mask )  8 and h# 1b lshift  ;
+1A36370 	 0  0 67 65 74 2D 70 72 
+1A36378 	65 66 65 74 63 68 2D 6D 
+1A36380 	61 73 6B 91 28 63 A3  1 
+1A36388 	20 40 A0  1 F0 6F A0  1 
+1A36390 	5C 44 A0  1 58 41 A0  1 
+1A36398 	1B  0  0  0 9C 44 A0  1 
+1A363A0 	58 46 A0  1 
+
+: t-bit-mask  ( reg-val -- mask )  2 and h# 1c lshift  ;
+1A363A4 	 0 74 2D 62 
+1A363A8 	69 74 2D 6D 61 73 6B 8A 
+1A363B0 	88 63 A3  1 20 40 A0  1 
+1A363B8 	90 6F A0  1 5C 44 A0  1 
+1A363C0 	58 41 A0  1 1C  0  0  0 
+1A363C8 	9C 44 A0  1 58 46 A0  1 
+
+\ Determine "phys.lo..hi", the numeric representation of the base address
+\ register at configuration space address "base-reg-adr", and "increment",
+\ the offset to the next base address register (8 for 64-bit memory space,
+\ 4 otherwise).  If the base address register isn't implemented, return false.
+
+\ In the code below, "mask" is a bitmask containing ones in the high bits
+\ that can be programmed to set the device's address, and zeros in the
+\ low bits that cannot be programmed.  The phrase "invert 1+" converts such
+\ a mask into the size of the region.
+
+: decode-base-reg  ( base-reg-offset -- ... )
+1A363D0 	64 65 63 6F 64 65 2D 62 
+1A363D8 	61 73 65 2D 72 65 67 8F 
+1A363E0 	B4 63 A3  1 20 40 A0  1 
+   ( false increment | phys.lo..hi size true increment )
+
+   dup probe-own-base-reg  h# f invert and  0=  if
+1A363E8 	40 49 A0  1 38 5E A3  1 
+1A363F0 	58 41 A0  1  F  0  0  0 
+1A363F8 	30 45 A0  1 5C 44 A0  1 
+1A36400 	24 47 A0  1 DC 41 A0  1 
+1A36408 	14  0  0  0 
+      \ No valid address set, but the space decode, i/o or prefetchable
+      \ bits are ignored.
+      drop false 4 exit
+1A3640C 	30 49 A0  1 
+1A36410 	18 70 A0  1 B0 6F A0  1 
+1A36418 	40 46 A0  1 
+   then						  ( base )
+
+   \ XXX TODO what about non-relocatable devices?  How do we detect them?
+
+   0 0 rot   dup own-size-mask swap               ( 0 0 mask base )
+1A3641C 	70 6F A0  1 
+1A36420 	70 6F A0  1 7C 49 A0  1 
+1A36428 	40 49 A0  1 50 5F A3  1 
+1A36430 	68 49 A0  1 
+
+   dup my-l@  dup >r 7 and  4 =  if               ( 0 0 mask base )
+1A36434 	40 49 A0  1 
+1A36438 	28 4E A3  1 40 49 A0  1 
+1A36440 	BC 45 A0  1 E0 6F A0  1 
+1A36448 	5C 44 A0  1 B0 6F A0  1 
+1A36450 	24 48 A0  1 DC 41 A0  1 
+1A36458 	64  0  0  0 
+      \ 64-bit memory space - look at the next base register too
+      dup 4 +  probe-own-base-reg                 ( 0 0 mask base hi-mask )
+1A3645C 	40 49 A0  1 
+1A36460 	B0 6F A0  1  4 45 A0  1 
+1A36468 	38 5E A3  1 
+      swap h# 3000000 or r> get-prefetch-mask or ( 0 0 mask hi-mask' )
+1A3646C 	68 49 A0  1 
+1A36470 	58 41 A0  1  0  0  0  3 
+1A36478 	70 44 A0  1 D0 45 A0  1 
+1A36480 	88 63 A3  1 70 44 A0  1 
+      my-space +  -rot                            ( 0 0 phys mask hi-mask )
+1A36488 	AC  3 A2  1  4 45 A0  1 
+1A36490 	94 49 A0  1 
+      swap invert swap invert  1 0 d+  8          ( 0 0 phys size.lo..hi inc )
+1A36494 	68 49 A0  1 
+1A36498 	30 45 A0  1 68 49 A0  1 
+1A364A0 	30 45 A0  1 80 6F A0  1 
+1A364A8 	70 6F A0  1 E0 5D A0  1 
+1A364B0 	F0 6F A0  1 
+   else				                  ( 0 0 mask base )
+1A364B4 	C8 41 A0  1 
+1A364B8 	74  0  0  0 
+      \ 32-bit ..
+      \ Memory space or I/O space
+      \ XXX what about "below 1 Meg" memory?
+      r> dup 1 and  if                           ( 0 0 mask base reg )
+1A364BC 	D0 45 A0  1 
+1A364C0 	40 49 A0  1 80 6F A0  1 
+1A364C8 	5C 44 A0  1 DC 41 A0  1 
+1A364D0 	18  0  0  0 
+         drop h# 1000000                        ( 0 0 mask base hi-mask )
+1A364D4 	30 49 A0  1 
+1A364D8 	58 41 A0  1  0  0  0  1 
+      else                                       ( 0 0 mask base reg )
+1A364E0 	C8 41 A0  1 28  0  0  0 
+         dup get-prefetch-mask >r                ( 0 0 mask base reg )
+1A364E8 	40 49 A0  1 88 63 A3  1 
+1A364F0 	BC 45 A0  1 
+         t-bit-mask r> or h# 2000000 or         ( 0 0 mask base hi-mask )
+1A364F4 	B4 63 A3  1 
+1A364F8 	D0 45 A0  1 70 44 A0  1 
+1A36500 	58 41 A0  1  0  0  0  2 
+1A36508 	70 44 A0  1 
+      then                                       ( 0 0 mask base type' )
+      or  my-space +  swap invert 1+  0  4       ( 0 0 base' size.lo..hi inc )
+1A3650C 	70 44 A0  1 
+1A36510 	AC  3 A2  1  4 45 A0  1 
+1A36518 	68 49 A0  1 30 45 A0  1 
+1A36520 	30 4B A0  1 70 6F A0  1 
+1A36528 	B0 6F A0  1 
+   then
+   true  swap
+1A3652C 	 4 70 A0  1 
+1A36530 	68 49 A0  1 
+;
+1A36534 	58 46 A0  1 
+
+\ If the base address register at "offset" is implemented, add its
+\ description to the property-encoded array "adr,len", returning
+\ "inc" = 8 if the base address register is for 64-bit memory space,
+\ "inc" = 4 otherwise.
+
+: add-reg-entry  ( adr len offset -- adr' len' inc )
+1A36538 	 0  0 61 64 64 2D 72 65 
+1A36540 	67 2D 65 6E 74 72 79 8D 
+1A36548 	E4 63 A3  1 20 40 A0  1 
+   decode-base-reg  >r  if  +reg-entry  then  r>
+1A36550 	E4 63 A3  1 BC 45 A0  1 
+1A36558 	DC 41 A0  1  8  0  0  0 
+1A36560 	28 63 A3  1 D0 45 A0  1 
+;
+1A36568 	58 46 A0  1 
+
+\ Create a "reg" property describing the base address registers
+
+: make-reg-property  ( -- )
+1A3656C 	 0  0 6D 61 
+1A36570 	6B 65 2D 72 65 67 2D 70 
+1A36578 	72 6F 70 65 72 74 79 91 
+1A36580 	4C 65 A3  1 20 40 A0  1 
+   my-space encode-int  0+i  0+i  0+i  0+i   ( adr len )
+1A36588 	AC  3 A2  1 40 F7 A1  1 
+1A36590 	1C 47 A3  1 1C 47 A3  1 
+1A36598 	1C 47 A3  1 1C 47 A3  1 
+   cr ." base-register-bounds " here .h
+1A365A0 	80 6D A0  1 20 7C A0  1 
+1A365A8 	15 62 61 73 65 2D 72 65 
+1A365B0 	67 69 73 74 65 72 2D 62 
+1A365B8 	6F 75 6E 64 73 20  0  0 
+1A365C0 	70 54 A0  1 10  E A1  1 
+   base-register-bounds 2dup . . do  i add-reg-entry  ( inc ) +loop  ( adr len )
+1A365C8 	 8 60 A3  1 C0 49 A0  1 
+1A365D0 	94 7A A0  1 94 7A A0  1 
+1A365D8 	88 42 A0  1 14  0  0  0 
+1A365E0 	B4 42 A0  1 4C 65 A3  1 
+1A365E8 	1C 42 A0  1 F4 FF FF FF 
+   " reg" property
+1A365F0 	9C 53 A0  1  3 72 65 67 
+1A365F8 	 0  0  0  0 BC 14 A2  1 
+  cr ." make-reg-property "  here .h
+1A36600 	80 6D A0  1 20 7C A0  1 
+1A36608 	12 6D 61 6B 65 2D 72 65 
+1A36610 	67 2D 70 72 6F 70 65 72 
+1A36618 	74 79 20  0 70 54 A0  1 
+1A36620 	10  E A1  1 
+;
+1A36624 	58 46 A0  1 
+
+: set-power-property  ( prsnt-bits -- )
+1A36628 	 0 73 65 74 2D 70 6F 77 
+1A36630 	65 72 2D 70 72 6F 70 65 
+1A36638 	72 74 79 92 84 65 A3  1 
+1A36640 	20 40 A0  1 
+   \ XXX I hope we decide to switch the order of "standby" and "full-on"
+   \ so we can omit the "standby" entry here.
+   0 encode-int
+1A36644 	70 6F A0  1 
+1A36648 	40 F7 A1  1 
+   rot case
+1A3664C 	7C 49 A0  1 
+     0 of  d#  7.500.000  endof	\ 7.5W  (the property value is in microwatts)
+1A36650 	70 6F A0  1 48 43 A0  1 
+1A36658 	14  0  0  0 58 41 A0  1 
+1A36660 	E0 70 72  0 6C 43 A0  1 
+1A36668 	4C  0  0  0 
+     1 of  d# 15.000.000  endof	\ 15W
+1A3666C 	80 6F A0  1 
+1A36670 	48 43 A0  1 14  0  0  0 
+1A36678 	58 41 A0  1 C0 E1 E4  0 
+1A36680 	6C 43 A0  1 30  0  0  0 
+     2 of  d# 25.000.000  endof	\ 25W
+1A36688 	90 6F A0  1 48 43 A0  1 
+1A36690 	14  0  0  0 58 41 A0  1 
+1A36698 	40 78 7D  1 6C 43 A0  1 
+1A366A0 	14  0  0  0 
+     \ We know there is something in the slot because we only
+     \ execute this word after finding something, but in case
+     \ the PRSNT bits lie (or the hardware doesn't give them to us,
+     \ we assume the worst case
+     ( default )  d# 25.000.000 swap
+1A366A4 	58 41 A0  1 
+1A366A8 	40 78 7D  1 68 49 A0  1 
+   endcase
+1A366B0 	84 43 A0  1 
+   +i  " power-consumption" property
+1A366B4 	 4 47 A3  1 
+1A366B8 	9C 53 A0  1 11 70 6F 77 
+1A366C0 	65 72 2D 63 6F 6E 73 75 
+1A366C8 	6D 70 74 69 6F 6E  0  0 
+1A366D0 	BC 14 A2  1 
+;
+1A366D4 	58 46 A0  1 
+
+\ Read the power sense pins in a system-dependent manner
+: make-power-property  ( -- )
+1A366D8 	6D 61 6B 65 2D 70 6F 77 
+1A366E0 	65 72 2D 70 72 6F 70 65 
+1A366E8 	72 74 79 93 40 66 A3  1 
+1A366F0 	20 40 A0  1 
+   \ Don't create the property for non-zero function numbers
+   my-space 8 rshift 7 and  if  exit  then
+1A366F4 	AC  3 A2  1 
+1A366F8 	F0 6F A0  1 B4 44 A0  1 
+1A36700 	E0 6F A0  1 5C 44 A0  1 
+1A36708 	DC 41 A0  1  8  0  0  0 
+1A36710 	40 46 A0  1 
+
+   my-space prsnt@  if  set-power-property  then
+1A36714 	AC  3 A2  1 
+1A36718 	98 3A A3  1 DC 41 A0  1 
+1A36720 	 8  0  0  0 40 66 A3  1 
+;
+1A36728 	58 46 A0  1 
+
+: usbalias
+1A3672C 	 0  0  0 75 
+1A36730 	73 62 61 6C 69 61 73 88 
+1A36738 	F0 66 A3  1 20 40 A0  1 
+	s" alias dma-alloc dma-alloc" eval
+1A36740 	9C 53 A0  1 19 61 6C 69 
+1A36748 	61 73 20 64 6D 61 2D 61 
+1A36750 	6C 6C 6F 63 20 64 6D 61 
+1A36758 	2D 61 6C 6C 6F 63  0  0 
+1A36760 	D8 E5 A0  1 
+	s" alias dma-free dma-free" eval
+1A36764 	9C 53 A0  1 
+1A36768 	17 61 6C 69 61 73 20 64 
+1A36770 	6D 61 2D 66 72 65 65 20 
+1A36778 	64 6D 61 2D 66 72 65 65 
+1A36780 	 0  0  0  0 D8 E5 A0  1 
+
+
+	s" alias decode-unit decode-unit-m" eval
+1A36788 	9C 53 A0  1 1F 61 6C 69 
+1A36790 	61 73 20 64 65 63 6F 64 
+1A36798 	65 2D 75 6E 69 74 20 64 
+1A367A0 	65 63 6F 64 65 2D 75 6E 
+1A367A8 	69 74 2D 6D  0  0  0  0 
+1A367B0 	D8 E5 A0  1 
+	s" alias encode-unit encode-unit-m" eval
+1A367B4 	9C 53 A0  1 
+1A367B8 	1F 61 6C 69 61 73 20 65 
+1A367C0 	6E 63 6F 64 65 2D 75 6E 
+1A367C8 	69 74 20 65 6E 63 6F 64 
+1A367D0 	65 2D 75 6E 69 74 2D 6D 
+1A367D8 	 0  0  0  0 D8 E5 A0  1 
+
+	s" defer unstall-pipe ' drop to unstall-pipe" eval
+1A367E0 	9C 53 A0  1 29 64 65 66 
+1A367E8 	65 72 20 75 6E 73 74 61 
+1A367F0 	6C 6C 2D 70 69 70 65 20 
+1A367F8 	27 20 64 72 6F 70 20 74 
+1A36800 	6F 20 75 6E 73 74 61 6C 
+1A36808 	6C 2D 70 69 70 65  0  0 
+1A36810 	D8 E5 A0  1 
+
+	s" 0 instance value target" eval
+1A36814 	9C 53 A0  1 
+1A36818 	17 30 20 69 6E 73 74 61 
+1A36820 	6E 63 65 20 76 61 6C 75 
+1A36828 	65 20 74 61 72 67 65 74 
+1A36830 	 0  0  0  0 D8 E5 A0  1 
+	s" false instance value noprobe?" eval
+1A36838 	9C 53 A0  1 1D 66 61 6C 
+1A36840 	73 65 20 69 6E 73 74 61 
+1A36848 	6E 63 65 20 76 61 6C 75 
+1A36850 	65 20 6E 6F 70 72 6F 62 
+1A36858 	65 3F  0  0 D8 E5 A0  1 
+
+
+	s" : set-target  ( target -- )  to target  ;" eval
+1A36860 	9C 53 A0  1 29 3A 20 73 
+1A36868 	65 74 2D 74 61 72 67 65 
+1A36870 	74 20 20 28 20 74 61 72 
+1A36878 	67 65 74 20 2D 2D 20 29 
+1A36880 	20 20 74 6F 20 74 61 72 
+1A36888 	67 65 74 20 20 3B  0  0 
+1A36890 	D8 E5 A0  1 
+
+\ A usb device node defines an address space of the form
+\ "port,interface".  port and interface are both integers.
+\ parse-2int converts a text string (e.g. "3,1") into a pair of
+\ binary integers.
+
+	s" false instance value fisheye?" eval
+1A36894 	9C 53 A0  1 
+1A36898 	1D 66 61 6C 73 65 20 69 
+1A368A0 	6E 73 74 61 6E 63 65 20 
+1A368A8 	76 61 6C 75 65 20 66 69 
+1A368B0 	73 68 65 79 65 3F  0  0 
+1A368B8 	D8 E5 A0  1 
+	s" : parse-my-args ;" eval
+1A368BC 	9C 53 A0  1 
+1A368C0 	11 3A 20 70 61 72 73 65 
+1A368C8 	2D 6D 79 2D 61 72 67 73 
+1A368D0 	20 3B  0  0 D8 E5 A0  1 
+
+
+         " usb"             device-name
+1A368D8 	9C 53 A0  1  3 75 73 62 
+1A368E0 	 0  0  0  0 20 49 A2  1 
+ 2       " #address-cells"  int-property
+1A368E8 	90 6F A0  1 9C 53 A0  1 
+1A368F0 	 E 23 61 64 64 72 65 73 
+1A368F8 	73 2D 63 65 6C 6C 73  0 
+1A36900 	90 4E A3  1 
+ 0       " #size-cells"     int-property
+1A36904 	70 6F A0  1 
+1A36908 	9C 53 A0  1  B 23 73 69 
+1A36910 	7A 65 2D 63 65 6C 6C 73 
+1A36918 	 0  0  0  0 90 4E A3  1 
+
+;
+1A36920 	58 46 A0  1 
+
+: usbaliaso
+1A36924 	 0  0 75 73 
+1A36928 	62 61 6C 69 61 73 6F 89 
+1A36930 	3C 67 A3  1 20 40 A0  1 
+" ohci" encode-string " device_type" property
+1A36938 	9C 53 A0  1  4 6F 68 63 
+1A36940 	69  0  0  0 A0 F6 A1  1 
+1A36948 	9C 53 A0  1  B 64 65 76 
+1A36950 	69 63 65 5F 74 79 70 65 
+1A36958 	 0  0  0  0 BC 14 A2  1 
+\ Configuration space registers
+my-address my-space encode-phys
+1A36960 	20 10 A2  1 AC  3 A2  1 
+1A36968 	E0 47 A2  1 
+0 encode-int encode+  0 encode-int encode+
+1A3696C 	70 6F A0  1 
+1A36970 	40 F7 A1  1 F0 F5 A1  1 
+1A36978 	70 6F A0  1 40 F7 A1  1 
+1A36980 	F0 F5 A1  1 
+\ OHCI operational registers
+0 0    my-space  02000010 + encode-phys encode+
+1A36984 	70 6F A0  1 
+1A36988 	70 6F A0  1 AC  3 A2  1 
+1A36990 	58 41 A0  1 10  0  0  2 
+1A36998 	 4 45 A0  1 E0 47 A2  1 
+1A369A0 	F0 F5 A1  1 
+0 encode-int encode+  h# 1000 encode-int encode+
+1A369A4 	70 6F A0  1 
+1A369A8 	40 F7 A1  1 F0 F5 A1  1 
+1A369B0 	58 41 A0  1  0 10  0  0 
+1A369B8 	40 F7 A1  1 F0 F5 A1  1 
+" reg" property
+1A369C0 	9C 53 A0  1  3 72 65 67 
+1A369C8 	 0  0  0  0 BC 14 A2  1 
+
+
+s" : set-normal-dev target dup to my-dev to my-real-dev ;" eval
+1A369D0 	9C 53 A0  1 36 3A 20 73 
+1A369D8 	65 74 2D 6E 6F 72 6D 61 
+1A369E0 	6C 2D 64 65 76 20 74 61 
+1A369E8 	72 67 65 74 20 64 75 70 
+1A369F0 	20 74 6F 20 6D 79 2D 64 
+1A369F8 	65 76 20 74 6F 20 6D 79 
+1A36A00 	2D 72 65 61 6C 2D 64 65 
+1A36A08 	76 20 3B  0 D8 E5 A0  1 
+s" ' set-normal-dev to set-my-dev" eval
+1A36A10 	9C 53 A0  1 1E 27 20 73 
+1A36A18 	65 74 2D 6E 6F 72 6D 61 
+1A36A20 	6C 2D 64 65 76 20 74 6F 
+1A36A28 	20 73 65 74 2D 6D 79 2D 
+1A36A30 	64 65 76  0 D8 E5 A0  1 
+
+
+;
+1A36A38 	58 46 A0  1 
+
+: usbaliasu
+1A36A3C 	 0  0 75 73 
+1A36A40 	62 61 6C 69 61 73 75 89 
+1A36A48 	34 69 A3  1 20 40 A0  1 
+
+" uhci" encode-string " device_type" property
+1A36A50 	9C 53 A0  1  4 75 68 63 
+1A36A58 	69  0  0  0 A0 F6 A1  1 
+1A36A60 	9C 53 A0  1  B 64 65 76 
+1A36A68 	69 63 65 5F 74 79 70 65 
+1A36A70 	 0  0  0  0 BC 14 A2  1 
+
+\ Configuration space registers
+my-address my-space          encode-phys
+1A36A78 	20 10 A2  1 AC  3 A2  1 
+1A36A80 	E0 47 A2  1 
+                           0 encode-int  encode+  0     encode-int encode+
+1A36A84 	70 6F A0  1 
+1A36A88 	40 F7 A1  1 F0 F5 A1  1 
+1A36A90 	70 6F A0  1 40 F7 A1  1 
+1A36A98 	F0 F5 A1  1 
+\ UHCI operational registers
+0 0    my-space  01000020 + encode-phys encode+
+1A36A9C 	70 6F A0  1 
+1A36AA0 	70 6F A0  1 AC  3 A2  1 
+1A36AA8 	58 41 A0  1 20  0  0  1 
+1A36AB0 	 4 45 A0  1 E0 47 A2  1 
+1A36AB8 	F0 F5 A1  1 
+                           0 encode-int  encode+  h# 400 encode-int encode+
+1A36ABC 	70 6F A0  1 
+1A36AC0 	40 F7 A1  1 F0 F5 A1  1 
+1A36AC8 	58 41 A0  1  0  4  0  0 
+1A36AD0 	40 F7 A1  1 F0 F5 A1  1 
+
+" reg" property
+1A36AD8 	9C 53 A0  1  3 72 65 67 
+1A36AE0 	 0  0  0  0 BC 14 A2  1 
+
+
+s" : set-normal-dev  target dup to my-dev to my-real-dev ;" eval
+1A36AE8 	9C 53 A0  1 37 3A 20 73 
+1A36AF0 	65 74 2D 6E 6F 72 6D 61 
+1A36AF8 	6C 2D 64 65 76 20 20 74 
+1A36B00 	61 72 67 65 74 20 64 75 
+1A36B08 	70 20 74 6F 20 6D 79 2D 
+1A36B10 	64 65 76 20 74 6F 20 6D 
+1A36B18 	79 2D 72 65 61 6C 2D 64 
+1A36B20 	65 76 20 3B  0  0  0  0 
+1A36B28 	D8 E5 A0  1 
+s" ' set-normal-dev to set-my-dev" eval
+1A36B2C 	9C 53 A0  1 
+1A36B30 	1E 27 20 73 65 74 2D 6E 
+1A36B38 	6F 72 6D 61 6C 2D 64 65 
+1A36B40 	76 20 74 6F 20 73 65 74 
+1A36B48 	2D 6D 79 2D 64 65 76  0 
+1A36B50 	D8 E5 A0  1 
+
+
+;
+1A36B54 	58 46 A0  1 
+
+
+\ After a function has been located and a device node has been created
+\ for it, fill in the device node with properties and methods.
+headers
+vocabulary builtin-drivers
+1A36B58 	62 75 69 6C 74 69 6E 2D 
+1A36B60 	64 72 69 76 65 72 73 8F 
+1A36B68 	4C 6A A3  1 E0 B6 A0  1 
+1A36B70 	D4  A  0  0 64 39 A3  1 
+1A36B78 	 0  0  0  0 
+headerless
+: no-builtin-fcode?  ( -- flag )
+1A36B7C 	 0  0 6E 6F 
+1A36B80 	2D 62 75 69 6C 74 69 6E 
+1A36B88 	2D 66 63 6F 64 65 3F 91 
+1A36B90 	6C 6B A3  1 20 40 A0  1 
+\	debug-me
+   probemsg?  if  
+1A36B98 	20 3B A3  1 DC 41 A0  1 
+1A36BA0 	B8  0  0  0 
+      ??cr ."   Checking for built-in FCode match for "
+1A36BA4 	 0 A1 A0  1 
+1A36BA8 	20 7C A0  1 28 20 20 43 
+1A36BB0 	68 65 63 6B 69 6E 67 20 
+1A36BB8 	66 6F 72 20 62 75 69 6C 
+1A36BC0 	74 2D 69 6E 20 46 43 6F 
+1A36BC8 	64 65 20 6D 61 74 63 68 
+1A36BD0 	20 66 6F 72 20  0  0  0 
+      ??cr
+1A36BD8 	 0 A1 A0  1 
+      ."   Vendor:" " vendor-id" get-int-property 4 u.r
+1A36BDC 	20 7C A0  1 
+1A36BE0 	 9 20 20 56 65 6E 64 6F 
+1A36BE8 	72 3A  0  0 9C 53 A0  1 
+1A36BF0 	 9 76 65 6E 64 6F 72 2D 
+1A36BF8 	69 64  0  0 14 59 A3  1 
+1A36C00 	B0 6F A0  1 E4 77 A0  1 
+      ."   Device:" " device-id" get-int-property 4 u.r
+1A36C08 	20 7C A0  1  9 20 20 44 
+1A36C10 	65 76 69 63 65 3A  0  0 
+1A36C18 	9C 53 A0  1  9 64 65 76 
+1A36C20 	69 63 65 2D 69 64  0  0 
+1A36C28 	14 59 A3  1 B0 6F A0  1 
+1A36C30 	E4 77 A0  1 
+      ."   class-code:"  class-code u. HERE .H
+1A36C34 	20 7C A0  1 
+1A36C38 	 D 20 20 63 6C 61 73 73 
+1A36C40 	2D 63 6F 64 65 3A  0  0 
+1A36C48 	98 4F A3  1 C8 77 A0  1 
+1A36C50 	70 54 A0  1 10  E A1  1 
+   then
+      ??cr pwd cr
+1A36C58 	 0 A1 A0  1 D0 2B A2  1 
+1A36C60 	80 6D A0  1 
+  class-code h# 0c0300 = if
+1A36C64 	98 4F A3  1 
+1A36C68 	58 41 A0  1  0  3  C  0 
+1A36C70 	24 48 A0  1 DC 41 A0  1 
+1A36C78 	44  0  0  0 
+	usb_lib_u also current @ context !
+1A36C7C 	44 39 A3  1 
+1A36C80 	C8 C1 A0  1 F0 A3 A0  1 
+1A36C88 	5C 4C A0  1 DC A3 A0  1 
+1A36C90 	54 4D A0  1 
+        usbalias
+1A36C94 	3C 67 A3  1 
+        usbaliasu
+1A36C98 	4C 6A A3  1 
+\    s" d:include\dev\usbm\hcd\uhci\uhci.bth" included
+        usbaevalu
+1A36C9C 	9C 39 A3  1 
+        previous  current @ context !
+1A36CA0 	E4 C3 A0  1 F0 A3 A0  1 
+1A36CA8 	5C 4C A0  1 DC A3 A0  1 
+1A36CB0 	54 4D A0  1 
+  false exit
+1A36CB4 	18 70 A0  1 
+1A36CB8 	40 46 A0  1 
+   then
+
+  class-code h# 0c0310 = if
+1A36CBC 	98 4F A3  1 
+1A36CC0 	58 41 A0  1 10  3  C  0 
+1A36CC8 	24 48 A0  1 DC 41 A0  1 
+1A36CD0 	74  0  0  0 
+	usb_lib_o also current @ context !
+1A36CD4 	 4 39 A3  1 
+1A36CD8 	C8 C1 A0  1 F0 A3 A0  1 
+1A36CE0 	5C 4C A0  1 DC A3 A0  1 
+1A36CE8 	54 4D A0  1 
+	usbalias
+1A36CEC 	3C 67 A3  1 
+	usbaliaso
+1A36CF0 	34 69 A3  1 
+
+    s" d:include\dev\usbm\hcd\ohci\ohci.bth" included
+1A36CF4 	9C 53 A0  1 
+1A36CF8 	24 64 3A 69 6E 63 6C 75 
+1A36D00 	64 65 5C 64 65 76 5C 75 
+1A36D08 	73 62 6D 5C 68 63 64 5C 
+1A36D10 	6F 68 63 69 5C 6F 68 63 
+1A36D18 	69 2E 62 74 68  0  0  0 
+1A36D20 	C8 E8 A0  1 
+        usbaevalo
+1A36D24 	CC 39 A3  1 
+\	cr ." usb_lib_o=" order key drop
+        previous  current @ context !
+1A36D28 	E4 C3 A0  1 F0 A3 A0  1 
+1A36D30 	5C 4C A0  1 DC A3 A0  1 
+1A36D38 	54 4D A0  1 
+  false exit
+1A36D3C 	18 70 A0  1 
+1A36D40 	40 46 A0  1 
+   then
+
+  class-code h# 0c0320 = if
+1A36D44 	98 4F A3  1 
+1A36D48 	58 41 A0  1 20  3  C  0 
+1A36D50 	24 48 A0  1 DC 41 A0  1 
+1A36D58 	44  0  0  0 
+	usb_lib_e also current @ context !
+1A36D5C 	24 39 A3  1 
+1A36D60 	C8 C1 A0  1 F0 A3 A0  1 
+1A36D68 	5C 4C A0  1 DC A3 A0  1 
+1A36D70 	54 4D A0  1 
+
+	usbalias
+1A36D74 	3C 67 A3  1 
+        usbaliase
+1A36D78 	84 39 A3  1 
+\    s" d:include\dev\usbm\hcd\ehci\ehci.bth" included
+        usbaevale
+1A36D7C 	B4 39 A3  1 
+\	cr ." usb_lib_e=" order key drop
+        previous  current @ context !
+1A36D80 	E4 C3 A0  1 F0 A3 A0  1 
+1A36D88 	5C 4C A0  1 DC A3 A0  1 
+1A36D90 	54 4D A0  1 
+  false exit
+1A36D94 	18 70 A0  1 
+1A36D98 	40 46 A0  1 
+   then
+
+   true
+1A36D9C 	 4 70 A0  1 
+;
+1A36DA0 	58 46 A0  1 
+
+: make-common-properties ( -- )
+1A36DA4 	 0 6D 61 6B 
+1A36DA8 	65 2D 63 6F 6D 6D 6F 6E 
+1A36DB0 	2D 70 72 6F 70 65 72 74 
+1A36DB8 	69 65 73 96 94 6B A3  1 
+1A36DC0 	20 40 A0  1 
+   make-name-property
+1A36DC4 	28 57 A3  1 
+ cr ." make-compatible-property " here .h
+1A36DC8 	80 6D A0  1 20 7C A0  1 
+1A36DD0 	19 6D 61 6B 65 2D 63 6F 
+1A36DD8 	6D 70 61 74 69 62 6C 65 
+1A36DE0 	2D 70 72 6F 70 65 72 74 
+1A36DE8 	79 20  0  0 70 54 A0  1 
+1A36DF0 	10  E A1  1 
+   make-compatible-property
+1A36DF4 	14 58 A3  1 
+ cr ." make-reg-property " here .h
+1A36DF8 	80 6D A0  1 20 7C A0  1 
+1A36E00 	12 6D 61 6B 65 2D 72 65 
+1A36E08 	67 2D 70 72 6F 70 65 72 
+1A36E10 	74 79 20  0 70 54 A0  1 
+1A36E18 	10  E A1  1 
+   make-reg-property
+1A36E1C 	84 65 A3  1 
+ cr ." make-power-property " here .h
+1A36E20 	80 6D A0  1 20 7C A0  1 
+1A36E28 	14 6D 61 6B 65 2D 70 6F 
+1A36E30 	77 65 72 2D 70 72 6F 70 
+1A36E38 	65 72 74 79 20  0  0  0 
+1A36E40 	70 54 A0  1 10  E A1  1 
+   make-power-property
+1A36E48 	F0 66 A3  1 
+;
+1A36E4C 	58 46 A0  1 
+: populate-device-node  ( -- )
+1A36E50 	 0  0  0 70 6F 70 75 6C 
+1A36E58 	61 74 65 2D 64 65 76 69 
+1A36E60 	63 65 2D 6E 6F 64 65 94 
+1A36E68 	C0 6D A3  1 20 40 A0  1 
+ cr ." populate-device-node " here .h
+1A36E70 	80 6D A0  1 20 7C A0  1 
+1A36E78 	15 70 6F 70 75 6C 61 74 
+1A36E80 	65 2D 64 65 76 69 63 65 
+1A36E88 	2D 6E 6F 64 65 20  0  0 
+1A36E90 	70 54 A0  1 10  E A1  1 
+\ cr ."  exit" exit
+   setup-fcodes              ( )		
+1A36E98 	D8 3A A3  1 
+ cr ." populate-device-node1 " here .h
+1A36E9C 	80 6D A0  1 
+1A36EA0 	20 7C A0  1 16 70 6F 70 
+1A36EA8 	75 6C 61 74 65 2D 64 65 
+1A36EB0 	76 69 63 65 2D 6E 6F 64 
+1A36EB8 	65 31 20  0 70 54 A0  1 
+1A36EC0 	10  E A1  1 
+   make-child-properties     ( )
+1A36EC4 	CC 4F A3  1 
+ cr ." populate-device-node5 " here .h
+1A36EC8 	80 6D A0  1 20 7C A0  1 
+1A36ED0 	16 70 6F 70 75 6C 61 74 
+1A36ED8 	65 2D 64 65 76 69 63 65 
+1A36EE0 	2D 6E 6F 64 65 35 20  0 
+1A36EE8 	70 54 A0  1 10  E A1  1 
+   card-bus? dup .  if  make-common-properties  exit  then  ( )
+1A36EF0 	5C 4F A3  1 40 49 A0  1 
+1A36EF8 	94 7A A0  1 DC 41 A0  1 
+1A36F00 	 C  0  0  0 C0 6D A3  1 
+1A36F08 	40 46 A0  1 
+ cr ." populate-device-node11 " here .h
+1A36F0C 	80 6D A0  1 
+1A36F10 	20 7C A0  1 17 70 6F 70 
+1A36F18 	75 6C 61 74 65 2D 64 65 
+1A36F20 	76 69 63 65 2D 6E 6F 64 
+1A36F28 	65 31 31 20  0  0  0  0 
+1A36F30 	70 54 A0  1 10  E A1  1 
+   parent-assign-addresses? dup .  if  clear-addresses  then        ( )
+1A36F38 	70 3D A3  1 40 49 A0  1 
+1A36F40 	94 7A A0  1 DC 41 A0  1 
+1A36F48 	 8  0  0  0 E8 62 A3  1 
+
+ cr ." populate-device-node22 " here .h
+1A36F50 	80 6D A0  1 20 7C A0  1 
+1A36F58 	17 70 6F 70 75 6C 61 74 
+1A36F60 	65 2D 64 65 76 69 63 65 
+1A36F68 	2D 6E 6F 64 65 32 32 20 
+1A36F70 	 0  0  0  0 70 54 A0  1 
+1A36F78 	10  E A1  1 
+
+   \ Interpret FCode if present; if not, invent "name" and "reg" properties
+      no-builtin-fcode?   if  make-common-properties  then
+1A36F7C 	94 6B A3  1 
+1A36F80 	DC 41 A0  1  8  0  0  0 
+1A36F88 	C0 6D A3  1 
+
+ cr ." populate-device-node33 " here .h
+1A36F8C 	80 6D A0  1 
+1A36F90 	20 7C A0  1 17 70 6F 70 
+1A36F98 	75 6C 61 74 65 2D 64 65 
+1A36FA0 	76 69 63 65 2D 6E 6F 64 
+1A36FA8 	65 33 33 20  0  0  0  0 
+1A36FB0 	70 54 A0  1 10  E A1  1 
+
+   bridge? 0= dup .  if
+1A36FB8 	24 4F A3  1 24 47 A0  1 
+1A36FC0 	40 49 A0  1 94 7A A0  1 
+1A36FC8 	DC 41 A0  1 3C  0  0  0 
+      parent-assign-addresses?  if
+1A36FD0 	70 3D A3  1 DC 41 A0  1 
+1A36FD8 	30  0  0  0 
+	 clear-addresses          ( )
+1A36FDC 	E8 62 A3  1 
+	 b my-b@ 6 <>  if
+1A36FE0 	58 41 A0  1  B  0  0  0 
+1A36FE8 	68 4D A3  1 D0 6F A0  1 
+1A36FF0 	44 48 A0  1 DC 41 A0  1 
+1A36FF8 	10  0  0  0 
+	    0 4 my-w!		\ Disables all card response
+1A36FFC 	70 6F A0  1 
+1A37000 	B0 6F A0  1 F8 4D A3  1 
+	 then
+      then
+   then
+ cr ." populate-device-node44 " here .h
+1A37008 	80 6D A0  1 20 7C A0  1 
+1A37010 	17 70 6F 70 75 6C 61 74 
+1A37018 	65 2D 64 65 76 69 63 65 
+1A37020 	2D 6E 6F 64 65 34 34 20 
+1A37028 	 0  0  0  0 70 54 A0  1 
+1A37030 	10  E A1  1 
+   restore-fcodes
+1A37034 	F4 3A A3  1 
+ cr ." populate-device-node55 " here .h
+1A37038 	80 6D A0  1 20 7C A0  1 
+1A37040 	17 70 6F 70 75 6C 61 74 
+1A37048 	65 2D 64 65 76 69 63 65 
+1A37050 	2D 6E 6F 64 65 35 35 20 
+1A37058 	 0  0  0  0 70 54 A0  1 
+1A37060 	10  E A1  1 
+;
+1A37064 	58 46 A0  1 
+\ Searches the direct children of the PCI node for an existing
+\ whose unit address matches reg$ .  The name property is ignored,
+\ because during probing, there's no target name for which to search.
+: find-existing  ( reg$ -- reg$ )
+1A37068 	 0  0 66 69 6E 64 2D 65 
+1A37070 	78 69 73 74 69 6E 67 8D 
+1A37078 	6C 6E A3  1 20 40 A0  1 
+   2dup decode-unit  unit# 3 /n* bounds  ?do  i !  /n +loop  ( reg$ )
+1A37080 	C0 49 A0  1 C4 41 A3  1 
+1A37088 	1C 18 A2  1 A0 6F A0  1 
+1A37090 	98 51 A0  1 F0 6D A0  1 
+1A37098 	50 42 A0  1 18  0  0  0 
+1A370A0 	B4 42 A0  1 54 4D A0  1 
+1A370A8 	40 51 A0  1 1C 42 A0  1 
+1A370B0 	F0 FF FF FF 
+   ['] unit-match?  search-level  drop                       ( reg$ )
+1A370B4 	60 53 A0  1 
+1A370B8 	18 19 A2  1 E0 17 A2  1 
+1A370C0 	30 49 A0  1 
+;
+1A370C4 	58 46 A0  1 
+
+\ Create a new node or activate an existing one
+: make-function-node  ( arg$ reg$ -- )
+1A370C8 	 0 6D 61 6B 65 2D 66 75 
+1A370D0 	6E 63 74 69 6F 6E 2D 6E 
+1A370D8 	6F 64 65 92 7C 70 A3  1 
+1A370E0 	20 40 A0  1 
+ CR ." make-function-node=" .s here .h
+1A370E4 	80 6D A0  1 
+1A370E8 	20 7C A0  1 13 6D 61 6B 
+1A370F0 	65 2D 66 75 6E 63 74 69 
+1A370F8 	6F 6E 2D 6E 6F 64 65 3D 
+1A37100 	 0  0  0  0 38 7C A0  1 
+1A37108 	70 54 A0  1 10  E A1  1 
+   ['] find-existing catch  if  ( arg$ reg$ )   \ Make new node
+1A37110 	60 53 A0  1 7C 70 A3  1 
+1A37118 	14 7F A0  1 DC 41 A0  1 
+1A37120 	18  0  0  0 
+      new-device  set-args      ( )
+1A37124 	74  F A2  1 
+1A37128 	 4 33 A2  1 
+\ CR ." make-function-node11=" .s here .h
+      populate-device-node      ( )
+1A3712C 	6C 6E A3  1 
+   else                         ( arg$ reg$ )	\ Active the existing node
+1A37130 	C8 41 A0  1 60  0  0  0 
+      extend-package set-args   ( )
+1A37138 	C0  9 A2  1  4 33 A2  1 
+      make-child-properties     ( )
+1A37140 	CC 4F A3  1 
+ CR ." make-function-node15=" .s here .h
+1A37144 	80 6D A0  1 
+1A37148 	20 7C A0  1 15 6D 61 6B 
+1A37150 	65 2D 66 75 6E 63 74 69 
+1A37158 	6F 6E 2D 6E 6F 64 65 31 
+1A37160 	35 3D  0  0 38 7C A0  1 
+1A37168 	70 54 A0  1 10  E A1  1 
+      " init" my-self		( adr len ihandle )
+1A37170 	9C 53 A0  1  4 69 6E 69 
+1A37178 	74  0  0  0 EC 7E A0  1 
+      ihandle>phandle		( adr len phandle )
+1A37180 	 0 32 A2  1 
+      find-method  if		( xt )
+1A37184 	A0 2F A2  1 
+1A37188 	DC 41 A0  1  8  0  0  0 
+         execute		( )
+1A37190 	98 41 A0  1 
+      then			( )
+   then pwd
+1A37194 	D0 2B A2  1 
+ CR ." make-function-node22=" .s here .h
+1A37198 	80 6D A0  1 20 7C A0  1 
+1A371A0 	15 6D 61 6B 65 2D 66 75 
+1A371A8 	6E 63 74 69 6F 6E 2D 6E 
+1A371B0 	6F 64 65 32 32 3D  0  0 
+1A371B8 	38 7C A0  1 70 54 A0  1 
+1A371C0 	10  E A1  1 
+   finish-device                ( )
+1A371C4 	74 11 A2  1 
+ CR ." make-function-node33=" .s here .h
+1A371C8 	80 6D A0  1 20 7C A0  1 
+1A371D0 	15 6D 61 6B 65 2D 66 75 
+1A371D8 	6E 63 74 69 6F 6E 2D 6E 
+1A371E0 	6F 64 65 33 33 3D  0  0 
+1A371E8 	38 7C A0  1 70 54 A0  1 
+1A371F0 	10  E A1  1 
+;
+1A371F4 	58 46 A0  1 
+
+: amend-reg$  ( reg$ func# -- reg$' )
+1A371F8 	 0 61 6D 65 6E 64 2D 72 
+1A37200 	65 67 24 8A E0 70 A3  1 
+1A37208 	20 40 A0  1 
+   push-hex
+1A3720C 	5C F4 A0  1 
+   >r  ascii , left-parse-string         ( rem$ head$ )
+1A37210 	BC 45 A0  1 58 41 A0  1 
+1A37218 	2C  0  0  0 44 D7 A0  1 
+   2swap 2drop $number  if  0  then  r>  ( dev# func# )
+1A37220 	F4 49 A0  1 AC 49 A0  1 
+1A37228 	40 FE A0  1 DC 41 A0  1 
+1A37230 	 8  0  0  0 70 6F A0  1 
+1A37238 	D0 45 A0  1 
+   <# u# drop  ascii , hold  u#s u#> string4 $save
+1A3723C 	 8 76 A0  1 
+1A37240 	94 76 A0  1 30 49 A0  1 
+1A37248 	58 41 A0  1 2C  0  0  0 
+1A37250 	DC 75 A0  1 BC 76 A0  1 
+1A37258 	E0 76 A0  1 F0 3B A3  1 
+1A37260 	68 7E A0  1 
+   pop-base
+1A37264 	9C F4 A0  1 
+;
+1A37268 	58 46 A0  1 
+
+\ Returns true if the card implements a function at the indicated
+\ configuration address.
+
+\ We defer this because some systems require more careful checking, perhaps
+\ using "wpeek" (which in turn may require a mapping operation).
+defer function-present?  ( phys.hi.func -- flag )
+1A3726C 	 0  0 66 75 
+1A37270 	6E 63 74 69 6F 6E 2D 70 
+1A37278 	72 65 73 65 6E 74 3F 91 
+1A37280 	 8 72 A3  1 5C 40 A0  1 
+1A37288 	D8  A  0  0 
+: (function-present?)  ( phys.hi.func -- flag )
+1A3728C 	28 66 75 6E 
+1A37290 	63 74 69 6F 6E 2D 70 72 
+1A37298 	65 73 65 6E 74 3F 29 93 
+1A372A0 	84 72 A3  1 20 40 A0  1 
+   " config-w@" $call-self  h# ffff <>
+1A372A8 	9C 53 A0  1  9 63 6F 6E 
+1A372B0 	66 69 67 2D 77 40  0  0 
+1A372B8 	B4 30 A2  1 58 41 A0  1 
+1A372C0 	FF FF  0  0 44 48 A0  1 
+;
+1A372C8 	58 46 A0  1 
+' (function-present?) to function-present?
+
+\ Create a string of the form  "D,F" where D is the device number portion
+\ of the string "reg$" and F is the hexadecimal representation of "func#"
+\ Probe the card function func#
+: probe-function  ( args$ reg$ phys.hi.dev func# -- args$ reg$ phys.hi.dev )
+1A372CC 	 0 70 72 6F 
+1A372D0 	62 65 2D 66 75 6E 63 74 
+1A372D8 	69 6F 6E 8E A4 72 A3  1 
+1A372E0 	20 40 A0  1 
+
+   2dup  8 lshift +  function-present?  if  ( args$ reg$ phys.hi.dev func# )
+1A372E4 	C0 49 A0  1 
+1A372E8 	F0 6F A0  1 9C 44 A0  1 
+1A372F0 	 4 45 A0  1 84 72 A3  1 
+1A372F8 	DC 41 A0  1 20  0  0  0 
+
+      \ Now we know that the function is present, so we can go ahead and
+      \ create a device node for it
+
+      2>r  2over 2over                      ( args$ reg$ args$ reg$ r: p f# )
+1A37300 	F8 45 A0  1 D8 49 A0  1 
+1A37308 	D8 49 A0  1 
+      r@ amend-reg$  make-function-node     ( args$ reg$ r: p f# )
+1A3730C 	E4 45 A0  1 
+1A37310 	 8 72 A3  1 E0 70 A3  1 
+      2r>                                   ( args$ reg$ phys.hi.dev func# )
+1A37318 	10 46 A0  1 
+   then                                     ( args$ reg$ phys.hi.dev func# )
+   drop                                     ( args$ reg$ phys.hi.dev )
+1A3731C 	30 49 A0  1 
+;
+1A37320 	58 46 A0  1 
+
+\ Returns 0 if the card isn't present, 8 for a multifunction card, 1 otherwise
+: max#functions  ( phys.hi -- phys.hi n )
+1A37324 	 0  0 6D 61 
+1A37328 	78 23 66 75 6E 63 74 69 
+1A37330 	6F 6E 73 8D E0 72 A3  1 
+1A37338 	20 40 A0  1 
+   dup function-present?  if               ( phys.hi )
+1A3733C 	40 49 A0  1 
+1A37340 	84 72 A3  1 DC 41 A0  1 
+1A37348 	54  0  0  0 
+      dup h# e +  " config-b@" $call-self  ( phys.hi field )
+1A3734C 	40 49 A0  1 
+1A37350 	58 41 A0  1  E  0  0  0 
+1A37358 	 4 45 A0  1 9C 53 A0  1 
+1A37360 	 9 63 6F 6E 66 69 67 2D 
+1A37368 	62 40  0  0 B4 30 A2  1 
+      h# 80  and  if  8  else  1  then     ( phys.hi n )
+1A37370 	58 41 A0  1 80  0  0  0 
+1A37378 	5C 44 A0  1 DC 41 A0  1 
+1A37380 	10  0  0  0 F0 6F A0  1 
+1A37388 	C8 41 A0  1  8  0  0  0 
+1A37390 	80 6F A0  1 
+   else                                    ( phys.hi )
+1A37394 	C8 41 A0  1 
+1A37398 	 8  0  0  0 
+      0                                    ( phys.hi n )
+1A3739C 	70 6F A0  1 
+   then
+;
+1A373A0 	58 46 A0  1 
+
+0 value aa-adr
+1A373A4 	 0 61 61 2D 
+1A373A8 	61 64 72 86 38 73 A3  1 
+1A373B0 	50 40 A0  1 DC  A  0  0 
+0 value aa-len
+1A373B8 	 0 61 61 2D 6C 65 6E 86 
+1A373C0 	B0 73 A3  1 50 40 A0  1 
+1A373C8 	E0  A  0  0 
+: init-aa-property  ( -- )  0 0 encode-bytes  to aa-len  to aa-adr  ;
+1A373CC 	 0  0  0 69 
+1A373D0 	6E 69 74 2D 61 61 2D 70 
+1A373D8 	72 6F 70 65 72 74 79 90 
+1A373E0 	C4 73 A3  1 20 40 A0  1 
+1A373E8 	70 6F A0  1 70 6F A0  1 
+1A373F0 	14 F6 A1  1 B8 40 A0  1 
+1A373F8 	C4 73 A3  1 B8 40 A0  1 
+1A37400 	B0 73 A3  1 58 46 A0  1 
+: finish-aa-property  ( phandle -- )
+1A37408 	 0 66 69 6E 69 73 68 2D 
+1A37410 	61 61 2D 70 72 6F 70 65 
+1A37418 	72 74 79 92 E4 73 A3  1 
+1A37420 	20 40 A0  1 
+   aa-len  if
+1A37424 	C4 73 A3  1 
+1A37428 	DC 41 A0  1 38  0  0  0 
+      >r  aa-adr aa-len  " assigned-addresses"  r> set-package-property
+1A37430 	BC 45 A0  1 B0 73 A3  1 
+1A37438 	C4 73 A3  1 9C 53 A0  1 
+1A37440 	12 61 73 73 69 67 6E 65 
+1A37448 	64 2D 61 64 64 72 65 73 
+1A37450 	73 65 73  0 D0 45 A0  1 
+1A37458 	C8 33 A2  1 
+   else
+1A3745C 	C8 41 A0  1 
+1A37460 	 8  0  0  0 
+      drop
+1A37464 	30 49 A0  1 
+   then
+;
+1A37468 	58 46 A0  1 
+\ "encode-phys" cannot be used to implement this, because it executes in
+\ the instance context of the bus node, whereas encode-phys expects to
+\ execute in the child instance context.
+: +assigned-address  ( phys.hi paddr len -- )
+1A3746C 	 0  0 2B 61 
+1A37470 	73 73 69 67 6E 65 64 2D 
+1A37478 	61 64 64 72 65 73 73 91 
+1A37480 	20 74 A3  1 20 40 A0  1 
+   >r                                ( phys.hi paddr )  ( r: len )
+1A37488 	BC 45 A0  1 
+   swap h# 80000000 or              ( paddr phys.hi' )
+1A3748C 	68 49 A0  1 
+1A37490 	58 41 A0  1  0  0  0 80 
+1A37498 	70 44 A0  1 
+   aa-adr aa-len rot +i              ( paddr adr' len' )
+1A3749C 	B0 73 A3  1 
+1A374A0 	C4 73 A3  1 7C 49 A0  1 
+1A374A8 	 4 47 A3  1 
+   0+i  rot +i                       ( adr len )
+1A374AC 	1C 47 A3  1 
+1A374B0 	7C 49 A0  1  4 47 A3  1 
+   0+i  r> +i  to aa-len  to aa-adr  ( )
+1A374B8 	1C 47 A3  1 D0 45 A0  1 
+1A374C0 	 4 47 A3  1 B8 40 A0  1 
+1A374C8 	C4 73 A3  1 B8 40 A0  1 
+1A374D0 	B0 73 A3  1 
+;
+1A374D4 	58 46 A0  1 
+
+d# 16 buffer: already-assigned
+1A374D8 	 0  0  0 61 6C 72 65 61 
+1A374E0 	64 79 2D 61 73 73 69 67 
+1A374E8 	6E 65 64 90 84 74 A3  1 
+1A374F0 	B4 A9 A0  1 E4  A  0  0 
+1A374F8 	10  0  0  0 F0 3B A3  1 
+: >assigned  ( phys.hi -- adr )
+1A37500 	 0  0 3E 61 73 73 69 67 
+1A37508 	6E 65 64 89 F0 74 A3  1 
+1A37510 	20 40 A0  1 
+   h# 3c and  2 >>  already-assigned +
+1A37514 	58 41 A0  1 
+1A37518 	3C  0  0  0 5C 44 A0  1 
+1A37520 	90 6F A0  1 DC 44 A0  1 
+1A37528 	F0 74 A3  1  4 45 A0  1 
+;
+1A37530 	58 46 A0  1 
+
+: (assign-address)  ( phys.lo,mid,hi size.lo,hi -- )
+1A37534 	 0  0  0 28 
+1A37538 	61 73 73 69 67 6E 2D 61 
+1A37540 	64 64 72 65 73 73 29 90 
+1A37548 	10 75 A3  1 20 40 A0  1 
+   \ Don't assign addresses for reg entries that refer to a base address
+   \ register that has already been assigned by an earlier entry.
+   2 pick  >assigned c@  if
+1A37550 	90 6F A0  1  C 4A A0  1 
+1A37558 	10 75 A3  1 C4 4C A0  1 
+1A37560 	DC 41 A0  1  C  0  0  0 
+      5drop  exit
+1A37568 	4C 53 A0  1 40 46 A0  1 
+   then                           ( phys.lo,mid,hi size.lo,hi )
+
+   if                             ( phys.lo,mid,hi size.lo )
+1A37570 	DC 41 A0  1 48  0  0  0 
+      ." Can't assign address ranges larger than 32-bits" cr
+1A37578 	20 7C A0  1 2F 43 61 6E 
+1A37580 	27 74 20 61 73 73 69 67 
+1A37588 	6E 20 61 64 64 72 65 73 
+1A37590 	73 20 72 61 6E 67 65 73 
+1A37598 	20 6C 61 72 67 65 72 20 
+1A375A0 	74 68 61 6E 20 33 32 2D 
+1A375A8 	62 69 74 73  0  0  0  0 
+1A375B0 	80 6D A0  1 
+      4drop   exit
+1A375B4 	38 53 A0  1 
+1A375B8 	40 46 A0  1 
+   then                           ( phys.lo,mid,hi size.lo )
+
+   over io?  if                   ( phys.lo,mid,hi size.lo )
+1A375BC 	54 49 A0  1 
+1A375C0 	 C 3F A3  1 DC 41 A0  1 
+1A375C8 	A8  0  0  0 
+      dup h# 4000 u>=  if         ( phys.lo,mid,hi size.lo )
+1A375CC 	40 49 A0  1 
+1A375D0 	58 41 A0  1  0 40  0  0 
+1A375D8 	CC 48 A0  1 DC 41 A0  1 
+1A375E0 	90  0  0  0 
+         ." Can't assign more than 16K of I/O space" cr
+1A375E4 	20 7C A0  1 
+1A375E8 	27 43 61 6E 27 74 20 61 
+1A375F0 	73 73 69 67 6E 20 6D 6F 
+1A375F8 	72 65 20 74 68 61 6E 20 
+1A37600 	31 36 4B 20 6F 66 20 49 
+1A37608 	2F 4F 20 73 70 61 63 65 
+1A37610 	 0  0  0  0 80 6D A0  1 
+         ." Probably a non-writable BAR at PCI config address " drop h# ff.ffff and u. cr
+1A37618 	20 7C A0  1 32 50 72 6F 
+1A37620 	62 61 62 6C 79 20 61 20 
+1A37628 	6E 6F 6E 2D 77 72 69 74 
+1A37630 	61 62 6C 65 20 42 41 52 
+1A37638 	20 61 74 20 50 43 49 20 
+1A37640 	63 6F 6E 66 69 67 20 61 
+1A37648 	64 64 72 65 73 73 20  0 
+1A37650 	30 49 A0  1 58 41 A0  1 
+1A37658 	FF FF FF  0 5C 44 A0  1 
+1A37660 	C8 77 A0  1 80 6D A0  1 
+         2drop exit
+1A37668 	AC 49 A0  1 40 46 A0  1 
+      then
+   then
+
+   \ Mark as already assigned
+   1  2 pick  >assigned dup 1+ >r c!  ( phys.lo,mid,hi size.lo ) ( r: adr)
+1A37670 	80 6F A0  1 90 6F A0  1 
+1A37678 	 C 4A A0  1 10 75 A3  1 
+1A37680 	40 49 A0  1 30 4B A0  1 
+1A37688 	BC 45 A0  1 B8 4D A0  1 
+   r> 2 pick 64mem?  if  1 swap c!  else  drop  then
+1A37690 	D0 45 A0  1 90 6F A0  1 
+1A37698 	 C 4A A0  1 E8 3E A3  1 
+1A376A0 	DC 41 A0  1 18  0  0  0 
+1A376A8 	80 6F A0  1 68 49 A0  1 
+1A376B0 	B8 4D A0  1 C8 41 A0  1 
+1A376B8 	 8  0  0  0 30 49 A0  1 
+   
+
+   \ assign-pci-addr must be called with $call-self because the ultimate
+   \ address assignment must occur in the context of the top-level PCI
+   \ node within the PCI domain.  If prober is called from a PCI-PCI
+   \ bridge node, the context must be changed to the top-level node
+   \ so that the package values next-io and next-mem can be accessed.
+   \ PCI-PCI bridges have assign-pci-addr methods that call up the tree.
+   " assign-pci-addr" $call-self  ( phys.hi paddr actual-size )
+1A376C0 	9C 53 A0  1  F 61 73 73 
+1A376C8 	69 67 6E 2D 70 63 69 2D 
+1A376D0 	61 64 64 72  0  0  0  0 
+1A376D8 	B4 30 A2  1 
+
+   +assigned-address              ( )
+1A376DC 	84 74 A3  1 
+;
+1A376E0 	58 46 A0  1 
+
+\ Returns true if the given address should not be assigned.
+defer avoid?  ( phys.hi -- flag )
+1A376E4 	 0 61 76 6F 
+1A376E8 	69 64 3F 86 4C 75 A3  1 
+1A376F0 	5C 40 A0  1 E8  A  0  0 
+
+\ Normally, we don't assign configuration space or non-relocatable addresses
+\ In some systems, we may need to avoid additional devices or addresses;
+\ in those system, avoid? can be extended as needed.
+: (avoid?)  ( phys.hi -- flag )
+1A376F8 	 0  0  0 28 61 76 6F 69 
+1A37700 	64 3F 29 88 F0 76 A3  1 
+1A37708 	20 40 A0  1 
+   dup h# 3000000 and  0=  swap h# 80000000 and 0<>  or
+1A3770C 	40 49 A0  1 
+1A37710 	58 41 A0  1  0  0  0  3 
+1A37718 	5C 44 A0  1 24 47 A0  1 
+1A37720 	68 49 A0  1 58 41 A0  1 
+1A37728 	 0  0  0 80 5C 44 A0  1 
+1A37730 	44 47 A0  1 70 44 A0  1 
+;
+1A37738 	58 46 A0  1 
+' (avoid?) to avoid?
+
+: assign-address  ( phys.lo,mid,hi size.lo,hi -- )
+1A3773C 	 0 61 73 73 
+1A37740 	69 67 6E 2D 61 64 64 72 
+1A37748 	65 73 73 8E  8 77 A3  1 
+1A37750 	20 40 A0  1 
+   2 pick  avoid?  if                    ( phys.lo,mid,hi size.lo,hi )
+1A37754 	90 6F A0  1 
+1A37758 	 C 4A A0  1 F0 76 A3  1 
+1A37760 	DC 41 A0  1 20  0  0  0 
+      \ Mark it as assigned so the code that handles base address
+      \ registers that don't appear in "reg" properties won't blast it.
+      2drop  1 swap >assigned c!  2drop  exit   ( )
+1A37768 	AC 49 A0  1 80 6F A0  1 
+1A37770 	68 49 A0  1 10 75 A3  1 
+1A37778 	B8 4D A0  1 AC 49 A0  1 
+1A37780 	40 46 A0  1 
+   then                                  ( phys.lo,mid,hi size.lo,hi )
+   (assign-address)
+1A37784 	4C 75 A3  1 
+;
+1A37788 	58 46 A0  1 
+
+: decode-reg-entry  ( adr len -- adr' len' phys.lo,mid,hi size.lo,hi )
+1A3778C 	 0  0  0 64 
+1A37790 	65 63 6F 64 65 2D 72 65 
+1A37798 	67 2D 65 6E 74 72 79 90 
+1A377A0 	50 77 A3  1 20 40 A0  1 
+   decode-int >r  decode-int >r        ( $' ) ( r: phys.hi phys.mid )
+1A377A8 	68 F7 A1  1 BC 45 A0  1 
+1A377B0 	68 F7 A1  1 BC 45 A0  1 
+   decode-int r>  2swap r> -rot        ( phys.lo,mid,hi adr' len' )
+1A377B8 	68 F7 A1  1 D0 45 A0  1 
+1A377C0 	F4 49 A0  1 D0 45 A0  1 
+1A377C8 	94 49 A0  1 
+   decode-int >r  decode-int >r        ( phys.lo,mid,hi adr'' len'' )
+1A377CC 	68 F7 A1  1 
+1A377D0 	BC 45 A0  1 68 F7 A1  1 
+1A377D8 	BC 45 A0  1 
+   rot >r 2swap r> r> r>               ( adr' len' phys.lo,mid,hi size.lo,hi )
+1A377DC 	7C 49 A0  1 
+1A377E0 	BC 45 A0  1 F4 49 A0  1 
+1A377E8 	D0 45 A0  1 D0 45 A0  1 
+1A377F0 	D0 45 A0  1 
+;
+1A377F4 	58 46 A0  1 
+
+\ Assign addresses for a child device
+: assign-package-addresses  ( phandle -- )
+1A377F8 	 0  0  0 61 73 73 69 67 
+1A37800 	6E 2D 70 61 63 6B 61 67 
+1A37808 	65 2D 61 64 64 72 65 73 
+1A37810 	73 65 73 98 A4 77 A3  1 
+1A37818 	20 40 A0  1 
+   \ If there is already an assigned-addresses property, don't reassign.
+   \ This handles the case where an on-board device has a preassigned address.
+   " assigned-addresses" 2 pick get-package-property  0=  if  3drop exit  then
+1A3781C 	9C 53 A0  1 
+1A37820 	12 61 73 73 69 67 6E 65 
+1A37828 	64 2D 61 64 64 72 65 73 
+1A37830 	73 65 73  0 90 6F A0  1 
+1A37838 	 C 4A A0  1 98 33 A2  1 
+1A37840 	24 47 A0  1 DC 41 A0  1 
+1A37848 	 C  0  0  0 90 52 A0  1 
+1A37850 	40 46 A0  1 
+
+   already-assigned d# 16 erase		\ No base registers have been assigned
+1A37854 	F0 74 A3  1 
+1A37858 	58 41 A0  1 10  0  0  0 
+1A37860 	F0 72 A0  1 
+   init-aa-property
+1A37864 	E4 73 A3  1 
+   >r
+1A37868 	BC 45 A0  1 
+   " reg" r@ get-package-property  0=  if    ( adr len r: phandle )
+1A3786C 	9C 53 A0  1 
+1A37870 	 3 72 65 67  0  0  0  0 
+1A37878 	E4 45 A0  1 98 33 A2  1 
+1A37880 	24 47 A0  1 DC 41 A0  1 
+1A37888 	70  1  0  0 
+      \ Get the configuration space address for later
+      decode-reg-entry 2drop >r 2drop        ( adr' len' r: phandle phys.hi )
+1A3788C 	A4 77 A3  1 
+1A37890 	AC 49 A0  1 BC 45 A0  1 
+1A37898 	AC 49 A0  1 
+
+      begin  dup 0>  while                   ( adr len r: phandle phys.hi )
+1A3789C 	40 49 A0  1 
+1A378A0 	A4 47 A0  1 DC 41 A0  1 
+1A378A8 	14  0  0  0 
+         decode-reg-entry assign-address     ( adr' len' r: phandle phys.hi )
+1A378AC 	A4 77 A3  1 
+1A378B0 	50 77 A3  1 
+      repeat                                 ( adr' len' r: phandle phys.hi )
+1A378B4 	C8 41 A0  1 
+1A378B8 	E4 FF FF FF 
+      2drop                                  ( r: phandle phys.hi )
+1A378BC 	AC 49 A0  1 
+
+      \ Ensure that all the base registers have been assigned, even those
+      \ that have no "reg" entry.
+
+      \ Determine the last base address register according to whether or
+      \ not this device is a PCI-PCI bridge.  We can't use "bridge?" because
+      \ it requires that we be in an instance of the child node, but we
+      \ are currently in the parent node and there is no longer a child
+      \ instance.
+      r@ h# 0e + self-b@  h# 7f and  1 =  if  h# 18  else  h# 28  then
+1A378C0 	E4 45 A0  1 58 41 A0  1 
+1A378C8 	 E  0  0  0  4 45 A0  1 
+1A378D0 	4C 3E A3  1 58 41 A0  1 
+1A378D8 	7F  0  0  0 5C 44 A0  1 
+1A378E0 	80 6F A0  1 24 48 A0  1 
+1A378E8 	DC 41 A0  1 14  0  0  0 
+1A378F0 	58 41 A0  1 18  0  0  0 
+1A378F8 	C8 41 A0  1  C  0  0  0 
+1A37900 	58 41 A0  1 28  0  0  0 
+                                             ( base-reg-end r: phandle phys.hi)
+      \ Loop over the possible base address registers
+      r@ +  r> h# 10 +  do                   ( r: phandle )
+1A37908 	E4 45 A0  1  4 45 A0  1 
+1A37910 	D0 45 A0  1 58 41 A0  1 
+1A37918 	10  0  0  0  4 45 A0  1 
+1A37920 	88 42 A0  1 D4  0  0  0 
+         i probe-base-reg  7 and 4 =  if   \ Skip mem64     ( )
+1A37928 	B4 42 A0  1 6C 3F A3  1 
+1A37930 	E0 6F A0  1 5C 44 A0  1 
+1A37938 	B0 6F A0  1 24 48 A0  1 
+1A37940 	DC 41 A0  1 48  0  0  0 
+            i find-boundary 1+  if                          ( )
+1A37948 	B4 42 A0  1 44 40 A3  1 
+1A37950 	30 4B A0  1 DC 41 A0  1 
+1A37958 	28  0  0  0 
+               0 0
+1A3795C 	70 6F A0  1 
+1A37960 	70 6F A0  1 
+               h# 3000000
+1A37964 	58 41 A0  1 
+1A37968 	 0  0  0  3 
+               i or  0 0  (assign-address)                  ( )
+1A3796C 	B4 42 A0  1 
+1A37970 	70 44 A0  1 70 6F A0  1 
+1A37978 	70 6F A0  1 4C 75 A3  1 
+            then                                            ( )
+            8                                               ( increment )
+1A37980 	F0 6F A0  1 
+         else   \ mem32 or I/O                              ( )
+1A37984 	C8 41 A0  1 
+1A37988 	68  0  0  0 
+            i find-boundary 1+  if                          ( )
+1A3798C 	B4 42 A0  1 
+1A37990 	44 40 A3  1 30 4B A0  1 
+1A37998 	DC 41 A0  1 50  0  0  0 
+               0 0
+1A379A0 	70 6F A0  1 70 6F A0  1 
+               i probe-base-reg 1 and  if  h# 1000000  else  h# 2000000  then
+1A379A8 	B4 42 A0  1 6C 3F A3  1 
+1A379B0 	80 6F A0  1 5C 44 A0  1 
+1A379B8 	DC 41 A0  1 14  0  0  0 
+1A379C0 	58 41 A0  1  0  0  0  1 
+1A379C8 	C8 41 A0  1  C  0  0  0 
+1A379D0 	58 41 A0  1  0  0  0  2 
+               i or  0 0  (assign-address)                  ( )
+1A379D8 	B4 42 A0  1 70 44 A0  1 
+1A379E0 	70 6F A0  1 70 6F A0  1 
+1A379E8 	4C 75 A3  1 
+            then                                            ( )
+            4                                               ( increment )
+1A379EC 	B0 6F A0  1 
+         then                                               ( increment )
+      +loop
+1A379F0 	1C 42 A0  1 34 FF FF FF 
+
+   then
+   r> finish-aa-property
+1A379F8 	D0 45 A0  1 20 74 A3  1 
+;
+1A37A00 	58 46 A0  1 
+
+\ Assign addresses for all children
+: assign-all-addresses  ( -- )
+1A37A04 	 0  0  0 61 
+1A37A08 	73 73 69 67 6E 2D 61 6C 
+1A37A10 	6C 2D 61 64 64 72 65 73 
+1A37A18 	73 65 73 94 18 78 A3  1 
+1A37A20 	20 40 A0  1 
+   my-self ihandle>phandle  child
+1A37A24 	EC 7E A0  1 
+1A37A28 	 0 32 A2  1 58 74 A2  1 
+   begin  ?dup  while
+1A37A30 	B4 70 A0  1 DC 41 A0  1 
+1A37A38 	18  0  0  0 
+      dup assign-package-addresses
+1A37A3C 	40 49 A0  1 
+1A37A40 	18 78 A3  1 
+      peer
+1A37A44 	B4 74 A2  1 
+   repeat
+1A37A48 	C8 41 A0  1 E4 FF FF FF 
+;
+1A37A50 	58 46 A0  1 
+
+headers
+: fix-adr  ( pci-devaddr size -- root-devaddr size )  swap pci-devaddr> swap  ;
+1A37A54 	66 69 78 2D 
+1A37A58 	61 64 72 87 20 7A A3  1 
+1A37A60 	20 40 A0  1 68 49 A0  1 
+1A37A68 	78 3A A3  1 68 49 A0  1 
+1A37A70 	58 46 A0  1 
+
+[ifndef] get-property-patch
+also forth definitions
+headerless
+: get-property-patch  ( adr len -- adr len voc )
+1A37A74 	 0 67 65 74 
+1A37A78 	2D 70 72 6F 70 65 72 74 
+1A37A80 	79 2D 70 61 74 63 68 92 
+1A37A88 	CC 39 A3  1 20 40 A0  1 
+   2dup " assigned-addresses"  $=  if
+1A37A90 	C0 49 A0  1 9C 53 A0  1 
+1A37A98 	12 61 73 73 69 67 6E 65 
+1A37AA0 	64 2D 61 64 64 72 65 73 
+1A37AA8 	73 65 73  0 88 8D A0  1 
+1A37AB0 	DC 41 A0  1 34  0  0  0 
+      " enable-apple-hack" ['] $call-parent catch  if  2drop  then
+1A37AB8 	9C 53 A0  1 11 65 6E 61 
+1A37AC0 	62 6C 65 2D 61 70 70 6C 
+1A37AC8 	65 2D 68 61 63 6B  0  0 
+1A37AD0 	60 53 A0  1 DC 31 A2  1 
+1A37AD8 	14 7F A0  1 DC 41 A0  1 
+1A37AE0 	 8  0  0  0 AC 49 A0  1 
+   then
+   current-properties
+1A37AE8 	98  C A2  1 
+;
+1A37AEC 	58 46 A0  1 
+patch get-property-patch current-properties get-property
+headers
+previous definitions
+[then]
+
+also forth definitions
+: make-properties  ( -- )
+1A37AF0 	6D 61 6B 65 2D 70 72 6F 
+1A37AF8 	70 65 72 74 69 65 73 8F 
+1A37B00 	8C 7A A3  1 20 40 A0  1 
+   my-self  " make-function-properties" $call-parent
+1A37B08 	EC 7E A0  1 9C 53 A0  1 
+1A37B10 	18 6D 61 6B 65 2D 66 75 
+1A37B18 	6E 63 74 69 6F 6E 2D 70 
+1A37B20 	72 6F 70 65 72 74 69 65 
+1A37B28 	73  0  0  0 DC 31 A2  1 
+;
+1A37B30 	58 46 A0  1 
+: assign-addresses  ( -- )
+1A37B34 	 0  0  0 61 
+1A37B38 	73 73 69 67 6E 2D 61 64 
+1A37B40 	64 72 65 73 73 65 73 90 
+1A37B48 	 4 7B A3  1 20 40 A0  1 
+   my-self ihandle>phandle  " assign-package-addresses"  $call-parent
+1A37B50 	EC 7E A0  1  0 32 A2  1 
+1A37B58 	9C 53 A0  1 18 61 73 73 
+1A37B60 	69 67 6E 2D 70 61 63 6B 
+1A37B68 	61 67 65 2D 61 64 64 72 
+1A37B70 	65 73 73 65 73  0  0  0 
+1A37B78 	DC 31 A2  1 
+;
+1A37B7C 	58 46 A0  1 
+previous definitions
+
+\ Probe the card at the address given by fcode$, setting my-address,my-space
+\ in the resulting device node to the address given by reg$.
+\
+\ probe-self is meant to handle one PCI device (= 1 physical slot)
+\ at a time.  Up to 8 functions are checked per device.  Each can have
+\ a separate piece of FCode controlling it.
+
+[ifdef] probe-exclusion
+\ Check to see if pci node devices are excluded from probing
+: (no-probe?)  ( dev-id no-probe-adr no-probe-len -- flag ) 3drop false ;
+defer no-probe?    ' (no-probe?)  is  no-probe?
+[then]
+
+: probe-self  ( args$ reg$ fcode$ -- )
+1A37B80 	 0 70 72 6F 62 65 2D 73 
+1A37B88 	65 6C 66 8A 60 7A A3  1 
+1A37B90 	20 40 A0  1 
+ cr ." probe-self="
+1A37B94 	80 6D A0  1 
+1A37B98 	20 7C A0  1  B 70 72 6F 
+1A37BA0 	62 65 2D 73 65 6C 66 3D 
+1A37BA8 	 0  0  0  0 
+   " decode-unit" $call-self  nip nip              ( args$ reg$ phys.hi.dev )
+1A37BAC 	9C 53 A0  1 
+1A37BB0 	 B 64 65 63 6F 64 65 2D 
+1A37BB8 	75 6E 69 74  0  0  0  0 
+1A37BC0 	B4 30 A2  1 FC 46 A0  1 
+1A37BC8 	FC 46 A0  1 
+\   probemsg?  if  ." PCI PROBE-SELF:  Phys.hi = " dup . cr  then
+                  .s
+1A37BCC 	38 7C A0  1 
+   max#functions dup . ?dup  if
+1A37BD0 	38 73 A3  1 40 49 A0  1 
+1A37BD8 	94 7A A0  1 B4 70 A0  1 
+1A37BE0 	DC 41 A0  1 2C  0  0  0 
+      0  ?do  i probe-function  loop   ( args$ reg$ phys.hi.dev )
+1A37BE8 	70 6F A0  1 50 42 A0  1 
+1A37BF0 	14  0  0  0 B4 42 A0  1 
+1A37BF8 	E0 72 A3  1 F8 41 A0  1 
+1A37C00 	F4 FF FF FF 
+      diag-cr
+1A37C04 	18 E7 A1  1 
+   else
+1A37C08 	C8 41 A0  1 1C  0  0  0 
+      " Nothing there" diag-type-cr
+1A37C10 	9C 53 A0  1  D 4E 6F 74 
+1A37C18 	68 69 6E 67 20 74 68 65 
+1A37C20 	72 65  0  0 74 E7 A1  1 
+\      probemsg?  if  ." Nothing there" cr  then
+   then
+   5drop
+1A37C28 	4C 53 A0  1 
+;
+1A37C2C 	58 46 A0  1 
+
+\ XXX TODO need to handle bus numbers somehow
+
+also forth definitions
+defer .prober-location
+1A37C30 	 0  0  0 2E 70 72 6F 62 
+1A37C38 	65 72 2D 6C 6F 63 61 74 
+1A37C40 	69 6F 6E 90 4C 7B A3  1 
+1A37C48 	5C 40 A0  1 EC  A  0  0 
+' noop is .prober-location
+previous definitions
+
+headerless
+\ Restore temporary allocation pointers to permanent values
+: update-pointers  ( -- )  -1 " assign-pci-addr" $call-self  ;
+1A37C50 	75 70 64 61 74 65 2D 70 
+1A37C58 	6F 69 6E 74 65 72 73 8F 
+1A37C60 	90 7B A3  1 20 40 A0  1 
+1A37C68 	58 41 A0  1 FF FF FF FF 
+1A37C70 	9C 53 A0  1  F 61 73 73 
+1A37C78 	69 67 6E 2D 70 63 69 2D 
+1A37C80 	61 64 64 72  0  0  0  0 
+1A37C88 	B4 30 A2  1 58 46 A0  1 
+
+headers
+[ifndef] my-bus#
+0 encode-int  0+i  " bus-range" property
+1A37C90 	 0  0  0  0  0  0  0  0 
+1A37C98 	 0  0 62 75 73 2D 72 61 
+1A37CA0 	6E 67 65 89 74 3C A3  1 
+1A37CA8 	BC 13 A2  1 1C  0  0  0 
+1A37CB0 	 8  0  0  0 
+[then]
+
+: prober  ( adr len -- )
+1A37CB4 	 0 70 72 6F 
+1A37CB8 	62 65 72 86 64 7C A3  1 
+1A37CC0 	20 40 A0  1 
+   update-pointers		\ Init the temporary allocation pointers
+1A37CC4 	64 7C A3  1 
+   begin  dup  while                              ( adr len )
+1A37CC8 	40 49 A0  1 DC 41 A0  1 
+1A37CD0 	48  0  0  0 
+\ CR ."  prober="
+      ascii , left-parse-string                   ( rem$ dev#$ )
+1A37CD4 	58 41 A0  1 
+1A37CD8 	2C  0  0  0 44 D7 A0  1 
+\ .s cr
+      dup  if                                     ( rem$ dev#$ )
+1A37CE0 	40 49 A0  1 DC 41 A0  1 
+1A37CE8 	24  0  0  0 
+         .prober-location                         ( rem$ dev#$ )
+1A37CEC 	48 7C A3  1 
+         " "  2swap 2dup  probe-self              ( rem$ )
+1A37CF0 	9C 53 A0  1  0  0  0  0 
+1A37CF8 	F4 49 A0  1 C0 49 A0  1 
+1A37D00 	90 7B A3  1 
+      else                                        ( rem$ dev#$ )
+1A37D04 	C8 41 A0  1 
+1A37D08 	 8  0  0  0 
+         2drop                                    ( rem$ )
+1A37D0C 	AC 49 A0  1 
+      then                                        ( rem$ )
+   repeat                                         ( null$ )
+1A37D10 	C8 41 A0  1 B4 FF FF FF 
+   2drop
+1A37D18 	AC 49 A0  1 
+   update-pointers		\ Re-init the temporary allocation pointers,
+1A37D1C 	64 7C A3  1 
+				\ thus erasing any probe-state mappings
+
+   assign-addresses?  if  assign-all-addresses  then
+1A37D20 	24 3D A3  1 DC 41 A0  1 
+1A37D28 	 8  0  0  0 20 7A A3  1 
+   \ XXX TODO set-latency-timers  set-fast-back-to-backs
+;
+1A37D30 	58 46 A0  1 
+: master-probe  ( adr len -- )
+1A37D34 	 0  0  0 6D 
+1A37D38 	61 73 74 65 72 2D 70 72 
+1A37D40 	6F 62 65 8C C0 7C A3  1 
+1A37D48 	20 40 A0  1 
+   assign-addresses?  to probe-state?
+1A37D4C 	24 3D A3  1 
+1A37D50 	B8 40 A0  1 AC 3C A3  1 
+   prober
+1A37D58 	C0 7C A3  1 
+
+   \ Make permanent any address assignments that occurred during the
+   \ execution of prober.
+   next-mem to first-mem      next-io to first-io
+1A37D5C 	D8 3D A3  1 
+1A37D60 	48 B8 A1  1 6C 3B A3  1 
+1A37D68 	C0 3D A3  1 48 B8 A1  1 
+1A37D70 	38 3B A3  1 
+
+   false to probe-state?
+1A37D74 	18 70 A0  1 
+1A37D78 	B8 40 A0  1 AC 3C A3  1 
+[ifdef] my-bus#
+   my-bus# current-bus# max  to current-bus#
+   my-bus#
+[else]
+   0
+1A37D80 	70 6F A0  1 
+[then]
+   encode-int  current-bus# +i  " bus-range" property
+1A37D84 	40 F7 A1  1 
+1A37D88 	C8 3C A3  1  4 47 A3  1 
+1A37D90 	9C 53 A0  1  9 62 75 73 
+1A37D98 	2D 72 61 6E 67 65  0  0 
+1A37DA0 	BC 14 A2  1 
+;
+1A37DA4 	58 46 A0  1 
+: prober-xt  ( -- adr )  ['] prober  ;
+1A37DA8 	 0  0 70 72 6F 62 65 72 
+1A37DB0 	2D 78 74 89 48 7D A3  1 
+1A37DB8 	20 40 A0  1 60 53 A0  1 
+1A37DC0 	C0 7C A3  1 58 46 A0  1 
+
+[ifdef] notdef   \ Sun uses a different approach; here is their version
+\ Note that this version requires that a "prober" method exist in every
+\ subordinate bus node
+: master-probe  ( -- )
+   \ If previously probed, we need to update current-bus#
+   " bus-range"  get-my-property  0= if
+      2 decode-ints drop nip nip is current-bus#
+   else
+      " my-pci-bus" $call-self  is current-bus#
+   then
+
+   true to probe-state?
+   " prober"  $call-self
+   false to probe-state?
+   " my-pci-bus" $call-self  encode-int  current-bus# +i  " bus-range" property
+;
+[then]
+
+\ This is called twice for each PCI-PCI bridge,
+\ It is called with n=1 at the beginning of the bridge probing sequence,
+\ in order to allocate a new bus number and establish base address values.
+\ It is called with n=0 at the end of the bridge probing sequence,
+\ in order to determine the "high water marks" of the bus numbers and
+\ address ranges that were assigned during the (possibly recursive)
+\ bridge probing process.
+
+: allocate-bus#  ( n -- bus# first-mem first-io )
+1A37DC8 	 0  0 61 6C 6C 6F 63 61 
+1A37DD0 	74 65 2D 62 75 73 23 8D 
+1A37DD8 	B8 7D A3  1 20 40 A0  1 
+   current-bus# over +  dup to current-bus#			( n bus# )
+1A37DE0 	C8 3C A3  1 54 49 A0  1 
+1A37DE8 	 4 45 A0  1 40 49 A0  1 
+1A37DF0 	B8 40 A0  1 C8 3C A3  1 
+
+   \ When beginning a new bridge (n=1), we use the permanent pointers
+   \ (first-xx) in order to "erase" any temporary (probe-state) address
+   \ assignments that resulted from probing ordinary devices.
+
+   \ When finishing a bridge (n=0), we use the temporary pointers
+   \ (next-xx) in order to capture the result of address
+   \ assignments that resulted from "assign-addresses".
+
+   swap  if  first-mem first-io  else  next-mem next-io  then	( bus# mem io )
+1A37DF8 	68 49 A0  1 DC 41 A0  1 
+1A37E00 	14  0  0  0 6C 3B A3  1 
+1A37E08 	38 3B A3  1 C8 41 A0  1 
+1A37E10 	 C  0  0  0 D8 3D A3  1 
+1A37E18 	C0 3D A3  1 
+
+   h#   1000 round-up dup to first-io   set-next-io		( bus# mem )
+1A37E1C 	58 41 A0  1 
+1A37E20 	 0 10  0  0 A4 91 A0  1 
+1A37E28 	40 49 A0  1 48 B8 A1  1 
+1A37E30 	38 3B A3  1 F0 3D A3  1 
+   h# 100000 round-up dup to first-mem  set-next-mem		( bus# )
+1A37E38 	58 41 A0  1  0  0 10  0 
+1A37E40 	A4 91 A0  1 40 49 A0  1 
+1A37E48 	48 B8 A1  1 6C 3B A3  1 
+1A37E50 	14 3E A3  1 
+
+   update-pointers						( bus# )
+1A37E54 	64 7C A3  1 
+   first-mem first-io						( bus# mem' io' )
+1A37E58 	6C 3B A3  1 38 3B A3  1 
+;
+1A37E60 	58 46 A0  1 
+
+: map-out      ( vaddr size -- )                 " map-out"     $call-parent  ;
+1A37E64 	6D 61 70 2D 
+1A37E68 	6F 75 74 87 DC 7D A3  1 
+1A37E70 	20 40 A0  1 9C 53 A0  1 
+1A37E78 	 7 6D 61 70 2D 6F 75 74 
+1A37E80 	 0  0  0  0 DC 31 A2  1 
+1A37E88 	58 46 A0  1 
+
+: dma-map-in   ( vaddr size cache? -- devaddr )
+1A37E8C 	 0 64 6D 61 
+1A37E90 	2D 6D 61 70 2D 69 6E 8A 
+1A37E98 	70 7E A3  1 20 40 A0  1 
+   " dma-map-in"  $call-parent  >pci-devaddr
+1A37EA0 	9C 53 A0  1  A 64 6D 61 
+1A37EA8 	2D 6D 61 70 2D 69 6E  0 
+1A37EB0 	DC 31 A2  1 50 3A A3  1 
+;
+1A37EB8 	58 46 A0  1 
+
+: dma-alloc    ( size -- vaddr )                 " dma-alloc"   $call-parent  ;
+1A37EBC 	 0  0 64 6D 
+1A37EC0 	61 2D 61 6C 6C 6F 63 89 
+1A37EC8 	9C 7E A3  1 20 40 A0  1 
+1A37ED0 	9C 53 A0  1  9 64 6D 61 
+1A37ED8 	2D 61 6C 6C 6F 63  0  0 
+1A37EE0 	DC 31 A2  1 58 46 A0  1 
+: dma-free     ( vaddr size -- )                 " dma-free"    $call-parent  ;
+1A37EE8 	 0  0  0 64 6D 61 2D 66 
+1A37EF0 	72 65 65 88 CC 7E A3  1 
+1A37EF8 	20 40 A0  1 9C 53 A0  1 
+1A37F00 	 8 64 6D 61 2D 66 72 65 
+1A37F08 	65  0  0  0 DC 31 A2  1 
+1A37F10 	58 46 A0  1 
+: dma-map-out  ( vaddr devaddr size -- ) fix-adr " dma-map-out" $call-parent  ;
+1A37F14 	64 6D 61 2D 
+1A37F18 	6D 61 70 2D 6F 75 74 8B 
+1A37F20 	F8 7E A3  1 20 40 A0  1 
+1A37F28 	60 7A A3  1 9C 53 A0  1 
+1A37F30 	 B 64 6D 61 2D 6D 61 70 
+1A37F38 	2D 6F 75 74  0  0  0  0 
+1A37F40 	DC 31 A2  1 58 46 A0  1 
+: dma-sync     ( vaddr devaddr size -- ) fix-adr " dma-sync"    $call-parent  ;
+1A37F48 	 0  0  0 64 6D 61 2D 73 
+1A37F50 	79 6E 63 88 24 7F A3  1 
+1A37F58 	20 40 A0  1 60 7A A3  1 
+1A37F60 	9C 53 A0  1  8 64 6D 61 
+1A37F68 	2D 73 79 6E 63  0  0  0 
+1A37F70 	DC 31 A2  1 58 46 A0  1 
+: dma-push     ( vaddr devaddr size -- ) fix-adr " dma-push"    $call-parent  ;
+1A37F78 	 0  0  0 64 6D 61 2D 70 
+1A37F80 	75 73 68 88 58 7F A3  1 
+1A37F88 	20 40 A0  1 60 7A A3  1 
+1A37F90 	9C 53 A0  1  8 64 6D 61 
+1A37F98 	2D 70 75 73 68  0  0  0 
+1A37FA0 	DC 31 A2  1 58 46 A0  1 
+: dma-pull     ( vaddr devaddr size -- ) fix-adr " dma-pull"    $call-parent  ;
+1A37FA8 	 0  0  0 64 6D 61 2D 70 
+1A37FB0 	75 6C 6C 88 88 7F A3  1 
+1A37FB8 	20 40 A0  1 60 7A A3  1 
+1A37FC0 	9C 53 A0  1  8 64 6D 61 
+1A37FC8 	2D 70 75 6C 6C  0  0  0 
+1A37FD0 	DC 31 A2  1 58 46 A0  1 
+
+\ Define the display format for some PCI-specific properties
+also known-int-properties definitions
+[ifndef] alternate-reg
+: alternate-reg       ( -- n )  reg  ;
+1A37FD8 	 0  0 61 6C 74 65 72 6E 
+1A37FE0 	61 74 65 2D 72 65 67 8D 
+1A37FE8 	B8 27 A2  1 20 40 A0  1 
+1A37FF0 	C0 26 A2  1 58 46 A0  1 
+: assigned-addresses  ( -- n )  reg  ;
+1A37FF8 	 0 61 73 73 69 67 6E 65 
+1A38000 	64 2D 61 64 64 72 65 73 
+1A38008 	73 65 73 92 EC 7F A3  1 
+1A38010 	20 40 A0  1 C0 26 A2  1 
+1A38018 	58 46 A0  1 
+[then]
+previous definitions
+
+[ifdef] notdef   \ Some code from Sun, untested in our environment
+: lookup-ranges ( -- size phys.lo )
+   decode-int drop decode-int drop decode-phys lxjoin >r
+     decode-int >r decode-int r> lxjoin r> over 1- and
+;
+
+: set-avail-prop ( -- )
+  select-dev
+     my-self ihandle>phandle dup >r
+     " available" 2dup r> get-package-property 0= if
+        2drop 2dup delete-property
+     then 2>r >r
+     " ranges" r> get-package-property 0= if
+        begin dup 0> while
+           decode-int dup h# 01000000 = if
+                 drop lookup-ranges next-io + swap next-io - >r >r
+                      h# 81000000 " my-pci-bus" $call-self  h# 10 lshift or >r
+                 else
+                      h# 02000000 = if
+                      lookup-ranges next-mem + swap next-mem - >r >r
+                      h# 82000000 " my-pci-bus" $call-self  h# 10 lshift or >r
+                 else
+                      lookup-ranges 2drop
+                 then then
+        repeat
+        2drop then
+        0 0 encode-bytes
+        r> +i 0+i r> +i r> xlsplit swap >r +i r> +i
+        r> +i 0+i r> +i r> xlsplit swap >r +i r> +i
+        2r> property
+   unselect-dev
+;
+headerless
+[then]
+

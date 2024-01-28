@@ -1,0 +1,261 @@
+
+\ Smart keyboard driven exit
+\ Type q to abort the listing, anything else to pause it.
+\ While it's paused, type q to abort, anything else to resume.
+
+decimal
+
+only forth also hidden also
+hidden definitions
+
+headerless
+variable 1-more-line?  1-more-line? off
+1A107DC 	 0  0  0 31 
+1A107E0 	2D 6D 6F 72 65 2D 6C 69 
+1A107E8 	6E 65 3F 8C  0  0 A0  1 
+1A107F0 	48 40 A0  1 28  3  0  0 
+true value page-mode?
+1A107F8 	 0 70 61 67 65 2D 6D 6F 
+1A10800 	64 65 3F 8A F0  7 A1  1 
+1A10808 	50 40 A0  1 2C  3  0  0 
+
+forth definitions
+headers
+: no-page    ( -- )  false is page-mode?  ;
+1A10810 	6E 6F 2D 70 61 67 65 87 
+1A10818 	AC  7 A1  1 20 40 A0  1 
+1A10820 	18 70 A0  1 B8 40 A0  1 
+1A10828 	 8  8 A1  1 58 46 A0  1 
+: page-mode  ( -- )  true  is page-mode?  ;
+1A10830 	 0  0 70 61 67 65 2D 6D 
+1A10838 	6F 64 65 89 1C  8 A1  1 
+1A10840 	20 40 A0  1  4 70 A0  1 
+1A10848 	B8 40 A0  1  8  8 A1  1 
+1A10850 	58 46 A0  1 
+headerless
+: suspend-help  ( -- )
+1A10854 	 0  0  0 73 
+1A10858 	75 73 70 65 6E 64 2D 68 
+1A10860 	65 6C 70 8C 40  8 A1  1 
+1A10868 	20 40 A0  1 
+   ." Pager keys:" cr
+1A1086C 	20 7C A0  1 
+1A10870 	 B 50 61 67 65 72 20 6B 
+1A10878 	65 79 73 3A  0  0  0  0 
+1A10880 	80 6D A0  1 
+   ."  <space>   Another page" cr
+1A10884 	20 7C A0  1 
+1A10888 	17 20 3C 73 70 61 63 65 
+1A10890 	3E 20 20 20 41 6E 6F 74 
+1A10898 	68 65 72 20 70 61 67 65 
+1A108A0 	 0  0  0  0 80 6D A0  1 
+   ."  <cr>      Another line" cr
+1A108A8 	20 7C A0  1 17 20 3C 63 
+1A108B0 	72 3E 20 20 20 20 20 20 
+1A108B8 	41 6E 6F 74 68 65 72 20 
+1A108C0 	6C 69 6E 65  0  0  0  0 
+1A108C8 	80 6D A0  1 
+   ."  q         Quit" cr
+1A108CC 	20 7C A0  1 
+1A108D0 	 F 20 71 20 20 20 20 20 
+1A108D8 	20 20 20 20 51 75 69 74 
+1A108E0 	 0  0  0  0 80 6D A0  1 
+   ."  c         Page Mode Off" cr
+1A108E8 	20 7C A0  1 18 20 63 20 
+1A108F0 	20 20 20 20 20 20 20 20 
+1A108F8 	50 61 67 65 20 4D 6F 64 
+1A10900 	65 20 4F 66 66  0  0  0 
+1A10908 	80 6D A0  1 
+   ."  p         Page Mode On" cr
+1A1090C 	20 7C A0  1 
+1A10910 	17 20 70 20 20 20 20 20 
+1A10918 	20 20 20 20 50 61 67 65 
+1A10920 	20 4D 6F 64 65 20 4F 6E 
+1A10928 	 0  0  0  0 80 6D A0  1 
+   ."  i         Interact" cr
+1A10930 	20 7C A0  1 13 20 69 20 
+1A10938 	20 20 20 20 20 20 20 20 
+1A10940 	49 6E 74 65 72 61 63 74 
+1A10948 	 0  0  0  0 80 6D A0  1 
+   ."  d         Debug" cr
+1A10950 	20 7C A0  1 10 20 64 20 
+1A10958 	20 20 20 20 20 20 20 20 
+1A10960 	44 65 62 75 67  0  0  0 
+1A10968 	80 6D A0  1 
+   ."  h or ?    Help (this message)" cr
+1A1096C 	20 7C A0  1 
+1A10970 	1E 20 68 20 6F 72 20 3F 
+1A10978 	20 20 20 20 48 65 6C 70 
+1A10980 	20 28 74 68 69 73 20 6D 
+1A10988 	65 73 73 61 67 65 29  0 
+1A10990 	80 6D A0  1 
+;
+1A10994 	58 46 A0  1 
+: suspend-interact  ( -- )  ." Type 'resume' to continue" cr  interact  ;
+1A10998 	 0  0  0 73 75 73 70 65 
+1A109A0 	6E 64 2D 69 6E 74 65 72 
+1A109A8 	61 63 74 90 68  8 A1  1 
+1A109B0 	20 40 A0  1 20 7C A0  1 
+1A109B8 	19 54 79 70 65 20 27 72 
+1A109C0 	65 73 75 6D 65 27 20 74 
+1A109C8 	6F 20 63 6F 6E 74 69 6E 
+1A109D0 	75 65  0  0 80 6D A0  1 
+1A109D8 	E0 E4 A0  1 58 46 A0  1 
+defer suspend-debug  ( -- )   ' noop is suspend-debug
+1A109E0 	 0  0 73 75 73 70 65 6E 
+1A109E8 	64 2D 64 65 62 75 67 8D 
+1A109F0 	B0  9 A1  1 5C 40 A0  1 
+1A109F8 	30  3  0  0 
+: (reset-page)  #line off  1-more-line? off  ;
+1A109FC 	 0  0  0 28 
+1A10A00 	72 65 73 65 74 2D 70 61 
+1A10A08 	67 65 29 8C F4  9 A1  1 
+1A10A10 	20 40 A0  1 70 6D A0  1 
+1A10A18 	F8 4B A0  1 F0  7 A1  1 
+1A10A20 	F8 4B A0  1 58 46 A0  1 
+' (reset-page)  is reset-page
+: suspend  ( -- flag )
+1A10A28 	73 75 73 70 65 6E 64 87 
+1A10A30 	10  A A1  1 20 40 A0  1 
+   #line off
+1A10A38 	70 6D A0  1 F8 4B A0  1 
+   ??cr dark  ."  More [<space>,<cr>,q,c,p,i,d,h] ? "  light
+1A10A40 	 0 A1 A0  1 2C F8 A0  1 
+1A10A48 	20 7C A0  1 23 20 4D 6F 
+1A10A50 	72 65 20 5B 3C 73 70 61 
+1A10A58 	63 65 3E 2C 3C 63 72 3E 
+1A10A60 	2C 71 2C 63 2C 70 2C 69 
+1A10A68 	2C 64 2C 68 5D 20 3F 20 
+1A10A70 	 0  0  0  0 18 F8 A0  1 
+   key  #out @  (cr  spaces  (cr  #out off
+1A10A78 	50 6C A0  1 5C 6D A0  1 
+1A10A80 	5C 4C A0  1 9C 72 A0  1 
+1A10A88 	E8 71 A0  1 9C 72 A0  1 
+1A10A90 	5C 6D A0  1 F8 4B A0  1 
+   dup  ascii q  =   if  drop true  exit  then
+1A10A98 	40 49 A0  1 58 41 A0  1 
+1A10AA0 	71  0  0  0 24 48 A0  1 
+1A10AA8 	DC 41 A0  1 10  0  0  0 
+1A10AB0 	30 49 A0  1  4 70 A0  1 
+1A10AB8 	40 46 A0  1 
+   dup  ascii n  =   if  drop true  exit  then
+1A10ABC 	40 49 A0  1 
+1A10AC0 	58 41 A0  1 6E  0  0  0 
+1A10AC8 	24 48 A0  1 DC 41 A0  1 
+1A10AD0 	10  0  0  0 30 49 A0  1 
+1A10AD8 	 4 70 A0  1 40 46 A0  1 
+   dup  ascii p  =   if  drop page-mode  false  exit  then
+1A10AE0 	40 49 A0  1 58 41 A0  1 
+1A10AE8 	70  0  0  0 24 48 A0  1 
+1A10AF0 	DC 41 A0  1 14  0  0  0 
+1A10AF8 	30 49 A0  1 40  8 A1  1 
+1A10B00 	18 70 A0  1 40 46 A0  1 
+   dup  ascii c  =   if  drop no-page  false  exit  then
+1A10B08 	40 49 A0  1 58 41 A0  1 
+1A10B10 	63  0  0  0 24 48 A0  1 
+1A10B18 	DC 41 A0  1 14  0  0  0 
+1A10B20 	30 49 A0  1 1C  8 A1  1 
+1A10B28 	18 70 A0  1 40 46 A0  1 
+   dup  ascii i  =   if  drop suspend-interact  false  exit  then
+1A10B30 	40 49 A0  1 58 41 A0  1 
+1A10B38 	69  0  0  0 24 48 A0  1 
+1A10B40 	DC 41 A0  1 14  0  0  0 
+1A10B48 	30 49 A0  1 B0  9 A1  1 
+1A10B50 	18 70 A0  1 40 46 A0  1 
+   dup  ascii d  =   if  drop suspend-debug  false  exit  then
+1A10B58 	40 49 A0  1 58 41 A0  1 
+1A10B60 	64  0  0  0 24 48 A0  1 
+1A10B68 	DC 41 A0  1 14  0  0  0 
+1A10B70 	30 49 A0  1 F4  9 A1  1 
+1A10B78 	18 70 A0  1 40 46 A0  1 
+   dup  ascii h  =   if  drop suspend-help   false  exit  then
+1A10B80 	40 49 A0  1 58 41 A0  1 
+1A10B88 	68  0  0  0 24 48 A0  1 
+1A10B90 	DC 41 A0  1 14  0  0  0 
+1A10B98 	30 49 A0  1 68  8 A1  1 
+1A10BA0 	18 70 A0  1 40 46 A0  1 
+   dup  ascii ?  =   if  drop suspend-help   false  exit  then
+1A10BA8 	40 49 A0  1 58 41 A0  1 
+1A10BB0 	3F  0  0  0 24 48 A0  1 
+1A10BB8 	DC 41 A0  1 14  0  0  0 
+1A10BC0 	30 49 A0  1 68  8 A1  1 
+1A10BC8 	18 70 A0  1 40 46 A0  1 
+   dup  linefeed =  swap carret =  or  if  1-more-line? on  then
+1A10BD0 	40 49 A0  1 4C 6F A0  1 
+1A10BD8 	24 48 A0  1 68 49 A0  1 
+1A10BE0 	60 6F A0  1 24 48 A0  1 
+1A10BE8 	70 44 A0  1 DC 41 A0  1 
+1A10BF0 	 C  0  0  0 F0  7 A1  1 
+1A10BF8 	E0 4B A0  1 
+   false
+1A10BFC 	18 70 A0  1 
+;
+1A10C00 	58 46 A0  1 
+d# 24 value default-#lines
+1A10C04 	 0 64 65 66 
+1A10C08 	61 75 6C 74 2D 23 6C 69 
+1A10C10 	6E 65 73 8E 34  A A1  1 
+1A10C18 	50 40 A0  1 34  3  0  0 
+headers
+
+defer lines/page  ' default-#lines is lines/page
+1A10C20 	 0 6C 69 6E 65 73 2F 70 
+1A10C28 	61 67 65 8A 18  C A1  1 
+1A10C30 	5C 40 A0  1 38  3  0  0 
+
+headerless
+: (exit?)  ( -- flag )  \ True if the listing should be stopped
+1A10C38 	28 65 78 69 74 3F 29 87 
+1A10C40 	30  C A1  1 20 40 A0  1 
+   interactive?  0=  if  false  exit  then
+1A10C48 	C4 6C A0  1 24 47 A0  1 
+1A10C50 	DC 41 A0  1  C  0  0  0 
+1A10C58 	18 70 A0  1 40 46 A0  1 
+
+   \ In case we start with lines/page already too large, we clear it out
+   page-mode?  if  #line @ lines/page u>=  if  suspend exit  then  then
+1A10C60 	 8  8 A1  1 DC 41 A0  1 
+1A10C68 	24  0  0  0 70 6D A0  1 
+1A10C70 	5C 4C A0  1 30  C A1  1 
+1A10C78 	CC 48 A0  1 DC 41 A0  1 
+1A10C80 	 C  0  0  0 34  A A1  1 
+1A10C88 	40 46 A0  1 
+   1-more-line? @  if  1-more-line? off  suspend  exit  then
+1A10C8C 	F0  7 A1  1 
+1A10C90 	5C 4C A0  1 DC 41 A0  1 
+1A10C98 	14  0  0  0 F0  7 A1  1 
+1A10CA0 	F8 4B A0  1 34  A A1  1 
+1A10CA8 	40 46 A0  1 
+   page-mode?  if  #line @ 1+  lines/page =  if  suspend exit  then  then
+1A10CAC 	 8  8 A1  1 
+1A10CB0 	DC 41 A0  1 28  0  0  0 
+1A10CB8 	70 6D A0  1 5C 4C A0  1 
+1A10CC0 	30 4B A0  1 30  C A1  1 
+1A10CC8 	24 48 A0  1 DC 41 A0  1 
+1A10CD0 	 C  0  0  0 34  A A1  1 
+1A10CD8 	40 46 A0  1 
+   key?  if
+1A10CDC 	64 6C A0  1 
+1A10CE0 	DC 41 A0  1 3C  0  0  0 
+      key ascii q =  if   #line off  true  else  suspend  then
+1A10CE8 	50 6C A0  1 58 41 A0  1 
+1A10CF0 	71  0  0  0 24 48 A0  1 
+1A10CF8 	DC 41 A0  1 18  0  0  0 
+1A10D00 	70 6D A0  1 F8 4B A0  1 
+1A10D08 	 4 70 A0  1 C8 41 A0  1 
+1A10D10 	 8  0  0  0 34  A A1  1 
+   else
+1A10D18 	C8 41 A0  1  8  0  0  0 
+      false
+1A10D20 	18 70 A0  1 
+   then
+;
+1A10D24 	58 46 A0  1 
+headers
+defer exit?
+1A10D28 	 0  0 65 78 69 74 3F 85 
+1A10D30 	44  C A1  1 5C 40 A0  1 
+1A10D38 	3C  3  0  0 
+' (exit?) is exit?
+only forth also definitions
+

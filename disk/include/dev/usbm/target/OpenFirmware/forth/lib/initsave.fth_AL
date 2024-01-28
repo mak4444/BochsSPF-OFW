@@ -1,0 +1,42 @@
+\ initsave.fth 1.1 94/09/01
+
+headers
+: $find-name  ( name -- acf )
+1A17538 	 0 24 66 69 6E 64 2D 6E 
+1A17540 	61 6D 65 8A B0 74 A1  1 
+1A17548 	20 40 A0  1 
+   $find  0= if  ." Can't find " type  cr  abort  then
+1A1754C 	C4 93 A0  1 
+1A17550 	24 47 A0  1 DC 41 A0  1 
+1A17558 	24  0  0  0 20 7C A0  1 
+1A17560 	 B 43 61 6E 27 74 20 66 
+1A17568 	69 6E 64 20  0  0  0  0 
+1A17570 	 4 6C A0  1 80 6D A0  1 
+1A17578 	28 91 A0  1 
+;
+1A1757C 	58 46 A0  1 
+headerless
+: init-save  ( 'init-environment -- )
+1A17580 	 0  0 69 6E 69 74 2D 73 
+1A17588 	61 76 65 89 48 75 A1  1 
+1A17590 	20 40 A0  1 
+                 $find-name is init-environment
+1A17594 	48 75 A1  1 
+1A17598 	98 40 A0  1 B8 D0 A0  1 
+   " init"       $find-name is do-init
+1A175A0 	9C 53 A0  1  4 69 6E 69 
+1A175A8 	74  0  0  0 48 75 A1  1 
+1A175B0 	98 40 A0  1 80 D0 A0  1 
+   " (cold-hook" $find-name is cold-hook
+1A175B8 	9C 53 A0  1  A 28 63 6F 
+1A175C0 	6C 64 2D 68 6F 6F 6B  0 
+1A175C8 	48 75 A1  1 98 40 A0  1 
+1A175D0 	98 D0 A0  1 
+
+   here fence a!			\ Protect the dictionary
+1A175D4 	70 54 A0  1 
+1A175D8 	B8 BE A0  1 98 58 A0  1 
+;
+1A175E0 	58 46 A0  1 
+headers
+

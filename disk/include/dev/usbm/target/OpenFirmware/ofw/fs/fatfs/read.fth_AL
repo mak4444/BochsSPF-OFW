@@ -1,0 +1,404 @@
+\ opening, seeking and reading the contents of an existing file.
+\ 10/2/90 cpt: revised for reading continuous clusters in 1 shot.
+
+\ mmo private
+: to-first-cluster  ( -- )
+1A2E770 	 0  0  0 74 6F 2D 66 69 
+1A2E778 	72 73 74 2D 63 6C 75 73 
+1A2E780 	74 65 72 90 30 E7 A2  1 
+1A2E788 	20 40 A0  1 
+   0 fh_logicalcl l!
+1A2E78C 	70 6F A0  1 
+1A2E790 	14 E6 A2  1 7C 4D A0  1 
+   fh_first l@ fh_physicalcl l!
+1A2E798 	E0 E5 A2  1 6C 4C A0  1 
+1A2E7A0 	30 E6 A2  1 7C 4D A0  1 
+   0 fh_prevphyscl l!
+1A2E7A8 	70 6F A0  1 4C E6 A2  1 
+1A2E7B0 	7C 4D A0  1 
+;
+1A2E7B4 	58 46 A0  1 
+
+: last-cluster?  ( -- flag )
+1A2E7B8 	 0  0 6C 61 73 74 2D 63 
+1A2E7C0 	6C 75 73 74 65 72 3F 8D 
+1A2E7C8 	88 E7 A2  1 20 40 A0  1 
+   fh_physicalcl l@ fat-end?  fh_physicalcl l@ 0=  or ;
+1A2E7D0 	30 E6 A2  1 6C 4C A0  1 
+1A2E7D8 	24 CD A2  1 30 E6 A2  1 
+1A2E7E0 	6C 4C A0  1 24 47 A0  1 
+1A2E7E8 	70 44 A0  1 58 46 A0  1 
+
+: to-next-cluster  ( -- )
+1A2E7F0 	74 6F 2D 6E 65 78 74 2D 
+1A2E7F8 	63 6C 75 73 74 65 72 8F 
+1A2E800 	CC E7 A2  1 20 40 A0  1 
+   fh_physicalcl l@  dup fh_prevphyscl l!  ( previous-physical-cluster# )
+1A2E808 	30 E6 A2  1 6C 4C A0  1 
+1A2E810 	40 49 A0  1 4C E6 A2  1 
+1A2E818 	7C 4D A0  1 
+   cluster@ fh_physicalcl l!
+1A2E81C 	1C D0 A2  1 
+1A2E820 	30 E6 A2  1 7C 4D A0  1 
+   fh_logicalcl l@ 1+ fh_logicalcl l!
+1A2E828 	14 E6 A2  1 6C 4C A0  1 
+1A2E830 	30 4B A0  1 14 E6 A2  1 
+1A2E838 	7C 4D A0  1 
+;
+1A2E83C 	58 46 A0  1 
+
+: to-last-cluster  ( -- )
+1A2E840 	74 6F 2D 6C 61 73 74 2D 
+1A2E848 	63 6C 75 73 74 65 72 8F 
+1A2E850 	 4 E8 A2  1 20 40 A0  1 
+   begin  last-cluster?  0=  while  to-next-cluster  repeat
+1A2E858 	CC E7 A2  1 24 47 A0  1 
+1A2E860 	DC 41 A0  1 10  0  0  0 
+1A2E868 	 4 E8 A2  1 C8 41 A0  1 
+1A2E870 	E8 FF FF FF 
+;
+1A2E874 	58 46 A0  1 
+
+: dos-seek  ( byte# fh -- error? )
+1A2E878 	 0  0  0 64 6F 73 2D 73 
+1A2E880 	65 65 6B 88 54 E8 A2  1 
+1A2E888 	20 40 A0  1 
+   fh !   ( byte# )
+1A2E88C 	5C E5 A2  1 
+1A2E890 	54 4D A0  1 
+   fh_dev @ set-device
+1A2E894 	B0 E5 A2  1 
+1A2E898 	5C 4C A0  1  4 CC A2  1 
+
+   fh_clshift w@ >>   ( target-cl )
+1A2E8A0 	7C E6 A2  1 94 4C A0  1 
+1A2E8A8 	DC 44 A0  1 
+
+   \ Bail out early if we're already on the right cluster
+   dup fh_logicalcl l@ = if  drop false  exit  then
+1A2E8AC 	40 49 A0  1 
+1A2E8B0 	14 E6 A2  1 6C 4C A0  1 
+1A2E8B8 	24 48 A0  1 DC 41 A0  1 
+1A2E8C0 	10  0  0  0 30 49 A0  1 
+1A2E8C8 	18 70 A0  1 40 46 A0  1 
+
+   \ If we are seeking forward, start at the current position.  Otherwise
+   \ start at the beginning of the file.
+
+   dup fh_logicalcl l@ <= if  to-first-cluster  then
+1A2E8D0 	40 49 A0  1 14 E6 A2  1 
+1A2E8D8 	6C 4C A0  1  C 49 A0  1 
+1A2E8E0 	DC 41 A0  1  8  0  0  0 
+1A2E8E8 	88 E7 A2  1 
+
+   \ Advance to the desired cluster, if it exists.
+   begin  dup fh_logicalcl l@ <> while           ( target-cluster# )
+1A2E8EC 	40 49 A0  1 
+1A2E8F0 	14 E6 A2  1 6C 4C A0  1 
+1A2E8F8 	44 48 A0  1 DC 41 A0  1 
+1A2E900 	28  0  0  0 
+
+      last-cluster?  if  drop true  exit   then   \ End of file?
+1A2E904 	CC E7 A2  1 
+1A2E908 	DC 41 A0  1 10  0  0  0 
+1A2E910 	30 49 A0  1  4 70 A0  1 
+1A2E918 	40 46 A0  1 
+      to-next-cluster
+1A2E91C 	 4 E8 A2  1 
+   repeat                                       ( target-cluster# )
+1A2E920 	C8 41 A0  1 C8 FF FF FF 
+
+   drop false
+1A2E928 	30 49 A0  1 18 70 A0  1 
+;
+1A2E930 	58 46 A0  1 
+
+: log2  ( n -- log2-of-n )
+1A2E934 	 0  0  0 6C 
+1A2E938 	6F 67 32 84 88 E8 A2  1 
+1A2E940 	20 40 A0  1 
+   -1 swap  bits/cell 0  do
+1A2E944 	58 41 A0  1 
+1A2E948 	FF FF FF FF 68 49 A0  1 
+1A2E950 	94 65 A0  1 70 6F A0  1 
+1A2E958 	88 42 A0  1 34  0  0  0 
+       1 >>  dup 0=  if  nip i swap leave  then
+1A2E960 	80 6F A0  1 DC 44 A0  1 
+1A2E968 	40 49 A0  1 24 47 A0  1 
+1A2E970 	DC 41 A0  1 14  0  0  0 
+1A2E978 	FC 46 A0  1 B4 42 A0  1 
+1A2E980 	68 49 A0  1 18 43 A0  1 
+   loop  ( log n' )
+1A2E988 	F8 41 A0  1 D4 FF FF FF 
+   drop
+1A2E990 	30 49 A0  1 
+;
+1A2E994 	58 46 A0  1 
+: fh-open  ( 'dirent -- fh false | true )
+1A2E998 	66 68 2D 6F 70 65 6E 87 
+1A2E9A0 	40 E9 A2  1 20 40 A0  1 
+   dirent !
+1A2E9A8 	DC BE A2  1 54 4D A0  1 
+   allocate-fh  if  fh !  else  true exit  then
+1A2E9B0 	30 E7 A2  1 DC 41 A0  1 
+1A2E9B8 	14  0  0  0 5C E5 A2  1 
+1A2E9C0 	54 4D A0  1 C8 41 A0  1 
+1A2E9C8 	 C  0  0  0  4 70 A0  1 
+1A2E9D0 	40 46 A0  1 
+
+   fh_isopen
+1A2E9D4 	AC E6 A2  1 
+   de_attributes c@ at_rdonly and  0=  if  fh_writeable or  then
+1A2E9D8 	68 BF A2  1 C4 4C A0  1 
+1A2E9E0 	80 BF A2  1 5C 44 A0  1 
+1A2E9E8 	24 47 A0  1 DC 41 A0  1 
+1A2E9F0 	 C  0  0  0 C8 E6 A2  1 
+1A2E9F8 	70 44 A0  1 
+   fh_flags w!
+1A2E9FC 	94 E6 A2  1 
+1A2EA00 	A4 4D A0  1 
+
+   current-device @  fh_dev !
+1A2EA04 	A8 BA A2  1 
+1A2EA08 	5C 4C A0  1 B0 E5 A2  1 
+1A2EA10 	54 4D A0  1 
+   dir-cl @  fh_dircl !  \ Cluster containing the directory entry
+1A2EA14 	A8 DC A2  1 
+1A2EA18 	5C 4C A0  1 C8 E5 A2  1 
+1A2EA20 	54 4D A0  1 
+   dirent @ dir-buf - fh_diroff w! \ Location of directory entry in its cluster
+1A2EA24 	DC BE A2  1 
+1A2EA28 	5C 4C A0  1 1C C4 A2  1 
+1A2EA30 	18 45 A0  1 64 E6 A2  1 
+1A2EA38 	A4 4D A0  1 
+   ( fh_dircl ?  ) ( fh_diroff ? )
+   file-cluster@  fh_first  l!
+1A2EA3C 	A0 C2 A2  1 
+1A2EA40 	E0 E5 A2  1 7C 4D A0  1 
+   de_length lel@ fh_length l!
+1A2EA48 	DC C0 A2  1 DC B4 A2  1 
+1A2EA50 	F8 E5 A2  1 7C 4D A0  1 
+   to-first-cluster
+1A2EA58 	88 E7 A2  1 
+   /cluster  log2  fh_clshift w!
+1A2EA5C 	18 C3 A2  1 
+1A2EA60 	40 E9 A2  1 7C E6 A2  1 
+1A2EA68 	A4 4D A0  1 
+   fh @ false
+1A2EA6C 	5C E5 A2  1 
+1A2EA70 	5C 4C A0  1 18 70 A0  1 
+;
+1A2EA78 	58 46 A0  1 
+
+: name-open  ( adr len mode -- fh false  | true )
+1A2EA7C 	 0  0 6E 61 
+1A2EA80 	6D 65 2D 6F 70 65 6E 89 
+1A2EA88 	A4 E9 A2  1 20 40 A0  1 
+   \ If the mode specifies writing, look for writeable normal files
+   \ If mode is "read" (0), also find read-only files and subdirectories
+
+   1 >=  if  0  else  at_rdonly  then
+1A2EA90 	80 6F A0  1 EC 48 A0  1 
+1A2EA98 	DC 41 A0  1 10  0  0  0 
+1A2EAA0 	70 6F A0  1 C8 41 A0  1 
+1A2EAA8 	 8  0  0  0 80 BF A2  1 
+   at_system or  at_hidden or              ( adr len file-types )
+1A2EAB0 	B0 BF A2  1 70 44 A0  1 
+1A2EAB8 	98 BF A2  1 70 44 A0  1 
+
+   find-first  if  dirent @ fh-open  else  -1  then
+1A2EAC0 	18 E4 A2  1 DC 41 A0  1 
+1A2EAC8 	18  0  0  0 DC BE A2  1 
+1A2EAD0 	5C 4C A0  1 A4 E9 A2  1 
+1A2EAD8 	C8 41 A0  1  C  0  0  0 
+1A2EAE0 	58 41 A0  1 FF FF FF FF 
+;
+1A2EAE8 	58 46 A0  1 
+
+variable remaining \ bytes
+1A2EAEC 	 0  0 72 65 
+1A2EAF0 	6D 61 69 6E 69 6E 67 89 
+1A2EAF8 	8C EA A2  1 48 40 A0  1 
+1A2EB00 	3C  9  0  0 
+variable requested \ bytes
+1A2EB04 	 0  0 72 65 
+1A2EB08 	71 75 65 73 74 65 64 89 
+1A2EB10 	FC EA A2  1 48 40 A0  1 
+1A2EB18 	40  9  0  0 
+variable bufadr
+1A2EB1C 	 0 62 75 66 
+1A2EB20 	61 64 72 86 14 EB A2  1 
+1A2EB28 	48 40 A0  1 44  9  0  0 
+VARIABLE 1st-cl#   \ marks 1st of an allocated cotinuous cluster range
+1A2EB30 	31 73 74 2D 63 6C 23 87 
+1A2EB38 	28 EB A2  1 48 40 A0  1 
+1A2EB40 	48  9  0  0 
+VARIABLE #cont-cls \ marks # of clusters in the  ----  "  --------
+1A2EB44 	 0  0 23 63 
+1A2EB48 	6F 6E 74 2D 63 6C 73 89 
+1A2EB50 	3C EB A2  1 48 40 A0  1 
+1A2EB58 	4C  9  0  0 
+VARIABLE next-cl#  \ marks next 1st cluster of non-continuous cluster range
+1A2EB5C 	 0  0  0 6E 
+1A2EB60 	65 78 74 2D 63 6C 23 88 
+1A2EB68 	54 EB A2  1 48 40 A0  1 
+1A2EB70 	50  9  0  0 
+                   \ (for read its used as a flag only)
+
+: current-position  ( -- n )  fh_logicalcl l@ fh_clshift w@ <<  ;
+1A2EB74 	 0  0  0 63 
+1A2EB78 	75 72 72 65 6E 74 2D 70 
+1A2EB80 	6F 73 69 74 69 6F 6E 90 
+1A2EB88 	6C EB A2  1 20 40 A0  1 
+1A2EB90 	14 E6 A2  1 6C 4C A0  1 
+1A2EB98 	7C E6 A2  1 94 4C A0  1 
+1A2EBA0 	C8 44 A0  1 58 46 A0  1 
+
+: cl#-valid?  ( cl# -- flag )  2  max-cl# l@  between  ;
+1A2EBA8 	 0 63 6C 23 2D 76 61 6C 
+1A2EBB0 	69 64 3F 8A 8C EB A2  1 
+1A2EBB8 	20 40 A0  1 90 6F A0  1 
+1A2EBC0 	54 BB A2  1 6C 4C A0  1 
+1A2EBC8 	D8 70 A0  1 58 46 A0  1 
+
+: dos-read  ( adr count 'fh -- #read false  |  true )
+1A2EBD0 	 0  0  0 64 6F 73 2D 72 
+1A2EBD8 	65 61 64 88 B8 EB A2  1 
+1A2EBE0 	20 40 A0  1 
+   fh !   fh_dev @ set-device                        ( adr count )
+1A2EBE4 	5C E5 A2  1 
+1A2EBE8 	54 4D A0  1 B0 E5 A2  1 
+1A2EBF0 	5C 4C A0  1  4 CC A2  1 
+
+   dup remaining !  dup requested ! swap bufadr !     ( count )
+1A2EBF8 	40 49 A0  1 FC EA A2  1 
+1A2EC00 	54 4D A0  1 40 49 A0  1 
+1A2EC08 	14 EB A2  1 54 4D A0  1 
+1A2EC10 	68 49 A0  1 28 EB A2  1 
+1A2EC18 	54 4D A0  1 
+   bytes>clusters                                     ( #cls-to-read )
+1A2EC1C 	44 C3 A2  1 
+   fh_physicalcl l@  dup 1st-cl# !  1 #cont-cls !     ( #cls phys-cl# )
+1A2EC20 	30 E6 A2  1 6C 4C A0  1 
+1A2EC28 	40 49 A0  1 3C EB A2  1 
+1A2EC30 	54 4D A0  1 80 6F A0  1 
+1A2EC38 	54 EB A2  1 54 4D A0  1 
+   cl#-valid?  0=  next-cl# !              \ set if not in valid range!
+1A2EC40 	B8 EB A2  1 24 47 A0  1 
+1A2EC48 	6C EB A2  1 54 4D A0  1 
+                                                      ( #cls-to-read )
+   begin
+      dup 0>
+1A2EC50 	40 49 A0  1 A4 47 A0  1 
+      remaining @ 0>  and
+1A2EC58 	FC EA A2  1 5C 4C A0  1 
+1A2EC60 	A4 47 A0  1 5C 44 A0  1 
+      current-position fh_length l@ u<  and
+1A2EC68 	8C EB A2  1 F8 E5 A2  1 
+1A2EC70 	6C 4C A0  1 A8 48 A0  1 
+1A2EC78 	5C 44 A0  1 
+      last-cluster? 0=  and
+1A2EC7C 	CC E7 A2  1 
+1A2EC80 	24 47 A0  1 5C 44 A0  1 
+   while                                              ( #cls-remaining )
+1A2EC88 	DC 41 A0  1 FC  0  0  0 
+      to-next-cluster 
+1A2EC90 	 4 E8 A2  1 
+      1st-cl# @  #cont-cls @  +  fh_physicalcl l@  =  if
+1A2EC94 	3C EB A2  1 
+1A2EC98 	5C 4C A0  1 54 EB A2  1 
+1A2ECA0 	5C 4C A0  1  4 45 A0  1 
+1A2ECA8 	30 E6 A2  1 6C 4C A0  1 
+1A2ECB0 	24 48 A0  1 DC 41 A0  1 
+1A2ECB8 	34  0  0  0 
+         \ increment counter only if not first loop
+         next-cl# @  if  next-cl# off  else  #cont-cls 1+!  then
+1A2ECBC 	6C EB A2  1 
+1A2ECC0 	5C 4C A0  1 DC 41 A0  1 
+1A2ECC8 	14  0  0  0 6C EB A2  1 
+1A2ECD0 	F8 4B A0  1 C8 41 A0  1 
+1A2ECD8 	 C  0  0  0 54 EB A2  1 
+1A2ECE0 	54 B3 A2  1 
+      else 
+1A2ECE4 	C8 41 A0  1 
+1A2ECE8 	94  0  0  0 
+         next-cl# @ 0= if
+1A2ECEC 	6C EB A2  1 
+1A2ECF0 	5C 4C A0  1 24 47 A0  1 
+1A2ECF8 	DC 41 A0  1 5C  0  0  0 
+            1st-cl# @  #cont-cls @  bufadr @  read-clusters  if  
+1A2ED00 	3C EB A2  1 5C 4C A0  1 
+1A2ED08 	54 EB A2  1 5C 4C A0  1 
+1A2ED10 	28 EB A2  1 5C 4C A0  1 
+1A2ED18 	90 CC A2  1 DC 41 A0  1 
+1A2ED20 	10  0  0  0 
+               drop true  exit
+1A2ED24 	30 49 A0  1 
+1A2ED28 	 4 70 A0  1 40 46 A0  1 
+            then
+            #cont-cls @  /cluster *  dup bufadr +!  negate remaining +!
+1A2ED30 	54 EB A2  1 5C 4C A0  1 
+1A2ED38 	18 C3 A2  1 1C 5F A0  1 
+1A2ED40 	40 49 A0  1 28 EB A2  1 
+1A2ED48 	 C 4C A0  1 48 45 A0  1 
+1A2ED50 	FC EA A2  1  C 4C A0  1 
+         then
+         fh_physicalcl l@ 1st-cl# !  1 #cont-cls !  next-cl# off
+1A2ED58 	30 E6 A2  1 6C 4C A0  1 
+1A2ED60 	3C EB A2  1 54 4D A0  1 
+1A2ED68 	80 6F A0  1 54 EB A2  1 
+1A2ED70 	54 4D A0  1 6C EB A2  1 
+1A2ED78 	F8 4B A0  1 
+      then
+      1-  ( #cls-to-read-1 )
+1A2ED7C 	54 4B A0  1 
+   repeat  drop
+1A2ED80 	C8 41 A0  1 CC FE FF FF 
+1A2ED88 	30 49 A0  1 
+   
+   remaining @ 0>  next-cl# @ 0=  and  1st-cl# @ cl#-valid?  and  if
+1A2ED8C 	FC EA A2  1 
+1A2ED90 	5C 4C A0  1 A4 47 A0  1 
+1A2ED98 	6C EB A2  1 5C 4C A0  1 
+1A2EDA0 	24 47 A0  1 5C 44 A0  1 
+1A2EDA8 	3C EB A2  1 5C 4C A0  1 
+1A2EDB0 	B8 EB A2  1 5C 44 A0  1 
+1A2EDB8 	DC 41 A0  1 50  0  0  0 
+      \ We did loop & there is real data
+      remaining @  bytes>clusters          ( #clusters-left )
+1A2EDC0 	FC EA A2  1 5C 4C A0  1 
+1A2EDC8 	44 C3 A2  1 
+      1st-cl# @ over bufadr @ read-clusters  if  drop true exit  then
+1A2EDCC 	3C EB A2  1 
+1A2EDD0 	5C 4C A0  1 54 49 A0  1 
+1A2EDD8 	28 EB A2  1 5C 4C A0  1 
+1A2EDE0 	90 CC A2  1 DC 41 A0  1 
+1A2EDE8 	10  0  0  0 30 49 A0  1 
+1A2EDF0 	 4 70 A0  1 40 46 A0  1 
+      /cluster *  negate  remaining +!
+1A2EDF8 	18 C3 A2  1 1C 5F A0  1 
+1A2EE00 	48 45 A0  1 FC EA A2  1 
+1A2EE08 	 C 4C A0  1 
+   then
+
+   requested @  remaining @ -              ( bytes-tranferred )
+1A2EE0C 	14 EB A2  1 
+1A2EE10 	5C 4C A0  1 FC EA A2  1 
+1A2EE18 	5C 4C A0  1 18 45 A0  1 
+
+   \ If the last cluster of the file has been read, account for the
+   \ true length of the file
+   current-position fh_length l@ u>  if    ( bytes-tranferred )
+1A2EE20 	8C EB A2  1 F8 E5 A2  1 
+1A2EE28 	6C 4C A0  1 64 48 A0  1 
+1A2EE30 	DC 41 A0  1 18  0  0  0 
+      current-position fh_length l@ -  -   ( bytes-valid )
+1A2EE38 	8C EB A2  1 F8 E5 A2  1 
+1A2EE40 	6C 4C A0  1 18 45 A0  1 
+1A2EE48 	18 45 A0  1 
+   then                                    ( bytes-valid )
+
+   false
+1A2EE4C 	18 70 A0  1 
+;
+1A2EE50 	58 46 A0  1 

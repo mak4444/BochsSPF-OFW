@@ -1,0 +1,375 @@
+\ Initializes a disk, creating an empty MS-DOS file system.
+
+\ mmo private
+
+create ibm-jmp  h# eb c,  h# 34 c,  h# 90 c,  0 c,
+1A2FB7C 	69 62 6D 2D 
+1A2FB80 	6A 6D 70 87 80 FA A2  1 
+1A2FB88 	30 40 A0  1 EB 34 90  0 
+
+create fat32-jmp  h# eb c,  h# 58 c,  h# 90 c,  0 c,
+1A2FB90 	 0  0 66 61 74 33 32 2D 
+1A2FB98 	6A 6D 70 89 88 FB A2  1 
+1A2FBA0 	30 40 A0  1 EB 58 90  0 
+
+: set-params16
+1A2FBA8 	 0  0  0 73 65 74 2D 70 
+1A2FBB0 	61 72 61 6D 73 31 36 8C 
+1A2FBB8 	A0 FB A2  1 20 40 A0  1 
+( #hidden-sectors #sides sec/trk sec/fat media-desc #sectors #dirents spc bps 
+  -- )
+   ibm-jmp     bp_branch 3 cmove  \  0  branch-to-boot instruction
+1A2FBC0 	88 FB A2  1 9C B7 A2  1 
+1A2FBC8 	A0 6F A0  1 10 44 A0  1 
+   " Forthmax" bp_name swap cmove \  3  system name string
+1A2FBD0 	9C 53 A0  1  8 46 6F 72 
+1A2FBD8 	74 68 6D 61 78  0  0  0 
+1A2FBE0 	B0 B7 A2  1 68 49 A0  1 
+1A2FBE8 	10 44 A0  1 
+               bp_bps lew!        \  b  bytes/sector
+1A2FBEC 	C4 B7 A2  1 
+1A2FBF0 	A8 B4 A2  1 
+               bp_spc c!          \  d  sectors/cluster
+1A2FBF4 	D8 B7 A2  1 
+1A2FBF8 	B8 4D A0  1 
+   1           bp_res lew!        \  e  #reserved-sectors
+1A2FBFC 	80 6F A0  1 
+1A2FC00 	EC B7 A2  1 A8 B4 A2  1 
+   2           bp_nfats c!        \ 10  #FATs
+1A2FC08 	90 6F A0  1  4 B8 A2  1 
+1A2FC10 	B8 4D A0  1 
+               bp_ndirs lew!      \ 11  #directory-entries
+1A2FC14 	1C B8 A2  1 
+1A2FC18 	A8 B4 A2  1 
+   dup h# 10000 <  if
+1A2FC1C 	40 49 A0  1 
+1A2FC20 	58 41 A0  1  0  0  1  0 
+1A2FC28 	E4 47 A0  1 DC 41 A0  1 
+1A2FC30 	14  0  0  0 
+               bp_nsects lew!     \ 13  total-#sectors (including reserved ones)
+1A2FC34 	34 B8 A2  1 
+1A2FC38 	A8 B4 A2  1 
+   else
+1A2FC3C 	C8 41 A0  1 
+1A2FC40 	 C  0  0  0 
+               bp_xnsects lel!    \ 20  total #sectors (4 bytes)
+1A2FC44 	B8 B8 A2  1 
+1A2FC48 	 8 B5 A2  1 
+   then
+               bp_media c!        \ 15  media descriptor ("magic" number)
+1A2FC4C 	4C B8 A2  1 
+1A2FC50 	B8 4D A0  1 
+               bp_spf lew!        \ 16  sectors/FAT
+1A2FC54 	60 B8 A2  1 
+1A2FC58 	A8 B4 A2  1 
+               bp_spt lew!        \ 18  sectors/track
+1A2FC5C 	74 B8 A2  1 
+1A2FC60 	A8 B4 A2  1 
+               bp_nsides lew!     \ 1a  #sides (#heads)
+1A2FC64 	8C B8 A2  1 
+1A2FC68 	A8 B4 A2  1 
+               bp_nhid lel!       \ 1c  #hidden-sectors
+1A2FC6C 	A0 B8 A2  1 
+1A2FC70 	 8 B5 A2  1 
+;
+1A2FC74 	58 46 A0  1 
+: set-params32
+1A2FC78 	 0  0  0 73 65 74 2D 70 
+1A2FC80 	61 72 61 6D 73 33 32 8C 
+1A2FC88 	BC FB A2  1 20 40 A0  1 
+( #hidden-sectors #sides sec/trk sec/fat media-desc #sectors #dirents spc bps 
+  -- )
+   fat32-jmp   bp_branch 3 cmove  \  0  branch-to-boot instruction
+1A2FC90 	A0 FB A2  1 9C B7 A2  1 
+1A2FC98 	A0 6F A0  1 10 44 A0  1 
+   " Forthmax" bp_name swap cmove \  3  system name string
+1A2FCA0 	9C 53 A0  1  8 46 6F 72 
+1A2FCA8 	74 68 6D 61 78  0  0  0 
+1A2FCB0 	B0 B7 A2  1 68 49 A0  1 
+1A2FCB8 	10 44 A0  1 
+               bp_bps lew!        \  b  bytes/sector
+1A2FCBC 	C4 B7 A2  1 
+1A2FCC0 	A8 B4 A2  1 
+               bp_spc c!          \  d  sectors/cluster
+1A2FCC4 	D8 B7 A2  1 
+1A2FCC8 	B8 4D A0  1 
+   ( #dirents ) drop
+1A2FCCC 	30 49 A0  1 
+   20          bp_res lew!        \  e  #reserved-sectors
+1A2FCD0 	58 41 A0  1 20  0  0  0 
+1A2FCD8 	EC B7 A2  1 A8 B4 A2  1 
+   2           bp_nfats c!        \ 10  #FATs
+1A2FCE0 	90 6F A0  1  4 B8 A2  1 
+1A2FCE8 	B8 4D A0  1 
+               bp_xnsects lel!    \ 20  total #sectors (4 bytes)
+1A2FCEC 	B8 B8 A2  1 
+1A2FCF0 	 8 B5 A2  1 
+               bp_media c!        \ 15  media descriptor ("magic" number)
+1A2FCF4 	4C B8 A2  1 
+1A2FCF8 	B8 4D A0  1 
+	       bp_bspf lel!	  \ 24  big sectors/FAT
+1A2FCFC 	CC B8 A2  1 
+1A2FD00 	 8 B5 A2  1 
+               bp_spt lew!        \ 18  sectors/track
+1A2FD04 	74 B8 A2  1 
+1A2FD08 	A8 B4 A2  1 
+               bp_nsides lew!     \ 1a  #sides (#heads)
+1A2FD0C 	8C B8 A2  1 
+1A2FD10 	A8 B4 A2  1 
+               bp_nhid lel!       \ 1c  #hidden-sectors
+1A2FD14 	A0 B8 A2  1 
+1A2FD18 	 8 B5 A2  1 
+   2	       bp_rdirclus lel!	  \ 2c  root directory starting cluster
+1A2FD1C 	90 6F A0  1 
+1A2FD20 	14 B9 A2  1  8 B5 A2  1 
+   1	       bp_fsinfos lew!	  \ 30  file system info sector
+1A2FD28 	80 6F A0  1 2C B9 A2  1 
+1A2FD30 	A8 B4 A2  1 
+;
+1A2FD34 	58 46 A0  1 
+: fill-sectors  ( sector# #sectors byte -- )
+1A2FD38 	 0  0  0 66 69 6C 6C 2D 
+1A2FD40 	73 65 63 74 6F 72 73 8C 
+1A2FD48 	8C FC A2  1 20 40 A0  1 
+   /sector alloc-mem                 ( sector# #sectors byte adr )
+1A2FD50 	F8 C2 A2  1 F0 6C A0  1 
+   tuck /sector  rot fill            ( sector# #sectors adr )
+1A2FD58 	E8 46 A0  1 F8 C2 A2  1 
+1A2FD60 	7C 49 A0  1 8C 4E A0  1 
+   -rot bounds  ?do                  ( adr )
+1A2FD68 	94 49 A0  1 F0 6D A0  1 
+1A2FD70 	50 42 A0  1 48  0  0  0 
+      i 1 2 pick write-sectors if  /sector free-mem
+1A2FD78 	B4 42 A0  1 80 6F A0  1 
+1A2FD80 	90 6F A0  1  C 4A A0  1 
+1A2FD88 	8C BE A2  1 DC 41 A0  1 
+1A2FD90 	24  0  0  0 F8 C2 A2  1 
+1A2FD98 	 8 6D A0  1 
+
+
+         "CaW ". ." sector"  abort  then  ( adr )
+1A2FD9C 	D4 B3 A2  1 
+1A2FDA0 	A8 7C A0  1 20 7C A0  1 
+1A2FDA8 	 6 73 65 63 74 6F 72  0 
+1A2FDB0 	28 91 A0  1 
+   loop                              ( adr )
+1A2FDB4 	F8 41 A0  1 
+1A2FDB8 	C0 FF FF FF 
+   /sector free-mem
+1A2FDBC 	F8 C2 A2  1 
+1A2FDC0 	 8 6D A0  1 
+;
+1A2FDC4 	58 46 A0  1 
+\ mmo public	\ Called with $call-self
+: (init-disk)
+1A2FDC8 	28 69 6E 69 74 2D 64 69 
+1A2FDD0 	73 6B 29 8B 4C FD A2  1 
+1A2FDD8 	20 40 A0  1 
+   ( #hid-sectors #sides sec/trk sec/fat media-desc #sectors #dirents
+     spc bps fat32? -- )
+
+   over >r >r
+1A2FDDC 	54 49 A0  1 
+1A2FDE0 	BC 45 A0  1 BC 45 A0  1 
+   dos-lock
+1A2FDE8 	64 4F A0  1 
+
+   uncache-device   \ force BPB refresh for the next time
+1A2FDEC 	78 C3 A2  1 
+   0 dv_cwd-cl l!   \ Go to root directory on this device
+1A2FDF0 	70 6F A0  1 84 BB A2  1 
+1A2FDF8 	7C 4D A0  1 
+
+   dup alloc-mem dup bpb ! over erase
+1A2FDFC 	40 49 A0  1 
+1A2FE00 	F0 6C A0  1 40 49 A0  1 
+1A2FE08 	44 B7 A2  1 54 4D A0  1 
+1A2FE10 	54 49 A0  1 F0 72 A0  1 
+  
+   r@  if  set-params32  else  set-params16  then
+1A2FE18 	E4 45 A0  1 DC 41 A0  1 
+1A2FE20 	10  0  0  0 8C FC A2  1 
+1A2FE28 	C8 41 A0  1  8  0  0  0 
+1A2FE30 	BC FB A2  1 
+   bpb>device
+1A2FE34 	10 C9 A2  1 
+   r> r>			( fat32? bps )
+1A2FE38 	D0 45 A0  1 D0 45 A0  1 
+
+   bpb @ over 1- + h# aa over c! 1- h# 55 swap c!
+1A2FE40 	44 B7 A2  1 5C 4C A0  1 
+1A2FE48 	54 49 A0  1 54 4B A0  1 
+1A2FE50 	 4 45 A0  1 58 41 A0  1 
+1A2FE58 	AA  0  0  0 54 49 A0  1 
+1A2FE60 	B8 4D A0  1 54 4B A0  1 
+1A2FE68 	58 41 A0  1 55  0  0  0 
+1A2FE70 	68 49 A0  1 B8 4D A0  1 
+   0 1 bpb @ write-sectors	( fat32? bps error? )
+1A2FE78 	70 6F A0  1 80 6F A0  1 
+1A2FE80 	44 B7 A2  1 5C 4C A0  1 
+1A2FE88 	8C BE A2  1 
+   rot  if	\ Write file system info sector
+1A2FE8C 	7C 49 A0  1 
+1A2FE90 	DC 41 A0  1 10  1  0  0 
+      alloc-fssector
+1A2FE98 	E0 C6 A2  1 
+      fssector @ 2 pick erase
+1A2FE9C 	BC B9 A2  1 
+1A2FEA0 	5C 4C A0  1 90 6F A0  1 
+1A2FEA8 	 C 4A A0  1 F0 72 A0  1 
+      over /fsinfo - /n - fssector @ + fsinfo !
+1A2FEB0 	54 49 A0  1 8C BA A2  1 
+1A2FEB8 	18 45 A0  1 40 51 A0  1 
+1A2FEC0 	18 45 A0  1 BC B9 A2  1 
+1A2FEC8 	5C 4C A0  1  4 45 A0  1 
+1A2FED0 	D0 B9 A2  1 54 4D A0  1 
+      fssignature0 fssector @ 4 cmove
+1A2FED8 	8C B9 A2  1 BC B9 A2  1 
+1A2FEE0 	5C 4C A0  1 B0 6F A0  1 
+1A2FEE8 	10 44 A0  1 
+      fssignature  fs_sig 4 cmove
+1A2FEEC 	A4 B9 A2  1 
+1A2FEF0 	24 BA A2  1 B0 6F A0  1 
+1A2FEF8 	10 44 A0  1 
+      bp_nsects lew@ ?dup 0=  if  bp_xnsects lel@ then
+1A2FEFC 	34 B8 A2  1 
+1A2FF00 	7C B4 A2  1 B4 70 A0  1 
+1A2FF08 	24 47 A0  1 DC 41 A0  1 
+1A2FF10 	 C  0  0  0 B8 B8 A2  1 
+1A2FF18 	DC B4 A2  1 
+      bp_res lew@ -  bp_spc c@ / 2-  fs_#freeclusters lel!
+1A2FF1C 	EC B7 A2  1 
+1A2FF20 	7C B4 A2  1 18 45 A0  1 
+1A2FF28 	D8 B7 A2  1 C4 4C A0  1 
+1A2FF30 	98 5F A0  1 64 4B A0  1 
+1A2FF38 	44 BA A2  1  8 B5 A2  1 
+      3 fs_freecluster# lel!
+1A2FF40 	A0 6F A0  1 60 BA A2  1 
+1A2FF48 	 8 B5 A2  1 
+      fssector @ 2 pick 1- + h# aa over c! 1- h# 55 swap c!
+1A2FF4C 	BC B9 A2  1 
+1A2FF50 	5C 4C A0  1 90 6F A0  1 
+1A2FF58 	 C 4A A0  1 54 4B A0  1 
+1A2FF60 	 4 45 A0  1 58 41 A0  1 
+1A2FF68 	AA  0  0  0 54 49 A0  1 
+1A2FF70 	B8 4D A0  1 54 4B A0  1 
+1A2FF78 	58 41 A0  1 55  0  0  0 
+1A2FF80 	68 49 A0  1 B8 4D A0  1 
+      1 1 fssector @ write-sectors or	( bps error? )
+1A2FF88 	80 6F A0  1 80 6F A0  1 
+1A2FF90 	BC B9 A2  1 5C 4C A0  1 
+1A2FF98 	8C BE A2  1 70 44 A0  1 
+      free-fssector
+1A2FFA0 	20 C7 A2  1 
+   then
+
+   bpb @ rot free-mem
+1A2FFA4 	44 B7 A2  1 
+1A2FFA8 	5C 4C A0  1 7C 49 A0  1 
+1A2FFB0 	 8 6D A0  1 
+   if  "CaW ". ." sector 0"  abort  then
+1A2FFB4 	DC 41 A0  1 
+1A2FFB8 	20  0  0  0 D4 B3 A2  1 
+1A2FFC0 	A8 7C A0  1 20 7C A0  1 
+1A2FFC8 	 8 73 65 63 74 6F 72 20 
+1A2FFD0 	30  0  0  0 28 91 A0  1 
+
+   0 bps w!    \ Force reread
+1A2FFD8 	70 6F A0  1 34 BC A2  1 
+1A2FFE0 	A4 4D A0  1 
+   ?read-bpb   \ Now read back the BIOS parameter block
+1A2FFE4 	58 CB A2  1 
+
+   \ Clear the FATs. (0 means "free cluster")
+   fat-sector0 w@  spf l@ 2*  ( assume 2 FATs )  0  fill-sectors
+1A2FFE8 	F0 BB A2  1 94 4C A0  1 
+1A2FFF0 	28 BB A2  1 6C 4C A0  1 
+1A2FFF8 	A0 4B A0  1 70 6F A0  1 
+1A30000 	4C FD A2  1 
+
+   media c@ h# 0fffff00 or  0 cluster!
+1A30004 	6C BC A2  1 
+1A30008 	C4 4C A0  1 58 41 A0  1 
+1A30010 	 0 FF FF  F 70 44 A0  1 
+1A30018 	70 6F A0  1 14 D1 A2  1 
+   fat-eof  1 cluster!
+1A30020 	F8 CC A2  1 80 6F A0  1 
+1A30028 	14 D1 A2  1 
+   fat-type c@ fat32 =  if  fat-eof 2 cluster!  then
+1A3002C 	84 BC A2  1 
+1A30030 	C4 4C A0  1 F0 BC A2  1 
+1A30038 	24 48 A0  1 DC 41 A0  1 
+1A30040 	10  0  0  0 F8 CC A2  1 
+1A30048 	90 6F A0  1 14 D1 A2  1 
+   ?flush-fat-cache
+1A30050 	98 CE A2  1 
+
+   \ Clear the root directory.
+   init-dir   \ Invalidate the directory cache
+1A30054 	EC DC A2  1 
+   rdirclus l@  ?dup  if
+1A30058 	40 BB A2  1 6C 4C A0  1 
+1A30060 	B4 70 A0  1 DC 41 A0  1 
+1A30068 	1C  0  0  0 
+      1 cl>sector 0 fill-sectors
+1A3006C 	80 6F A0  1 
+1A30070 	5C CC A2  1 70 6F A0  1 
+1A30078 	4C FD A2  1 
+   else
+1A3007C 	C8 41 A0  1 
+1A30080 	1C  0  0  0 
+      dir-sector0 w@ #dir-sectors w@ 0  fill-sectors
+1A30084 	 8 BC A2  1 
+1A30088 	94 4C A0  1 24 BC A2  1 
+1A30090 	94 4C A0  1 70 6F A0  1 
+1A30098 	4C FD A2  1 
+   then
+   
+   \ XXX We should put a label in the root directory.
+
+   dos-unlock
+1A3009C 	64 4F A0  1 
+;
+1A300A0 	58 46 A0  1 
+
+[ifdef] format-floppies
+
+public
+
+\ Extra high density floppy; 2.88MB total space (3-1/2")
+\ 512-byte sectors, 8.5K x 2 FATs, 7K root directory, 2 sectors/cluster
+: 3ed-fl-init  ( -- )
+   2ed-den
+   0  2  d# 36  d# 9  h# f0  d# 5760  d# 224  2  d# 512  0  false  (init-disk)
+;
+
+\ PC/AT style high density floppy; 1.44MB total space (3-1/2")
+\ 512-byte sectors, 4.5K x 2 FATs, 7K root directory, 1 sectors/cluster
+: 3hd-fl-init  ( -- )
+   2hd-den
+   0  2  d# 18  9  h# f0  d# 2880  d# 224  1  d# 512  0  false  (init-disk)
+;
+[then]
+
+[ifdef] format-hard-disks
+
+public
+
+variable  c-kbytes d# 5120 c-kbytes ! \ ** 1/17/91 cpt 
+
+\ Hard disk, using 5 Mbytes of the disk for DOS file system space
+\ 1K sectors, 6K x 2 FATs (enough to map <3 Mbytes of disk space),
+\ 256 root directory entries (8K), ?M total space, 1 sector/cluster
+: hd-init  ( -- )  \ 10 sects/FAT               
+   0  7  9  c-kbytes @ 2* d# 1024 /mod swap  if  1+  then
+                   h# f8  c-kbytes @  d# 256  1  d# 1024  false  (init-disk)
+;
+[then]
+
+[ifdef] format-floppies
+
+public
+
+: format-1.44  ( -- )  3hd-format 3hd-fl-init  ;
+: format-2.88  ( -- )  3ed-format 3ed-fl-init  ;
+[then]

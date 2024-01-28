@@ -1,0 +1,79 @@
+purpose: Access primitives for descriptor tables.
+
+\ Far pointers to the beginnings of descriptor tables
+\ "farp" is "offset selector"
+
+defer idt  ( -- farp )
+1A28219 	 0  0  0 69 64 74 83 
+1A28220 	10 82 A2  1 5C 40 A0  1 
+1A28228 	30  8  0  0 
+defer gdt  ( -- farp )
+1A2822C 	67 64 74 83 
+1A28230 	24 82 A2  1 5C 40 A0  1 
+1A28238 	34  8  0  0 
+defer ldt  ( -- farp )
+1A2823C 	6C 64 74 83 
+1A28240 	34 82 A2  1 5C 40 A0  1 
+1A28248 	38  8  0  0 
+defer environ-ptr  ( -- farp )
+1A2824C 	65 6E 76 69 
+1A28250 	72 6F 6E 2D 70 74 72 8B 
+1A28258 	44 82 A2  1 5C 40 A0  1 
+1A28260 	3C  8  0  0 
+
+: (ldt)    ( -- farp )  0  ldtr@  ;
+1A28264 	 0  0 28 6C 
+1A28268 	64 74 29 85 5C 82 A2  1 
+1A28270 	20 40 A0  1 70 6F A0  1 
+1A28278 	90 76 A1  1 58 46 A0  1 
+' (ldt) is ldt
+
+\ Add an offset to a far pointer.
+: far+  ( farp-offset farp-sel offset -- farp-offset' farp-sel )  rot + swap  ;
+1A28280 	 0  0  0 66 61 72 2B 84 
+1A28288 	70 82 A2  1 20 40 A0  1 
+1A28290 	7C 49 A0  1  4 45 A0  1 
+1A28298 	68 49 A0  1 58 46 A0  1 
+
+\ Fetch and store far pointers
+: farp@  ( adr -- offset sel )  dup le-l@  swap la1+ le-w@  ;
+1A282A0 	 0  0 66 61 72 70 40 85 
+1A282A8 	8C 82 A2  1 20 40 A0  1 
+1A282B0 	40 49 A0  1 4C 4C A0  1 
+1A282B8 	68 49 A0  1 B4 50 A0  1 
+1A282C0 	80 4C A0  1 58 46 A0  1 
+: farp!  ( offset sel adr -- )  tuck la1+ le-w!  le-l!  ;
+1A282C8 	 0  0 66 61 72 70 21 85 
+1A282D0 	AC 82 A2  1 20 40 A0  1 
+1A282D8 	E8 46 A0  1 B4 50 A0  1 
+1A282E0 	90 4D A0  1 44 4D A0  1 
+1A282E8 	58 46 A0  1 
+
+\ 4-byte far access
+: far-l@  ( farp -- l )  spacel@  ;
+1A282EC 	 0 66 61 72 
+1A282F0 	2D 6C 40 86 D4 82 A2  1 
+1A282F8 	20 40 A0  1 78 81 A2  1 
+1A28300 	58 46 A0  1 
+: far-l!  ( l farp -- )  spacel!  ;
+1A28304 	 0 66 61 72 
+1A28308 	2D 6C 21 86 F8 82 A2  1 
+1A28310 	20 40 A0  1 94 81 A2  1 
+1A28318 	58 46 A0  1 
+
+\ 8-byte far access
+: far-x@  ( farp -- ls ms )  2dup far-l@  -rot  4 far+ far-l@  ;
+1A2831C 	 0 66 61 72 
+1A28320 	2D 78 40 86 10 83 A2  1 
+1A28328 	20 40 A0  1 C0 49 A0  1 
+1A28330 	F8 82 A2  1 94 49 A0  1 
+1A28338 	B0 6F A0  1 8C 82 A2  1 
+1A28340 	F8 82 A2  1 58 46 A0  1 
+: far-x!  ( ls ms farp -- )  rot 2 pick 2 pick 4 far+  far-l!  far-l!  ;
+1A28348 	 0 66 61 72 2D 78 21 86 
+1A28350 	28 83 A2  1 20 40 A0  1 
+1A28358 	7C 49 A0  1 90 6F A0  1 
+1A28360 	 C 4A A0  1 90 6F A0  1 
+1A28368 	 C 4A A0  1 B0 6F A0  1 
+1A28370 	8C 82 A2  1 10 83 A2  1 
+1A28378 	10 83 A2  1 58 46 A0  1 

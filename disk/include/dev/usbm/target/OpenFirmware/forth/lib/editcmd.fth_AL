@@ -1,0 +1,627 @@
+
+headers
+forth definitions
+
+vocabulary keys-forth
+1A15B04 	 0 6B 65 79 
+1A15B08 	73 2D 66 6F 72 74 68 8A 
+1A15B10 	64 40 A1  1 E0 B6 A0  1 
+1A15B18 	20  4  0  0 18 F3 A0  1 
+1A15B20 	 0  0  0  0 
+defer skey  ' key is skey  \ Perhaps override with an ekey-based word later
+1A15B24 	 0  0  0 73 
+1A15B28 	6B 65 79 84 14 5B A1  1 
+1A15B30 	5C 40 A0  1 24  4  0  0 
+
+hidden definitions
+
+headerless
+tuser keys  ' keys-forth keys token!
+1A15B38 	 0  0  0 6B 65 79 73 84 
+1A15B40 	EC 5A A1  1 48 40 A0  1 
+1A15B48 	28  4  0  0 
+
+d# 32 buffer: name-buf
+1A15B4C 	 0  0  0 6E 
+1A15B50 	61 6D 65 2D 62 75 66 88 
+1A15B58 	44 5B A1  1 B4 A9 A0  1 
+1A15B60 	2C  4  0  0 20  0  0  0 
+1A15B68 	EC 55 A1  1 
+
+: add-char-to-string  ( str char -- )
+1A15B6C 	 0 61 64 64 
+1A15B70 	2D 63 68 61 72 2D 74 6F 
+1A15B78 	2D 73 74 72 69 6E 67 92 
+1A15B80 	5C 5B A1  1 20 40 A0  1 
+   over ( str char str )
+1A15B88 	54 49 A0  1 
+   count dup >r ( str char addr len )
+1A15B8C 	BC 53 A0  1 
+1A15B90 	40 49 A0  1 BC 45 A0  1 
+   + c!  ( str )
+1A15B98 	 4 45 A0  1 B8 4D A0  1 
+   r> 1+ swap c!
+1A15BA0 	D0 45 A0  1 30 4B A0  1 
+1A15BA8 	68 49 A0  1 B8 4D A0  1 
+;
+1A15BB0 	58 46 A0  1 
+: add-char-to-name  ( str char -- )
+1A15BB4 	 0  0  0 61 
+1A15BB8 	64 64 2D 63 68 61 72 2D 
+1A15BC0 	74 6F 2D 6E 61 6D 65 90 
+1A15BC8 	84 5B A1  1 20 40 A0  1 
+   dup bl u<  if    ( str char )  \ control character so translate to ^ form
+1A15BD0 	40 49 A0  1 28 70 A0  1 
+1A15BD8 	A8 48 A0  1 DC 41 A0  1 
+1A15BE0 	30  0  0  0 
+      over ascii ^ add-char-to-string  ( str char )
+1A15BE4 	54 49 A0  1 
+1A15BE8 	58 41 A0  1 5E  0  0  0 
+1A15BF0 	84 5B A1  1 
+      ascii a 1- +  ( str char' )  add-char-to-string
+1A15BF4 	58 41 A0  1 
+1A15BF8 	61  0  0  0 54 4B A0  1 
+1A15C00 	 4 45 A0  1 84 5B A1  1 
+  else
+1A15C08 	C8 41 A0  1 A4  0  0  0 
+      \ Map the Delete key to the string "del"
+      dup d# 127 =  if   drop  " del" rot $cat  exit  then
+1A15C10 	40 49 A0  1 58 41 A0  1 
+1A15C18 	7F  0  0  0 24 48 A0  1 
+1A15C20 	DC 41 A0  1 20  0  0  0 
+1A15C28 	30 49 A0  1 9C 53 A0  1 
+1A15C30 	 3 64 65 6C  0  0  0  0 
+1A15C38 	7C 49 A0  1 84 7E A0  1 
+1A15C40 	40 46 A0  1 
+
+      \ Map the Unicode Control Sequence Identifier to the string "ESC["
+      dup h# 9b =  if   drop  " esc-[" rot $cat  exit  then
+1A15C44 	40 49 A0  1 
+1A15C48 	58 41 A0  1 9B  0  0  0 
+1A15C50 	24 48 A0  1 DC 41 A0  1 
+1A15C58 	20  0  0  0 30 49 A0  1 
+1A15C60 	9C 53 A0  1  5 65 73 63 
+1A15C68 	2D 5B  0  0 7C 49 A0  1 
+1A15C70 	84 7E A0  1 40 46 A0  1 
+
+      \ Map the out-of-band character into the string "ext"
+      dup -1 =   if   drop  " ext" rot $cat  exit  then
+1A15C78 	40 49 A0  1 58 41 A0  1 
+1A15C80 	FF FF FF FF 24 48 A0  1 
+1A15C88 	DC 41 A0  1 20  0  0  0 
+1A15C90 	30 49 A0  1 9C 53 A0  1 
+1A15C98 	 3 65 78 74  0  0  0  0 
+1A15CA0 	7C 49 A0  1 84 7E A0  1 
+1A15CA8 	40 46 A0  1 
+
+      add-char-to-string
+1A15CAC 	84 5B A1  1 
+  then
+;
+1A15CB0 	58 46 A0  1 
+defer not-found
+1A15CB4 	 0  0 6E 6F 
+1A15CB8 	74 2D 66 6F 75 6E 64 89 
+1A15CC0 	CC 5B A1  1 5C 40 A0  1 
+1A15CC8 	30  4  0  0 
+
+nuser lastchar		\ most-recently-typed character
+1A15CCC 	 0  0  0 6C 
+1A15CD0 	61 73 74 63 68 61 72 88 
+1A15CD8 	C4 5C A1  1 48 40 A0  1 
+1A15CE0 	34  4  0  0 
+nuser beforechar	\ next most-recently-typed character
+1A15CE4 	 0 62 65 66 
+1A15CE8 	6F 72 65 63 68 61 72 8A 
+1A15CF0 	DC 5C A1  1 48 40 A0  1 
+1A15CF8 	38  4  0  0 
+: do-command  ( prefix$ -- )
+1A15CFC 	 0 64 6F 2D 
+1A15D00 	63 6F 6D 6D 61 6E 64 8A 
+1A15D08 	F4 5C A1  1 20 40 A0  1 
+   name-buf place
+1A15D10 	5C 5B A1  1 F0 88 A0  1 
+   name-buf lastchar @  add-char-to-name
+1A15D18 	5C 5B A1  1 DC 5C A1  1 
+1A15D20 	5C 4C A0  1 CC 5B A1  1 
+   name-buf count  keys token@ search-wordlist  ( false | cfa true )
+1A15D28 	5C 5B A1  1 BC 53 A0  1 
+1A15D30 	44 5B A1  1  C 54 A0  1 
+1A15D38 	38 BB A0  1 
+   if  catch drop  else  not-found  then
+1A15D3C 	DC 41 A0  1 
+1A15D40 	14  0  0  0 14 7F A0  1 
+1A15D48 	30 49 A0  1 C8 41 A0  1 
+1A15D50 	 8  0  0  0 C4 5C A1  1 
+;
+1A15D58 	58 46 A0  1 
+
+defer printable-char
+1A15D5C 	 0 70 72 69 
+1A15D60 	6E 74 61 62 6C 65 2D 63 
+1A15D68 	68 61 72 8E  C 5D A1  1 
+1A15D70 	5C 40 A0  1 3C  4  0  0 
+nuser finished		\ is the line complete yet?
+1A15D78 	 0  0  0 66 69 6E 69 73 
+1A15D80 	68 65 64 88 70 5D A1  1 
+1A15D88 	48 40 A0  1 40  4  0  0 
+
+headers
+: start-edit  ( bufadr buflen bufmax line# position display? -- )
+1A15D90 	 0 73 74 61 72 74 2D 65 
+1A15D98 	64 69 74 8A 88 5D A1  1 
+1A15DA0 	20 40 A0  1 
+   is display?   2>r                        ( adr len max r: line#,position )
+1A15DA4 	B8 40 A0  1 
+1A15DA8 	7C 40 A1  1 F8 45 A0  1 
+   is bufmax  is buflen  is buf-start-adr   ( r: line#,position )
+1A15DB0 	B8 40 A0  1 CC 4A A1  1 
+1A15DB8 	B8 40 A0  1 B8 4A A1  1 
+1A15DC0 	B8 40 A0  1 A4 4A A1  1 
+   2r> buf-start-adr +  swap  set-line
+1A15DC8 	10 46 A0  1 A4 4A A1  1 
+1A15DD0 	 4 45 A0  1 68 49 A0  1 
+1A15DD8 	F4 4C A1  1 
+;
+1A15DDC 	58 46 A0  1 
+: finish-edit  ( -- length )  buflen  ;
+1A15DE0 	66 69 6E 69 73 68 2D 65 
+1A15DE8 	64 69 74 8B A0 5D A1  1 
+1A15DF0 	20 40 A0  1 B8 4A A1  1 
+1A15DF8 	58 46 A0  1 
+headerless
+: edit-command-loop  ( -- )
+1A15DFC 	 0  0 65 64 
+1A15E00 	69 74 2D 63 6F 6D 6D 61 
+1A15E08 	6E 64 2D 6C 6F 6F 70 91 
+1A15E10 	F0 5D A1  1 20 40 A0  1 
+   open-display redisplay
+1A15E18 	F0 46 A1  1 3C 46 A1  1 
+   finished off
+1A15E20 	88 5D A1  1 F8 4B A0  1 
+   begin
+      lastchar @ beforechar !
+1A15E28 	DC 5C A1  1 5C 4C A0  1 
+1A15E30 	F4 5C A1  1 54 4D A0  1 
+      skey lastchar !
+1A15E38 	30 5B A1  1 DC 5C A1  1 
+1A15E40 	54 4D A0  1 
+      lastchar @
+1A15E44 	DC 5C A1  1 
+1A15E48 	5C 4C A0  1 
+      dup  bl     h# 7e  between
+1A15E4C 	40 49 A0  1 
+1A15E50 	28 70 A0  1 58 41 A0  1 
+1A15E58 	7E  0  0  0 D8 70 A0  1 
+      swap h# a0  h# fe  between  or
+1A15E60 	68 49 A0  1 58 41 A0  1 
+1A15E68 	A0  0  0  0 58 41 A0  1 
+1A15E70 	FE  0  0  0 D8 70 A0  1 
+1A15E78 	70 44 A0  1 
+      if  lastchar @ printable-char  else  " "  do-command  then
+1A15E7C 	DC 41 A0  1 
+1A15E80 	18  0  0  0 DC 5C A1  1 
+1A15E88 	5C 4C A0  1 70 5D A1  1 
+1A15E90 	C8 41 A0  1 10  0  0  0 
+1A15E98 	9C 53 A0  1  0  0  0  0 
+1A15EA0 	 C 5D A1  1 
+      redisplay
+1A15EA4 	3C 46 A1  1 
+   finished @  until
+1A15EA8 	88 5D A1  1 5C 4C A0  1 
+1A15EB0 	DC 41 A0  1 74 FF FF FF 
+   close-display
+1A15EB8 	 C 47 A1  1 
+;
+1A15EBC 	58 46 A0  1 
+headerless
+
+: edit-buffer  (s bufadr buflen bufmax line# position -- newlen )
+1A15EC0 	65 64 69 74 2D 62 75 66 
+1A15EC8 	66 65 72 8B 14 5E A1  1 
+1A15ED0 	20 40 A0  1 
+[ifdef] set-window
+   accepting?  0=  if
+1A15ED4 	94 40 A1  1 
+1A15ED8 	24 47 A0  1 DC 41 A0  1 
+1A15EE0 	18  0  0  0 
+      0 0  display-width display-height  set-window
+1A15EE4 	70 6F A0  1 
+1A15EE8 	70 6F A0  1 64 40 A1  1 
+1A15EF0 	5C 54 A1  1 D4 5A A1  1 
+   then
+[then]
+
+   true start-edit
+1A15EF8 	 4 70 A0  1 A0 5D A1  1 
+
+   edit-command-loop
+1A15F00 	14 5E A1  1 
+
+   finish-edit
+1A15F04 	F0 5D A1  1 
+;
+1A15F08 	58 46 A0  1 
+headers
+: edit-file  (s addr len maxlen -- newlen )
+1A15F0C 	 0  0 65 64 
+1A15F10 	69 74 2D 66 69 6C 65 89 
+1A15F18 	D0 5E A1  1 20 40 A0  1 
+   0 0 edit-buffer
+1A15F20 	70 6F A0  1 70 6F A0  1 
+1A15F28 	D0 5E A1  1 
+;
+1A15F2C 	58 46 A0  1 
+also forth definitions
+: edit-line  ( addr len maxlen -- newlen )
+1A15F30 	 0  0 65 64 69 74 2D 6C 
+1A15F38 	69 6E 65 89 30 5B A1  1 
+1A15F40 	20 40 A0  1 
+   true is accepting?		\ Edit on a single line
+1A15F44 	 4 70 A0  1 
+1A15F48 	B8 40 A0  1 94 40 A1  1 
+   0 0  true start-edit  end-of-line  edit-command-loop  finish-edit  ( len' )
+1A15F50 	70 6F A0  1 70 6F A0  1 
+1A15F58 	 4 70 A0  1 A0 5D A1  1 
+1A15F60 	2C 48 A1  1 14 5E A1  1 
+1A15F68 	F0 5D A1  1 
+   false is accepting?
+1A15F6C 	18 70 A0  1 
+1A15F70 	B8 40 A0  1 94 40 A1  1 
+;
+1A15F78 	58 46 A0  1 
+previous definitions
+
+headerless
+
+d# 512  /tib 2* max  value hbufmax
+1A15F7C 	68 62 75 66 
+1A15F80 	6D 61 78 87 1C 5F A1  1 
+1A15F88 	50 40 A0  1 44  4  0  0 
+hbufmax buffer: hbuf-adr
+1A15F90 	 0  0  0 68 62 75 66 2D 
+1A15F98 	61 64 72 88 88 5F A1  1 
+1A15FA0 	B4 A9 A0  1 48  4  0  0 
+1A15FA8 	 0  8  0  0 5C 5B A1  1 
+0 value hbuflen
+1A15FB0 	68 62 75 66 6C 65 6E 87 
+1A15FB8 	A0 5F A1  1 50 40 A0  1 
+1A15FC0 	4C  4  0  0 
+: ensure-line-end  ( -- )
+1A15FC4 	65 6E 73 75 
+1A15FC8 	72 65 2D 6C 69 6E 65 2D 
+1A15FD0 	65 6E 64 8F BC 5F A1  1 
+1A15FD8 	20 40 A0  1 
+   \ Put a newline at the end of the last line if necessary
+   hbuflen  if
+1A15FDC 	BC 5F A1  1 
+1A15FE0 	DC 41 A0  1 4C  0  0  0 
+      hbuf-adr hbuflen +  1-  c@  newline  <> if
+1A15FE8 	A0 5F A1  1 BC 5F A1  1 
+1A15FF0 	 4 45 A0  1 54 4B A0  1 
+1A15FF8 	C4 4C A0  1 A8 71 A0  1 
+1A16000 	44 48 A0  1 DC 41 A0  1 
+1A16008 	28  0  0  0 
+         newline  hbuf-adr hbuflen +  c!
+1A1600C 	A8 71 A0  1 
+1A16010 	A0 5F A1  1 BC 5F A1  1 
+1A16018 	 4 45 A0  1 B8 4D A0  1 
+	 hbuflen 1+  is hbuflen
+1A16020 	BC 5F A1  1 30 4B A0  1 
+1A16028 	B8 40 A0  1 BC 5F A1  1 
+      then
+   then
+;
+1A16030 	58 46 A0  1 
+: make-room  ( needed -- )
+1A16034 	 0  0 6D 61 
+1A16038 	6B 65 2D 72 6F 6F 6D 89 
+1A16040 	D8 5F A1  1 20 40 A0  1 
+   1+  hbufmax  hbuflen -  -  ( shortfall )
+1A16048 	30 4B A0  1 88 5F A1  1 
+1A16050 	BC 5F A1  1 18 45 A0  1 
+1A16058 	18 45 A0  1 
+   dup  0>  if                ( shortfall )   \ Too little room at the end
+1A1605C 	40 49 A0  1 
+1A16060 	A4 47 A0  1 DC 41 A0  1 
+1A16068 	44  0  0  0 
+      dup hbuf-adr +  hbuf-adr  hbuflen 3 pick -  move  ( shortfall )
+1A1606C 	40 49 A0  1 
+1A16070 	A0 5F A1  1  4 45 A0  1 
+1A16078 	A0 5F A1  1 BC 5F A1  1 
+1A16080 	A0 6F A0  1  C 4A A0  1 
+1A16088 	18 45 A0  1 F4 4A A0  1 
+      hbuflen swap - is hbuflen
+1A16090 	BC 5F A1  1 68 49 A0  1 
+1A16098 	18 45 A0  1 B8 40 A0  1 
+1A160A0 	BC 5F A1  1 
+   else
+1A160A4 	C8 41 A0  1 
+1A160A8 	 8  0  0  0 
+      drop
+1A160AC 	30 49 A0  1 
+   then
+\      hbuf-adr over +  hbufmax  rot -    ( adr remaining )
+\      hbufmax -rot  bounds  ?do          ( next-line-adr )
+\         i c@  newline =  if
+\	    drop i 1+  hbuf-adr - leave
+\         then
+\      loop                               ( shortfall next-line-adr )
+\      dup hbuf-adr
+   ensure-line-end
+1A160B0 	D8 5F A1  1 
+;
+1A160B4 	58 46 A0  1 
+: open-history  ( needed -- buf len maxlen line# position )
+1A160B8 	 0  0  0 6F 70 65 6E 2D 
+1A160C0 	68 69 73 74 6F 72 79 8C 
+1A160C8 	44 60 A1  1 20 40 A0  1 
+   make-room   ( )
+1A160D0 	44 60 A1  1 
+   hbuf-adr  hbuflen  hbufmax  0  hbuflen
+1A160D4 	A0 5F A1  1 
+1A160D8 	BC 5F A1  1 88 5F A1  1 
+1A160E0 	70 6F A0  1 BC 5F A1  1 
+;
+1A160E8 	58 46 A0  1 
+: xaccept  (s adr len -- actual )
+1A160EC 	78 61 63 63 
+1A160F0 	65 70 74 87 CC 60 A1  1 
+1A160F8 	20 40 A0  1 
+   tuck dup hbufmax 1-  >  if    ( len adr len )
+1A160FC 	E8 46 A0  1 
+1A16100 	40 49 A0  1 88 5F A1  1 
+1A16108 	54 4B A0  1  4 48 A0  1 
+1A16110 	DC 41 A0  1 1C  0  0  0 
+      0 swap  0 0                ( len adr 0 len 0 0 )
+1A16118 	70 6F A0  1 68 49 A0  1 
+1A16120 	70 6F A0  1 70 6F A0  1 
+   else                          ( adr len )
+1A16128 	C8 41 A0  1  8  0  0  0 
+      open-history               ( len adr  hbuf hlen hmax line# position )
+1A16130 	CC 60 A1  1 
+   then
+
+   true is accepting?
+1A16134 	 4 70 A0  1 
+1A16138 	B8 40 A0  1 94 40 A1  1 
+   edit-buffer  is hbuflen       ( len adr )
+1A16140 	D0 5E A1  1 B8 40 A0  1 
+1A16148 	BC 5F A1  1 
+   false is accepting?
+1A1614C 	18 70 A0  1 
+1A16150 	B8 40 A0  1 94 40 A1  1 
+
+   swap linelen min  tuck        ( len' adr len' )
+1A16158 	68 49 A0  1 F8 40 A1  1 
+1A16160 	74 4A A0  1 E8 46 A0  1 
+   line-start-adr  -rot move     ( len' )
+1A16168 	E4 40 A1  1 94 49 A0  1 
+1A16170 	F4 4A A0  1 
+;
+1A16174 	58 46 A0  1 
+: new-line-or-done  ( -- )
+1A16178 	 0  0  0 6E 65 77 2D 6C 
+1A16180 	69 6E 65 2D 6F 72 2D 64 
+1A16188 	6F 6E 65 90 F8 60 A1  1 
+1A16190 	20 40 A0  1 
+   accepting?  if
+1A16194 	94 40 A1  1 
+1A16198 	DC 41 A0  1 30  0  0  0 
+      finished on
+1A161A0 	88 5D A1  1 E0 4B A0  1 
+      edit-line# -1 < if  ?copyline  then
+1A161A8 	24 41 A1  1 58 41 A0  1 
+1A161B0 	FF FF FF FF E4 47 A0  1 
+1A161B8 	DC 41 A0  1  8  0  0  0 
+1A161C0 	6C 4E A1  1 
+   else
+1A161C4 	C8 41 A0  1 
+1A161C8 	 8  0  0  0 
+      new-line
+1A161CC 	D0 52 A1  1 
+   then
+;
+1A161D0 	58 46 A0  1 
+
+: self-insert  ( -- )  lastchar @ insert-character  ;
+1A161D4 	73 65 6C 66 
+1A161D8 	2D 69 6E 73 65 72 74 8B 
+1A161E0 	90 61 A1  1 20 40 A0  1 
+1A161E8 	DC 5C A1  1 5C 4C A0  1 
+1A161F0 	C0 4F A1  1 58 46 A0  1 
+
+headers
+keys-forth also definitions
+
+: ^f  forward-character  ;
+1A161F8 	 0 5E 66 82  0  0 A0  1 
+1A16200 	20 40 A0  1 E4 47 A1  1 
+1A16208 	58 46 A0  1 
+: ^b  backward-character  ;
+1A1620C 	 0 5E 62 82 
+1A16210 	 0 62 A1  1 20 40 A0  1 
+1A16218 	 C 48 A1  1 58 46 A0  1 
+: ^a  beginning-of-line  ;
+1A16220 	 0 5E 61 82 14 62 A1  1 
+1A16228 	20 40 A0  1 54 48 A1  1 
+1A16230 	58 46 A0  1 
+: ^c  finished on  ;
+1A16234 	 0 5E 63 82 
+1A16238 	28 62 A1  1 20 40 A0  1 
+1A16240 	88 5D A1  1 E0 4B A0  1 
+1A16248 	58 46 A0  1 
+: ^e  end-of-line  ;
+1A1624C 	 0 5E 65 82 
+1A16250 	3C 62 A1  1 20 40 A0  1 
+1A16258 	2C 48 A1  1 58 46 A0  1 
+: ^d  erase-next-character  ;
+1A16260 	 0 5E 64 82 54 62 A1  1 
+1A16268 	20 40 A0  1 24 50 A1  1 
+1A16270 	58 46 A0  1 
+: ^h  erase-previous-character  ;
+1A16274 	 0 5E 68 82 
+1A16278 	68 62 A1  1 20 40 A0  1 
+1A16280 	5C 50 A1  1 58 46 A0  1 
+: ^i  bl insert-character  ;
+1A16288 	 0 5E 69 82 7C 62 A1  1 
+1A16290 	20 40 A0  1 28 70 A0  1 
+1A16298 	C0 4F A1  1 58 46 A0  1 
+: ^j  new-line-or-done  ;
+1A162A0 	 0 5E 6A 82 90 62 A1  1 
+1A162A8 	20 40 A0  1 90 61 A1  1 
+1A162B0 	58 46 A0  1 
+: ^k  kill-to-end-of-line  ;
+1A162B4 	 0 5E 6B 82 
+1A162B8 	A8 62 A1  1 20 40 A0  1 
+1A162C0 	94 50 A1  1 58 46 A0  1 
+: ^l  recenter  ;
+1A162C8 	 0 5E 6C 82 BC 62 A1  1 
+1A162D0 	20 40 A0  1 90 53 A1  1 
+1A162D8 	58 46 A0  1 
+: ^m  new-line-or-done  ;
+1A162DC 	 0 5E 6D 82 
+1A162E0 	D0 62 A1  1 20 40 A0  1 
+1A162E8 	90 61 A1  1 58 46 A0  1 
+: ^n  next-line  ;
+1A162F0 	 0 5E 6E 82 E4 62 A1  1 
+1A162F8 	20 40 A0  1 BC 51 A1  1 
+1A16300 	58 46 A0  1 
+: ^o  split-line  ;
+1A16304 	 0 5E 6F 82 
+1A16308 	F8 62 A1  1 20 40 A0  1 
+1A16310 	70 52 A1  1 58 46 A0  1 
+: ^p  previous-line  ;
+1A16318 	 0 5E 70 82  C 63 A1  1 
+1A16320 	20 40 A0  1 20 52 A1  1 
+1A16328 	58 46 A0  1 
+: ^q  quote-next-character  ;
+1A1632C 	 0 5E 71 82 
+1A16330 	20 63 A1  1 20 40 A0  1 
+1A16338 	F8 4F A1  1 58 46 A0  1 
+: ^x  finished on  ;		\ XXX for testing on systems where ^C is magic
+1A16340 	 0 5E 78 82 34 63 A1  1 
+1A16348 	20 40 A0  1 88 5D A1  1 
+1A16350 	E0 4B A0  1 58 46 A0  1 
+: ^y  yank  ;
+1A16358 	 0 5E 79 82 48 63 A1  1 
+1A16360 	20 40 A0  1 6C 53 A1  1 
+1A16368 	58 46 A0  1 
+
+: ^{  key lastchar !  " esc-" do-command  ;
+1A1636C 	 0 5E 7B 82 
+1A16370 	60 63 A1  1 20 40 A0  1 
+1A16378 	50 6C A0  1 DC 5C A1  1 
+1A16380 	54 4D A0  1 9C 53 A0  1 
+1A16388 	 4 65 73 63 2D  0  0  0 
+1A16390 	 C 5D A1  1 58 46 A0  1 
+
+: esc-v  only forth also definitions  beep beep beep  ;  \ Reset search order
+1A16398 	 0  0 65 73 63 2D 76 85 
+1A163A0 	74 63 A1  1 20 40 A0  1 
+1A163A8 	88 C3 A0  1  8 C5 A0  1 
+1A163B0 	C8 C1 A0  1 2C C4 A0  1 
+1A163B8 	A8 40 A1  1 A8 40 A1  1 
+1A163C0 	A8 40 A1  1 58 46 A0  1 
+: esc-h  erase-previous-word  ;
+1A163C8 	 0  0 65 73 63 2D 68 85 
+1A163D0 	A4 63 A1  1 20 40 A0  1 
+1A163D8 	2C 51 A1  1 58 46 A0  1 
+: esc-d  erase-next-word  ;
+1A163E0 	 0  0 65 73 63 2D 64 85 
+1A163E8 	D4 63 A1  1 20 40 A0  1 
+1A163F0 	FC 50 A1  1 58 46 A0  1 
+: esc-f  forward-word  ;
+1A163F8 	 0  0 65 73 63 2D 66 85 
+1A16400 	EC 63 A1  1 20 40 A0  1 
+1A16408 	4C 4A A1  1 58 46 A0  1 
+: esc-b  backward-word  ;
+1A16410 	 0  0 65 73 63 2D 62 85 
+1A16418 	 4 64 A1  1 20 40 A0  1 
+1A16420 	78 4A A1  1 58 46 A0  1 
+: esc-^h  erase-previous-word  ;
+1A16428 	 0 65 73 63 2D 5E 68 86 
+1A16430 	1C 64 A1  1 20 40 A0  1 
+1A16438 	2C 51 A1  1 58 46 A0  1 
+: esc-^d  erase-next-word  ;
+1A16440 	 0 65 73 63 2D 5E 64 86 
+1A16448 	34 64 A1  1 20 40 A0  1 
+1A16450 	FC 50 A1  1 58 46 A0  1 
+: esc-^f  forward-word  ;
+1A16458 	 0 65 73 63 2D 5E 66 86 
+1A16460 	4C 64 A1  1 20 40 A0  1 
+1A16468 	4C 4A A1  1 58 46 A0  1 
+: esc-^b  backward-word  ;
+1A16470 	 0 65 73 63 2D 5E 62 86 
+1A16478 	64 64 A1  1 20 40 A0  1 
+1A16480 	78 4A A1  1 58 46 A0  1 
+: esc-del  erase-next-word  ;
+1A16488 	65 73 63 2D 64 65 6C 87 
+1A16490 	7C 64 A1  1 20 40 A0  1 
+1A16498 	FC 50 A1  1 58 46 A0  1 
+
+\ ANSI cursor keys
+: esc-[  key lastchar !  " esc-[" do-command  ;
+1A164A0 	 0  0 65 73 63 2D 5B 85 
+1A164A8 	94 64 A1  1 20 40 A0  1 
+1A164B0 	50 6C A0  1 DC 5C A1  1 
+1A164B8 	54 4D A0  1 9C 53 A0  1 
+1A164C0 	 5 65 73 63 2D 5B  0  0 
+1A164C8 	 C 5D A1  1 58 46 A0  1 
+: esc-o  key lastchar !  " esc-[" do-command  ;  \ TeraTerm uses esc-o as the arrow prefix
+1A164D0 	 0  0 65 73 63 2D 6F 85 
+1A164D8 	AC 64 A1  1 20 40 A0  1 
+1A164E0 	50 6C A0  1 DC 5C A1  1 
+1A164E8 	54 4D A0  1 9C 53 A0  1 
+1A164F0 	 5 65 73 63 2D 5B  0  0 
+1A164F8 	 C 5D A1  1 58 46 A0  1 
+: esc-[A previous-line  ;
+1A16500 	 0 65 73 63 2D 5B 61 86 
+1A16508 	DC 64 A1  1 20 40 A0  1 
+1A16510 	20 52 A1  1 58 46 A0  1 
+: esc-[B next-line  ;
+1A16518 	 0 65 73 63 2D 5B 62 86 
+1A16520 	 C 65 A1  1 20 40 A0  1 
+1A16528 	BC 51 A1  1 58 46 A0  1 
+: esc-[C forward-character  ;
+1A16530 	 0 65 73 63 2D 5B 63 86 
+1A16538 	24 65 A1  1 20 40 A0  1 
+1A16540 	E4 47 A1  1 58 46 A0  1 
+: esc-[D backward-character  ;
+1A16548 	 0 65 73 63 2D 5B 64 86 
+1A16550 	3C 65 A1  1 20 40 A0  1 
+1A16558 	 C 48 A1  1 58 46 A0  1 
+: esc-[P erase-previous-character  ;
+1A16560 	 0 65 73 63 2D 5B 70 86 
+1A16568 	54 65 A1  1 20 40 A0  1 
+1A16570 	5C 50 A1  1 58 46 A0  1 
+
+hidden definitions
+headerless
+: emacs-edit
+1A16578 	 0 65 6D 61 63 73 2D 65 
+1A16580 	64 69 74 8A E4 61 A1  1 
+1A16588 	20 40 A0  1 
+   ['] beep             is  not-found
+1A1658C 	60 53 A0  1 
+1A16590 	A8 40 A1  1 98 40 A0  1 
+1A16598 	C4 5C A1  1 
+   ['] insert-character is  printable-char
+1A1659C 	60 53 A0  1 
+1A165A0 	C0 4F A1  1 98 40 A0  1 
+1A165A8 	70 5D A1  1 
+   ['] xaccept          is  accept
+1A165AC 	60 53 A0  1 
+1A165B0 	F8 60 A1  1 98 40 A0  1 
+1A165B8 	D8 6C A0  1 
+;
+1A165BC 	58 46 A0  1 
+emacs-edit
+
+headers
+forth definitions
+: init  ( -- )  init  emacs-edit  ;
+1A165C0 	 0  0  0 69 6E 69 74 84 
+1A165C8 	40 5F A1  1 20 40 A0  1 
+1A165D0 	40 E9 A0  1 88 65 A1  1 
+1A165D8 	58 46 A0  1 

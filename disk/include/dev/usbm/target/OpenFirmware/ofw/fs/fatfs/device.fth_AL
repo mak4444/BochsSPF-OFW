@@ -1,0 +1,563 @@
+purpose: BPB management
+
+hex
+
+d# 4096 constant /sector-max
+1A2C2D4 	2F 73 65 63 
+1A2C2D8 	74 6F 72 2D 6D 61 78 8B 
+1A2C2E0 	A0 C2 A2  1 68 40 A0  1 
+1A2C2E8 	 0 10  0  0 
+
+: /sector  ( -- n )  bps w@  ;
+1A2C2EC 	2F 73 65 63 
+1A2C2F0 	74 6F 72 87 E4 C2 A2  1 
+1A2C2F8 	20 40 A0  1 34 BC A2  1 
+1A2C300 	94 4C A0  1 58 46 A0  1 
+: /cluster  ( -- n )  spc c@ /sector *  ;
+1A2C308 	 0  0  0 2F 63 6C 75 73 
+1A2C310 	74 65 72 88 F8 C2 A2  1 
+1A2C318 	20 40 A0  1 58 BC A2  1 
+1A2C320 	C4 4C A0  1 F8 C2 A2  1 
+1A2C328 	1C 5F A0  1 58 46 A0  1 
+: bytes>clusters  ( #bytes -- #clusters )  /cluster /mod  swap  if  1+  then  ;
+1A2C330 	 0 62 79 74 65 73 3E 63 
+1A2C338 	6C 75 73 74 65 72 73 8E 
+1A2C340 	18 C3 A2  1 20 40 A0  1 
+1A2C348 	18 C3 A2  1 50 5F A0  1 
+1A2C350 	68 49 A0  1 DC 41 A0  1 
+1A2C358 	 8  0  0  0 30 4B A0  1 
+1A2C360 	58 46 A0  1 
+: uncache-device  ( -- )  0 bps w!  ;
+1A2C364 	 0 75 6E 63 
+1A2C368 	61 63 68 65 2D 64 65 76 
+1A2C370 	69 63 65 8E 44 C3 A2  1 
+1A2C378 	20 40 A0  1 70 6F A0  1 
+1A2C380 	34 BC A2  1 A4 4D A0  1 
+1A2C388 	58 46 A0  1 
+
+: bytes>cl-entries  ( #bytes -- #cl-entries )
+1A2C38C 	 0  0  0 62 
+1A2C390 	79 74 65 73 3E 63 6C 2D 
+1A2C398 	65 6E 74 72 69 65 73 90 
+1A2C3A0 	78 C3 A2  1 20 40 A0  1 
+   fat-type c@  case
+1A2C3A8 	84 BC A2  1 C4 4C A0  1 
+      fat12  of  2 * 3 /  endof
+1A2C3B0 	C8 BC A2  1 48 43 A0  1 
+1A2C3B8 	1C  0  0  0 90 6F A0  1 
+1A2C3C0 	1C 5F A0  1 A0 6F A0  1 
+1A2C3C8 	98 5F A0  1 6C 43 A0  1 
+1A2C3D0 	3C  0  0  0 
+      fat16  of  2/       endof
+1A2C3D4 	DC BC A2  1 
+1A2C3D8 	48 43 A0  1 10  0  0  0 
+1A2C3E0 	78 4B A0  1 6C 43 A0  1 
+1A2C3E8 	24  0  0  0 
+      fat32  of  2/ 2/    endof
+1A2C3EC 	F0 BC A2  1 
+1A2C3F0 	48 43 A0  1 14  0  0  0 
+1A2C3F8 	78 4B A0  1 78 4B A0  1 
+1A2C400 	6C 43 A0  1  8  0  0  0 
+   endcase
+1A2C408 	84 43 A0  1 
+;
+1A2C40C 	58 46 A0  1 
+
+0 instance value dir-buf
+1A2C410 	64 69 72 2D 62 75 66 87 
+1A2C418 	A4 C3 A2  1 C0 FE A1  1 
+1A2C420 	1C  0  0  0 
+
+\ 3 sectors contains an integral number of FAT entries for either the
+\ 12-bit or 16-bit or 32-bit FAT format, thus avoiding fragments of entries.
+
+: init-fat-cache  ( -- )
+1A2C424 	 0 69 6E 69 
+1A2C428 	74 2D 66 61 74 2D 63 61 
+1A2C430 	63 68 65 8E 1C C4 A2  1 
+1A2C438 	20 40 A0  1 
+   \ We really should verify that the sector size is the same as it
+   \ used to be, in case a different floppy was inserted.
+   fat-cache @ 0=  if
+1A2C43C 	 0 BB A2  1 
+1A2C440 	5C 4C A0  1 24 47 A0  1 
+1A2C448 	DC 41 A0  1 48  0  0  0 
+      3 dup  sectors/fat-cache w!        ( #cache-sectors ) 
+1A2C450 	A0 6F A0  1 40 49 A0  1 
+1A2C458 	A4 BB A2  1 A4 4D A0  1 
+      /sector *                          ( cache-size )
+1A2C460 	F8 C2 A2  1 1C 5F A0  1 
+      dup alloc-mem  fat-cache !         ( cache-size )
+1A2C468 	40 49 A0  1 F0 6C A0  1 
+1A2C470 	 0 BB A2  1 54 4D A0  1 
+      bytes>cl-entries cl#/fat-cache w!
+1A2C478 	A4 C3 A2  1 D8 BB A2  1 
+1A2C480 	A4 4D A0  1 
+
+      /cluster alloc-mem  to dir-buf
+1A2C484 	18 C3 A2  1 
+1A2C488 	F0 6C A0  1 48 B8 A1  1 
+1A2C490 	1C C4 A2  1 
+   then
+   -1 fat-sector !  false fat-dirty w! 
+1A2C494 	58 41 A0  1 
+1A2C498 	FF FF FF FF 18 BB A2  1 
+1A2C4A0 	54 4D A0  1 18 70 A0  1 
+1A2C4A8 	BC BB A2  1 A4 4D A0  1 
+;
+1A2C4B0 	58 46 A0  1 
+: ?free-fat-cache  ( -- )
+1A2C4B4 	3F 66 72 65 
+1A2C4B8 	65 2D 66 61 74 2D 63 61 
+1A2C4C0 	63 68 65 8F 38 C4 A2  1 
+1A2C4C8 	20 40 A0  1 
+   fat-cache @  if
+1A2C4CC 	 0 BB A2  1 
+1A2C4D0 	5C 4C A0  1 DC 41 A0  1 
+1A2C4D8 	38  0  0  0 
+      dir-buf /cluster free-mem
+1A2C4DC 	1C C4 A2  1 
+1A2C4E0 	18 C3 A2  1  8 6D A0  1 
+      fat-cache @  sectors/fat-cache w@ /sector *  free-mem
+1A2C4E8 	 0 BB A2  1 5C 4C A0  1 
+1A2C4F0 	A4 BB A2  1 94 4C A0  1 
+1A2C4F8 	F8 C2 A2  1 1C 5F A0  1 
+1A2C500 	 8 6D A0  1 
+      0 fat-cache !
+1A2C504 	70 6F A0  1 
+1A2C508 	 0 BB A2  1 54 4D A0  1 
+   then
+;
+1A2C510 	58 46 A0  1 
+
+: (set-device)  ( device# -- )  current-device !  ;
+1A2C514 	 0  0  0 28 
+1A2C518 	73 65 74 2D 64 65 76 69 
+1A2C520 	63 65 29 8C C8 C4 A2  1 
+1A2C528 	20 40 A0  1 A8 BA A2  1 
+1A2C530 	54 4D A0  1 58 46 A0  1 
+
+\ XXX There must be a better way to do this.  Right now, we just zap
+\ the BPB cache for both removable devices.  This really ought to be
+\ device interface procedure.
+: media-changed?  ( -- flag )
+1A2C538 	 0 6D 65 64 69 61 2D 63 
+1A2C540 	68 61 6E 67 65 64 3F 8E 
+1A2C548 	28 C5 A2  1 20 40 A0  1 
+[ifdef] notdef
+   current-device @
+   3"floppy (set-device)  uncache-device
+   5"floppy (set-device)  uncache-device
+   (set-device)
+   true
+[else]
+   false
+1A2C550 	18 70 A0  1 
+[then]
+;
+1A2C554 	58 46 A0  1 
+
+: free-bpb  ( -- )
+1A2C558 	 0  0  0 66 72 65 65 2D 
+1A2C560 	62 70 62 88 4C C5 A2  1 
+1A2C568 	20 40 A0  1 
+   bpb @  ?dup  if  /sector-max  free-mem  0 bpb !  then
+1A2C56C 	44 B7 A2  1 
+1A2C570 	5C 4C A0  1 B4 70 A0  1 
+1A2C578 	DC 41 A0  1 18  0  0  0 
+1A2C580 	E4 C2 A2  1  8 6D A0  1 
+1A2C588 	70 6F A0  1 44 B7 A2  1 
+1A2C590 	54 4D A0  1 
+;
+1A2C594 	58 46 A0  1 
+: ?read-error  ( error? -- )
+1A2C598 	3F 72 65 61 64 2D 65 72 
+1A2C5A0 	72 6F 72 8B 68 C5 A2  1 
+1A2C5A8 	20 40 A0  1 
+   if          ( )
+1A2C5AC 	DC 41 A0  1 
+1A2C5B0 	30  0  0  0 
+      free-bpb
+1A2C5B4 	68 C5 A2  1 
+      "CaR ". ." BIOS Parameter Block"
+1A2C5B8 	B4 B3 A2  1 A8 7C A0  1 
+1A2C5C0 	20 7C A0  1 14 42 49 4F 
+1A2C5C8 	53 20 50 61 72 61 6D 65 
+1A2C5D0 	74 65 72 20 42 6C 6F 63 
+1A2C5D8 	6B  0  0  0 
+      abort
+1A2C5DC 	28 91 A0  1 
+   then         ( )
+;
+1A2C5E0 	58 46 A0  1 
+: not-bpb?  ( -- error? )
+1A2C5E4 	 0  0  0 6E 
+1A2C5E8 	6F 74 2D 62 70 62 3F 88 
+1A2C5F0 	A8 C5 A2  1 20 40 A0  1 
+   bp_bps lew@                         ( bps )
+1A2C5F8 	C4 B7 A2  1 7C B4 A2  1 
+   dup  dup 1- and 0=                  ( bps power-of-2? )
+1A2C600 	40 49 A0  1 40 49 A0  1 
+1A2C608 	54 4B A0  1 5C 44 A0  1 
+1A2C610 	24 47 A0  1 
+   swap  d# 256  d# 4096 between  and  ( bps-ok? )
+1A2C614 	68 49 A0  1 
+1A2C618 	58 41 A0  1  0  1  0  0 
+1A2C620 	58 41 A0  1  0 10  0  0 
+1A2C628 	D8 70 A0  1 5C 44 A0  1 
+   bp_nfats c@ 1 2 between and  0=     ( error? )
+1A2C630 	 4 B8 A2  1 C4 4C A0  1 
+1A2C638 	80 6F A0  1 90 6F A0  1 
+1A2C640 	D8 70 A0  1 5C 44 A0  1 
+1A2C648 	24 47 A0  1 
+;
+1A2C64C 	58 46 A0  1 
+: find-bpb  ( -- )
+1A2C650 	 0  0  0 66 69 6E 64 2D 
+1A2C658 	62 70 62 88 F4 C5 A2  1 
+1A2C660 	20 40 A0  1 
+   ?init-device   \ Call the device's init routine
+1A2C664 	64 4F A0  1 
+
+   /sector-max alloc-mem  bpb !
+1A2C668 	E4 C2 A2  1 F0 6C A0  1 
+1A2C670 	44 B7 A2  1 54 4D A0  1 
+   0 1 bpb @  read-sectors  ?read-error
+1A2C678 	70 6F A0  1 80 6F A0  1 
+1A2C680 	44 B7 A2  1 5C 4C A0  1 
+1A2C688 	4C BE A2  1 A8 C5 A2  1 
+   not-bpb?  if
+1A2C690 	F4 C5 A2  1 DC 41 A0  1 
+1A2C698 	30  0  0  0 
+      free-bpb
+1A2C69C 	68 C5 A2  1 
+      true abort" Not an MS-DOS formatted drive"
+1A2C6A0 	 4 70 A0  1  8 81 A0  1 
+1A2C6A8 	1D 4E 6F 74 20 61 6E 20 
+1A2C6B0 	4D 53 2D 44 4F 53 20 66 
+1A2C6B8 	6F 72 6D 61 74 74 65 64 
+1A2C6C0 	20 64 72 69 76 65  0  0 
+   then   
+;
+1A2C6C8 	58 46 A0  1 
+
+: alloc-fssector  ( -- )
+1A2C6CC 	 0 61 6C 6C 
+1A2C6D0 	6F 63 2D 66 73 73 65 63 
+1A2C6D8 	74 6F 72 8E 60 C6 A2  1 
+1A2C6E0 	20 40 A0  1 
+   fssector @ 0=  if  /sector-max alloc-mem  fssector !  then
+1A2C6E4 	BC B9 A2  1 
+1A2C6E8 	5C 4C A0  1 24 47 A0  1 
+1A2C6F0 	DC 41 A0  1 14  0  0  0 
+1A2C6F8 	E4 C2 A2  1 F0 6C A0  1 
+1A2C700 	BC B9 A2  1 54 4D A0  1 
+;
+1A2C708 	58 46 A0  1 
+: free-fssector  ( -- )
+1A2C70C 	 0  0 66 72 
+1A2C710 	65 65 2D 66 73 73 65 63 
+1A2C718 	74 6F 72 8D E0 C6 A2  1 
+1A2C720 	20 40 A0  1 
+   fssector @ ?dup  if  /sector-max  free-mem  0 fsinfo !  0 fssector ! then
+1A2C724 	BC B9 A2  1 
+1A2C728 	5C 4C A0  1 B4 70 A0  1 
+1A2C730 	DC 41 A0  1 24  0  0  0 
+1A2C738 	E4 C2 A2  1  8 6D A0  1 
+1A2C740 	70 6F A0  1 D0 B9 A2  1 
+1A2C748 	54 4D A0  1 70 6F A0  1 
+1A2C750 	BC B9 A2  1 54 4D A0  1 
+;
+1A2C758 	58 46 A0  1 
+: not-fsinfo?  ( -- error? )
+1A2C75C 	6E 6F 74 2D 
+1A2C760 	66 73 69 6E 66 6F 3F 8B 
+1A2C768 	20 C7 A2  1 20 40 A0  1 
+   0 fsinfo !
+1A2C770 	70 6F A0  1 D0 B9 A2  1 
+1A2C778 	54 4D A0  1 
+   fssector @ /sector bounds  do
+1A2C77C 	BC B9 A2  1 
+1A2C780 	5C 4C A0  1 F8 C2 A2  1 
+1A2C788 	F0 6D A0  1 88 42 A0  1 
+1A2C790 	3C  0  0  0 
+      i lel@ fssignature lel@ =  if
+1A2C794 	B4 42 A0  1 
+1A2C798 	DC B4 A2  1 A4 B9 A2  1 
+1A2C7A0 	DC B4 A2  1 24 48 A0  1 
+1A2C7A8 	DC 41 A0  1 14  0  0  0 
+         i fsinfo !  leave
+1A2C7B0 	B4 42 A0  1 D0 B9 A2  1 
+1A2C7B8 	54 4D A0  1 18 43 A0  1 
+      then
+   4 +loop
+1A2C7C0 	B0 6F A0  1 1C 42 A0  1 
+1A2C7C8 	CC FF FF FF 
+   fsinfo @ 0=
+1A2C7CC 	D0 B9 A2  1 
+1A2C7D0 	5C 4C A0  1 24 47 A0  1 
+;
+1A2C7D8 	58 46 A0  1 
+: read-fsinfo  ( sector# -- )
+1A2C7DC 	72 65 61 64 
+1A2C7E0 	2D 66 73 69 6E 66 6F 8B 
+1A2C7E8 	6C C7 A2  1 20 40 A0  1 
+   false fsinfos-dirty c!
+1A2C7F0 	18 70 A0  1 A0 BC A2  1 
+1A2C7F8 	B8 4D A0  1 
+   alloc-fssector
+1A2C7FC 	E0 C6 A2  1 
+   1 fssector @  read-sectors  if
+1A2C800 	80 6F A0  1 BC B9 A2  1 
+1A2C808 	5C 4C A0  1 4C BE A2  1 
+1A2C810 	DC 41 A0  1 38  0  0  0 
+      free-fssector
+1A2C818 	20 C7 A2  1 
+      "CaR ". ." File system information sector"
+1A2C81C 	B4 B3 A2  1 
+1A2C820 	A8 7C A0  1 20 7C A0  1 
+1A2C828 	1E 46 69 6C 65 20 73 79 
+1A2C830 	73 74 65 6D 20 69 6E 66 
+1A2C838 	6F 72 6D 61 74 69 6F 6E 
+1A2C840 	20 73 65 63 74 6F 72  0 
+      abort
+1A2C848 	28 91 A0  1 
+   then
+   not-fsinfo?  if  free-fssector  then
+1A2C84C 	6C C7 A2  1 
+1A2C850 	DC 41 A0  1  8  0  0  0 
+1A2C858 	20 C7 A2  1 
+;
+1A2C85C 	58 46 A0  1 
+: write-fsinfo  ( -- )
+1A2C860 	 0  0  0 77 72 69 74 65 
+1A2C868 	2D 66 73 69 6E 66 6F 8C 
+1A2C870 	EC C7 A2  1 20 40 A0  1 
+   fsinfos w@ 0<>  fsinfos-dirty c@ and  if
+1A2C878 	48 BC A2  1 94 4C A0  1 
+1A2C880 	44 47 A0  1 A0 BC A2  1 
+1A2C888 	C4 4C A0  1 5C 44 A0  1 
+1A2C890 	DC 41 A0  1 54  0  0  0 
+      false fsinfos-dirty c!
+1A2C898 	18 70 A0  1 A0 BC A2  1 
+1A2C8A0 	B8 4D A0  1 
+      fsinfos w@ 1 fssector @ write-sectors
+1A2C8A4 	48 BC A2  1 
+1A2C8A8 	94 4C A0  1 80 6F A0  1 
+1A2C8B0 	BC B9 A2  1 5C 4C A0  1 
+1A2C8B8 	8C BE A2  1 
+      if  "CaW ". ." File info sector"  abort  then
+1A2C8BC 	DC 41 A0  1 
+1A2C8C0 	28  0  0  0 D4 B3 A2  1 
+1A2C8C8 	A8 7C A0  1 20 7C A0  1 
+1A2C8D0 	10 46 69 6C 65 20 69 6E 
+1A2C8D8 	66 6F 20 73 65 63 74 6F 
+1A2C8E0 	72  0  0  0 28 91 A0  1 
+   then
+;
+1A2C8E8 	58 46 A0  1 
+
+\ This BPB parser implements Microsoft's recommended method
+\ for determining whether a filesystem is FAT-16 or FAT-32.
+variable nsects
+1A2C8EC 	 0 6E 73 65 
+1A2C8F0 	63 74 73 86 74 C8 A2  1 
+1A2C8F8 	48 40 A0  1 10  9  0  0 
+
+: bpb>device  ( -- )
+1A2C900 	 0 62 70 62 3E 64 65 76 
+1A2C908 	69 63 65 8A F8 C8 A2  1 
+1A2C910 	20 40 A0  1 
+   bp_media c@  media c!
+1A2C914 	4C B8 A2  1 
+1A2C918 	C4 4C A0  1 6C BC A2  1 
+1A2C920 	B8 4D A0  1 
+   bp_bps lew@  bps w!
+1A2C924 	C4 B7 A2  1 
+1A2C928 	7C B4 A2  1 34 BC A2  1 
+1A2C930 	A4 4D A0  1 
+   bp_spc c@    spc c!
+1A2C934 	D8 B7 A2  1 
+1A2C938 	C4 4C A0  1 58 BC A2  1 
+1A2C940 	B8 4D A0  1 
+   bp_spf lew@  ?dup  0=  if   bp_bspf lel@  then   spf l!
+1A2C944 	60 B8 A2  1 
+1A2C948 	7C B4 A2  1 B4 70 A0  1 
+1A2C950 	24 47 A0  1 DC 41 A0  1 
+1A2C958 	 C  0  0  0 CC B8 A2  1 
+1A2C960 	DC B4 A2  1 28 BB A2  1 
+1A2C968 	7C 4D A0  1 
+   bp_nsects lew@ ?dup 0=  if  bp_xnsects lel@  then  nsects l!
+1A2C96C 	34 B8 A2  1 
+1A2C970 	7C B4 A2  1 B4 70 A0  1 
+1A2C978 	24 47 A0  1 DC 41 A0  1 
+1A2C980 	 C  0  0  0 B8 B8 A2  1 
+1A2C988 	DC B4 A2  1 F8 C8 A2  1 
+1A2C990 	7C 4D A0  1 
+
+   bp_ndirs lew@  /dirent *  /sector 1- +   /sector /  #dir-sectors w!
+1A2C994 	1C B8 A2  1 
+1A2C998 	7C B4 A2  1 F0 C0 A2  1 
+1A2C9A0 	1C 5F A0  1 F8 C2 A2  1 
+1A2C9A8 	54 4B A0  1  4 45 A0  1 
+1A2C9B0 	F8 C2 A2  1 98 5F A0  1 
+1A2C9B8 	24 BC A2  1 A4 4D A0  1 
+
+   \ nsects is TotSec
+   \ #dir-sectors is RootDirSectors
+
+   \ Sector number where the FAT starts.
+   \ bp_nhid is the number of sectors before the BPB sector.
+   \ bp_res is the number of sectors from the BPT sector to the
+   \ first FAT sector.
+
+   \ If the underlying disk driver handles partition offsets,
+   \ we don't need to handle bp_nhid here.
+   bp_res lew@   ( bp_nhid lel@ + )
+1A2C9C0 	EC B7 A2  1 7C B4 A2  1 
+   dup fat-sector0 w!                    ( #resv-sectors )
+1A2C9C8 	40 49 A0  1 F0 BB A2  1 
+1A2C9D0 	A4 4D A0  1 
+   spf l@  bp_nfats c@ *  +              ( #early-sectors )
+1A2C9D4 	28 BB A2  1 
+1A2C9D8 	6C 4C A0  1  4 B8 A2  1 
+1A2C9E0 	C4 4C A0  1 1C 5F A0  1 
+1A2C9E8 	 4 45 A0  1 
+   dup dir-sector0 w!                    ( #early-sectors )
+1A2C9EC 	40 49 A0  1 
+1A2C9F0 	 8 BC A2  1 A4 4D A0  1 
+   #dir-sectors w@ +  cl-sector0 l!      ( )
+1A2C9F8 	24 BC A2  1 94 4C A0  1 
+1A2CA00 	 4 45 A0  1 6C BB A2  1 
+1A2CA08 	7C 4D A0  1 
+
+   \ cl-sector0 is FirstDataSector
+
+   nsects l@  #dir-sectors w@ -  spc c@ /  ( #clusters )
+1A2CA0C 	F8 C8 A2  1 
+1A2CA10 	6C 4C A0  1 24 BC A2  1 
+1A2CA18 	94 4C A0  1 18 45 A0  1 
+1A2CA20 	58 BC A2  1 C4 4C A0  1 
+1A2CA28 	98 5F A0  1 
+   dup d# 65525 >=  if                    ( #clusters )
+1A2CA2C 	40 49 A0  1 
+1A2CA30 	58 41 A0  1 F5 FF  0  0 
+1A2CA38 	EC 48 A0  1 DC 41 A0  1 
+1A2CA40 	50  0  0  0 
+      drop  fat32 fat-type c!
+1A2CA44 	30 49 A0  1 
+1A2CA48 	F0 BC A2  1 84 BC A2  1 
+1A2CA50 	B8 4D A0  1 
+      0 dir-sector0 w!
+1A2CA54 	70 6F A0  1 
+1A2CA58 	 8 BC A2  1 A4 4D A0  1 
+      bp_rdirclus lel@  rdirclus l!
+1A2CA60 	14 B9 A2  1 DC B4 A2  1 
+1A2CA68 	40 BB A2  1 7C 4D A0  1 
+      bp_fsinfos lew@ dup read-fsinfo fsinfos w!
+1A2CA70 	2C B9 A2  1 7C B4 A2  1 
+1A2CA78 	40 49 A0  1 EC C7 A2  1 
+1A2CA80 	48 BC A2  1 A4 4D A0  1 
+   else
+1A2CA88 	C8 41 A0  1 6C  0  0  0 
+      d# 4085 >=  if  fat16  else  fat12  then  fat-type c!
+1A2CA90 	58 41 A0  1 F5  F  0  0 
+1A2CA98 	EC 48 A0  1 DC 41 A0  1 
+1A2CAA0 	10  0  0  0 DC BC A2  1 
+1A2CAA8 	C8 41 A0  1  8  0  0  0 
+1A2CAB0 	C8 BC A2  1 84 BC A2  1 
+1A2CAB8 	B8 4D A0  1 
+      0 fsinfo !  0 fssector !  false fsinfos-dirty c!
+1A2CABC 	70 6F A0  1 
+1A2CAC0 	D0 B9 A2  1 54 4D A0  1 
+1A2CAC8 	70 6F A0  1 BC B9 A2  1 
+1A2CAD0 	54 4D A0  1 18 70 A0  1 
+1A2CAD8 	A0 BC A2  1 B8 4D A0  1 
+      0 fsinfos w!  0 rdirclus l!
+1A2CAE0 	70 6F A0  1 48 BC A2  1 
+1A2CAE8 	A4 4D A0  1 70 6F A0  1 
+1A2CAF0 	40 BB A2  1 7C 4D A0  1 
+   then
+
+   \ The number of clusters is limited both by space for clusters numbers
+   \ in the FAT and by disk space for storage of the actual clusters.
+   \ It would be silly to waste disk space by making the FAT too small,
+   \ but I am paranoid so I check both limits.
+
+   \ Calculate the number of clusters the FAT can represent
+   spf l@  /sector *    bytes>cl-entries   ( #clusters )
+1A2CAF8 	28 BB A2  1 6C 4C A0  1 
+1A2CB00 	F8 C2 A2  1 1C 5F A0  1 
+1A2CB08 	A4 C3 A2  1 
+
+   \ Compare it with the number of clusters for which there is disk space
+   nsects l@
+1A2CB0C 	F8 C8 A2  1 
+1A2CB10 	6C 4C A0  1 
+   cl-sector0 l@ -  spc c@ /  2 +   min  1-
+1A2CB14 	6C BB A2  1 
+1A2CB18 	6C 4C A0  1 18 45 A0  1 
+1A2CB20 	58 BC A2  1 C4 4C A0  1 
+1A2CB28 	98 5F A0  1 90 6F A0  1 
+1A2CB30 	 4 45 A0  1 74 4A A0  1 
+1A2CB38 	54 4B A0  1 
+   max-cl# l!
+1A2CB3C 	54 BB A2  1 
+1A2CB40 	7C 4D A0  1 
+;
+1A2CB44 	58 46 A0  1 
+
+: ?read-bpb  ( -- )
+1A2CB48 	 0  0 3F 72 65 61 64 2D 
+1A2CB50 	62 70 62 89 10 C9 A2  1 
+1A2CB58 	20 40 A0  1 
+   /sector 0=  if      \ Read bpb if necessary
+1A2CB5C 	F8 C2 A2  1 
+1A2CB60 	24 47 A0  1 DC 41 A0  1 
+1A2CB68 	88  0  0  0 
+      init-sector-size
+1A2CB6C 	9C BD A2  1 
+      find-bpb
+1A2CB70 	60 C6 A2  1 
+      bp_bps lew@  bps w@ <>  if
+1A2CB74 	C4 B7 A2  1 
+1A2CB78 	7C B4 A2  1 34 BC A2  1 
+1A2CB80 	94 4C A0  1 44 48 A0  1 
+1A2CB88 	DC 41 A0  1 48  0  0  0 
+         ." WARNING: BPB sector size differs from device sector size" cr
+1A2CB90 	20 7C A0  1 38 57 41 52 
+1A2CB98 	4E 49 4E 47 3A 20 42 50 
+1A2CBA0 	42 20 73 65 63 74 6F 72 
+1A2CBA8 	20 73 69 7A 65 20 64 69 
+1A2CBB0 	66 66 65 72 73 20 66 72 
+1A2CBB8 	6F 6D 20 64 65 76 69 63 
+1A2CBC0 	65 20 73 65 63 74 6F 72 
+1A2CBC8 	20 73 69 7A 65  0  0  0 
+1A2CBD0 	80 6D A0  1 
+      then
+      bpb>device
+1A2CBD4 	10 C9 A2  1 
+
+      init-fat-cache
+1A2CBD8 	38 C4 A2  1 
+
+      \ Start with the root directory as the current working directory
+      rdirclus @  dv_cwd-cl l! 
+1A2CBDC 	40 BB A2  1 
+1A2CBE0 	5C 4C A0  1 84 BB A2  1 
+1A2CBE8 	7C 4D A0  1 
+
+      free-bpb
+1A2CBEC 	68 C5 A2  1 
+   then
+;
+1A2CBF0 	58 46 A0  1 
+
+: set-device  ( device# -- )  (set-device)  ?read-bpb  ;
+1A2CBF4 	 0 73 65 74 
+1A2CBF8 	2D 64 65 76 69 63 65 8A 
+1A2CC00 	58 CB A2  1 20 40 A0  1 
+1A2CC08 	28 C5 A2  1 58 CB A2  1 
+1A2CC10 	58 46 A0  1 
+
+\ : stand-init  ( -- )  stand-init  clear-device-records  ;

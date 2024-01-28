@@ -1,0 +1,418 @@
+
+\ Action definition for multiple-code-field words.
+\ Data structures:
+\   nth-action-does-clause   acfs  unnest
+\   n-1th-action-does-clause acfs  unnest
+\   ...
+\   1th-action-does-clause acfs  unnest
+\   nth-adr
+\   n-1th-adr
+\   ...
+\   1th-adr
+\   n
+\   0th-action-does-clause acfs  unnest
+\   object-header  build-acfs
+\   (') 0th-adr uses
+
+\ Object data structure:
+\
+\ Created by object defining words (actions, action:, etc):
+\
+\   tokenN-1  tokenN-1   ...    token1   #actions  (does-clause) ...
+\   |________|________|________|________|________|________
+\                                                ^
+\                                                |
+\                     ___________________________|
+\                    |
+\ Object instance:   |
+\                    |
+\   name  link  code-field  parameter-field
+\               ^           ^
+\               |           |
+\            object-acf  object-apf
+
+needs doaction objsup.fth	\ Machine-dependent support routines
+
+decimal
+headerless
+
+0 value action#
+1A1B564 	61 63 74 69 
+1A1B568 	6F 6E 23 87 58 B5 A1  1 
+1A1B570 	50 40 A0  1 BC  4  0  0 
+0 value #actions
+1A1B578 	 0  0  0 23 61 63 74 69 
+1A1B580 	6F 6E 73 88 70 B5 A1  1 
+1A1B588 	50 40 A0  1 C0  4  0  0 
+0 value action-adr
+1A1B590 	 0 61 63 74 69 6F 6E 2D 
+1A1B598 	61 64 72 8A 88 B5 A1  1 
+1A1B5A0 	50 40 A0  1 C4  4  0  0 
+headers
+: actions  ( #actions -- )
+1A1B5A8 	61 63 74 69 6F 6E 73 87 
+1A1B5B0 	A0 B5 A1  1 20 40 A0  1 
+   is #actions
+1A1B5B8 	B8 40 A0  1 88 B5 A1  1 
+   #actions 1- /token * na1+ allot    ( #actions )   \ Make the jump table
+1A1B5C0 	88 B5 A1  1 54 4B A0  1 
+1A1B5C8 	B4 46 A0  1 1C 5F A0  1 
+1A1B5D0 	CC 50 A0  1 E4 54 A0  1 
+   \ The default action is a code field, which must be aligned
+   align acf-align  here is action-adr
+1A1B5D8 	34 62 A0  1 2C 5D A0  1 
+1A1B5E0 	70 54 A0  1 B8 40 A0  1 
+1A1B5E8 	A0 B5 A1  1 
+   0 is action#
+1A1B5EC 	70 6F A0  1 
+1A1B5F0 	B8 40 A0  1 70 B5 A1  1 
+   #actions  action-adr /n -  !
+1A1B5F8 	88 B5 A1  1 A0 B5 A1  1 
+1A1B600 	40 51 A0  1 18 45 A0  1 
+1A1B608 	54 4D A0  1 
+;
+1A1B60C 	58 46 A0  1 
+headerless
+\ Sets the address entry in the action table
+: set-action  ( -- )
+1A1B610 	 0 73 65 74 2D 61 63 74 
+1A1B618 	69 6F 6E 8A B4 B5 A1  1 
+1A1B620 	20 40 A0  1 
+   action#  #actions  >= abort" Too many actions defined"
+1A1B624 	70 B5 A1  1 
+1A1B628 	88 B5 A1  1 EC 48 A0  1 
+1A1B630 	 8 81 A0  1 18 54 6F 6F 
+1A1B638 	20 6D 61 6E 79 20 61 63 
+1A1B640 	74 69 6F 6E 73 20 64 65 
+1A1B648 	66 69 6E 65 64  0  0  0 
+   lastacf  action-adr  action# /token * -  /n -  token!
+1A1B650 	AC 57 A0  1 A0 B5 A1  1 
+1A1B658 	70 B5 A1  1 B4 46 A0  1 
+1A1B660 	1C 5F A0  1 18 45 A0  1 
+1A1B668 	40 51 A0  1 18 45 A0  1 
+1A1B670 	20 54 A0  1 
+;
+1A1B674 	58 46 A0  1 
+headers
+: action:  ( -- )
+1A1B678 	61 63 74 69 6F 6E 3A 87 
+1A1B680 	20 B6 A1  1 20 40 A0  1 
+   action# if   \ Not the default action
+1A1B688 	70 B5 A1  1 DC 41 A0  1 
+1A1B690 	14  0  0  0 
+      doaction set-action
+1A1B694 	AC B4 A1  1 
+1A1B698 	20 B6 A1  1 
+   else \ The default action, like does>
+1A1B69C 	C8 41 A0  1 
+1A1B6A0 	 8  0  0  0 
+      place-does
+1A1B6A4 	4C 56 A0  1 
+   then
+
+   action# 1+ is action#
+1A1B6A8 	70 B5 A1  1 30 4B A0  1 
+1A1B6B0 	B8 40 A0  1 70 B5 A1  1 
+   !csp
+1A1B6B8 	D4 A2 A0  1 
+   ]
+1A1B6BC 	A0 6D A0  1 
+;
+1A1B6C0 	58 46 A0  1 
+: action-code  ( -- )
+1A1B6C4 	61 63 74 69 
+1A1B6C8 	6F 6E 2D 63 6F 64 65 8B 
+1A1B6D0 	84 B6 A1  1 20 40 A0  1 
+   action#  if   \ Not the default action
+1A1B6D8 	70 B5 A1  1 DC 41 A0  1 
+1A1B6E0 	18  0  0  0 
+      acf-align start-code set-action
+1A1B6E4 	2C 5D A0  1 
+1A1B6E8 	70 B4 A1  1 20 B6 A1  1 
+   else          \ The default action, like ;code
+1A1B6F0 	C8 41 A0  1  8  0  0  0 
+      start-;code
+1A1B6F8 	90 B4 A1  1 
+   then
+
+   \ For the default action, the apf of the child word is found in
+   \ the same way as with ;code words.
+
+   action# 1+ is action#
+1A1B6FC 	70 B5 A1  1 
+1A1B700 	30 4B A0  1 B8 40 A0  1 
+1A1B708 	70 B5 A1  1 
+   do-entercode
+1A1B70C 	78 A3 A0  1 
+;
+1A1B710 	58 46 A0  1 
+: use-actions  ( -- )
+1A1B714 	75 73 65 2D 
+1A1B718 	61 63 74 69 6F 6E 73 CB 
+1A1B720 	D4 B6 A1  1 20 40 A0  1 
+   state @  if
+1A1B728 	38 54 A0  1 5C 4C A0  1 
+1A1B730 	DC 41 A0  1 24  0  0  0 
+      compile (')  action-adr  token,  compile used
+1A1B738 	8C 75 A0  1 60 53 A0  1 
+1A1B740 	A0 B5 A1  1 2C 55 A0  1 
+1A1B748 	8C 75 A0  1 E0 57 A0  1 
+   else
+1A1B750 	C8 41 A0  1  C  0  0  0 
+      action-adr  used
+1A1B758 	A0 B5 A1  1 E0 57 A0  1 
+   then
+; immediate
+1A1B760 	58 46 A0  1 
+
+headerless
+: .object-error
+1A1B764 	 0  0 2E 6F 
+1A1B768 	62 6A 65 63 74 2D 65 72 
+1A1B770 	72 6F 72 8D 24 B7 A1  1 
+1A1B778 	20 40 A0  1 
+   ( object-acf action-adr false  |  acf action# #actions true -- ... )
+   ( ... -- object-acf action-adr )
+   if
+1A1B77C 	DC 41 A0  1 
+1A1B780 	78  0  0  0 
+      ." Unimplemented action # " swap .d  ." on object " swap .name
+1A1B784 	20 7C A0  1 
+1A1B788 	17 55 6E 69 6D 70 6C 65 
+1A1B790 	6D 65 6E 74 65 64 20 61 
+1A1B798 	63 74 69 6F 6E 20 23 20 
+1A1B7A0 	 0  0  0  0 68 49 A0  1 
+1A1B7A8 	48  E A1  1 20 7C A0  1 
+1A1B7B0 	 A 6F 6E 20 6F 62 6A 65 
+1A1B7B8 	63 74 20  0 68 49 A0  1 
+1A1B7C0 	C8 9A A0  1 
+      ." , whose maximum action # is " 1- .d cr
+1A1B7C4 	20 7C A0  1 
+1A1B7C8 	1C 2C 20 77 68 6F 73 65 
+1A1B7D0 	20 6D 61 78 69 6D 75 6D 
+1A1B7D8 	20 61 63 74 69 6F 6E 20 
+1A1B7E0 	23 20 69 73 20  0  0  0 
+1A1B7E8 	54 4B A0  1 48  E A1  1 
+1A1B7F0 	80 6D A0  1 
+      abort
+1A1B7F4 	28 91 A0  1 
+   then
+;
+1A1B7F8 	58 46 A0  1 
+
+headers
+
+[ifdef] notdef
+\ Run-time code for "to".  This is important enough to deserve special
+\ optimization.
+code to  ( -- )
+   ax           lods	\ Object acf in ax
+   4 #     ax   add
+   ax           push	\ Put pfa in top-of-stack register
+
+   -4 [ax]  ax  mov	\ Token of default action clause
+
+   -8 [ax]  ax  mov	\ Token of "to" action clause
+
+   0 [ax]      jmp	\ Tail of "NEXT"
+end-code
+[then]
+
+\ Executes the numbered action of the indicated object
+\ It might be worthwhile to implement perform-action entirely in code.
+
+: perform-action  ( object-acf action# -- )
+1A1B7FC 	 0 70 65 72 
+1A1B800 	66 6F 72 6D 2D 61 63 74 
+1A1B808 	69 6F 6E 8E 78 B7 A1  1 
+1A1B810 	20 40 A0  1 
+   dup if
+1A1B814 	40 49 A0  1 
+1A1B818 	DC 41 A0  1 18  0  0  0 
+      >action-adr .object-error  ( object-apf action-adr )
+1A1B820 	E8 B4 A1  1 78 B7 A1  1 
+      execute
+1A1B828 	98 41 A0  1 
+   else
+1A1B82C 	C8 41 A0  1 
+1A1B830 	 C  0  0  0 
+      drop execute
+1A1B834 	30 49 A0  1 
+1A1B838 	98 41 A0  1 
+   then
+;
+1A1B83C 	58 46 A0  1 
+
+1 action-name to
+1A1B840 	 0 74 6F 82 10 B8 A1  1 
+1A1B848 	34 B5 A1  1  1  0  0  0 
+2 action-name addr
+1A1B850 	 0  0  0 61 64 64 72 84 
+1A1B858 	48 B8 A1  1 34 B5 A1  1 
+1A1B860 	 2  0  0  0 
+' to to 'ac-to
+\ Add these words to the decompiler case tables so that the
+\ debugger will display their arguments and so that the decompiler
+\ will not show the action name and its argument on separate lines
+\ if it happens to be near the end of a line.
+
+[ifdef] install-decomp
+
+also hidden also
+: .action  ( ip -- ip' )
+1A1B864 	2E 61 63 74 
+1A1B868 	69 6F 6E 87 5C B8 A1  1 
+1A1B870 	20 40 A0  1 
+   d# 15 ?line  \ Just a guess
+1A1B874 	58 41 A0  1 
+1A1B878 	 F  0  0  0 A8 13 A1  1 
+   dup token@ >name name>string cr". space ta1+
+1A1B880 	40 49 A0  1  C 54 A0  1 
+1A1B888 	24 74 A0  1 58 74 A0  1 
+1A1B890 	60 23 A1  1 CC 71 A0  1 
+1A1B898 	FC 50 A0  1 
+   .compiled
+1A1B89C 	8C 31 A1  1 
+;
+1A1B8A0 	58 46 A0  1 
+
+  ' to to 'is2value
+
+previous previous
+[then]
+
+
+: ?has-action  ( object-acf action-acf -- object-acf action-acf )
+1A1B8A4 	3F 68 61 73 
+1A1B8A8 	2D 61 63 74 69 6F 6E 8B 
+1A1B8B0 	70 B8 A1  1 20 40 A0  1 
+   2dup >body >action# >action-adr .object-error  2drop
+1A1B8B8 	C0 49 A0  1 E4 59 A0  1 
+1A1B8C0 	58 B5 A1  1 E8 B4 A1  1 
+1A1B8C8 	78 B7 A1  1 AC 49 A0  1 
+;
+1A1B8D0 	58 46 A0  1 
+: action-compiler:  \ name  ( -- )
+1A1B8D4 	 0  0  0 61 
+1A1B8D8 	63 74 69 6F 6E 2D 63 6F 
+1A1B8E0 	6D 70 69 6C 65 72 3A 90 
+1A1B8E8 	B4 B8 A1  1 20 40 A0  1 
+   parse-word  2dup $find  $?missing drop  \ adr len xt
+1A1B8F0 	34 93 A0  1 C0 49 A0  1 
+1A1B8F8 	C4 93 A0  1 84 94 A0  1 
+1A1B900 	30 49 A0  1 
+   -rot $create  token,  immediate
+1A1B904 	94 49 A0  1 
+1A1B908 	8C A2 A0  1 2C 55 A0  1 
+1A1B910 	BC B8 A0  1 
+   does>             ( apf )
+1A1B914 	50 A3 A0  1 
+1A1B918 	90 90 90 E8 5C 87 FE FF 
+      ' swap token@  ( object-acf action-acf )
+1A1B920 	F8 95 A0  1 68 49 A0  1 
+1A1B928 	 C 54 A0  1 
+      ?has-action    ( object-acf action-acf )
+1A1B92C 	B4 B8 A1  1 
+      +level         ( apf )	\ Enter temporary compile state if necessary
+1A1B930 	 4 83 A0  1 
+      compile,		\ Compile run-time action-name word
+1A1B934 	74 75 A0  1 
+      compile,		\ Compile object acf
+1A1B938 	74 75 A0  1 
+      -level		\ Exit temporary compile state, perhaps run word
+1A1B93C 	98 83 A0  1 
+;
+1A1B940 	58 46 A0  1 
+
+also hidden
+[ifdef] object-definer
+: (object-definer)  ( action-acf -- definer )
+1A1B944 	 0  0  0 28 
+1A1B948 	6F 62 6A 65 63 74 2D 64 
+1A1B950 	65 66 69 6E 65 72 29 90 
+1A1B958 	EC B8 A1  1 20 40 A0  1 
+   dup /n -  @                 ( action-acf #actions )
+1A1B960 	40 49 A0  1 40 51 A0  1 
+1A1B968 	18 45 A0  1 5C 4C A0  1 
+   1- /token * - /n -  token@  ( last-action-acf )
+1A1B970 	54 4B A0  1 B4 46 A0  1 
+1A1B978 	1C 5F A0  1 18 45 A0  1 
+1A1B980 	40 51 A0  1 18 45 A0  1 
+1A1B988 	 C 54 A0  1 
+   ta1+                        ( adr )
+1A1B98C 	FC 50 A0  1 
+
+   taligned
+1A1B990 	54 62 A0  1 
+   begin
+      dup in-dictionary?  0=  if  drop ['] lose  exit  then
+1A1B994 	40 49 A0  1 
+1A1B998 	24 CF A0  1 24 47 A0  1 
+1A1B9A0 	DC 41 A0  1 14  0  0  0 
+1A1B9A8 	30 49 A0  1 60 53 A0  1 
+1A1B9B0 	90 9B A0  1 40 46 A0  1 
+      ta1+  dup  probably-cfa?
+1A1B9B8 	FC 50 A0  1 40 49 A0  1 
+1A1B9C0 	D4 1F A1  1 
+   until
+1A1B9C4 	DC 41 A0  1 
+1A1B9C8 	CC FF FF FF 
+;
+1A1B9CC 	58 46 A0  1 
+' (object-definer) is object-definer
+[then]
+previous
+
+\ action-compiler: to
+action-compiler: addr
+1A1B9D0 	 0  0  0 61 64 64 72 C4 
+1A1B9D8 	5C B9 A1  1 18 B9 A1  1 
+1A1B9E0 	5C B8 A1  1 
+
+
+\ Makes "is" and "to" synonymous.  "is" first checks to see if the
+\ object is of one of the kernel object types (which don't have multiple
+\ code fields), and if so, compiles or executes the "(is) <token>" form.
+\ If the object is not of one of the kernel object types, "is" calls
+\ "to-hook" to handle the object as a multiple-code field type object.
+
+: (to)  ( [data] acf -- )  +level  compile to  compile, -level  ;
+1A1B9E4 	 0  0  0 28 
+1A1B9E8 	74 6F 29 84 DC B9 A1  1 
+1A1B9F0 	20 40 A0  1  4 83 A0  1 
+1A1B9F8 	8C 75 A0  1 48 B8 A1  1 
+1A1BA00 	74 75 A0  1 98 83 A0  1 
+1A1BA08 	58 46 A0  1 
+' (to) is to-hook
+
+alias to is
+1A1BA0C 	 0 74 6F E2 
+1A1BA10 	F0 B9 A1  1 98 C8 A0  1 
+
+3 actions
+1A1BA18 	48 BA A1  1 38 BA A1  1 
+1A1BA20 	 3  0  0  0 
+action: >user 2@ ;
+1A1BA24 	90 90 90 E8 
+1A1BA28 	50 86 FE FF C8 74 A0  1 
+1A1BA30 	CC 4D A0  1 58 46 A0  1 
+action: >user 2! ;
+1A1BA38 	20 40 A0  1 C8 74 A0  1 
+1A1BA40 	E4 4D A0  1 58 46 A0  1 
+action: >user    ;
+1A1BA48 	20 40 A0  1 C8 74 A0  1 
+1A1BA50 	58 46 A0  1 
+: 2value-cf  create-cf use-actions  ;
+1A1BA54 	 0  0 32 76 
+1A1BA58 	61 6C 75 65 2D 63 66 89 
+1A1BA60 	14 BA A1  1 20 40 A0  1 
+1A1BA68 	30 5B A0  1 60 53 A0  1 
+1A1BA70 	24 BA A1  1 E0 57 A0  1 
+1A1BA78 	58 46 A0  1 
+: 2value  ( n1 n2 "name" -- )  header 2value-cf  2 /n* user#,  2!  ;
+1A1BA7C 	 0 32 76 61 
+1A1BA80 	6C 75 65 86 64 BA A1  1 
+1A1BA88 	20 40 A0  1 DC 6D A0  1 
+1A1BA90 	64 BA A1  1 90 6F A0  1 
+1A1BA98 	98 51 A0  1 84 9A A0  1 
+1A1BAA0 	E4 4D A0  1 58 46 A0  1 

@@ -1,0 +1,24 @@
+
+\ To make the line editor handle ^U and ^W just like Unix normally does
+
+only forth hidden also forth also keys-forth definitions
+
+: ^u beginning-of-line kill-to-end-of-line ;
+1A165DC 	 0 5E 75 82 
+1A165E0 	6C 65 A1  1 20 40 A0  1 
+1A165E8 	54 48 A1  1 94 50 A1  1 
+1A165F0 	58 46 A0  1 
+: ^w erase-previous-word ;
+1A165F4 	 0 5E 77 82 
+1A165F8 	E4 65 A1  1 20 40 A0  1 
+1A16600 	2C 51 A1  1 58 46 A0  1 
+: ^r retype-line ;
+1A16608 	 0 5E 72 82 FC 65 A1  1 
+1A16610 	20 40 A0  1 74 48 A1  1 
+1A16618 	58 46 A0  1 
+: del erase-previous-character ;
+1A1661C 	64 65 6C 83 
+1A16620 	10 66 A1  1 20 40 A0  1 
+1A16628 	5C 50 A1  1 58 46 A0  1 
+
+only forth also definitions

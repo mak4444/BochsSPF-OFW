@@ -1,0 +1,368 @@
+\ Extend a file by allocating more clusters and writing out cluster data.
+\ 10/2/90 cpt : revised for 1 shot i/o on consecutive clusters
+
+\ mmo private
+
+: (get-modtime)  ( -- s m h d m y )  de_time lew@ >hms  de_date lew@ >dmy  ;
+1A2EE54 	 0  0 28 67 
+1A2EE58 	65 74 2D 6D 6F 64 74 69 
+1A2EE60 	6D 65 29 8D E0 EB A2  1 
+1A2EE68 	20 40 A0  1 98 C0 A2  1 
+1A2EE70 	7C B4 A2  1 B8 B5 A2  1 
+1A2EE78 	AC C0 A2  1 7C B4 A2  1 
+1A2EE80 	78 B6 A2  1 58 46 A0  1 
+: (set-modtime)  ( s m h d m y -- )  dmy> de_date lew!  hms> de_time lew!  ;
+1A2EE88 	 0  0 28 73 65 74 2D 6D 
+1A2EE90 	6F 64 74 69 6D 65 29 8D 
+1A2EE98 	68 EE A2  1 20 40 A0  1 
+1A2EEA0 	E0 B6 A2  1 AC C0 A2  1 
+1A2EEA8 	A8 B4 A2  1 18 B6 A2  1 
+1A2EEB0 	98 C0 A2  1 A8 B4 A2  1 
+1A2EEB8 	58 46 A0  1 
+: (set-createtime)  ( s m h d m y -- )
+1A2EEBC 	 0  0  0 28 
+1A2EEC0 	73 65 74 2D 63 72 65 61 
+1A2EEC8 	74 65 74 69 6D 65 29 90 
+1A2EED0 	9C EE A2  1 20 40 A0  1 
+   fat-type c@  fat32 =  if
+1A2EED8 	84 BC A2  1 C4 4C A0  1 
+1A2EEE0 	F0 BC A2  1 24 48 A0  1 
+1A2EEE8 	DC 41 A0  1 24  0  0  0 
+      dmy> de_cdate lew! hms> de_ctime lew!  
+1A2EEF0 	E0 B6 A2  1 54 C0 A2  1 
+1A2EEF8 	A8 B4 A2  1 18 B6 A2  1 
+1A2EF00 	3C C0 A2  1 A8 B4 A2  1 
+   else
+1A2EF08 	C8 41 A0  1  C  0  0  0 
+      3drop 3drop
+1A2EF10 	90 52 A0  1 90 52 A0  1 
+   then
+;
+1A2EF18 	58 46 A0  1 
+: (set-accessdate)  ( d m y -- )
+1A2EF1C 	 0  0  0 28 
+1A2EF20 	73 65 74 2D 61 63 63 65 
+1A2EF28 	73 73 64 61 74 65 29 90 
+1A2EF30 	D4 EE A2  1 20 40 A0  1 
+   fat-type c@  fat32 =  if
+1A2EF38 	84 BC A2  1 C4 4C A0  1 
+1A2EF40 	F0 BC A2  1 24 48 A0  1 
+1A2EF48 	DC 41 A0  1 18  0  0  0 
+      dmy> de_adate lew!  
+1A2EF50 	E0 B6 A2  1 6C C0 A2  1 
+1A2EF58 	A8 B4 A2  1 
+   else
+1A2EF5C 	C8 41 A0  1 
+1A2EF60 	 8  0  0  0 
+      3drop
+1A2EF64 	90 52 A0  1 
+   then
+;
+1A2EF68 	58 46 A0  1 
+
+: update-dirent ( -- error? )
+1A2EF6C 	 0  0 75 70 
+1A2EF70 	64 61 74 65 2D 64 69 72 
+1A2EF78 	65 6E 74 8D 34 EF A2  1 
+1A2EF80 	20 40 A0  1 
+   fh_flags w@ fh_dirty and  if  \ Update directory entry if file has changed
+1A2EF84 	94 E6 A2  1 
+1A2EF88 	94 4C A0  1 E0 E6 A2  1 
+1A2EF90 	5C 44 A0  1 DC 41 A0  1 
+1A2EF98 	A0  0  0  0 
+      fh_diroff w@ fh_dircl @ fh_dev @ set-dirent ?dup if  exit  then
+1A2EF9C 	64 E6 A2  1 
+1A2EFA0 	94 4C A0  1 C8 E5 A2  1 
+1A2EFA8 	5C 4C A0  1 B0 E5 A2  1 
+1A2EFB0 	5C 4C A0  1  4 DE A2  1 
+1A2EFB8 	B4 70 A0  1 DC 41 A0  1 
+1A2EFC0 	 8  0  0  0 40 46 A0  1 
+      fh_length l@ de_length lel!
+1A2EFC8 	F8 E5 A2  1 6C 4C A0  1 
+1A2EFD0 	DC C0 A2  1  8 B5 A2  1 
+      fh_first l@ file-cluster!
+1A2EFD8 	E0 E5 A2  1 6C 4C A0  1 
+1A2EFE0 	70 C2 A2  1 
+      now today  (set-modtime)
+1A2EFE4 	 4 ED A0  1 
+1A2EFE8 	20 ED A0  1 9C EE A2  1 
+      de_attributes c@ at_archiv or  de_attributes c!
+1A2EFF0 	68 BF A2  1 C4 4C A0  1 
+1A2EFF8 	F8 BF A2  1 70 44 A0  1 
+1A2F000 	68 BF A2  1 B8 4D A0  1 
+      write-dir-cl   ( error? )  ?dup  if  exit  then
+1A2F008 	6C DD A2  1 B4 70 A0  1 
+1A2F010 	DC 41 A0  1  8  0  0  0 
+1A2F018 	40 46 A0  1 
+      fh_flags w@ fh_dirty invert and  fh_flags w!
+1A2F01C 	94 E6 A2  1 
+1A2F020 	94 4C A0  1 E0 E6 A2  1 
+1A2F028 	30 45 A0  1 5C 44 A0  1 
+1A2F030 	94 E6 A2  1 A4 4D A0  1 
+   then
+   false
+1A2F038 	18 70 A0  1 
+;
+1A2F03C 	58 46 A0  1 
+\ When a file is first created, it's "de_first" field is set to 0.
+
+: extend-file  ( #needed-clusters -- #needed-clusters' error? )
+1A2F040 	65 78 74 65 6E 64 2D 66 
+1A2F048 	69 6C 65 8B 80 EF A2  1 
+1A2F050 	20 40 A0  1 
+\ Assumes that fh_physicalcl is the cluster# of the last valid cluster
+\ in the file, or 0 if the file is empty
+
+   0  begin  drop                                ( #cls' )
+1A2F054 	70 6F A0  1 
+1A2F058 	30 49 A0  1 
+      to-last-cluster
+1A2F05C 	54 E8 A2  1 
+      fh_prevphyscl l@ allocate-cluster if       ( #cls' cluster# )
+1A2F060 	4C E6 A2  1 6C 4C A0  1 
+1A2F068 	10 D5 A2  1 DC 41 A0  1 
+1A2F070 	F0  0  0  0 
+         fh_prevphyscl l@ if                     ( #cls' cluster# )
+1A2F074 	4C E6 A2  1 
+1A2F078 	6C 4C A0  1 DC 41 A0  1 
+1A2F080 	1C  0  0  0 
+            dup fh_prevphyscl l@ cluster!        ( #cls' cluster# )
+1A2F084 	40 49 A0  1 
+1A2F088 	4C E6 A2  1 6C 4C A0  1 
+1A2F090 	14 D1 A2  1 
+         else
+1A2F094 	C8 41 A0  1 
+1A2F098 	28  0  0  0 
+            dup fh_first l!                      ( #cls' cluster# )
+1A2F09C 	40 49 A0  1 
+1A2F0A0 	E0 E5 A2  1 7C 4D A0  1 
+            update-dirent if  drop true exit  then \ to remember got clusters
+1A2F0A8 	80 EF A2  1 DC 41 A0  1 
+1A2F0B0 	10  0  0  0 30 49 A0  1 
+1A2F0B8 	 4 70 A0  1 40 46 A0  1 
+         then                                    ( #cls' cluster# )
+         dup fh_physicalcl l!                    ( #cls' cluster# )
+1A2F0C0 	40 49 A0  1 30 E6 A2  1 
+1A2F0C8 	7C 4D A0  1 
+         1st-cl# @ #cont-cls @ + over = IF   
+1A2F0CC 	3C EB A2  1 
+1A2F0D0 	5C 4C A0  1 54 EB A2  1 
+1A2F0D8 	5C 4C A0  1  4 45 A0  1 
+1A2F0E0 	54 49 A0  1 24 48 A0  1 
+1A2F0E8 	DC 41 A0  1 18  0  0  0 
+             drop #cont-cls 1+!          \ continuation case
+1A2F0F0 	30 49 A0  1 54 EB A2  1 
+1A2F0F8 	54 B3 A2  1 
+         else 1st-cl# @ 0= IF 
+1A2F0FC 	C8 41 A0  1 
+1A2F100 	3C  0  0  0 3C EB A2  1 
+1A2F108 	5C 4C A0  1 24 47 A0  1 
+1A2F110 	DC 41 A0  1 20  0  0  0 
+                1st-cl# !  1 #cont-cls ! \ first cluster
+1A2F118 	3C EB A2  1 54 4D A0  1 
+1A2F120 	80 6F A0  1 54 EB A2  1 
+1A2F128 	54 4D A0  1 
+             else  next-cl# !  then      \ next range's 1st
+1A2F12C 	C8 41 A0  1 
+1A2F130 	 C  0  0  0 6C EB A2  1 
+1A2F138 	54 4D A0  1 
+         then
+         1-                                       ( #cls'-1 )         
+1A2F13C 	54 4B A0  1 
+         current-position /cluster + fh_length l! ( #cls'-1 )
+1A2F140 	8C EB A2  1 18 C3 A2  1 
+1A2F148 	 4 45 A0  1 F8 E5 A2  1 
+1A2F150 	7C 4D A0  1 
+         false                                    ( #cls'-1 false )
+1A2F154 	18 70 A0  1 
+      else                                          
+1A2F158 	C8 41 A0  1  8  0  0  0 
+         3                                        ( #cls no-more-space-error )
+1A2F160 	A0 6F A0  1 
+      then
+   over 0= over 0<> or next-cl# @ 0<> or until 
+1A2F164 	54 49 A0  1 
+1A2F168 	24 47 A0  1 54 49 A0  1 
+1A2F170 	44 47 A0  1 70 44 A0  1 
+1A2F178 	6C EB A2  1 5C 4C A0  1 
+1A2F180 	44 47 A0  1 70 44 A0  1 
+1A2F188 	DC 41 A0  1 CC FE FF FF 
+;
+1A2F190 	58 46 A0  1 
+
+variable extended?
+1A2F194 	 0  0 65 78 
+1A2F198 	74 65 6E 64 65 64 3F 89 
+1A2F1A0 	50 F0 A2  1 48 40 A0  1 
+1A2F1A8 	54  9  0  0 
+
+: dos-write  ( adr count 'fh -- #written false  |  true )
+1A2F1AC 	 0  0 64 6F 
+1A2F1B0 	73 2D 77 72 69 74 65 89 
+1A2F1B8 	A4 F1 A2  1 20 40 A0  1 
+   fh !  fh_dev @ set-device               ( adr count )
+1A2F1C0 	5C E5 A2  1 54 4D A0  1 
+1A2F1C8 	B0 E5 A2  1 5C 4C A0  1 
+1A2F1D0 	 4 CC A2  1 
+   fh_flags w@ fh_dirty or fh_flags w!
+1A2F1D4 	94 E6 A2  1 
+1A2F1D8 	94 4C A0  1 E0 E6 A2  1 
+1A2F1E0 	70 44 A0  1 94 E6 A2  1 
+1A2F1E8 	A4 4D A0  1 
+
+   dup remaining !  dup requested !  swap bufadr !     ( #bytes )
+1A2F1EC 	40 49 A0  1 
+1A2F1F0 	FC EA A2  1 54 4D A0  1 
+1A2F1F8 	40 49 A0  1 14 EB A2  1 
+1A2F200 	54 4D A0  1 68 49 A0  1 
+1A2F208 	28 EB A2  1 54 4D A0  1 
+   bytes>clusters                                      ( #needed-clusters )   
+1A2F210 	44 C3 A2  1 
+   1st-cl# off  #cont-cls off  next-cl# off
+1A2F214 	3C EB A2  1 
+1A2F218 	F8 4B A0  1 54 EB A2  1 
+1A2F220 	F8 4B A0  1 6C EB A2  1 
+1A2F228 	F8 4B A0  1 
+   extended? off
+1A2F22C 	A4 F1 A2  1 
+1A2F230 	F8 4B A0  1 
+   
+   begin   remaining @ 0>  while     ( #needed-clusters' )
+1A2F234 	FC EA A2  1 
+1A2F238 	5C 4C A0  1 A4 47 A0  1 
+1A2F240 	DC 41 A0  1 74  1  0  0 
+
+      \ If we need more cluster(s) and
+      \ we're at or beyond the end of the file, add new cluster(s)
+      dup 0>
+1A2F248 	40 49 A0  1 A4 47 A0  1 
+      current-position fh_length l@ >  last-cluster? or   and  if
+1A2F250 	8C EB A2  1 F8 E5 A2  1 
+1A2F258 	6C 4C A0  1  4 48 A0  1 
+1A2F260 	CC E7 A2  1 70 44 A0  1 
+1A2F268 	5C 44 A0  1 DC 41 A0  1 
+1A2F270 	30  0  0  0 
+         extend-file ?dup if  ?flush-fat-cache  nip  exit  then
+1A2F274 	50 F0 A2  1 
+1A2F278 	B4 70 A0  1 DC 41 A0  1 
+1A2F280 	10  0  0  0 98 CE A2  1 
+1A2F288 	FC 46 A0  1 40 46 A0  1 
+         extended? on
+1A2F290 	A4 F1 A2  1 E0 4B A0  1 
+      else \ same cluster?
+1A2F298 	C8 41 A0  1 34  0  0  0 
+          1st-cl# @ 0= if  
+1A2F2A0 	3C EB A2  1 5C 4C A0  1 
+1A2F2A8 	24 47 A0  1 DC 41 A0  1 
+1A2F2B0 	20  0  0  0 
+             fh_physicalcl l@ 1st-cl# !  1 #cont-cls !
+1A2F2B4 	30 E6 A2  1 
+1A2F2B8 	6C 4C A0  1 3C EB A2  1 
+1A2F2C0 	54 4D A0  1 80 6F A0  1 
+1A2F2C8 	54 EB A2  1 54 4D A0  1 
+          then
+      then                           ( #needed-clusters' )
+      
+      \ Write the data
+      1st-cl# @ #cont-cls @ bufadr @ write-clusters if
+1A2F2D0 	3C EB A2  1 5C 4C A0  1 
+1A2F2D8 	54 EB A2  1 5C 4C A0  1 
+1A2F2E0 	28 EB A2  1 5C 4C A0  1 
+1A2F2E8 	BC CC A2  1 DC 41 A0  1 
+1A2F2F0 	10  0  0  0 
+         ?flush-fat-cache  true exit
+1A2F2F4 	98 CE A2  1 
+1A2F2F8 	 4 70 A0  1 40 46 A0  1 
+      then
+
+      \ Adjust the length field unless extend-file already did it
+      extended? @ 0=  if
+1A2F300 	A4 F1 A2  1 5C 4C A0  1 
+1A2F308 	24 47 A0  1 DC 41 A0  1 
+1A2F310 	1C  0  0  0 
+         current-position remaining @ + fh_length l!
+1A2F314 	8C EB A2  1 
+1A2F318 	FC EA A2  1 5C 4C A0  1 
+1A2F320 	 4 45 A0  1 F8 E5 A2  1 
+1A2F328 	7C 4D A0  1 
+      then
+
+      \ Continue with the rest of the transfer
+      #cont-cls @ /cluster * dup bufadr +!  negate remaining +!
+1A2F32C 	54 EB A2  1 
+1A2F330 	5C 4C A0  1 18 C3 A2  1 
+1A2F338 	1C 5F A0  1 40 49 A0  1 
+1A2F340 	28 EB A2  1  C 4C A0  1 
+1A2F348 	48 45 A0  1 FC EA A2  1 
+1A2F350 	 C 4C A0  1 
+
+      next-cl# @ ?dup if
+1A2F354 	6C EB A2  1 
+1A2F358 	5C 4C A0  1 B4 70 A0  1 
+1A2F360 	DC 41 A0  1 28  0  0  0 
+         1st-cl# !  1 #cont-cls !  next-cl# off
+1A2F368 	3C EB A2  1 54 4D A0  1 
+1A2F370 	80 6F A0  1 54 EB A2  1 
+1A2F378 	54 4D A0  1 6C EB A2  1 
+1A2F380 	F8 4B A0  1 
+      else
+1A2F384 	C8 41 A0  1 
+1A2F388 	14  0  0  0 
+         1st-cl# off  #cont-cls off
+1A2F38C 	3C EB A2  1 
+1A2F390 	F8 4B A0  1 54 EB A2  1 
+1A2F398 	F8 4B A0  1 
+      then
+
+      last-cluster? 0= if  to-next-cluster  then 
+1A2F39C 	CC E7 A2  1 
+1A2F3A0 	24 47 A0  1 DC 41 A0  1 
+1A2F3A8 	 8  0  0  0  4 E8 A2  1 
+   repeat  drop ( )
+1A2F3B0 	C8 41 A0  1 80 FE FF FF 
+1A2F3B8 	30 49 A0  1 
+
+   extended? @ if
+1A2F3BC 	A4 F1 A2  1 
+1A2F3C0 	5C 4C A0  1 DC 41 A0  1 
+1A2F3C8 	20  0  0  0 
+      \ extended partial cluster length adjustment
+      remaining @ fh_length l@  +  fh_length l!
+1A2F3CC 	FC EA A2  1 
+1A2F3D0 	5C 4C A0  1 F8 E5 A2  1 
+1A2F3D8 	6C 4C A0  1  4 45 A0  1 
+1A2F3E0 	F8 E5 A2  1 7C 4D A0  1 
+   then
+   fh_flags w@ fh_dirty or  fh_flags w! \ force dirent & FAT update in close
+1A2F3E8 	94 E6 A2  1 94 4C A0  1 
+1A2F3F0 	E0 E6 A2  1 70 44 A0  1 
+1A2F3F8 	94 E6 A2  1 A4 4D A0  1 
+
+\ Flushing the FAT here causes excessive seeking.
+\   ?flush-fat-cache
+
+   requested @ remaining @ 0 max - ( bytes-tranferred )
+1A2F400 	14 EB A2  1 5C 4C A0  1 
+1A2F408 	FC EA A2  1 5C 4C A0  1 
+1A2F410 	70 6F A0  1 9C 4A A0  1 
+1A2F418 	18 45 A0  1 
+   false
+1A2F41C 	18 70 A0  1 
+;
+1A2F420 	58 46 A0  1 
+
+: dos-close  ( 'fh -- error? )
+1A2F424 	 0  0 64 6F 
+1A2F428 	73 2D 63 6C 6F 73 65 89 
+1A2F430 	BC F1 A2  1 20 40 A0  1 
+   fh !
+1A2F438 	5C E5 A2  1 54 4D A0  1 
+   update-dirent ( error? )
+1A2F440 	80 EF A2  1 
+   dup 0=  if  clear-fh  ?flush-fat-cache  then
+1A2F444 	40 49 A0  1 
+1A2F448 	24 47 A0  1 DC 41 A0  1 
+1A2F450 	 C  0  0  0  8 E7 A2  1 
+1A2F458 	98 CE A2  1 
+;
+1A2F45C 	58 46 A0  1 

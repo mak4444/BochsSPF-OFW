@@ -1,0 +1,249 @@
+purpose: Double number primitives
+
+headers
+
+: d0=   ( d -- flag )  or  0=  ;
+1A066F8 	64 30 3D 83 E8 66 A0  1 
+1A06700 	20 40 A0  1 70 44 A0  1 
+1A06708 	24 47 A0  1 58 46 A0  1 
+: d0<>  ( d -- flag )  or  0<>  ;
+1A06710 	 0  0  0 64 30 3C 3E 84 
+1A06718 	 0 67 A0  1 20 40 A0  1 
+1A06720 	70 44 A0  1 44 47 A0  1 
+1A06728 	58 46 A0  1 
+: d0<   ( d -- flag )  nip 0<  ;
+1A0672C 	64 30 3C 83 
+1A06730 	1C 67 A0  1 20 40 A0  1 
+1A06738 	FC 46 A0  1 64 47 A0  1 
+1A06740 	58 46 A0  1 
+: d=    ( d1 d2 -- flag )  d- d0=  ;
+1A06744 	 0 64 3D 82 
+1A06748 	34 67 A0  1 20 40 A0  1 
+1A06750 	F8 5D A0  1  0 67 A0  1 
+1A06758 	58 46 A0  1 
+: d<>   ( d1 d2 -- flag )  d=  0=  ;
+1A0675C 	64 3C 3E 83 
+1A06760 	4C 67 A0  1 20 40 A0  1 
+1A06768 	4C 67 A0  1 24 47 A0  1 
+1A06770 	58 46 A0  1 
+: du<   ( ud1 ud2 -- flag )  rot  swap  2dup <>  if  2swap  then  2drop u<  ;
+1A06774 	64 75 3C 83 
+1A06778 	64 67 A0  1 20 40 A0  1 
+1A06780 	7C 49 A0  1 68 49 A0  1 
+1A06788 	C0 49 A0  1 44 48 A0  1 
+1A06790 	DC 41 A0  1  8  0  0  0 
+1A06798 	F4 49 A0  1 AC 49 A0  1 
+1A067A0 	A8 48 A0  1 58 46 A0  1 
+: d<    ( d1 d2 -- flag )  2 pick over = if drop nip u< else nip < nip then  ;
+1A067A8 	 0 64 3C 82 7C 67 A0  1 
+1A067B0 	20 40 A0  1 58 41 A0  1 
+1A067B8 	 2  0  0  0  C 4A A0  1 
+1A067C0 	54 49 A0  1 24 48 A0  1 
+1A067C8 	DC 41 A0  1 18  0  0  0 
+1A067D0 	30 49 A0  1 FC 46 A0  1 
+1A067D8 	A8 48 A0  1 C8 41 A0  1 
+1A067E0 	10  0  0  0 FC 46 A0  1 
+1A067E8 	E4 47 A0  1 FC 46 A0  1 
+1A067F0 	58 46 A0  1 
+: d>=   ( d1 d2 -- flag )  d< 0=  ;
+1A067F4 	64 3E 3D 83 
+1A067F8 	B0 67 A0  1 20 40 A0  1 
+1A06800 	B0 67 A0  1 24 47 A0  1 
+1A06808 	58 46 A0  1 
+: d>    ( d1 d2 -- flag )  2swap d<  ;
+1A0680C 	 0 64 3E 82 
+1A06810 	FC 67 A0  1 20 40 A0  1 
+1A06818 	F4 49 A0  1 B0 67 A0  1 
+1A06820 	58 46 A0  1 
+: d<=   ( d1 d2 -- flag )  2swap d< 0=  ;
+1A06824 	64 3C 3D 83 
+1A06828 	14 68 A0  1 20 40 A0  1 
+1A06830 	F4 49 A0  1 B0 67 A0  1 
+1A06838 	24 47 A0  1 58 46 A0  1 
+: dnegate  ( d -- -d )  0 0  2swap  d-  ;
+1A06840 	64 6E 65 67 61 74 65 87 
+1A06848 	2C 68 A0  1 20 40 A0  1 
+1A06850 	58 41 A0  1  0  0  0  0 
+1A06858 	58 41 A0  1  0  0  0  0 
+1A06860 	F4 49 A0  1 F8 5D A0  1 
+1A06868 	58 46 A0  1 
+: dabs     ( d -- +d )  2dup  d0<  if  dnegate  then  ;
+1A0686C 	 0  0  0 64 
+1A06870 	61 62 73 84 4C 68 A0  1 
+1A06878 	20 40 A0  1 C0 49 A0  1 
+1A06880 	34 67 A0  1 DC 41 A0  1 
+1A06888 	 8  0  0  0 4C 68 A0  1 
+1A06890 	58 46 A0  1 
+
+: s>d   ( n -- d )  dup 0<  ;
+1A06894 	73 3E 64 83 
+1A06898 	78 68 A0  1 20 40 A0  1 
+1A068A0 	40 49 A0  1 64 47 A0  1 
+1A068A8 	58 46 A0  1 
+: u>d   ( u -- d )  0  ;
+1A068AC 	75 3E 64 83 
+1A068B0 	9C 68 A0  1 20 40 A0  1 
+1A068B8 	58 41 A0  1  0  0  0  0 
+1A068C0 	58 46 A0  1 
+: d>s   ( d -- n )  drop  ;
+1A068C4 	64 3E 73 83 
+1A068C8 	B4 68 A0  1 20 40 A0  1 
+1A068D0 	30 49 A0  1 58 46 A0  1 
+
+: d2*   ( xd1 -- xd2 )  2*  over 0<  if  1+  then  swap  2*  swap  ;
+1A068D8 	64 32 2A 83 CC 68 A0  1 
+1A068E0 	20 40 A0  1 A0 4B A0  1 
+1A068E8 	54 49 A0  1 64 47 A0  1 
+1A068F0 	DC 41 A0  1  8  0  0  0 
+1A068F8 	30 4B A0  1 68 49 A0  1 
+1A06900 	A0 4B A0  1 68 49 A0  1 
+1A06908 	58 46 A0  1 
+: d2/   ( xd1 -- xd2 )
+1A0690C 	64 32 2F 83 
+1A06910 	E0 68 A0  1 20 40 A0  1 
+   dup 2/  swap 1 and  rot 1 rshift  swap
+1A06918 	40 49 A0  1 78 4B A0  1 
+1A06920 	68 49 A0  1 58 41 A0  1 
+1A06928 	 1  0  0  0 5C 44 A0  1 
+1A06930 	7C 49 A0  1 58 41 A0  1 
+1A06938 	 1  0  0  0 B4 44 A0  1 
+1A06940 	68 49 A0  1 
+64\ d# 63
+32\ d# 31
+1A06944 	58 41 A0  1 
+1A06948 	1F  0  0  0 
+16\ d# 15
+   lshift  or  swap
+1A0694C 	9C 44 A0  1 
+1A06950 	70 44 A0  1 68 49 A0  1 
+;
+1A06958 	58 46 A0  1 
+
+: dmax  ( xd1 xd2 -- )  2over 2over d<  if  2swap  then  2drop  ;
+1A0695C 	 0  0  0 64 
+1A06960 	6D 61 78 84 14 69 A0  1 
+1A06968 	20 40 A0  1 D8 49 A0  1 
+1A06970 	D8 49 A0  1 B0 67 A0  1 
+1A06978 	DC 41 A0  1  8  0  0  0 
+1A06980 	F4 49 A0  1 AC 49 A0  1 
+1A06988 	58 46 A0  1 
+: dmin  ( xd1 xd2 -- )  2over 2over d<  0=  if  2swap  then  2drop  ;
+1A0698C 	 0  0  0 64 
+1A06990 	6D 69 6E 84 68 69 A0  1 
+1A06998 	20 40 A0  1 D8 49 A0  1 
+1A069A0 	D8 49 A0  1 B0 67 A0  1 
+1A069A8 	24 47 A0  1 DC 41 A0  1 
+1A069B0 	 8  0  0  0 F4 49 A0  1 
+1A069B8 	AC 49 A0  1 58 46 A0  1 
+
+: m+    ( d1|ud1 n -- )  s>d  d+  ;
+1A069C0 	 0 6D 2B 82 98 69 A0  1 
+1A069C8 	20 40 A0  1 9C 68 A0  1 
+1A069D0 	E0 5D A0  1 58 46 A0  1 
+: 2rot  ( d1 d2 d3 -- d2 d3 d1 )  2>r 2swap 2r> 2swap  ;
+1A069D8 	 0  0  0 32 72 6F 74 84 
+1A069E0 	C8 69 A0  1 20 40 A0  1 
+1A069E8 	F8 45 A0  1 F4 49 A0  1 
+1A069F0 	10 46 A0  1 F4 49 A0  1 
+1A069F8 	58 46 A0  1 
+: 2nip  ( $1 $2 -- $2 )  2swap 2drop  ;
+1A069FC 	 0  0  0 32 
+1A06A00 	6E 69 70 84 E4 69 A0  1 
+1A06A08 	20 40 A0  1 F4 49 A0  1 
+1A06A10 	AC 49 A0  1 58 46 A0  1 
+
+: drot  ( d1 d2 d3 -- d2 d3 d1 )  2>r 2swap 2r> 2swap  ;
+1A06A18 	 0  0  0 64 72 6F 74 84 
+1A06A20 	 8 6A A0  1 20 40 A0  1 
+1A06A28 	F8 45 A0  1 F4 49 A0  1 
+1A06A30 	10 46 A0  1 F4 49 A0  1 
+1A06A38 	58 46 A0  1 
+: -drot ( d1 d2 d3 -- d3 d1 d2 )  drot drot  ;
+1A06A3C 	 0  0 2D 64 
+1A06A40 	72 6F 74 85 24 6A A0  1 
+1A06A48 	20 40 A0  1 24 6A A0  1 
+1A06A50 	24 6A A0  1 58 46 A0  1 
+: dinvert  ( d1 -- d2 )  swap invert  swap invert  ;
+1A06A58 	64 69 6E 76 65 72 74 87 
+1A06A60 	48 6A A0  1 20 40 A0  1 
+1A06A68 	68 49 A0  1 30 45 A0  1 
+1A06A70 	68 49 A0  1 30 45 A0  1 
+1A06A78 	58 46 A0  1 
+\ EOF
+: dlshift  ( d1 n -- d2 )
+1A06A7C 	64 6C 73 68 
+1A06A80 	69 66 74 87 64 6A A0  1 
+1A06A88 	20 40 A0  1 
+   tuck lshift >r                           ( low n  r: high2 )
+1A06A8C 	E8 46 A0  1 
+1A06A90 	9C 44 A0  1 BC 45 A0  1 
+   2dup bits/cell  swap - rshift  r> or >r  ( low n  r: high2' )
+1A06A98 	C0 49 A0  1 94 65 A0  1 
+1A06AA0 	68 49 A0  1 18 45 A0  1 
+1A06AA8 	B4 44 A0  1 D0 45 A0  1 
+1A06AB0 	70 44 A0  1 BC 45 A0  1 
+   lshift r>                                ( d2 )
+1A06AB8 	9C 44 A0  1 D0 45 A0  1 
+;
+1A06AC0 	58 46 A0  1 
+: drshift  ( d1 n -- d2 )
+1A06AC4 	64 72 73 68 
+1A06AC8 	69 66 74 87 88 6A A0  1 
+1A06AD0 	20 40 A0  1 
+   2dup rshift >r                           ( low high n  r: high2 )
+1A06AD4 	C0 49 A0  1 
+1A06AD8 	B4 44 A0  1 BC 45 A0  1 
+   tuck  bits/cell swap - lshift            ( low n low2  r: high2 )
+1A06AE0 	E8 46 A0  1 94 65 A0  1 
+1A06AE8 	68 49 A0  1 18 45 A0  1 
+1A06AF0 	9C 44 A0  1 
+   -rot  rshift  or                         ( low2  r: high2 )
+1A06AF4 	94 49 A0  1 
+1A06AF8 	B4 44 A0  1 70 44 A0  1 
+   r>                                       ( d2 )
+1A06B00 	D0 45 A0  1 
+;
+1A06B04 	58 46 A0  1 
+: d>>a  ( d1 n -- d2 )
+1A06B08 	 0  0  0 64 3E 3E 61 84 
+1A06B10 	D0 6A A0  1 20 40 A0  1 
+   2dup rshift >r                           ( low high n  r: high2 )
+1A06B18 	C0 49 A0  1 B4 44 A0  1 
+1A06B20 	BC 45 A0  1 
+   tuck  bits/cell swap - lshift            ( low n low2  r: high2 )
+1A06B24 	E8 46 A0  1 
+1A06B28 	94 65 A0  1 68 49 A0  1 
+1A06B30 	18 45 A0  1 9C 44 A0  1 
+   -rot  >>a  or                            ( low2  r: high2 )
+1A06B38 	94 49 A0  1 F0 44 A0  1 
+1A06B40 	70 44 A0  1 
+   r>                                       ( d2 )
+1A06B44 	D0 45 A0  1 
+;
+1A06B48 	58 46 A0  1 
+: du*  ( d1 u -- d2 )  \ Double result
+1A06B4C 	64 75 2A 83 
+1A06B50 	14 6B A0  1 20 40 A0  1 
+   tuck u* >r     ( d1.lo u r: d2.hi )
+1A06B58 	E8 46 A0  1 34 5F A0  1 
+1A06B60 	BC 45 A0  1 
+   um*  r> +      ( d2 )
+1A06B64 	50 5D A0  1 
+1A06B68 	D0 45 A0  1  4 45 A0  1 
+;
+1A06B70 	58 46 A0  1 
+: du*t  ( ud.lo ud.hi u -- res.lo res.mid res.hi )  \ Triple result
+1A06B74 	 0  0  0 64 
+1A06B78 	75 2A 74 84 54 6B A0  1 
+1A06B80 	20 40 A0  1 
+   tuck um*  2>r  ( ud.lo u          r: res.mid0 res.hi0 )
+1A06B84 	E8 46 A0  1 
+1A06B88 	50 5D A0  1 F8 45 A0  1 
+   um*            ( res.lo res.mid1  r: res.mid0 res.hi0 )
+1A06B90 	50 5D A0  1 
+   0  2r> d+      ( res.lo res.mid res.hi )
+1A06B94 	58 41 A0  1 
+1A06B98 	 0  0  0  0 10 46 A0  1 
+1A06BA0 	E0 5D A0  1 
+;
+1A06BA4 	58 46 A0  1 

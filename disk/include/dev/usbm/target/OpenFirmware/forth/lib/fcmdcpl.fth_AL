@@ -1,0 +1,59 @@
+
+\ Command completion interface for the Forth line editor
+
+only forth also hidden also command-completion definitions
+
+headerless
+: install-fcmd
+1A16DE8 	 0  0  0 69 6E 73 74 61 
+1A16DF0 	6C 6C 2D 66 63 6D 64 8C 
+1A16DF8 	58 6D A1  1 20 40 A0  1 
+   ['] end-of-word               is find-end
+1A16E00 	60 53 A0  1  0 4A A1  1 
+1A16E08 	98 40 A0  1 68 66 A1  1 
+   ['] insert-character          is cinsert
+1A16E10 	60 53 A0  1 C0 4F A1  1 
+1A16E18 	98 40 A0  1 7C 66 A1  1 
+   ['] erase-previous-character  is cerase
+1A16E20 	60 53 A0  1 5C 50 A1  1 
+1A16E28 	98 40 A0  1 90 66 A1  1 
+;
+1A16E30 	58 46 A0  1 
+install-fcmd
+
+only forth also command-completion also hidden also keys-forth definitions
+
+headers
+\ TAB expands, TAB-TAB shows completions
+: ^i beforechar @ control i =  if do-show  else  expand-word then  ;	\ tab
+1A16E34 	 0 5E 69 82 
+1A16E38 	24 66 A1  1 20 40 A0  1 
+1A16E40 	F4 5C A1  1 5C 4C A0  1 
+1A16E48 	58 41 A0  1  9  0  0  0 
+1A16E50 	24 48 A0  1 DC 41 A0  1 
+1A16E58 	10  0  0  0 58 6D A1  1 
+1A16E60 	C8 41 A0  1  8  0  0  0 
+1A16E68 	9C 6C A1  1 58 46 A0  1 
+: ^` expand-word ;	\ Control-space or control-back-tick
+1A16E70 	 0 5E 60 82 3C 6E A1  1 
+1A16E78 	20 40 A0  1 9C 6C A1  1 
+1A16E80 	58 46 A0  1 
+: ^| expand-word ;	\ Control-vertical-bar or control-backslash
+1A16E84 	 0 5E 7C 82 
+1A16E88 	78 6E A1  1 20 40 A0  1 
+1A16E90 	9C 6C A1  1 58 46 A0  1 
+: ^} do-show ;		\ Control-right-bracket
+1A16E98 	 0 5E 7D 82 8C 6E A1  1 
+1A16EA0 	20 40 A0  1 58 6D A1  1 
+1A16EA8 	58 46 A0  1 
+: ^? do-show ;		\ Control-question-mark
+1A16EAC 	 0 5E 7F 82 
+1A16EB0 	A0 6E A1  1 20 40 A0  1 
+1A16EB8 	58 6D A1  1 58 46 A0  1 
+h# 7f last-t @ mmoname>string 
+ mmodrop 1+
+\ cr 2dup h. h. key drop
+ c!   	\ Hack hack
+
+only forth also definitions
+

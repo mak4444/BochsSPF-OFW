@@ -1,0 +1,16 @@
+\ Relocation table.  
+\ Keeps a bitmap identifying longwords that need to be relocated
+\ if they are saved to a file.
+
+variable memtop
+1A06BA8 	 0 6D 65 6D 74 6F 70 86 
+1A06BB0 	80 6B A0  1 48 40 A0  1 
+1A06BB8 	5C  0  0  0 
+
+: max-image  ( -- #bytes )  memtop @  origin -  ;
+1A06BBC 	 0  0 6D 61 
+1A06BC0 	78 2D 69 6D 61 67 65 89 
+1A06BC8 	B4 6B A0  1 20 40 A0  1 
+1A06BD0 	B4 6B A0  1 5C 4C A0  1 
+1A06BD8 	50 55 A0  1 18 45 A0  1 
+1A06BE0 	58 46 A0  1 

@@ -1,0 +1,47 @@
+purpose: lexical analysis primitive
+
+\ text$ means ( text-adr text-len )
+0 value delim
+1A17494 	 0  0 64 65 
+1A17498 	6C 69 6D 85 88 74 A1  1 
+1A174A0 	50 40 A0  1 7C  4  0  0 
+
+\ lex scans text$ for each character in delim$
+\ when one is found, lex splits text$ at that delimiter and leaves
+: lex   ( text$ delim$ -- rem$ head$ delim true | text$ false )
+1A174A8 	6C 65 78 83 A0 74 A1  1 
+1A174B0 	20 40 A0  1 
+   0 is delim
+1A174B4 	70 6F A0  1 
+1A174B8 	B8 40 A0  1 A0 74 A1  1 
+   2over bounds ?do				( text$ delim$ )
+1A174C0 	D8 49 A0  1 F0 6D A0  1 
+1A174C8 	50 42 A0  1 44  0  0  0 
+      2dup i c@ cindex if			( text$ delim$ [ index ] )
+1A174D0 	C0 49 A0  1 B4 42 A0  1 
+1A174D8 	C4 4C A0  1 4C 19 A1  1 
+1A174E0 	DC 41 A0  1 24  0  0  0 
+	 nip nip c@  dup is delim		( text$ delim )
+1A174E8 	FC 46 A0  1 FC 46 A0  1 
+1A174F0 	C4 4C A0  1 40 49 A0  1 
+1A174F8 	B8 40 A0  1 A0 74 A1  1 
+	 left-parse-string  leave		( rem$ head$ )
+1A17500 	44 D7 A0  1 18 43 A0  1 
+      then					( text$ delim$ | rem$ head$ )
+   loop						( text$ delim$ | rem$ head$ )
+1A17508 	F8 41 A0  1 C4 FF FF FF 
+   delim if
+1A17510 	A0 74 A1  1 DC 41 A0  1 
+1A17518 	14  0  0  0 
+      delim true
+1A1751C 	A0 74 A1  1 
+1A17520 	 4 70 A0  1 
+   else
+1A17524 	C8 41 A0  1 
+1A17528 	 C  0  0  0 
+      2drop false
+1A1752C 	AC 49 A0  1 
+1A17530 	18 70 A0  1 
+   then
+;
+1A17534 	58 46 A0  1 

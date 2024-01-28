@@ -1,0 +1,73 @@
+purpose: Configuration space access using "configuration mechanism 1"
+
+\ Ostensibly this applies to the PCI bus and thus should be in the PCI node.
+\ However, many of the host bridge registers are accessed via this mechanism,
+\ so it is convenient to make the configuration access words globally-visible.
+\ This mechanism works for several different PCI host bridges.
+
+headerless
+
+defer config-map
+1A337BC 	 0 63 6F 6E 
+1A337C0 	66 69 67 2D 6D 61 70 8A 
+1A337C8 	B4 37 A3  1 5C 40 A0  1 
+1A337D0 	50  A  0  0 
+: config-map-m1  ( config-adr -- port )
+1A337D4 	 0  0 63 6F 
+1A337D8 	6E 66 69 67 2D 6D 61 70 
+1A337E0 	2D 6D 31 8D CC 37 A3  1 
+1A337E8 	20 40 A0  1 
+   dup  3 invert and  h# 8000.0000 or  h# cf8 pl!  ( config-adr )
+1A337EC 	40 49 A0  1 
+1A337F0 	A0 6F A0  1 30 45 A0  1 
+1A337F8 	5C 44 A0  1 58 41 A0  1 
+1A33800 	 0  0  0 80 70 44 A0  1 
+1A33808 	58 41 A0  1 F8  C  0  0 
+1A33810 	10 82 A2  1 
+   3 and  h# cfc or  io-base +
+1A33814 	A0 6F A0  1 
+1A33818 	5C 44 A0  1 58 41 A0  1 
+1A33820 	FC  C  0  0 70 44 A0  1 
+1A33828 	B4 37 A3  1  4 45 A0  1 
+;
+1A33830 	58 46 A0  1 
+' config-map-m1 to config-map
+
+headers
+
+: config-l@  ( config-addr -- l )  config-map rl@  ;
+1A33834 	 0  0 63 6F 
+1A33838 	6E 66 69 67 2D 6C 40 89 
+1A33840 	E8 37 A3  1 20 40 A0  1 
+1A33848 	CC 37 A3  1 F8 B1 A2  1 
+1A33850 	58 46 A0  1 
+: config-l!  ( l config-addr -- )  config-map rl!  ;
+1A33854 	 0  0 63 6F 
+1A33858 	6E 66 69 67 2D 6C 21 89 
+1A33860 	44 38 A3  1 20 40 A0  1 
+1A33868 	CC 37 A3  1 68 B2 A2  1 
+1A33870 	58 46 A0  1 
+: config-w@  ( config-addr -- w )  config-map rw@  ;
+1A33874 	 0  0 63 6F 
+1A33878 	6E 66 69 67 2D 77 40 89 
+1A33880 	64 38 A3  1 20 40 A0  1 
+1A33888 	CC 37 A3  1 D0 B1 A2  1 
+1A33890 	58 46 A0  1 
+: config-w!  ( w config-addr -- )  config-map rw!  ;
+1A33894 	 0  0 63 6F 
+1A33898 	6E 66 69 67 2D 77 21 89 
+1A338A0 	84 38 A3  1 20 40 A0  1 
+1A338A8 	CC 37 A3  1 40 B2 A2  1 
+1A338B0 	58 46 A0  1 
+: config-b@  ( config-addr -- c )  config-map rb@  ;
+1A338B4 	 0  0 63 6F 
+1A338B8 	6E 66 69 67 2D 62 40 89 
+1A338C0 	A4 38 A3  1 20 40 A0  1 
+1A338C8 	CC 37 A3  1 A8 B1 A2  1 
+1A338D0 	58 46 A0  1 
+: config-b!  ( c config-addr -- )  config-map rb!  ;
+1A338D4 	 0  0 63 6F 
+1A338D8 	6E 66 69 67 2D 62 21 89 
+1A338E0 	C4 38 A3  1 20 40 A0  1 
+1A338E8 	CC 37 A3  1 1C B2 A2  1 
+1A338F0 	58 46 A0  1 

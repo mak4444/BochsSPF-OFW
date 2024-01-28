@@ -1,0 +1,122 @@
+purpose: Establish address and I/O configuration definitions
+
+\ Dropin-base is where the set of dropin modules, the verbatim
+\ image of what is stored in ROM or on disk, ends up in memory.
+\ If OFW is in FLASH, dropin-base can just be the FLASH address.
+\ If OFW is pulled in from disk, dropin-base is where the very
+\ early startup code - the first few instructions in the image -
+\ copies it to get it out of the way of things like OS load areas.
+
+[ifdef] coreboot-loaded
+  [ifdef] coreboot-qemu
+    \ when running in qemu OFW is not in ROM but loaded to RAM by elfboot
+    h# 198.0080 constant dropin-base  \ Location of payload in RAM
+    dropin-base h# 20 +  constant ResetBase	\ Location of "reset" dropin in RAM
+  [else]
+    h# fff8.0000 constant dropin-base  \ Location of payload in FLASH
+    dropin-base h# 80 + h# 20 +  constant ResetBase	\ Location of "reset" dropin in ROM
+  [then]
+  h#   08.0000 constant dropin-size
+[then]
+
+[ifdef] virtualbox-loaded
+  h#   f0.0000 constant dropin-base  \ Location of payload in RAM
+  h#   08.0000 constant dropin-size
+  h#    1.0000 constant dma-base  \ DMA heap
+  h#    8.0000 constant dma-size
+
+[then]
+
+[ifdef] preof-loaded
+h# 2000.0000 constant ramsize
+h# fff8.0020 constant dropin-base  \ Location of payload in ROM
+h#   08.0000 constant dropin-size
+[then]
+
+[ifdef] via-demo
+\ Don't assume a lot of memory (256M for most versions, 128M for a few)
+\needs fw-pa      h#  e00.0000 constant fw-pa     \ OFW dictionary location
+\needs /fw-ram    h#   20.0000 constant /fw-ram
+
+\needs heap-base  h#  e20.0000 constant heap-base \ Dynamic allocation heap
+\needs heap-size  h#   20.0000 constant heap-size
+
+\needs dma-base   h#  e40.0000 constant dma-base  \ DMA heap
+\needs dma-size   h#   20.0000 constant dma-size
+
+                  h#  e60.0000 constant dropin-base  \ Location of payload in RAM
+                  h#   08.0000 constant dropin-size
+[then]
+
+\needs dropin-base  h# 198.0000 constant dropin-base
+1A323D4 	64 72 6F 70 
+1A323D8 	69 6E 2D 62 61 73 65 8B 
+1A323E0 	D0 23 A3  1 68 40 A0  1 
+1A323E8 	 0  0 98  1 
+\needs dropin-size  h#   8.0000 constant dropin-size
+1A323EC 	64 72 6F 70 
+1A323F0 	69 6E 2D 73 69 7A 65 8B 
+1A323F8 	E4 23 A3  1 68 40 A0  1 
+1A32400 	 0  0  8  0 
+\needs ResetBase    dropin-base h# 20 +  constant ResetBase	\ Location of "reset" dropin in ROM
+1A32404 	 0  0 72 65 
+1A32408 	73 65 74 62 61 73 65 89 
+1A32410 	FC 23 A3  1 68 40 A0  1 
+1A32418 	20  0 98  1 
+
+[ifdef] syslinux-loaded
+\ This fits nicely with my VIA board that has "only" 256 MiB of memory
+\needs fw-pa      h# 1d80.0000 constant fw-pa     \ OFW dictionary location
+\needs /fw-ram    h#   20.0000 constant /fw-ram
+
+\needs heap-base  h# 1da0.0000 constant heap-base \ Dynamic allocation heap
+\needs heap-size  h#   20.0000 constant heap-size
+
+\needs dma-base   h# 1dc0.0000 constant dma-base  \ DMA heap
+\needs dma-size   h#   20.0000 constant dma-size
+[then]
+
+[ifndef] fw-pa
+\ This is considerably more memory than Open Firmware needs
+\ on platforms where you have a well bounded set of I/O devices.
+
+\needs fw-pa      h# 1a0.0000 constant fw-pa     \ OFW dictionary location
+1A3241C 	 0  0 66 77 
+1A32420 	2D 70 61 85 14 24 A3  1 
+1A32428 	68 40 A0  1  0  0 A0  1 
+\needs /fw-ram    h#  20.0000 constant /fw-ram
+1A32430 	2F 66 77 2D 72 61 6D 87 
+1A32438 	28 24 A3  1 68 40 A0  1 
+1A32440 	 0  0 20  0 
+
+\needs heap-base  h# 1c0.0000 constant heap-base \ Dynamic allocation heap
+1A32444 	 0  0 68 65 
+1A32448 	61 70 2D 62 61 73 65 89 
+1A32450 	3C 24 A3  1 68 40 A0  1 
+1A32458 	 0  0 C0  1 
+\needs heap-size  h#  20.0000 constant heap-size
+1A3245C 	 0  0 68 65 
+1A32460 	61 70 2D 73 69 7A 65 89 
+1A32468 	54 24 A3  1 68 40 A0  1 
+1A32470 	 0  0 20  0 
+
+\needs dma-base   h# 1e0.0000 constant dma-base  \ DMA heap
+1A32474 	 0  0  0 64 
+1A32478 	6D 61 2D 62 61 73 65 88 
+1A32480 	6C 24 A3  1 68 40 A0  1 
+1A32488 	 0  0 E0  1 
+\needs dma-size   h#  20.0000 constant dma-size
+1A3248C 	 0  0  0 64 
+1A32490 	6D 61 2D 73 69 7A 65 88 
+1A32498 	84 24 A3  1 68 40 A0  1 
+1A324A0 	 0  0 20  0 
+[then]
+
+\ Where OFW initially loads an OS that is is going to boot
+
+h# 100.0000 constant def-load-base      \ Convenient for initrd
+1A324A4 	 0  0 64 65 
+1A324A8 	66 2D 6C 6F 61 64 2D 62 
+1A324B0 	61 73 65 8D 9C 24 A3  1 
+1A324B8 	68 40 A0  1  0  0  0  1 
+

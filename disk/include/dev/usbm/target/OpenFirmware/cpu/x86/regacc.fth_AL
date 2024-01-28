@@ -1,0 +1,162 @@
+purpose: Register access words
+
+\ These versions of the "r" words treat addresses in the top 64K
+\ as I/O addresses, performing I/O cycles instead of memory cycles.
+
+\ Equivalent to:
+\ : rb@  ( adr -- b )
+\    dup h# ffff.0000 u>=  if  h# ffff and pc@  else  c@  then
+\ ;
+
+code rb@  ( adr -- b )
+1A2B1A0 	72 62 40 83 48 B1 A2  1 
+1A2B1A8 	AC B1 A2  1 
+   dx pop
+1A2B1AC 	5A 
+   ax  ax  xor
+1A2B1AD 	31 C0 
+   h# ffff0000 #  dx  cmp
+1A2B1AF 	81 
+1A2B1B0 	FA  0  0 FF FF 
+   u>=  if
+1A2B1B5 	72  9 
+      h# ffff #  dx  and
+1A2B1B7 	81 
+1A2B1B8 	E2 FF FF  0  0 
+      dx  al  in
+1A2B1BD 	EC 
+   else
+1A2B1BE 	EB  2 
+      0 [dx]  al  mov
+1A2B1C0 	8A  2 
+   then
+   ax push
+1A2B1C2 	50 
+c;
+1A2B1C3 	FF E7 
+code rw@  ( adr -- w )
+1A2B1C5 	 0  0  0 
+1A2B1C8 	72 77 40 83 A8 B1 A2  1 
+1A2B1D0 	D4 B1 A2  1 
+   dx pop
+1A2B1D4 	5A 
+   ax  ax  xor
+1A2B1D5 	31 C0 
+   h# ffff0000 #  dx  cmp
+1A2B1D7 	81 
+1A2B1D8 	FA  0  0 FF FF 
+   u>=  if
+1A2B1DD 	72  A 
+      h# ffff #  dx  and
+1A2B1DF 	81 
+1A2B1E0 	E2 FF FF  0  0 
+      op:  dx  ax  in
+1A2B1E5 	66 ED 
+   else
+1A2B1E7 	EB 
+1A2B1E8 	 3 
+      op:  0 [dx]  ax  mov
+1A2B1E9 	66 8B  2 
+   then
+   ax push
+1A2B1EC 	50 
+c;
+1A2B1ED 	FF E7 
+code rl@  ( adr -- l )
+1A2B1EF 	 0 
+1A2B1F0 	72 6C 40 83 D0 B1 A2  1 
+1A2B1F8 	FC B1 A2  1 
+   dx pop
+1A2B1FC 	5A 
+   h# ffff0000 #  dx  cmp
+1A2B1FD 	81 FA  0 
+1A2B200 	 0 FF FF 
+   u>=  if
+1A2B203 	72  9 
+      h# ffff #  dx  and
+1A2B205 	81 E2 FF 
+1A2B208 	FF  0  0 
+      dx  ax  in
+1A2B20B 	ED 
+   else
+1A2B20C 	EB  2 
+      0 [dx]  ax  mov
+1A2B20E 	8B  2 
+   then
+   ax push
+1A2B210 	50 
+c;
+1A2B211 	FF E7 
+code rb!  ( b adr -- )
+1A2B213 	 0 72 62 21 83 
+1A2B218 	F8 B1 A2  1 20 B2 A2  1 
+   dx pop
+1A2B220 	5A 
+   ax pop
+1A2B221 	58 
+   h# ffff0000 #  dx  cmp
+1A2B222 	81 FA  0  0 FF FF 
+   u>=  if
+1A2B228 	72  9 
+      h# ffff #  dx  and
+1A2B22A 	81 E2 FF FF  0  0 
+      al  dx  out
+1A2B230 	EE 
+   else
+1A2B231 	EB  2 
+      al  0 [dx]  mov
+1A2B233 	88  2 
+   then
+c;
+1A2B235 	FF E7 
+code rw!  ( w adr -- )
+1A2B237 	 0 
+1A2B238 	72 77 21 83 1C B2 A2  1 
+1A2B240 	44 B2 A2  1 
+   dx pop
+1A2B244 	5A 
+   ax pop
+1A2B245 	58 
+   h# ffff0000 #  dx  cmp
+1A2B246 	81 FA 
+1A2B248 	 0  0 FF FF 
+   u>=  if
+1A2B24C 	72  A 
+      h# ffff #  dx  and
+1A2B24E 	81 E2 
+1A2B250 	FF FF  0  0 
+      op:  ax  dx  out
+1A2B254 	66 EF 
+   else
+1A2B256 	EB  3 
+      op:  ax  0 [dx]  mov
+1A2B258 	66 89  2 
+   then
+c;
+1A2B25B 	FF E7 
+code rl!  ( l adr -- )
+1A2B25D 	 0  0  0 
+1A2B260 	72 6C 21 83 40 B2 A2  1 
+1A2B268 	6C B2 A2  1 
+   dx pop
+1A2B26C 	5A 
+   ax pop
+1A2B26D 	58 
+   h# ffff0000 #  dx  cmp
+1A2B26E 	81 FA 
+1A2B270 	 0  0 FF FF 
+   u>=  if
+1A2B274 	72  9 
+      h# ffff #  dx  and
+1A2B276 	81 E2 
+1A2B278 	FF FF  0  0 
+      ax  dx  out
+1A2B27C 	EF 
+   else
+1A2B27D 	EB  2 
+      ax  0 [dx]  mov
+1A2B27F 	89 
+1A2B280 	 2 
+   then
+c;
+1A2B281 	FF E7 

@@ -1,0 +1,108 @@
+purpose: USB hub probing code to support USB 1.1 devices downstream
+
+hex
+
+\ There are two properties to support 1.1 hubs and devices:
+\      hub20-dev
+\      hub20-port
+\
+\ hub20-dev   is an integer property containing the assigned-address of
+\             a USB 2.0 hub.
+\ hub20-port  is an integer property containing the downstream port# (based 1)
+\             of a USB 2.0 hub if the device attached to it is a 1.1 device.
+\
+\ For example, if we have the following physical topology:
+\     USB 2.0 hub:   port 1:  2.0 disk
+\                    port 2:  1.1 hub       port 1: disk
+\                                           port 2: disk
+\                    port 3:  1.1 mouse
+\                    port 4:  none
+\
+\ Then /usb/hub has the "hub20-dev" property.
+\      /usb/hub/hub has the "hub20-port" property of value 2.
+\      /usb/hub/mouse has the "hub20-port" property of value 3.
+\
+\ In order to correctly communicate with the 1.1 hub and all the devices behind
+\ it, the /usb/hub hub20-dev value and the /usb/hub/hub hub20-port value are
+\ used in the Transaction Descriptor (qTD).
+\
+\ Likewise, to correctly communicate with the mouse, the /usb/hub hub20-dev
+\ value and the /usb/hub/mouse hub20-port value are used in the qTD.
+: probehubfthe
+1A5D4A4 	 0  0  0 70 
+1A5D4A8 	72 6F 62 65 68 75 62 66 
+1A5D4B0 	74 68 65 8C 14 C1 A5  1 
+1A5D4B8 	20 40 A0  1 
+s" : ?set-hub20-port" eval  ( speed dev port -- )
+1A5D4BC 	9C 53 A0  1 
+1A5D4C0 	11 3A 20 3F 73 65 74 2D 
+1A5D4C8 	68 75 62 32 30 2D 70 6F 
+1A5D4D0 	72 74  0  0 D8 E5 A0  1 
+ "    "" hub20-dev"" my-parent ihandle>phandle get-package-property 0=  if" eval  ( speed dev port value$ )
+1A5D4D8 	9C 53 A0  1 45 20 20 20 
+1A5D4E0 	22 20 68 75 62 32 30 2D 
+1A5D4E8 	64 65 76 22 20 6D 79 2D 
+1A5D4F0 	70 61 72 65 6E 74 20 69 
+1A5D4F8 	68 61 6E 64 6C 65 3E 70 
+1A5D500 	68 61 6E 64 6C 65 20 67 
+1A5D508 	65 74 2D 70 61 63 6B 61 
+1A5D510 	67 65 2D 70 72 6F 70 65 
+1A5D518 	72 74 79 20 30 3D 20 20 
+1A5D520 	69 66  0  0 D8 E5 A0  1 
+s"       2drop" eval                                     ( speed dev port )
+1A5D528 	9C 53 A0  1  B 20 20 20 
+1A5D530 	20 20 20 32 64 72 6F 70 
+1A5D538 	 0  0  0  0 D8 E5 A0  1 
+s"       nip swap speed-high <>  if" eval                ( port )
+1A5D540 	9C 53 A0  1 20 20 20 20 
+1A5D548 	20 20 20 6E 69 70 20 73 
+1A5D550 	77 61 70 20 73 70 65 65 
+1A5D558 	64 2D 68 69 67 68 20 3C 
+1A5D560 	3E 20 20 69 66  0  0  0 
+1A5D568 	D8 E5 A0  1 
+ "          encode-int "" hub20-port"" property" eval      ( )
+1A5D56C 	9C 53 A0  1 
+1A5D570 	2A 20 20 20 20 20 20 20 
+1A5D578 	20 20 65 6E 63 6F 64 65 
+1A5D580 	2D 69 6E 74 20 22 20 68 
+1A5D588 	75 62 32 30 2D 70 6F 72 
+1A5D590 	74 22 20 70 72 6F 70 65 
+1A5D598 	72 74 79  0 D8 E5 A0  1 
+s"       else" eval                                      ( speed )
+1A5D5A0 	9C 53 A0  1  A 20 20 20 
+1A5D5A8 	20 20 20 65 6C 73 65  0 
+1A5D5B0 	D8 E5 A0  1 
+s"          drop" eval                                   ( )
+1A5D5B4 	9C 53 A0  1 
+1A5D5B8 	 D 20 20 20 20 20 20 20 
+1A5D5C0 	20 20 64 72 6F 70  0  0 
+1A5D5C8 	D8 E5 A0  1 
+s"       then" eval                                      ( )
+1A5D5CC 	9C 53 A0  1 
+1A5D5D0 	 A 20 20 20 20 20 20 74 
+1A5D5D8 	68 65 6E  0 D8 E5 A0  1 
+s"    else" eval                                         ( speed dev port )
+1A5D5E0 	9C 53 A0  1  7 20 20 20 
+1A5D5E8 	65 6C 73 65  0  0  0  0 
+1A5D5F0 	D8 E5 A0  1 
+s"       3drop" eval                                     ( )
+1A5D5F4 	9C 53 A0  1 
+1A5D5F8 	 B 20 20 20 20 20 20 33 
+1A5D600 	64 72 6F 70  0  0  0  0 
+1A5D608 	D8 E5 A0  1 
+s"    then ;" eval                                        ( )
+1A5D60C 	9C 53 A0  1 
+1A5D610 	 9 20 20 20 74 68 65 6E 
+1A5D618 	20 3B  0  0 D8 E5 A0  1 
+
+s" ' ?set-hub20-port to make-dev-property-hook" eval
+1A5D620 	9C 53 A0  1 2B 27 20 3F 
+1A5D628 	73 65 74 2D 68 75 62 32 
+1A5D630 	30 2D 70 6F 72 74 20 74 
+1A5D638 	6F 20 6D 61 6B 65 2D 64 
+1A5D640 	65 76 2D 70 72 6F 70 65 
+1A5D648 	72 74 79 2D 68 6F 6F 6B 
+1A5D650 	 0  0  0  0 D8 E5 A0  1 
+;
+1A5D658 	58 46 A0  1 
+headers

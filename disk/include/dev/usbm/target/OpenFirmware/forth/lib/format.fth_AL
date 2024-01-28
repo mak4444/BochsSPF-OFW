@@ -1,0 +1,91 @@
+
+\ Output Formatting
+decimal
+headerless
+
+variable lmargin    0 lmargin !
+1A11374 	6C 6D 61 72 
+1A11378 	67 69 6E 87 48 13 A1  1 
+1A11380 	48 40 A0  1 54  3  0  0 
+variable rmargin   79 rmargin !
+1A11388 	72 6D 61 72 67 69 6E 87 
+1A11390 	80 13 A1  1 48 40 A0  1 
+1A11398 	58  3  0  0 
+: ?line  (s n -- )
+1A1139C 	 0  0 3F 6C 
+1A113A0 	69 6E 65 85 94 13 A1  1 
+1A113A8 	20 40 A0  1 
+   #out @ +    rmargin @ >  if  cr  lmargin @ spaces  then
+1A113AC 	5C 6D A0  1 
+1A113B0 	5C 4C A0  1  4 45 A0  1 
+1A113B8 	94 13 A1  1 5C 4C A0  1 
+1A113C0 	 4 48 A0  1 DC 41 A0  1 
+1A113C8 	14  0  0  0 80 6D A0  1 
+1A113D0 	80 13 A1  1 5C 4C A0  1 
+1A113D8 	E8 71 A0  1 
+;
+1A113DC 	58 46 A0  1 
+: ?cr  (s -- )  0 ?line  ;
+1A113E0 	3F 63 72 83 A8 13 A1  1 
+1A113E8 	20 40 A0  1 70 6F A0  1 
+1A113F0 	A8 13 A1  1 58 46 A0  1 
+: to-column  (s column -- )  #out @  -  1 max spaces  ;
+1A113F8 	 0  0 74 6F 2D 63 6F 6C 
+1A11400 	75 6D 6E 89 E8 13 A1  1 
+1A11408 	20 40 A0  1 5C 6D A0  1 
+1A11410 	5C 4C A0  1 18 45 A0  1 
+1A11418 	80 6F A0  1 9C 4A A0  1 
+1A11420 	E8 71 A0  1 58 46 A0  1 
+
+variable tabstops  8 tabstops !
+1A11428 	 0  0  0 74 61 62 73 74 
+1A11430 	6F 70 73 88  8 14 A1  1 
+1A11438 	48 40 A0  1 5C  3  0  0 
+: ?to-column ( string-length starting-column -- )
+1A11440 	 0 3F 74 6F 2D 63 6F 6C 
+1A11448 	75 6D 6E 8A 38 14 A1  1 
+1A11450 	20 40 A0  1 
+   tuck + rmargin @ >  if
+1A11454 	E8 46 A0  1 
+1A11458 	 4 45 A0  1 94 13 A1  1 
+1A11460 	5C 4C A0  1  4 48 A0  1 
+1A11468 	DC 41 A0  1 20  0  0  0 
+      drop cr  lmargin @ spaces
+1A11470 	30 49 A0  1 80 6D A0  1 
+1A11478 	80 13 A1  1 5C 4C A0  1 
+1A11480 	E8 71 A0  1 
+   else
+1A11484 	C8 41 A0  1 
+1A11488 	14  0  0  0 
+      #out @ - spaces
+1A1148C 	5C 6D A0  1 
+1A11490 	5C 4C A0  1 18 45 A0  1 
+1A11498 	E8 71 A0  1 
+   then
+;
+1A1149C 	58 46 A0  1 
+: .tab  ( string-length -- )
+1A114A0 	 0  0  0 2E 74 61 62 84 
+1A114A8 	50 14 A1  1 20 40 A0  1 
+   \ Find the next tab stop after the current cursor position
+   rmargin @ tabstops @ +  dup lmargin @  do   ( string-length target-column )
+1A114B0 	94 13 A1  1 5C 4C A0  1 
+1A114B8 	38 14 A1  1 5C 4C A0  1 
+1A114C0 	 4 45 A0  1 40 49 A0  1 
+1A114C8 	80 13 A1  1 5C 4C A0  1 
+1A114D0 	88 42 A0  1 38  0  0  0 
+      i  #out @   >=  if  drop i leave  then   ( string-length target-column )
+1A114D8 	B4 42 A0  1 5C 6D A0  1 
+1A114E0 	5C 4C A0  1 EC 48 A0  1 
+1A114E8 	DC 41 A0  1 10  0  0  0 
+1A114F0 	30 49 A0  1 B4 42 A0  1 
+1A114F8 	18 43 A0  1 
+   tabstops @ +loop                            ( string-length target-column )
+1A114FC 	38 14 A1  1 
+1A11500 	5C 4C A0  1 1C 42 A0  1 
+1A11508 	D0 FF FF FF 
+   ?to-column
+1A1150C 	50 14 A1  1 
+;
+1A11510 	58 46 A0  1 
+headers

@@ -1,0 +1,1057 @@
+purpose: ANSI X3.64 terminal emulator (escape sequence parser)
+
+\ ANSI 3.64 Terminal Emulator.
+decimal
+headerless
+\ ansi-emit is the routine which handles the current character.
+\ It is deferred because the terminal emulator can be in one of several
+\ states, depending on the previous characters.  For each distinct state,
+\ a different routine is installed as the action performed by ansi-emit.
+\ The states are:
+\
+\   alpha-state		This is the "normal" state.  Printable characters
+\			are displayed, control characters are interpreted,
+\			and the ESCAPE character switches to escape-state .
+\
+\   escape-state 	In this state, an ESCAPE has been seen and we
+\			are expecting a "[" character to switch us to
+\			escbrkt-state.  In escape-state, a few control
+\			characters are recognized, and apart from that,
+\			any non-"[" character switches to alpha-state .
+\
+\   escbrkt-state	An ESCAPE [  pair has been seen.  We collect numeric
+\			arguments until an alphabetic command character
+\			is received, then we execute the command and switch
+\			to alpha-state .  Command characters are those
+\			with ASCII codes numerically greater than or equal
+\			to the ASCII code for the "@" character.
+\
+\   skipping-state	Entered from escbrkt-state if an invalid character
+\			is received while waiting for a command character.
+\			In skipping state, all non-command characters are
+\			ignored, and the next command character switches
+\			to alpha-state .
+
+: ring-bell  ( -- )
+1A28D60 	 0  0 72 69 6E 67 2D 62 
+1A28D68 	65 6C 6C 89 E4 8A A2  1 
+1A28D70 	20 40 A0  1 
+   " ring-bell" stdin @  ['] $call-method catch  if
+1A28D74 	9C 53 A0  1 
+1A28D78 	 9 72 69 6E 67 2D 62 65 
+1A28D80 	6C 6C  0  0 54 55 A2  1 
+1A28D88 	5C 4C A0  1 60 53 A0  1 
+1A28D90 	B4 31 A2  1 14 7F A0  1 
+1A28D98 	DC 41 A0  1  C  0  0  0 
+      3drop blink-screen
+1A28DA0 	90 52 A0  1 54 88 A2  1 
+   then
+;
+1A28DA8 	58 46 A0  1 
+
+\ set-line is also used by fb1-draw-logo
+\ which is defined outside the termemu package
+also forth definitions
+: set-line  ( line -- )
+1A28DAC 	 0  0  0 73 
+1A28DB0 	65 74 2D 6C 69 6E 65 88 
+1A28DB8 	E8 8C A2  1 20 40 A0  1 
+   0 max  #lines    1- min  is line#    \ ['] line#    >body >user !
+1A28DC0 	70 6F A0  1 9C 4A A0  1 
+1A28DC8 	 4 87 A2  1 54 4B A0  1 
+1A28DD0 	74 4A A0  1 48 B8 A1  1 
+1A28DD8 	54 86 A2  1 
+;
+1A28DDC 	58 46 A0  1 
+previous definitions
+
+: set-column  ( column# -- )
+1A28DE0 	 0 73 65 74 2D 63 6F 6C 
+1A28DE8 	75 6D 6E 8A 70 8D A2  1 
+1A28DF0 	20 40 A0  1 
+   0 max  #columns  1- min  is column#  \ ['] column#  >body >user !
+1A28DF4 	70 6F A0  1 
+1A28DF8 	9C 4A A0  1 1C 87 A2  1 
+1A28E00 	54 4B A0  1 74 4A A0  1 
+1A28E08 	48 B8 A1  1 40 86 A2  1 
+;
+1A28E10 	58 46 A0  1 
+: +column  ( delta-columns -- )  column# +   set-column  ;
+1A28E14 	2B 63 6F 6C 
+1A28E18 	75 6D 6E 87 F0 8D A2  1 
+1A28E20 	20 40 A0  1 40 86 A2  1 
+1A28E28 	 4 45 A0  1 F0 8D A2  1 
+1A28E30 	58 46 A0  1 
+: +line  ( delta-lines -- )  line# +  set-line  ;
+1A28E34 	 0  0 2B 6C 
+1A28E38 	69 6E 65 85 20 8E A2  1 
+1A28E40 	20 40 A0  1 54 86 A2  1 
+1A28E48 	 4 45 A0  1 BC 8D A2  1 
+1A28E50 	58 46 A0  1 
+
+: /string  ( adr len n -- adr+n len-n )  over min  rot over + -rot -  ;
+1A28E54 	2F 73 74 72 
+1A28E58 	69 6E 67 87 40 8E A2  1 
+1A28E60 	20 40 A0  1 54 49 A0  1 
+1A28E68 	74 4A A0  1 7C 49 A0  1 
+1A28E70 	54 49 A0  1  4 45 A0  1 
+1A28E78 	94 49 A0  1 18 45 A0  1 
+1A28E80 	58 46 A0  1 
+
+\ #newlines counts the number of newlines up to the end of the
+\ string to be printed, or up to the next escape or form feed.
+\ This is used to "batch" scrolls.
+: #newlines  ( adr len -- adr len #newlines )
+1A28E84 	 0  0 23 6E 
+1A28E88 	65 77 6C 69 6E 65 73 89 
+1A28E90 	60 8E A2  1 20 40 A0  1 
+   2dup 1 -rot                          ( adr len 1 adr len )
+1A28E98 	C0 49 A0  1 80 6F A0  1 
+1A28EA0 	94 49 A0  1 
+   1 /string   bounds  ?do              ( adr len #newlines-so-far )
+1A28EA4 	80 6F A0  1 
+1A28EA8 	60 8E A2  1 F0 6D A0  1 
+1A28EB0 	50 42 A0  1 84  0  0  0 
+      i c@  bl <  if                    ( adr len #newlines-so-far )
+1A28EB8 	B4 42 A0  1 C4 4C A0  1 
+1A28EC0 	28 70 A0  1 E4 47 A0  1 
+1A28EC8 	DC 41 A0  1 64  0  0  0 
+         i c@  case
+1A28ED0 	B4 42 A0  1 C4 4C A0  1 
+	    control J  of 1+     endof  \ Count linefeeds
+1A28ED8 	58 41 A0  1  A  0  0  0 
+1A28EE0 	48 43 A0  1 10  0  0  0 
+1A28EE8 	30 4B A0  1 6C 43 A0  1 
+1A28EF0 	40  0  0  0 
+	    control [  of leave  endof  \ Bail out on escapes
+1A28EF4 	58 41 A0  1 
+1A28EF8 	1B  0  0  0 48 43 A0  1 
+1A28F00 	10  0  0  0 18 43 A0  1 
+1A28F08 	6C 43 A0  1 24  0  0  0 
+	    control L  of leave  endof  \ Bail out on formfeeds
+1A28F10 	58 41 A0  1  C  0  0  0 
+1A28F18 	48 43 A0  1 10  0  0  0 
+1A28F20 	18 43 A0  1 6C 43 A0  1 
+1A28F28 	 8  0  0  0 
+         endcase
+1A28F2C 	84 43 A0  1 
+      then
+   loop   ( adr len #newlines )
+1A28F30 	F8 41 A0  1 84 FF FF FF 
+;
+1A28F38 	58 46 A0  1 
+
+: kill-1line  ( -- )  #columns column# -  delete-characters  ;
+1A28F3C 	 0 6B 69 6C 
+1A28F40 	6C 2D 31 6C 69 6E 65 8A 
+1A28F48 	94 8E A2  1 20 40 A0  1 
+1A28F50 	1C 87 A2  1 40 86 A2  1 
+1A28F58 	18 45 A0  1  0 88 A2  1 
+1A28F60 	58 46 A0  1 
+
+: kill-line  ( -- )
+1A28F64 	 0  0 6B 69 
+1A28F68 	6C 6C 2D 6C 69 6E 65 89 
+1A28F70 	4C 8F A2  1 20 40 A0  1 
+   column#
+1A28F78 	40 86 A2  1 
+   arginit  case
+1A28F7C 	BC 89 A2  1 
+      1  of		\ Erase from beginning of line to cursor
+1A28F80 	80 6F A0  1 48 43 A0  1 
+1A28F88 	24  0  0  0 
+         0 set-column  dup delete-characters dup insert-characters
+1A28F8C 	70 6F A0  1 
+1A28F90 	F0 8D A2  1 40 49 A0  1 
+1A28F98 	 0 88 A2  1 40 49 A0  1 
+1A28FA0 	E0 87 A2  1 
+      endof
+1A28FA4 	6C 43 A0  1 
+1A28FA8 	30  0  0  0 
+      2  of		\ Erase entire line
+1A28FAC 	90 6F A0  1 
+1A28FB0 	48 43 A0  1 1C  0  0  0 
+         0 set-column  #columns delete-characters
+1A28FB8 	70 6F A0  1 F0 8D A2  1 
+1A28FC0 	1C 87 A2  1  0 88 A2  1 
+      endof
+1A28FC8 	6C 43 A0  1  C  0  0  0 
+      ( default, and 0 case )  kill-1line   \ Erase from cursor to end of line
+1A28FD0 	4C 8F A2  1 
+   endcase
+1A28FD4 	84 43 A0  1 
+   set-column
+1A28FD8 	F0 8D A2  1 
+;
+1A28FDC 	58 46 A0  1 
+
+: do-newline  ( adr len -- adr len )
+1A28FE0 	 0 64 6F 2D 6E 65 77 6C 
+1A28FE8 	69 6E 65 8A 74 8F A2  1 
+1A28FF0 	20 40 A0  1 
+   line#  #lines 1-  <  if
+1A28FF4 	54 86 A2  1 
+1A28FF8 	 4 87 A2  1 54 4B A0  1 
+1A29000 	E4 47 A0  1 DC 41 A0  1 
+1A29008 	2C  0  0  0 
+
+      \ We're not at the bottom of the screen, so we don't need to scroll
+      line# 1+ set-line  ( adr len )
+1A2900C 	54 86 A2  1 
+1A29010 	30 4B A0  1 BC 8D A2  1 
+
+      \ Clear next line unless we're in wrap mode
+      #scroll-lines 0=  if   kill-1line   then
+1A29018 	80 89 A2  1 24 47 A0  1 
+1A29020 	DC 41 A0  1  8  0  0  0 
+1A29028 	4C 8F A2  1 
+
+   else  \ We're at the bottom of the screen, so we have to scroll
+1A2902C 	C8 41 A0  1 
+1A29030 	54  0  0  0 
+
+      \ In wrap mode, we just go to the top of the screen
+      #scroll-lines 0=  if  0 set-line  kill-1line  exit  then
+1A29034 	80 89 A2  1 
+1A29038 	24 47 A0  1 DC 41 A0  1 
+1A29040 	14  0  0  0 70 6F A0  1 
+1A29048 	BC 8D A2  1 4C 8F A2  1 
+1A29050 	40 46 A0  1 
+
+      \ In single-line scroll mode, we try to optimize out multiple scrolls
+\        #scroll-lines  1 =  if               ( adr len )
+\           #newlines                         ( adr len #newlines )
+\        else
+\           #scroll-lines                     ( adr len #scroll-lines )
+\        then
+
+      #scroll-lines                        ( adr len #scroll-lines )
+1A29054 	80 89 A2  1 
+
+      #lines min                           ( adr len #lines-to-scroll )
+1A29058 	 4 87 A2  1 74 4A A0  1 
+      line#                                ( adr len #lines line# )
+1A29060 	54 86 A2  1 
+      0 set-line   swap dup delete-lines   ( adr len line# #lines-to-scroll )
+1A29064 	70 6F A0  1 
+1A29068 	BC 8D A2  1 68 49 A0  1 
+1A29070 	40 49 A0  1 38 88 A2  1 
+      - 1+  set-line                       ( adr len )
+1A29078 	18 45 A0  1 30 4B A0  1 
+1A29080 	BC 8D A2  1 
+   then
+;
+1A29084 	58 46 A0  1 
+
+\ Moves the cursor to the position indicated by arg0 and arg1
+: move-cursor  ( -- )
+1A29088 	6D 6F 76 65 2D 63 75 72 
+1A29090 	73 6F 72 8B F0 8F A2  1 
+1A29098 	20 40 A0  1 
+   next-arg 0=  if  0  else  1 arg 1-  then  0 arg 1-
+1A2909C 	A8 89 A2  1 
+1A290A0 	24 47 A0  1 DC 41 A0  1 
+1A290A8 	10  0  0  0 70 6F A0  1 
+1A290B0 	C8 41 A0  1 10  0  0  0 
+1A290B8 	80 6F A0  1 90 89 A2  1 
+1A290C0 	54 4B A0  1 70 6F A0  1 
+1A290C8 	90 89 A2  1 54 4B A0  1 
+   set-line set-column
+1A290D0 	BC 8D A2  1 F0 8D A2  1 
+;
+1A290D8 	58 46 A0  1 
+: kill-screen  ( -- )
+1A290DC 	6B 69 6C 6C 
+1A290E0 	2D 73 63 72 65 65 6E 8B 
+1A290E8 	98 90 A2  1 20 40 A0  1 
+   line# column#       ( line# column# )
+1A290F0 	54 86 A2  1 40 86 A2  1 
+   arginit case
+1A290F8 	BC 89 A2  1 
+      1 of		\ Erase from beginning of screen to cursor
+1A290FC 	80 6F A0  1 
+1A29100 	48 43 A0  1 40  0  0  0 
+         0 set-column  dup delete-characters  dup insert-characters
+1A29108 	70 6F A0  1 F0 8D A2  1 
+1A29110 	40 49 A0  1  0 88 A2  1 
+1A29118 	40 49 A0  1 E0 87 A2  1 
+         0 set-line    over delete-lines  over insert-lines
+1A29120 	70 6F A0  1 BC 8D A2  1 
+1A29128 	54 49 A0  1 38 88 A2  1 
+1A29130 	54 49 A0  1 1C 88 A2  1 
+         dup
+1A29138 	40 49 A0  1 
+      endof
+1A2913C 	6C 43 A0  1 
+1A29140 	50  0  0  0 
+
+      2 of		\ Erase entire screen
+1A29144 	90 6F A0  1 
+1A29148 	48 43 A0  1 24  0  0  0 
+         0 set-line  0 set-column
+1A29150 	70 6F A0  1 BC 8D A2  1 
+1A29158 	70 6F A0  1 F0 8D A2  1 
+         #lines delete-lines
+1A29160 	 4 87 A2  1 38 88 A2  1 
+      endof
+1A29168 	6C 43 A0  1 24  0  0  0 
+
+      ( default, also explicitly the "0" case )
+      kill-1line	\ Erase from cursor to end of screen
+1A29170 	4C 8F A2  1 
+      1 +line  #lines  line# -  delete-lines
+1A29174 	80 6F A0  1 
+1A29178 	40 8E A2  1  4 87 A2  1 
+1A29180 	54 86 A2  1 18 45 A0  1 
+1A29188 	38 88 A2  1 
+   endcase
+1A2918C 	84 43 A0  1 
+   set-column set-line
+1A29190 	F0 8D A2  1 BC 8D A2  1 
+;
+1A29198 	58 46 A0  1 
+: form-feed  ( -- )  0 set-line 0 set-column  erase-screen  ;
+1A2919C 	 0  0 66 6F 
+1A291A0 	72 6D 2D 66 65 65 64 89 
+1A291A8 	EC 90 A2  1 20 40 A0  1 
+1A291B0 	70 6F A0  1 BC 8D A2  1 
+1A291B8 	70 6F A0  1 F0 8D A2  1 
+1A291C0 	A8 88 A2  1 58 46 A0  1 
+
+headers
+ true value ansi-terminal?
+1A291C8 	 0 61 6E 73 69 2D 74 65 
+1A291D0 	72 6D 69 6E 61 6C 3F 8E 
+1A291D8 	AC 91 A2  1 50 40 A0  1 
+1A291E0 	78  8  0  0 
+headerless
+
+\   alpha-state		This is the "normal" state.  Printable characters
+\			are displayed, control characters are interpreted,
+\			and the ESCAPE character switches to escape-state .
+\
+: alpha-emit  ( adr len char -- adr len )
+1A291E4 	 0 61 6C 70 
+1A291E8 	68 61 2D 65 6D 69 74 8A 
+1A291F0 	DC 91 A2  1 20 40 A0  1 
+[ifdef] nt-support
+\ In order to support NT's screen-oriented installation stuff, we have
+\ to suppress scrolling when the last line of the screen is exactly filled,
+\ but no additional characters are output.
+   pending-newline?  if
+      false to pending-newline?  0 set-column  >r do-newline r>
+   then
+   draw-character
+   column# #columns 1- u<  if  1 +column  else  true to pending-newline?  then
+[else]
+\ However, the above behavior doesn't work right with vi.
+   draw-character
+1A291F8 	C0 87 A2  1 
+   column# #columns 1- u<  if  1 +column  else  0 set-column   do-newline then
+1A291FC 	40 86 A2  1 
+1A29200 	1C 87 A2  1 54 4B A0  1 
+1A29208 	A8 48 A0  1 DC 41 A0  1 
+1A29210 	14  0  0  0 80 6F A0  1 
+1A29218 	20 8E A2  1 C8 41 A0  1 
+1A29220 	10  0  0  0 70 6F A0  1 
+1A29228 	F0 8D A2  1 F0 8F A2  1 
+[then]
+;
+1A29230 	58 46 A0  1 
+
+: alpha-state  ( adr len char -- adr len )
+1A29234 	61 6C 70 68 
+1A29238 	61 2D 73 74 61 74 65 8B 
+1A29240 	F4 91 A2  1 20 40 A0  1 
+   dup h# 7f and bl >=  if		\ Printable character
+1A29248 	40 49 A0  1 58 41 A0  1 
+1A29250 	7F  0  0  0 5C 44 A0  1 
+1A29258 	28 70 A0  1 EC 48 A0  1 
+1A29260 	DC 41 A0  1 10  0  0  0 
+      alpha-emit  ( adr len )
+1A29268 	F4 91 A2  1 
+   else					\ Control character
+1A2926C 	C8 41 A0  1 
+1A29270 	A8  1  0  0 
+      false to pending-newline?
+1A29274 	18 70 A0  1 
+1A29278 	48 B8 A1  1 64 89 A2  1 
+      case
+         control G of  ring-bell                                endof
+1A29280 	58 41 A0  1  7  0  0  0 
+1A29288 	48 43 A0  1 10  0  0  0 
+1A29290 	70 8D A2  1 6C 43 A0  1 
+1A29298 	80  1  0  0 
+         control H of  -1 +column                               endof
+1A2929C 	58 41 A0  1 
+1A292A0 	 8  0  0  0 48 43 A0  1 
+1A292A8 	18  0  0  0 58 41 A0  1 
+1A292B0 	FF FF FF FF 20 8E A2  1 
+1A292B8 	6C 43 A0  1 5C  1  0  0 
+         control I of  column# -8 and 8 +  set-column           endof
+1A292C0 	58 41 A0  1  9  0  0  0 
+1A292C8 	48 43 A0  1 28  0  0  0 
+1A292D0 	40 86 A2  1 58 41 A0  1 
+1A292D8 	F8 FF FF FF 5C 44 A0  1 
+1A292E0 	F0 6F A0  1  4 45 A0  1 
+1A292E8 	F0 8D A2  1 6C 43 A0  1 
+1A292F0 	28  1  0  0 
+         control J of  ( adr len )  do-newline  ( adr len )     endof
+1A292F4 	58 41 A0  1 
+1A292F8 	 A  0  0  0 48 43 A0  1 
+1A29300 	10  0  0  0 F0 8F A2  1 
+1A29308 	6C 43 A0  1  C  1  0  0 
+         control M of  0 set-column                             endof
+1A29310 	58 41 A0  1  D  0  0  0 
+1A29318 	48 43 A0  1 14  0  0  0 
+1A29320 	70 6F A0  1 F0 8D A2  1 
+1A29328 	6C 43 A0  1 EC  0  0  0 
+         control [ of  ansi-terminal?  if
+1A29330 	58 41 A0  1 1B  0  0  0 
+1A29338 	48 43 A0  1 48  0  0  0 
+1A29340 	DC 91 A2  1 DC 41 A0  1 
+1A29348 	1C  0  0  0 
+			  ['] escape-state is ansi-emit
+1A2934C 	60 53 A0  1 
+1A29350 	EC 83 A2  1 48 B8 A1  1 
+1A29358 	44 89 A2  1 
+		       else
+1A2935C 	C8 41 A0  1 
+1A29360 	1C  0  0  0 
+			  ascii ^ alpha-emit  ascii [ alpha-emit
+1A29364 	58 41 A0  1 
+1A29368 	5E  0  0  0 F4 91 A2  1 
+1A29370 	58 41 A0  1 5B  0  0  0 
+1A29378 	F4 91 A2  1 
+		       then					endof
+1A2937C 	6C 43 A0  1 
+1A29380 	98  0  0  0 
+         h# 9b     of  ansi-terminal?  if
+1A29384 	58 41 A0  1 
+1A29388 	9B  0  0  0 48 43 A0  1 
+1A29390 	44  0  0  0 DC 91 A2  1 
+1A29398 	DC 41 A0  1 18  0  0  0 
+			  ascii [ escape-state
+1A293A0 	58 41 A0  1 5B  0  0  0 
+1A293A8 	EC 83 A2  1 
+		       else
+1A293AC 	C8 41 A0  1 
+1A293B0 	1C  0  0  0 
+			  ascii ^ alpha-emit  ascii [ alpha-emit
+1A293B4 	58 41 A0  1 
+1A293B8 	5E  0  0  0 F4 91 A2  1 
+1A293C0 	58 41 A0  1 5B  0  0  0 
+1A293C8 	F4 91 A2  1 
+		       then					endof
+1A293CC 	6C 43 A0  1 
+1A293D0 	48  0  0  0 
+         \ ARC wants FF (^L) to be handled like linefeed
+         control L of  form-feed                                endof
+1A293D4 	58 41 A0  1 
+1A293D8 	 C  0  0  0 48 43 A0  1 
+1A293E0 	10  0  0  0 AC 91 A2  1 
+1A293E8 	6C 43 A0  1 2C  0  0  0 
+         \ ARC wants VT (^K) to be handled like linefeed
+         control K of  -1 +line                                 endof
+1A293F0 	58 41 A0  1  B  0  0  0 
+1A293F8 	48 43 A0  1 18  0  0  0 
+1A29400 	58 41 A0  1 FF FF FF FF 
+1A29408 	40 8E A2  1 6C 43 A0  1 
+1A29410 	 8  0  0  0 
+      endcase
+1A29414 	84 43 A0  1 
+   then
+;
+1A29418 	58 46 A0  1 
+: enter-alpha-state  ( -- )  ['] alpha-state is ansi-emit  ;
+1A2941C 	 0  0 65 6E 
+1A29420 	74 65 72 2D 61 6C 70 68 
+1A29428 	61 2D 73 74 61 74 65 91 
+1A29430 	44 92 A2  1 20 40 A0  1 
+1A29438 	60 53 A0  1 44 92 A2  1 
+1A29440 	48 B8 A1  1 44 89 A2  1 
+1A29448 	58 46 A0  1 
+: reset-modes  ( -- )
+1A2944C 	72 65 73 65 
+1A29450 	74 2D 6D 6F 64 65 73 8B 
+1A29458 	34 94 A2  1 20 40 A0  1 
+   1 is #scroll-lines
+1A29460 	80 6F A0  1 48 B8 A1  1 
+1A29468 	80 89 A2  1 
+   enter-alpha-state
+1A2946C 	34 94 A2  1 
+;
+1A29470 	58 46 A0  1 
+headers
+also forth definitions
+\ XXX we should probably do this with an escape sequence. Does ANSI define one?
+: hide-text-cursor  ( -- )  false to showing-cursor?  toggle-cursor  ;
+1A29474 	 0  0  0 68 
+1A29478 	69 64 65 2D 74 65 78 74 
+1A29480 	2D 63 75 72 73 6F 72 90 
+1A29488 	BC 8D A2  1 20 40 A0  1 
+1A29490 	18 70 A0  1 48 B8 A1  1 
+1A29498 	F8 88 A2  1 C4 88 A2  1 
+1A294A0 	58 46 A0  1 
+: reveal-text-cursor  ( -- )  true to showing-cursor?  toggle-cursor  ;
+1A294A4 	 0 72 65 76 
+1A294A8 	65 61 6C 2D 74 65 78 74 
+1A294B0 	2D 63 75 72 73 6F 72 92 
+1A294B8 	8C 94 A2  1 20 40 A0  1 
+1A294C0 	 4 70 A0  1 48 B8 A1  1 
+1A294C8 	F8 88 A2  1 C4 88 A2  1 
+1A294D0 	58 46 A0  1 
+: reset-emulator  ( -- )  0 set-line  reset-modes  ;
+1A294D4 	 0 72 65 73 
+1A294D8 	65 74 2D 65 6D 75 6C 61 
+1A294E0 	74 6F 72 8E BC 94 A2  1 
+1A294E8 	20 40 A0  1 70 6F A0  1 
+1A294F0 	BC 8D A2  1 5C 94 A2  1 
+1A294F8 	58 46 A0  1 
+previous definitions
+
+headerless
+
+: bold  ( -- mask )  foreground-color 8 and  ;
+1A294FC 	 0  0  0 62 
+1A29500 	6F 6C 64 84 5C 94 A2  1 
+1A29508 	20 40 A0  1 DC 89 A2  1 
+1A29510 	F0 6F A0  1 5C 44 A0  1 
+1A29518 	58 46 A0  1 
+: bold-on  ( -- )
+1A2951C 	62 6F 6C 64 
+1A29520 	2D 6F 6E 87  8 95 A2  1 
+1A29528 	20 40 A0  1 
+   foreground-color 8 or  to foreground-color
+1A2952C 	DC 89 A2  1 
+1A29530 	F0 6F A0  1 70 44 A0  1 
+1A29538 	48 B8 A1  1 DC 89 A2  1 
+;
+1A29540 	58 46 A0  1 
+: bold-off  ( -- )
+1A29544 	 0  0  0 62 
+1A29548 	6F 6C 64 2D 6F 66 66 88 
+1A29550 	28 95 A2  1 20 40 A0  1 
+   foreground-color 8 invert and  to foreground-color
+1A29558 	DC 89 A2  1 F0 6F A0  1 
+1A29560 	30 45 A0  1 5C 44 A0  1 
+1A29568 	48 B8 A1  1 DC 89 A2  1 
+;
+1A29570 	58 46 A0  1 
+: default-attributes  ( -- )  false to inverse?  0 to foreground-color  ;
+1A29574 	 0 64 65 66 
+1A29578 	61 75 6C 74 2D 61 74 74 
+1A29580 	72 69 62 75 74 65 73 92 
+1A29588 	54 95 A2  1 20 40 A0  1 
+1A29590 	18 70 A0  1 48 B8 A1  1 
+1A29598 	2C 89 A2  1 70 6F A0  1 
+1A295A0 	48 B8 A1  1 DC 89 A2  1 
+1A295A8 	58 46 A0  1 
+: >color#  ( ansi-color-code -- palette# )
+1A295AC 	3E 63 6F 6C 
+1A295B0 	6F 72 23 87 8C 95 A2  1 
+1A295B8 	20 40 A0  1 
+   10 mod  " "(00 04 02 06 01 05 03 07)" drop + c@
+1A295BC 	58 41 A0  1 
+1A295C0 	 A  0  0  0 B0 5F A0  1 
+1A295C8 	9C 53 A0  1  8  0  4  2 
+1A295D0 	 6  1  5  3  7  0  0  0 
+1A295D8 	30 49 A0  1  4 45 A0  1 
+1A295E0 	C4 4C A0  1 
+;
+1A295E4 	58 46 A0  1 
+: do-color  ( param -- )
+1A295E8 	 0  0  0 64 6F 2D 63 6F 
+1A295F0 	6C 6F 72 88 B8 95 A2  1 
+1A295F8 	20 40 A0  1 
+   case
+       0  of  default-attributes   endof
+1A295FC 	70 6F A0  1 
+1A29600 	48 43 A0  1 10  0  0  0 
+1A29608 	8C 95 A2  1 6C 43 A0  1 
+1A29610 	EC  0  0  0 
+       1  of  bold-on              endof
+1A29614 	80 6F A0  1 
+1A29618 	48 43 A0  1 10  0  0  0 
+1A29620 	28 95 A2  1 6C 43 A0  1 
+1A29628 	D4  0  0  0 
+       2  of  bold-off             endof
+1A2962C 	90 6F A0  1 
+1A29630 	48 43 A0  1 10  0  0  0 
+1A29638 	54 95 A2  1 6C 43 A0  1 
+1A29640 	BC  0  0  0 
+       7  of  true  to inverse?    endof
+1A29644 	E0 6F A0  1 
+1A29648 	48 43 A0  1 18  0  0  0 
+1A29650 	 4 70 A0  1 48 B8 A1  1 
+1A29658 	2C 89 A2  1 6C 43 A0  1 
+1A29660 	9C  0  0  0 
+   d# 27  of  false to inverse?    endof
+1A29664 	58 41 A0  1 
+1A29668 	1B  0  0  0 48 43 A0  1 
+1A29670 	18  0  0  0 18 70 A0  1 
+1A29678 	48 B8 A1  1 2C 89 A2  1 
+1A29680 	6C 43 A0  1 78  0  0  0 
+   ( default )
+      dup d# 30 d# 37 between  if
+1A29688 	40 49 A0  1 58 41 A0  1 
+1A29690 	1E  0  0  0 58 41 A0  1 
+1A29698 	25  0  0  0 D8 70 A0  1 
+1A296A0 	DC 41 A0  1 24  0  0  0 
+         dup >color#  bold or  to foreground-color
+1A296A8 	40 49 A0  1 B8 95 A2  1 
+1A296B0 	 8 95 A2  1 70 44 A0  1 
+1A296B8 	48 B8 A1  1 DC 89 A2  1 
+      else
+1A296C0 	C8 41 A0  1 34  0  0  0 
+         dup d# 40 d# 47 between  if
+1A296C8 	40 49 A0  1 58 41 A0  1 
+1A296D0 	28  0  0  0 58 41 A0  1 
+1A296D8 	2F  0  0  0 D8 70 A0  1 
+1A296E0 	DC 41 A0  1 14  0  0  0 
+            dup >color# to background-color	\ Only embolden foreground.
+1A296E8 	40 49 A0  1 B8 95 A2  1 
+1A296F0 	48 B8 A1  1 FC 89 A2  1 
+         then
+      then
+   endcase
+1A296F8 	84 43 A0  1 
+;
+1A296FC 	58 46 A0  1 
+0 value no-args?
+1A29700 	 0  0  0 6E 6F 2D 61 72 
+1A29708 	67 73 3F 88 F8 95 A2  1 
+1A29710 	50 40 A0  1 7C  8  0  0 
+: set-colors  ( -- )
+1A29718 	 0 73 65 74 2D 63 6F 6C 
+1A29720 	6F 72 73 8A 10 97 A2  1 
+1A29728 	20 40 A0  1 
+   16-color?  if
+1A2972C 	14 8A A2  1 
+1A29730 	DC 41 A0  1 34  0  0  0 
+      next-arg 1+  0  do  i arg do-color  loop
+1A29738 	A8 89 A2  1 30 4B A0  1 
+1A29740 	70 6F A0  1 88 42 A0  1 
+1A29748 	18  0  0  0 B4 42 A0  1 
+1A29750 	90 89 A2  1 F8 95 A2  1 
+1A29758 	F8 41 A0  1 F0 FF FF FF 
+   else
+1A29760 	C8 41 A0  1 1C  0  0  0 
+      inverse-screen?  arginit 0<>  xor  is inverse?
+1A29768 	14 89 A2  1 BC 89 A2  1 
+1A29770 	44 47 A0  1 84 44 A0  1 
+1A29778 	48 B8 A1  1 2C 89 A2  1 
+   then
+;
+1A29780 	58 46 A0  1 
+: handle-modes  ( flag -- )
+1A29784 	 0  0  0 68 
+1A29788 	61 6E 64 6C 65 2D 6D 6F 
+1A29790 	64 65 73 8C 28 97 A2  1 
+1A29798 	20 40 A0  1 
+   next-arg 1+  0  do
+1A2979C 	A8 89 A2  1 
+1A297A0 	30 4B A0  1 70 6F A0  1 
+1A297A8 	88 42 A0  1 3C  0  0  0 
+      i arg  case
+1A297B0 	B4 42 A0  1 90 89 A2  1 
+\ This doesn't work because turning off the escape sequence parser prevents
+\ parsing the sequence to return to ANSI mode.
+\        d#  3 of  dup to ansi-terminal?   endof
+         d# 25 of  dup to showing-cursor?  endof
+1A297B8 	58 41 A0  1 19  0  0  0 
+1A297C0 	48 43 A0  1 18  0  0  0 
+1A297C8 	40 49 A0  1 48 B8 A1  1 
+1A297D0 	F8 88 A2  1 6C 43 A0  1 
+1A297D8 	 8  0  0  0 
+      endcase
+1A297DC 	84 43 A0  1 
+   loop
+1A297E0 	F8 41 A0  1 CC FF FF FF 
+   drop
+1A297E8 	30 49 A0  1 
+;
+1A297EC 	58 46 A0  1 
+: set-ansi-modes    ( -- )  true  handle-modes  ;
+1A297F0 	 0 73 65 74 2D 61 6E 73 
+1A297F8 	69 2D 6D 6F 64 65 73 8E 
+1A29800 	98 97 A2  1 20 40 A0  1 
+1A29808 	 4 70 A0  1 98 97 A2  1 
+1A29810 	58 46 A0  1 
+: reset-ansi-modes  ( -- )  false handle-modes  ;
+1A29814 	 0  0  0 72 
+1A29818 	65 73 65 74 2D 61 6E 73 
+1A29820 	69 2D 6D 6F 64 65 73 90 
+1A29828 	 4 98 A2  1 20 40 A0  1 
+1A29830 	18 70 A0  1 98 97 A2  1 
+1A29838 	58 46 A0  1 
+: skipping-state  ( char -- )
+1A2983C 	 0 73 6B 69 
+1A29840 	70 70 69 6E 67 2D 73 74 
+1A29848 	61 74 65 8E 2C 98 A2  1 
+1A29850 	20 40 A0  1 
+   ascii @  >=  if  enter-alpha-state  then
+1A29854 	58 41 A0  1 
+1A29858 	40  0  0  0 EC 48 A0  1 
+1A29860 	DC 41 A0  1  8  0  0  0 
+1A29868 	34 94 A2  1 
+;
+1A2986C 	58 46 A0  1 
+: arg0  ( -- n )  0 arg  ?dup  0=  if  1  then  ;
+1A29870 	 0  0  0 61 72 67 30 84 
+1A29878 	50 98 A2  1 20 40 A0  1 
+1A29880 	70 6F A0  1 90 89 A2  1 
+1A29888 	B4 70 A0  1 24 47 A0  1 
+1A29890 	DC 41 A0  1  8  0  0  0 
+1A29898 	80 6F A0  1 58 46 A0  1 
+: do-command  ( char -- )
+1A298A0 	 0 64 6F 2D 63 6F 6D 6D 
+1A298A8 	61 6E 64 8A 7C 98 A2  1 
+1A298B0 	20 40 A0  1 
+   enter-alpha-state
+1A298B4 	34 94 A2  1 
+   0 arg  to arginit
+1A298B8 	70 6F A0  1 90 89 A2  1 
+1A298C0 	48 B8 A1  1 BC 89 A2  1 
+   case
+      ascii @  of  arg0 insert-characters  endof
+1A298C8 	58 41 A0  1 40  0  0  0 
+1A298D0 	48 43 A0  1 14  0  0  0 
+1A298D8 	7C 98 A2  1 E0 87 A2  1 
+1A298E0 	6C 43 A0  1 D4  2  0  0 
+      ascii A  of  arg0 negate  +line      endof
+1A298E8 	58 41 A0  1 41  0  0  0 
+1A298F0 	48 43 A0  1 18  0  0  0 
+1A298F8 	7C 98 A2  1 48 45 A0  1 
+1A29900 	40 8E A2  1 6C 43 A0  1 
+1A29908 	B0  2  0  0 
+      ascii B  of  arg0         +line      endof
+1A2990C 	58 41 A0  1 
+1A29910 	42  0  0  0 48 43 A0  1 
+1A29918 	14  0  0  0 7C 98 A2  1 
+1A29920 	40 8E A2  1 6C 43 A0  1 
+1A29928 	90  2  0  0 
+      ascii C  of  arg0         +column    endof
+1A2992C 	58 41 A0  1 
+1A29930 	43  0  0  0 48 43 A0  1 
+1A29938 	14  0  0  0 7C 98 A2  1 
+1A29940 	20 8E A2  1 6C 43 A0  1 
+1A29948 	70  2  0  0 
+      ascii D  of  arg0 negate  +column    endof
+1A2994C 	58 41 A0  1 
+1A29950 	44  0  0  0 48 43 A0  1 
+1A29958 	18  0  0  0 7C 98 A2  1 
+1A29960 	48 45 A0  1 20 8E A2  1 
+1A29968 	6C 43 A0  1 4C  2  0  0 
+      ascii E  of  line# arg0 +  set-line  endof
+1A29970 	58 41 A0  1 45  0  0  0 
+1A29978 	48 43 A0  1 1C  0  0  0 
+1A29980 	54 86 A2  1 7C 98 A2  1 
+1A29988 	 4 45 A0  1 BC 8D A2  1 
+1A29990 	6C 43 A0  1 24  2  0  0 
+      ascii f  of  move-cursor  endof
+1A29998 	58 41 A0  1 66  0  0  0 
+1A299A0 	48 43 A0  1 10  0  0  0 
+1A299A8 	98 90 A2  1 6C 43 A0  1 
+1A299B0 	 8  2  0  0 
+      ascii h  of  set-ansi-modes     endof
+1A299B4 	58 41 A0  1 
+1A299B8 	68  0  0  0 48 43 A0  1 
+1A299C0 	10  0  0  0  4 98 A2  1 
+1A299C8 	6C 43 A0  1 EC  1  0  0 
+      ascii l  of  reset-ansi-modes   endof
+1A299D0 	58 41 A0  1 6C  0  0  0 
+1A299D8 	48 43 A0  1 10  0  0  0 
+1A299E0 	2C 98 A2  1 6C 43 A0  1 
+1A299E8 	D0  1  0  0 
+      ascii H  of  move-cursor  endof
+1A299EC 	58 41 A0  1 
+1A299F0 	48  0  0  0 48 43 A0  1 
+1A299F8 	10  0  0  0 98 90 A2  1 
+1A29A00 	6C 43 A0  1 B4  1  0  0 
+      ascii J  of  kill-screen  endof
+1A29A08 	58 41 A0  1 4A  0  0  0 
+1A29A10 	48 43 A0  1 10  0  0  0 
+1A29A18 	EC 90 A2  1 6C 43 A0  1 
+1A29A20 	98  1  0  0 
+      ascii K  of  kill-line    endof
+1A29A24 	58 41 A0  1 
+1A29A28 	4B  0  0  0 48 43 A0  1 
+1A29A30 	10  0  0  0 74 8F A2  1 
+1A29A38 	6C 43 A0  1 7C  1  0  0 
+      ascii L  of  arg0 insert-lines    endof
+1A29A40 	58 41 A0  1 4C  0  0  0 
+1A29A48 	48 43 A0  1 14  0  0  0 
+1A29A50 	7C 98 A2  1 1C 88 A2  1 
+1A29A58 	6C 43 A0  1 5C  1  0  0 
+      ascii M  of  arg0 delete-lines    endof
+1A29A60 	58 41 A0  1 4D  0  0  0 
+1A29A68 	48 43 A0  1 14  0  0  0 
+1A29A70 	7C 98 A2  1 38 88 A2  1 
+1A29A78 	6C 43 A0  1 3C  1  0  0 
+      ascii P  of  arg0 delete-characters    endof
+1A29A80 	58 41 A0  1 50  0  0  0 
+1A29A88 	48 43 A0  1 14  0  0  0 
+1A29A90 	7C 98 A2  1  0 88 A2  1 
+1A29A98 	6C 43 A0  1 1C  1  0  0 
+      ascii m  of  set-colors  endof
+1A29AA0 	58 41 A0  1 6D  0  0  0 
+1A29AA8 	48 43 A0  1 10  0  0  0 
+1A29AB0 	28 97 A2  1 6C 43 A0  1 
+1A29AB8 	 0  1  0  0 
+      ascii p  of  inverse-screen?  if
+1A29ABC 	58 41 A0  1 
+1A29AC0 	70  0  0  0 48 43 A0  1 
+1A29AC8 	38  0  0  0 14 89 A2  1 
+1A29AD0 	DC 41 A0  1 24  0  0  0 
+                      invert-screen
+1A29AD8 	70 88 A2  1 
+                      inverse? 0= is inverse?
+1A29ADC 	2C 89 A2  1 
+1A29AE0 	24 47 A0  1 48 B8 A1  1 
+1A29AE8 	2C 89 A2  1 
+                      false is inverse-screen?
+1A29AEC 	18 70 A0  1 
+1A29AF0 	48 B8 A1  1 14 89 A2  1 
+		   then  endof
+1A29AF8 	6C 43 A0  1 BC  0  0  0 
+      ascii q  of  inverse-screen? 0=  if
+1A29B00 	58 41 A0  1 71  0  0  0 
+1A29B08 	48 43 A0  1 3C  0  0  0 
+1A29B10 	14 89 A2  1 24 47 A0  1 
+1A29B18 	DC 41 A0  1 24  0  0  0 
+	              invert-screen
+1A29B20 	70 88 A2  1 
+                      inverse? 0= is inverse?
+1A29B24 	2C 89 A2  1 
+1A29B28 	24 47 A0  1 48 B8 A1  1 
+1A29B30 	2C 89 A2  1 
+                      true is inverse-screen?
+1A29B34 	 4 70 A0  1 
+1A29B38 	48 B8 A1  1 14 89 A2  1 
+		   then  endof
+1A29B40 	6C 43 A0  1 74  0  0  0 
+      ascii r  of  arginit is #scroll-lines  endof
+1A29B48 	58 41 A0  1 72  0  0  0 
+1A29B50 	48 43 A0  1 18  0  0  0 
+1A29B58 	BC 89 A2  1 48 B8 A1  1 
+1A29B60 	80 89 A2  1 6C 43 A0  1 
+1A29B68 	50  0  0  0 
+      ascii s  of  reset-modes  reset-screen  endof
+1A29B6C 	58 41 A0  1 
+1A29B70 	73  0  0  0 48 43 A0  1 
+1A29B78 	14  0  0  0 5C 94 A2  1 
+1A29B80 	8C 88 A2  1 6C 43 A0  1 
+1A29B88 	30  0  0  0 
+         ( default )  dup ascii @  <  if  ['] skipping-state is ansi-emit  then
+1A29B8C 	40 49 A0  1 
+1A29B90 	58 41 A0  1 40  0  0  0 
+1A29B98 	E4 47 A0  1 DC 41 A0  1 
+1A29BA0 	14  0  0  0 60 53 A0  1 
+1A29BA8 	50 98 A2  1 48 B8 A1  1 
+1A29BB0 	44 89 A2  1 
+   endcase
+1A29BB4 	84 43 A0  1 
+;
+1A29BB8 	58 46 A0  1 
+: escbrkt-state  ( char -- )
+1A29BBC 	 0  0 65 73 
+1A29BC0 	63 62 72 6B 74 2D 73 74 
+1A29BC8 	61 74 65 8D B0 98 A2  1 
+1A29BD0 	20 40 A0  1 
+   dup  ascii 0  ascii 9  between  if	\ Collect number
+1A29BD4 	40 49 A0  1 
+1A29BD8 	58 41 A0  1 30  0  0  0 
+1A29BE0 	58 41 A0  1 39  0  0  0 
+1A29BE8 	D8 70 A0  1 DC 41 A0  1 
+1A29BF0 	3C  0  0  0 
+      next-arg arg  10 *  ascii 0  -  +  next-arg to arg
+1A29BF4 	A8 89 A2  1 
+1A29BF8 	90 89 A2  1 58 41 A0  1 
+1A29C00 	 A  0  0  0 1C 5F A0  1 
+1A29C08 	58 41 A0  1 30  0  0  0 
+1A29C10 	18 45 A0  1  4 45 A0  1 
+1A29C18 	A8 89 A2  1 48 B8 A1  1 
+1A29C20 	90 89 A2  1 
+   else  dup  ascii ;  =  if		\ Shift arguments
+1A29C24 	C8 41 A0  1 
+1A29C28 	4C  0  0  0 40 49 A0  1 
+1A29C30 	58 41 A0  1 3B  0  0  0 
+1A29C38 	24 48 A0  1 DC 41 A0  1 
+1A29C40 	30  0  0  0 
+      drop
+1A29C44 	30 49 A0  1 
+      next-arg 1+ to next-arg
+1A29C48 	A8 89 A2  1 30 4B A0  1 
+1A29C50 	48 B8 A1  1 A8 89 A2  1 
+      0 next-arg  to arg
+1A29C58 	70 6F A0  1 A8 89 A2  1 
+1A29C60 	48 B8 A1  1 90 89 A2  1 
+   else
+1A29C68 	C8 41 A0  1  8  0  0  0 
+      do-command
+1A29C70 	B0 98 A2  1 
+   then then
+;
+1A29C74 	58 46 A0  1 
+: (escape-state  ( char -- )
+1A29C78 	 0  0 28 65 73 63 61 70 
+1A29C80 	65 2D 73 74 61 74 65 8D 
+1A29C88 	D0 9B A2  1 20 40 A0  1 
+   0 to next-arg
+1A29C90 	70 6F A0  1 48 B8 A1  1 
+1A29C98 	A8 89 A2  1 
+   0 0  to arg
+1A29C9C 	70 6F A0  1 
+1A29CA0 	70 6F A0  1 48 B8 A1  1 
+1A29CA8 	90 89 A2  1 
+   case
+      ascii [    of  ['] escbrkt-state is ansi-emit    endof
+1A29CAC 	58 41 A0  1 
+1A29CB0 	5B  0  0  0 48 43 A0  1 
+1A29CB8 	1C  0  0  0 60 53 A0  1 
+1A29CC0 	D0 9B A2  1 48 B8 A1  1 
+1A29CC8 	44 89 A2  1 6C 43 A0  1 
+1A29CD0 	8C  0  0  0 
+      control L  of  enter-alpha-state  form-feed      endof
+1A29CD4 	58 41 A0  1 
+1A29CD8 	 C  0  0  0 48 43 A0  1 
+1A29CE0 	14  0  0  0 34 94 A2  1 
+1A29CE8 	AC 91 A2  1 6C 43 A0  1 
+1A29CF0 	6C  0  0  0 
+      control J  of  endof
+1A29CF4 	58 41 A0  1 
+1A29CF8 	 A  0  0  0 48 43 A0  1 
+1A29D00 	 C  0  0  0 6C 43 A0  1 
+1A29D08 	54  0  0  0 
+      control M  of  endof
+1A29D0C 	58 41 A0  1 
+1A29D10 	 D  0  0  0 48 43 A0  1 
+1A29D18 	 C  0  0  0 6C 43 A0  1 
+1A29D20 	3C  0  0  0 
+      control [  of  endof
+1A29D24 	58 41 A0  1 
+1A29D28 	1B  0  0  0 48 43 A0  1 
+1A29D30 	 C  0  0  0 6C 43 A0  1 
+1A29D38 	24  0  0  0 
+      control ?  of  endof
+1A29D3C 	58 41 A0  1 
+1A29D40 	1F  0  0  0 48 43 A0  1 
+1A29D48 	 C  0  0  0 6C 43 A0  1 
+1A29D50 	 C  0  0  0 
+      ( default )    enter-alpha-state
+1A29D54 	34 94 A2  1 
+   endcase
+1A29D58 	84 43 A0  1 
+;
+1A29D5C 	58 46 A0  1 
+\ Fix the forward reference
+' (escape-state is escape-state
+
+also forth definitions
+headers
+: ansi-type  ( adr len -- )
+1A29D60 	 0  0 61 6E 73 69 2D 74 
+1A29D68 	79 70 65 89 E8 94 A2  1 
+1A29D70 	20 40 A0  1 
+\ XXX here we should test for terminal locked, and if it is already
+\ locked, we are being re-entered, so we save the current state
+\ and switch to alpha state.
+   terminal-locked? on
+1A29D74 	D0 83 A2  1 
+1A29D78 	E0 4B A0  1 
+   showing-cursor?  if  toggle-cursor  then         ( adr len )
+1A29D7C 	F8 88 A2  1 
+1A29D80 	DC 41 A0  1  8  0  0  0 
+1A29D88 	C4 88 A2  1 
+   \ We save the string extent in variables so #newlines can
+   \ find the current position.
+   begin  dup  while       ( adr len )
+1A29D8C 	40 49 A0  1 
+1A29D90 	DC 41 A0  1 20  0  0  0 
+      over c@  ansi-emit   ( adr len )
+1A29D98 	54 49 A0  1 C4 4C A0  1 
+1A29DA0 	44 89 A2  1 
+      1 /string            ( adr' len' )
+1A29DA4 	80 6F A0  1 
+1A29DA8 	3C 85 A0  1 
+   repeat                  ( adr 0 )
+1A29DAC 	C8 41 A0  1 
+1A29DB0 	DC FF FF FF 
+   2drop                   ( )
+1A29DB4 	AC 49 A0  1 
+   showing-cursor?  if  toggle-cursor  then
+1A29DB8 	F8 88 A2  1 DC 41 A0  1 
+1A29DC0 	 8  0  0  0 C4 88 A2  1 
+\ XXX Here we should restore the previous state if necessary.
+   terminal-locked? off
+1A29DC8 	D0 83 A2  1 F8 4B A0  1 
+;
+1A29DD0 	58 46 A0  1 
+
+: install-terminal-emulator  ( -- )
+1A29DD4 	 0  0 69 6E 
+1A29DD8 	73 74 61 6C 6C 2D 74 65 
+1A29DE0 	72 6D 69 6E 61 6C 2D 65 
+1A29DE8 	6D 75 6C 61 74 6F 72 99 
+1A29DF0 	70 9D A2  1 20 40 A0  1 
+   \ Set the terminal emulator's frame-buffer-adr
+   \ to be the same as the device that opened it
+   \ in the first place.
+   frame-buffer-adr my-termemu package( is frame-buffer-adr )package
+1A29DF8 	CC  3 A2  1 E4  3 A2  1 
+1A29E00 	2C 31 A2  1 48 B8 A1  1 
+1A29E08 	CC  3 A2  1 5C 31 A2  1 
+[ifdef] reboot-saves-cursor
+   reboot?  if
+      \ Restore the cursor to the position that was saved before the reset
+      get-reboot-info          ( bootpath,len line# column# )
+      #columns min  is column# ( bootpath,len line# )
+      #lines  min  is line#    ( bootpath,len )
+      2drop                    (  )
+      line# column# or 0= if  erase-screen  then
+   else
+      erase-screen
+   then
+[else]
+   erase-screen
+1A29E10 	A8 88 A2  1 
+[then]
+
+   reset-screen     \ Enables video
+1A29E14 	8C 88 A2  1 
+   #lines termemu-#lines !
+1A29E18 	 4 87 A2  1 64 5A A2  1 
+1A29E20 	54 4D A0  1 
+   toggle-cursor
+1A29E24 	C4 88 A2  1 
+;
+1A29E28 	58 46 A0  1 
+\ Don't use this for now; we need to fix the escape sequence parser so that
+\ it will look for the "ansi-terminal" sequence even when in "dumb-terminal"
+\ mode.
+\ : dumb-terminal  ( -- )  " "(9b)25h" type  ;
+\ : ansi-terminal  ( -- )  " "(9b)25l" type  ;
+previous definitions
+
+headers
+: open ( -- success? )
+1A29E2C 	 0  0  0 6F 
+1A29E30 	70 65 6E 84 8C 9C A2  1 
+1A29E38 	20 40 A0  1 
+   my-self is my-termemu
+1A29E3C 	EC 7E A0  1 
+1A29E40 	48 B8 A1  1 E4  3 A2  1 
+   ['] romfont is font
+1A29E48 	60 53 A0  1 3C E4 A1  1 
+1A29E50 	98 40 A0  1 CC 8A A2  1 
+   reset-emulator
+1A29E58 	E8 94 A2  1 
+   true
+1A29E5C 	 4 70 A0  1 
+;
+1A29E60 	58 46 A0  1 
+: close ( -- )  ;
+1A29E64 	 0  0 63 6C 
+1A29E68 	6F 73 65 85 38 9E A2  1 
+1A29E70 	20 40 A0  1 58 46 A0  1 

@@ -1,0 +1,6 @@
+purpose: Real-mode access to ISA IO space
+
+h# ffff.0000 value io-base	\ "mapped" base address of ISA I/O space
+1A337A8 	69 6F 2D 62 61 73 65 87 
+1A337B0 	74 37 A3  1 50 40 A0  1 
+1A337B8 	4C  A  0  0 

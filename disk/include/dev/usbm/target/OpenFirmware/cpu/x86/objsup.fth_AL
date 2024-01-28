@@ -1,0 +1,149 @@
+
+\ Machine dependent support routines used for the objects package.
+\ These words know intimate details about the Forth virtual machine
+\ implementation.
+
+\ Assembles the common code executed by actions.  That code
+\ extracts the next token (which is the acf of the object) from the
+\ code stream and leaves the corresponding apf on the stack.
+
+: start-code  ( -- )  code-cf  !csp  ;
+1A1B460 	 0 73 74 61 72 74 2D 63 
+1A1B468 	6F 64 65 8A 5C B4 A1  1 
+1A1B470 	20 40 A0  1  8 5B A0  1 
+1A1B478 	D4 A2 A0  1 58 46 A0  1 
+
+\ Assembles the code which begins a ;code clause
+\ For this version, the acf of the child word is left in w
+: start-;code  ( -- )  start-code  ;
+1A1B480 	73 74 61 72 74 2D 3B 63 
+1A1B488 	6F 64 65 8B 70 B4 A1  1 
+1A1B490 	20 40 A0  1 70 B4 A1  1 
+1A1B498 	58 46 A0  1 
+
+\ Code field for an object action.
+: doaction  ( -- )  acf-align colon-cf  ;
+1A1B49C 	 0  0  0 64 
+1A1B4A0 	6F 61 63 74 69 6F 6E 88 
+1A1B4A8 	90 B4 A1  1 20 40 A0  1 
+1A1B4B0 	2C 5D A0  1 78 5B A0  1 
+1A1B4B8 	58 46 A0  1 
+   
+\ Returns the address of the code executed by the word whose code field
+\ address is acf
+: >code-adr  ( acf -- code-adr )  token@  ;
+1A1B4BC 	 0  0 3E 63 
+1A1B4C0 	6F 64 65 2D 61 64 72 89 
+1A1B4C8 	AC B4 A1  1 20 40 A0  1 
+1A1B4D0 	 C 54 A0  1 58 46 A0  1 
+
+code >action-adr  ( object-acf action# -- )
+1A1B4D8 	3E 61 63 74 69 6F 6E 2D 
+1A1B4E0 	61 64 72 8B CC B4 A1  1 
+1A1B4E8 	EC B4 A1  1 
+  ( ... -- object-acf action# #actions true | object-apf action-adr false )
+   cx           pop		\ action# in cx
+1A1B4EC 	59 
+   ax           pop		\ object-acf in ax 
+1A1B4ED 	58 
+    0 [ax]  bx  mov		\ code address in bx
+1A1B4EE 	8B 18 
+\+ rel  up bx add
+   -4 [bx]  cx  cmp		\ Test action number
+1A1B4F0 	3B 4B FC 
+   > if				\ "true" branch is error
+1A1B4F3 	7E  C 
+      cx          push		\ Push action#
+1A1B4F5 	51 
+      -4 [bx]     push		\ Push #actions
+1A1B4F6 	FF 73 
+1A1B4F8 	FC 
+      true #  ax  mov		\ Return true for error
+1A1B4F9 	B8 FF FF FF FF 
+      1push
+1A1B4FE 	50 
+      next
+1A1B4FF 	FF 
+1A1B500 	E7 
+   then
+   4 #          ax  add		\ Push object-apf
+1A1B501 	 5  4  0  0  0 
+   ax               push
+1A1B506 	50 
+   cx               neg		\ Index backwards into action table
+1A1B507 	F7 
+1A1B508 	D9 
+\- rel  -4 [bx] [cx] *4  push	\ Push action-adr
+1A1B509 	FF 74 8B FC 
+\+ rel  -4 [bx] [cx] *4  ax mov   up ax add   ax push	\ Push action-adr
+   ax           ax  xor		\ Return false for no error
+1A1B50D 	31 C0 
+   1push
+1A1B50F 	50 
+c;
+1A1B510 	FF E7 
+
+: action-name  \ name  ( action# -- )
+1A1B512 	 0  0 61 63 74 69 
+1A1B518 	6F 6E 2D 6E 61 6D 65 8B 
+1A1B520 	E8 B4 A1  1 20 40 A0  1 
+   create ,		\ Store action number in data field
+1A1B528 	A8 A2 A0  1 98 55 A0  1 
+   ;code
+1A1B530 	2C A3 A0  1 
+   4 [ax]  cx  mov	\ Action# in cx
+1A1B534 	8B 48  4 
+
+   ax          lods	\ Object acf in ax
+1A1B537 	AD 
+\+ rel  up ax add
+   4 #     ax  add	\ Compute pfa
+1A1B538 	 5  4  0  0  0 
+   ax          push	\ and push it
+1A1B53D 	50 
+
+   -4 [ax] ax  mov	\ Token of default action 
+1A1B53E 	8B 40 
+1A1B540 	FC 
+\+ rel  up ax add
+   
+   cx          neg	\ Index backwards into action table
+1A1B541 	F7 D9 
+   -4 [ax] [cx] *4  ax  mov	\ Address of action code
+1A1B543 	8B 44 88 FC 
+\+ rel up ax add
+
+\- rel   0 [ax]      jmp	\ Tail of "NEXT"
+1A1B547 	FF 
+1A1B548 	20 
+\+ rel   0 [ax]  bx mov  up bx add    bx jmp	\ Tail of "NEXT"
+end-code
+: >action#  ( apf -- action# )  @  ;
+1A1B549 	 0  0 3E 61 63 74 69 
+1A1B550 	6F 6E 23 88 24 B5 A1  1 
+1A1B558 	20 40 A0  1 5C 4C A0  1 
+1A1B560 	58 46 A0  1 
+
+headers
+
+\ Some examples of object actions defined in code.
+\ 3 actions
+\ action-code
+\    apf w lw   bubble  w  base w  addu
+\    w 0 bx lw  bubble  bx base bx addu
+\    bx jr      nop
+\ end-code
+\ action:  token!  ;  \ is
+\ action:          ;  \ addr
+\ : defer  \ name  ( -- )
+\    create ['] crash token,
+\    use-actions
+\ ;
+\ 3 actions
+\ action-code  cx sp push  apf cx lw     c;     \ Default; fetch
+\ action-code  cx apf sw   sp cx pop     c;     \ to
+\ action-code  cx sp push  apf cx addiu  c;     \ addr
+\ : value  \ name  ( initial-value -- )
+\    create ,
+\    use-actions
+\ ;

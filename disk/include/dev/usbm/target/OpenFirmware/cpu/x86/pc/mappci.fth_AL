@@ -1,0 +1,65 @@
+purpose: PCI physical address mapping to root node
+
+headerless
+
+\ map-pci-phys creates a virtual mapping for the PCI physical address range
+\ "paddr io? size", returning its virtual address "vaddr".  It does so by
+\ first translating the PCI physical base address "paddr io?" to the
+\ corresponding physical address in the parent node's address space (which
+\ in this case is the primary system bus address space), and then calling
+\ the parent's "map-in" method.  We have a bit of a problem here in that
+\ the root node is bogus - it doesn't recognize I/O space - so we do that
+\ explicitly here.
+\ "io?" is false for PCI memory space, true for PCI I/O space.
+
+\ We use the top 64K of address space to mean I/O space.
+\ The "rX@/!" words understand that and use I/O cycles for such addresses
+
+: map-pci-phys  ( paddr io? phys.hi size -- vaddr )
+1A339E8 	 0  0  0 6D 61 70 2D 70 
+1A339F0 	63 69 2D 70 68 79 73 8C 
+1A339F8 	 0  0 A0  1 20 40 A0  1 
+   nip swap  if                      ( paddr size )
+1A33A00 	FC 46 A0  1 68 49 A0  1 
+1A33A08 	DC 41 A0  1 1C  0  0  0 
+      \ We use the top 64K of address space to mean I/O space.
+      \ The "rX@/!" words understand that and use I/O cycles
+      \ for such addresses
+      drop  h# ffff.0000 or          ( io-vaddr )
+1A33A10 	30 49 A0  1 58 41 A0  1 
+1A33A18 	 0  0 FF FF 70 44 A0  1 
+   else                              ( paddr size )
+1A33A20 	C8 41 A0  1 14  0  0  0 
+      " map-in" $call-parent         ( mem-vaddr )
+1A33A28 	9C 53 A0  1  6 6D 61 70 
+1A33A30 	2D 69 6E  0 DC 31 A2  1 
+   then                              ( vaddr )
+;      
+1A33A38 	58 46 A0  1 
+
+\ >pci-devaddr translates the DMA address "parent-devaddr", which is in the
+\ parent node's physical address space, to the corresponding DMA address
+\ "pci-devaddr" in the PCI physical address space (in PCI memory space; DMA
+\ to PCI I/O space is not possible).
+
+: >pci-devaddr  ( parent-devaddr -- pci-devaddr )  h# 0  +  ;
+1A33A3C 	 0  0  0 3E 
+1A33A40 	70 63 69 2D 64 65 76 61 
+1A33A48 	64 64 72 8C FC 39 A3  1 
+1A33A50 	20 40 A0  1 58 41 A0  1 
+1A33A58 	 0  0  0  0  4 45 A0  1 
+1A33A60 	58 46 A0  1 
+
+\ pci-devaddr> translates the DMA address "pci-devaddr", which is in the
+\ PCI physical address space (in PCI memory space; DMA to PCI I/O space is
+\ not possible), to the corresponding DMA address "parent-devaddr" in the
+\ parent node's physical address space.
+
+: pci-devaddr>  ( pci-devaddr -- parent-devaddr )  h# 0  -  ;
+1A33A64 	 0  0  0 70 
+1A33A68 	63 69 2D 64 65 76 61 64 
+1A33A70 	64 72 3E 8C 50 3A A3  1 
+1A33A78 	20 40 A0  1 58 41 A0  1 
+1A33A80 	 0  0  0  0 18 45 A0  1 
+1A33A88 	58 46 A0  1 
+headers

@@ -1,0 +1,329 @@
+\ From date.fth
+purpose: Time and date decoding functions
+
+variable clock-node  ' clock-node  " clock" chosen-variable
+1A27898 	 0 63 6C 6F 63 6B 2D 6E 
+1A278A0 	6F 64 65 8A BC 76 A2  1 
+1A278A8 	48 40 A0  1 10  8  0  0 
+1A278B0 	 0  0 63 6C 6F 63 6B 85 
+1A278B8 	48 5A A2  1 F0 52 A2  1 
+1A278C0 	A8 78 A2  1 
+
+: ofw-time&date  ( -- s m h d m y )
+1A278C4 	 0  0 6F 66 
+1A278C8 	77 2D 74 69 6D 65 26 64 
+1A278D0 	61 74 65 8D A8 78 A2  1 
+1A278D8 	20 40 A0  1 
+   " get-date" clock-node @ ihandle>phandle find-method  if
+1A278DC 	9C 53 A0  1 
+1A278E0 	 8 67 65 74 2D 64 61 74 
+1A278E8 	65  0  0  0 A8 78 A2  1 
+1A278F0 	5C 4C A0  1  0 32 A2  1 
+1A278F8 	A0 2F A2  1 DC 41 A0  1 
+1A27900 	58  0  0  0 
+      drop
+1A27904 	30 49 A0  1 
+      " get-time" clock-node @  $call-method  swap rot
+1A27908 	9C 53 A0  1  8 67 65 74 
+1A27910 	2D 74 69 6D 65  0  0  0 
+1A27918 	A8 78 A2  1 5C 4C A0  1 
+1A27920 	B4 31 A2  1 68 49 A0  1 
+1A27928 	7C 49 A0  1 
+      " get-date" clock-node @  $call-method  swap rot
+1A2792C 	9C 53 A0  1 
+1A27930 	 8 67 65 74 2D 64 61 74 
+1A27938 	65  0  0  0 A8 78 A2  1 
+1A27940 	5C 4C A0  1 B4 31 A2  1 
+1A27948 	68 49 A0  1 7C 49 A0  1 
+   else
+1A27950 	C8 41 A0  1 20  0  0  0 
+      " get-time" clock-node @  $call-method
+1A27958 	9C 53 A0  1  8 67 65 74 
+1A27960 	2D 74 69 6D 65  0  0  0 
+1A27968 	A8 78 A2  1 5C 4C A0  1 
+1A27970 	B4 31 A2  1 
+   then
+;
+1A27974 	58 46 A0  1 
+stand-init:
+1A27978 	 0 73 74 61 6E 64 2D 69 
+1A27980 	6E 69 74 8A D8 78 A2  1 
+1A27988 	20 40 A0  1 
+   ['] ofw-time&date to time&date
+1A2798C 	60 53 A0  1 
+1A27990 	D8 78 A2  1 98 40 A0  1 
+1A27998 	F4 EC A0  1 
+;
+1A2799C 	58 46 A0  1 
+
+headerless
+: 2.d  ( n -- )   push-decimal  (.2)  type  pop-base  ;
+1A279A0 	32 2E 64 83 88 79 A2  1 
+1A279A8 	20 40 A0  1 48 F4 A0  1 
+1A279B0 	D8 78 A0  1  4 6C A0  1 
+1A279B8 	9C F4 A0  1 58 46 A0  1 
+: 4.d  ( n -- )   push-decimal  <# u# u# u# u# u#>  type  pop-base  ;
+1A279C0 	34 2E 64 83 A8 79 A2  1 
+1A279C8 	20 40 A0  1 48 F4 A0  1 
+1A279D0 	 8 76 A0  1 94 76 A0  1 
+1A279D8 	94 76 A0  1 94 76 A0  1 
+1A279E0 	94 76 A0  1 E0 76 A0  1 
+1A279E8 	 4 6C A0  1 9C F4 A0  1 
+1A279F0 	58 46 A0  1 
+
+headers
+: .date  ( d m y -- )   4.d ." -" 2.d ." -" 2.d  ;
+1A279F4 	 0  0 2E 64 
+1A279F8 	61 74 65 85 C8 79 A2  1 
+1A27A00 	20 40 A0  1 C8 79 A2  1 
+1A27A08 	20 7C A0  1  1 2D  0  0 
+1A27A10 	A8 79 A2  1 20 7C A0  1 
+1A27A18 	 1 2D  0  0 A8 79 A2  1 
+1A27A20 	58 46 A0  1 
+: .time  ( s m h -- )   2.d ." :" 2.d ." :" 2.d  ;
+1A27A24 	 0  0 2E 74 
+1A27A28 	69 6D 65 85  0 7A A2  1 
+1A27A30 	20 40 A0  1 A8 79 A2  1 
+1A27A38 	20 7C A0  1  1 3A  0  0 
+1A27A40 	A8 79 A2  1 20 7C A0  1 
+1A27A48 	 1 3A  0  0 A8 79 A2  1 
+1A27A50 	58 46 A0  1 
+
+\ Interactive diagnostic
+: watch-clock  ( -- )
+1A27A54 	77 61 74 63 
+1A27A58 	68 2D 63 6C 6F 63 6B 8B 
+1A27A60 	30 7A A2  1 20 40 A0  1 
+   ." Watching the 'seconds' register of the real time clock chip."  cr
+1A27A68 	20 7C A0  1 3C 57 61 74 
+1A27A70 	63 68 69 6E 67 20 74 68 
+1A27A78 	65 20 27 73 65 63 6F 6E 
+1A27A80 	64 73 27 20 72 65 67 69 
+1A27A88 	73 74 65 72 20 6F 66 20 
+1A27A90 	74 68 65 20 72 65 61 6C 
+1A27A98 	20 74 69 6D 65 20 63 6C 
+1A27AA0 	6F 63 6B 20 63 68 69 70 
+1A27AA8 	2E  0  0  0 80 6D A0  1 
+   ." It should be 'ticking' once a second." cr
+1A27AB0 	20 7C A0  1 25 49 74 20 
+1A27AB8 	73 68 6F 75 6C 64 20 62 
+1A27AC0 	65 20 27 74 69 63 6B 69 
+1A27AC8 	6E 67 27 20 6F 6E 63 65 
+1A27AD0 	20 61 20 73 65 63 6F 6E 
+1A27AD8 	64 2E  0  0 80 6D A0  1 
+   ." Type any key to stop."  cr
+1A27AE0 	20 7C A0  1 15 54 79 70 
+1A27AE8 	65 20 61 6E 79 20 6B 65 
+1A27AF0 	79 20 74 6F 20 73 74 6F 
+1A27AF8 	70 2E  0  0 80 6D A0  1 
+   -1
+1A27B00 	58 41 A0  1 FF FF FF FF 
+   begin    ( old-seconds )
+      begin
+         key?  if  key drop  drop exit  then
+1A27B08 	64 6C A0  1 DC 41 A0  1 
+1A27B10 	14  0  0  0 50 6C A0  1 
+1A27B18 	30 49 A0  1 30 49 A0  1 
+1A27B20 	40 46 A0  1 
+         now 2drop
+1A27B24 	 4 ED A0  1 
+1A27B28 	AC 49 A0  1 
+      2dup =  while   ( old-seconds old-seconds )
+1A27B2C 	C0 49 A0  1 
+1A27B30 	24 48 A0  1 DC 41 A0  1 
+1A27B38 	10  0  0  0 
+         drop
+1A27B3C 	30 49 A0  1 
+      repeat          ( old-seconds new-seconds )
+1A27B40 	C8 41 A0  1 C4 FF FF FF 
+      nip (cr now .time
+1A27B48 	FC 46 A0  1 9C 72 A0  1 
+1A27B50 	 4 ED A0  1 30 7A A2  1 
+   again
+1A27B58 	C8 41 A0  1 AC FF FF FF 
+   drop
+1A27B60 	30 49 A0  1 
+;
+1A27B64 	58 46 A0  1 
+
+: watch-rtc
+1A27B68 	 0  0 77 61 74 63 68 2D 
+1A27B70 	72 74 63 89 64 7A A2  1 
+1A27B78 	20 40 A0  1 
+   begin 
+      time&date .date ."  " .time (cr 500 ms
+1A27B7C 	F4 EC A0  1 
+1A27B80 	 0 7A A2  1 20 7C A0  1 
+1A27B88 	 1 20  0  0 30 7A A2  1 
+1A27B90 	9C 72 A0  1 58 41 A0  1 
+1A27B98 	F4  1  0  0 60 E0 A1  1 
+   key? until
+1A27BA0 	64 6C A0  1 DC 41 A0  1 
+1A27BA8 	D4 FF FF FF 
+   key drop
+1A27BAC 	50 6C A0  1 
+1A27BB0 	30 49 A0  1 
+;
+1A27BB4 	58 46 A0  1 
+
+\ From fwfileop.fth
+purpose: File I/O interface using Open Firmware
+
+headerless
+\ Closes an open file, freeing its descriptor for reuse.
+
+: _ofclose  ( file# -- )
+1A27BB8 	 0  0  0 5F 6F 66 63 6C 
+1A27BC0 	6F 73 65 88 78 7B A2  1 
+1A27BC8 	20 40 A0  1 
+   bfbase @  bflimit @ over -  free-mem   \ Hack!  Hack!
+1A27BCC 	98 AB A0  1 
+1A27BD0 	5C 4C A0  1 BC AB A0  1 
+1A27BD8 	5C 4C A0  1 54 49 A0  1 
+1A27BE0 	18 45 A0  1  8 6D A0  1 
+   close-dev
+1A27BE8 	5C 37 A2  1 
+;
+1A27BEC 	58 46 A0  1 
+
+\ Writes "count" bytes from the buffer at address "adr" to a file.
+\ Returns the number of bytes actually written.
+
+: _ofwrite  ( adr #bytes file# -- #written )  " write" rot $call-method  ;
+1A27BF0 	 0  0  0 5F 6F 66 77 72 
+1A27BF8 	69 74 65 88 C8 7B A2  1 
+1A27C00 	20 40 A0  1 9C 53 A0  1 
+1A27C08 	 5 77 72 69 74 65  0  0 
+1A27C10 	7C 49 A0  1 B4 31 A2  1 
+1A27C18 	58 46 A0  1 
+
+\ Reads at most "count" bytes into the buffer at address "adr" from a file.
+\ Returns the number of bytes actually read.
+
+: _ofread  ( adr #bytes file# -- #read )  " read" rot $call-method  ;
+1A27C1C 	5F 6F 66 72 
+1A27C20 	65 61 64 87  0 7C A2  1 
+1A27C28 	20 40 A0  1 9C 53 A0  1 
+1A27C30 	 4 72 65 61 64  0  0  0 
+1A27C38 	7C 49 A0  1 B4 31 A2  1 
+1A27C40 	58 46 A0  1 
+
+\ Positions to byte number "l.byte#" in a file
+
+: _ofseek  ( d.byte# file# -- )  " seek" rot $call-method  drop  ;
+1A27C44 	5F 6F 66 73 
+1A27C48 	65 65 6B 87 28 7C A2  1 
+1A27C50 	20 40 A0  1 9C 53 A0  1 
+1A27C58 	 4 73 65 65 6B  0  0  0 
+1A27C60 	7C 49 A0  1 B4 31 A2  1 
+1A27C68 	30 49 A0  1 58 46 A0  1 
+
+\ Returns the current size "l.size" of a file
+
+: _ofsize  ( file# -- d.size )  " size" rot $call-method  ;
+1A27C70 	5F 6F 66 73 69 7A 65 87 
+1A27C78 	50 7C A2  1 20 40 A0  1 
+1A27C80 	9C 53 A0  1  4 73 69 7A 
+1A27C88 	65  0  0  0 7C 49 A0  1 
+1A27C90 	B4 31 A2  1 58 46 A0  1 
+
+\ Prepares a file for later access.  Name is the pathname of the file
+\ and mode is the mode (0 read, 1 write, 2 modify).  If the operation
+\ succeeds, returns the addresses of routines to perform I/O on the
+\ open file and true.  If the operation fails, returns false.
+
+
+defer _ofcreate
+1A27C98 	 0  0 5F 6F 66 63 72 65 
+1A27CA0 	61 74 65 89 7C 7C A2  1 
+1A27CA8 	5C 40 A0  1 14  8  0  0 
+: null-create  ( name -- 0 )  2drop 0  ;
+1A27CB0 	6E 75 6C 6C 2D 63 72 65 
+1A27CB8 	61 74 65 8B A8 7C A2  1 
+1A27CC0 	20 40 A0  1 AC 49 A0  1 
+1A27CC8 	70 6F A0  1 58 46 A0  1 
+' null-create to _ofcreate
+
+defer _ofdelete
+1A27CD0 	 0  0 5F 6F 66 64 65 6C 
+1A27CD8 	65 74 65 89 C0 7C A2  1 
+1A27CE0 	5C 40 A0  1 18  8  0  0 
+' 2drop to _ofdelete
+
+: _ofopen
+1A27CE8 	5F 6F 66 6F 70 65 6E 87 
+1A27CF0 	E0 7C A2  1 20 40 A0  1 
+   ( name mode -- [ fid mode sizeop alignop closeop writeop readop ] okay? )
+   >r count                                     ( name$  r: mode )
+1A27CF8 	BC 45 A0  1 BC 53 A0  1 
+   r@ create-flag and  if                       ( name$  r: mode )
+1A27D00 	E4 45 A0  1 64 D6 A0  1 
+1A27D08 	5C 44 A0  1 DC 41 A0  1 
+1A27D10 	20  0  0  0 
+      2dup ['] _ofdelete catch  if  2drop  then ( name$  r: mode )
+1A27D14 	C0 49 A0  1 
+1A27D18 	60 53 A0  1 E0 7C A2  1 
+1A27D20 	14 7F A0  1 DC 41 A0  1 
+1A27D28 	 8  0  0  0 AC 49 A0  1 
+   then                                         ( name$  r: mode )
+
+   2dup open-dev  ?dup  0=  if                  ( name$    r: mode )
+1A27D30 	C0 49 A0  1 FC 3E A2  1 
+1A27D38 	B4 70 A0  1 24 47 A0  1 
+1A27D40 	DC 41 A0  1 4C  0  0  0 
+      r@ r/o =  if                              ( name$    r: mode )
+1A27D48 	E4 45 A0  1 1C D6 A0  1 
+1A27D50 	24 48 A0  1 DC 41 A0  1 
+1A27D58 	10  0  0  0 
+         0                                      ( name$ 0  r: mode )
+1A27D5C 	70 6F A0  1 
+      else                                      ( name$    r: mode )
+1A27D60 	C8 41 A0  1  C  0  0  0 
+         2dup _ofcreate                         ( name$ ih r: mode )
+1A27D68 	C0 49 A0  1 A8 7C A2  1 
+      then                                      ( name$ ih r: mode )
+      ?dup 0=  if  r> 3drop  false exit  then   ( name$ ih r: mode )
+1A27D70 	B4 70 A0  1 24 47 A0  1 
+1A27D78 	DC 41 A0  1 14  0  0  0 
+1A27D80 	D0 45 A0  1 90 52 A0  1 
+1A27D88 	18 70 A0  1 40 46 A0  1 
+   then                                         ( name$ ih r: mode )
+   nip nip                                      ( ih       r: mode )
+1A27D90 	FC 46 A0  1 FC 46 A0  1 
+   r@   ['] _ofsize   ['] _dfalign   ['] _ofclose   ['] _ofseek
+1A27D98 	E4 45 A0  1 60 53 A0  1 
+1A27DA0 	7C 7C A2  1 60 53 A0  1 
+1A27DA8 	D8 EE A0  1 60 53 A0  1 
+1A27DB0 	C8 7B A2  1 60 53 A0  1 
+1A27DB8 	50 7C A2  1 
+   r@ r/o  =  if  ['] nullwrite  else  ['] _ofwrite  then
+1A27DBC 	E4 45 A0  1 
+1A27DC0 	1C D6 A0  1 24 48 A0  1 
+1A27DC8 	DC 41 A0  1 14  0  0  0 
+1A27DD0 	60 53 A0  1 40 CA A0  1 
+1A27DD8 	C8 41 A0  1  C  0  0  0 
+1A27DE0 	60 53 A0  1  0 7C A2  1 
+   r> w/o  =  if  ['] nullread   else  ['] _ofread   then
+1A27DE8 	D0 45 A0  1 2C D6 A0  1 
+1A27DF0 	24 48 A0  1 DC 41 A0  1 
+1A27DF8 	14  0  0  0 60 53 A0  1 
+1A27E00 	9C CA A0  1 C8 41 A0  1 
+1A27E08 	 C  0  0  0 60 53 A0  1 
+1A27E10 	28 7C A2  1 
+   true
+1A27E14 	 4 70 A0  1 
+;
+1A27E18 	58 46 A0  1 
+
+headers
+
+: stand-init  ( -- )  stand-init  ['] _ofopen to do-fopen  ;
+1A27E1C 	 0 73 74 61 
+1A27E20 	6E 64 2D 69 6E 69 74 8A 
+1A27E28 	F4 7C A2  1 20 40 A0  1 
+1A27E30 	88 79 A2  1 60 53 A0  1 
+1A27E38 	F4 7C A2  1 98 40 A0  1 
+1A27E40 	50 D5 A0  1 58 46 A0  1 
+
+CR .( stand-init0=)
+' stand-init DUP H. to 'stand-init0

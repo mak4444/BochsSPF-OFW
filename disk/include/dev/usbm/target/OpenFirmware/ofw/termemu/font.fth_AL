@@ -1,0 +1,218 @@
+purpose: FCode interface to default font
+
+decimal
+headers
+0 termemu-value font-base		\ Base address of font
+1A28A1C 	 0  0 66 6F 
+1A28A20 	6E 74 2D 62 61 73 65 89 
+1A28A28 	14 8A A2  1 E0 84 A2  1 
+1A28A30 	C0  0  0  0 
+
+0 termemu-value char-width		\ FCode character width in pixels
+1A28A34 	 0 63 68 61 
+1A28A38 	72 2D 77 69 64 74 68 8A 
+1A28A40 	2C 8A A2  1 E0 84 A2  1 
+1A28A48 	C4  0  0  0 
+0 termemu-value char-height		\ FCode character height in pixels (scan lines)
+1A28A4C 	63 68 61 72 
+1A28A50 	2D 68 65 69 67 68 74 8B 
+1A28A58 	44 8A A2  1 E0 84 A2  1 
+1A28A60 	C8  0  0  0 
+0 termemu-value fontbytes		\ FCode distance in bytes from one scan line of
+1A28A64 	 0  0 66 6F 
+1A28A68 	6E 74 62 79 74 65 73 89 
+1A28A70 	5C 8A A2  1 E0 84 A2  1 
+1A28A78 	CC  0  0  0 
+					\ a glyph to the next
+0 termemu-value glyph-bytes		\ distance between glyphs
+1A28A7C 	67 6C 79 70 
+1A28A80 	68 2D 62 79 74 65 73 8B 
+1A28A88 	74 8A A2  1 E0 84 A2  1 
+1A28A90 	D0  0  0  0 
+headerless
+0 termemu-value min-char		\ The lowest character in the font
+1A28A94 	 0  0  0 6D 
+1A28A98 	69 6E 2D 63 68 61 72 88 
+1A28AA0 	8C 8A A2  1 E0 84 A2  1 
+1A28AA8 	D4  0  0  0 
+0 termemu-value #glyphs			\ The number of glyphs in the font
+1A28AAC 	23 67 6C 79 
+1A28AB0 	70 68 73 87 A4 8A A2  1 
+1A28AB8 	E0 84 A2  1 D8  0  0  0 
+
+headers
+defer font
+1A28AC0 	 0  0  0 66 6F 6E 74 84 
+1A28AC8 	 0  0 A0  1 5C 40 A0  1 
+1A28AD0 	74  8  0  0 
+' romfont is font
+
+headerless
+: decode-font  ( hdr-adr -- bits-adr width height advance min-char #glyphs )
+1A28AD4 	64 65 63 6F 
+1A28AD8 	64 65 2D 66 6F 6E 74 8B 
+1A28AE0 	CC 8A A2  1 20 40 A0  1 
+   dup " font" comp 0=  if   ( hdr-adr )   \ OBF font format
+1A28AE8 	40 49 A0  1 9C 53 A0  1 
+1A28AF0 	 4 66 6F 6E 74  0  0  0 
+1A28AF8 	38 52 A0  1 24 47 A0  1 
+1A28B00 	DC 41 A0  1 50  0  0  0 
+      dup d# 24 +  swap              ( bit-adr hdr-adr )
+1A28B08 	40 49 A0  1 58 41 A0  1 
+1A28B10 	18  0  0  0  4 45 A0  1 
+1A28B18 	68 49 A0  1 
+      4 +  d# 20                     ( bit-adr hdr-adr' hdr-len )
+1A28B1C 	B0 6F A0  1 
+1A28B20 	 4 45 A0  1 58 41 A0  1 
+1A28B28 	14  0  0  0 
+      5 0 do  decode-int -rot  loop  ( bits-adr width height advance min #gl str )
+1A28B2C 	C0 6F A0  1 
+1A28B30 	70 6F A0  1 88 42 A0  1 
+1A28B38 	14  0  0  0 68 F7 A1  1 
+1A28B40 	94 49 A0  1 F8 41 A0  1 
+1A28B48 	F4 FF FF FF 
+      2drop                  ( bits-adr width height advance min-char #glyphs )
+1A28B4C 	AC 49 A0  1 
+      exit
+1A28B50 	40 46 A0  1 
+   then                      ( hdr-adr )
+
+   \ http://www.win.tue.nl/~aeb/linux/kbd/font-formats-1.html
+   dup le-l@ h# 864ab572 =  if  ( hdr-adr )   \ PSF2 format, little endian
+1A28B54 	40 49 A0  1 
+1A28B58 	4C 4C A0  1 58 41 A0  1 
+1A28B60 	72 B5 4A 86 24 48 A0  1 
+1A28B68 	DC 41 A0  1 84  0  0  0 
+      >r                        ( r: hdr-adr )
+1A28B70 	BC 45 A0  1 
+      r@  r@ 8 + le-l@ +        ( bits-adr r: hdr-adr )
+1A28B74 	E4 45 A0  1 
+1A28B78 	E4 45 A0  1 F0 6F A0  1 
+1A28B80 	 4 45 A0  1 4C 4C A0  1 
+1A28B88 	 4 45 A0  1 
+      r@ h# 1c + le-l@          ( bits-adr width r: hdr-adr )
+1A28B8C 	E4 45 A0  1 
+1A28B90 	58 41 A0  1 1C  0  0  0 
+1A28B98 	 4 45 A0  1 4C 4C A0  1 
+      r@ h# 18 + le-l@ negate   ( bits-adr width height r: hdr-adr )
+1A28BA0 	E4 45 A0  1 58 41 A0  1 
+1A28BA8 	18  0  0  0  4 45 A0  1 
+1A28BB0 	4C 4C A0  1 48 45 A0  1 
+      over 7 + 8 /              ( bits-adr width height advance r: hdr-adr )
+1A28BB8 	54 49 A0  1 E0 6F A0  1 
+1A28BC0 	 4 45 A0  1 F0 6F A0  1 
+1A28BC8 	98 5F A0  1 
+      0                         ( bits-adr width height advance min r: hdr-adr )
+1A28BCC 	70 6F A0  1 
+      r@ h# 10 + le-l@          ( bits-adr width height advance #glyphs r: hdr-adr )
+1A28BD0 	E4 45 A0  1 58 41 A0  1 
+1A28BD8 	10  0  0  0  4 45 A0  1 
+1A28BE0 	4C 4C A0  1 
+      r> drop                   ( bits-adr width height advance #glyphs )
+1A28BE4 	D0 45 A0  1 
+1A28BE8 	30 49 A0  1 
+      exit
+1A28BEC 	40 46 A0  1 
+   then                         ( hdr-adr )
+
+   true abort" Not a font"
+1A28BF0 	 4 70 A0  1  8 81 A0  1 
+1A28BF8 	 A 4E 6F 74 20 61 20 66 
+1A28C00 	6F 6E 74  0 
+;
+1A28C04 	58 46 A0  1 
+headers
+also forth definitions
+\ There are no glyphs for control characters, so the font bitmaps actually
+\ begin with the glyph for the space (blank) character.
+
+\ The 1- after char-height is due to the way that the PROM stores character
+\ bitmaps.  Since the top and bottom scan lines of the character are both 0,
+\ only  char-height 1-  scan-lines are actually stored, and the bottom zero
+\ scan line of a glyph is overlapped with the top zero scan line of the
+\ next glyph.  This is probably a bad idea in the long run.
+
+: >font  ( char -- adr )					\ FCode
+1A28C08 	 0  0 3E 66 6F 6E 74 85 
+1A28C10 	B8 8A A2  1 20 40 A0  1 
+   min-char -  0 max  #glyphs min   ( char# )	\ Clip the glyph number
+1A28C18 	A4 8A A2  1 18 45 A0  1 
+1A28C20 	70 6F A0  1 9C 4A A0  1 
+1A28C28 	B8 8A A2  1 74 4A A0  1 
+   glyph-bytes * font-base +
+1A28C30 	8C 8A A2  1 1C 5F A0  1 
+1A28C38 	2C 8A A2  1  4 45 A0  1 
+;
+1A28C40 	58 46 A0  1 
+
+headerless
+: character-set ( -- )
+1A28C44 	 0  0 63 68 
+1A28C48 	61 72 61 63 74 65 72 2D 
+1A28C50 	73 65 74 8D 14 8C A2  1 
+1A28C58 	20 40 A0  1 
+   " character-set"  2dup get-my-property  if  ( adr,len )
+1A28C5C 	9C 53 A0  1 
+1A28C60 	 D 63 68 61 72 61 63 74 
+1A28C68 	65 72 2D 73 65 74  0  0 
+1A28C70 	C0 49 A0  1 1C 34 A2  1 
+1A28C78 	DC 41 A0  1 28  0  0  0 
+      " ISO8859-1" encode-string 2swap  property   (  )
+1A28C80 	9C 53 A0  1  9 49 53 4F 
+1A28C88 	38 38 35 39 2D 31  0  0 
+1A28C90 	A0 F6 A1  1 F4 49 A0  1 
+1A28C98 	BC 14 A2  1 
+   else                                         ( adr,len adr,len' )
+1A28C9C 	C8 41 A0  1 
+1A28CA0 	 C  0  0  0 
+      2drop 2drop                               (  )
+1A28CA4 	AC 49 A0  1 
+1A28CA8 	AC 49 A0  1 
+   then                                         (  )
+;
+1A28CAC 	58 46 A0  1 
+headers
+: default-font  ( -- adr width height advance min-char #glyphs ) \ FCode
+1A28CB0 	 0  0  0 64 65 66 61 75 
+1A28CB8 	6C 74 2D 66 6F 6E 74 8C 
+1A28CC0 	58 8C A2  1 20 40 A0  1 
+   character-set  font decode-font
+1A28CC8 	58 8C A2  1 CC 8A A2  1 
+1A28CD0 	E4 8A A2  1 
+;
+1A28CD4 	58 46 A0  1 
+
+: set-font  ( adr width +-height advance min-char #glyphs -- )	\ FCode
+1A28CD8 	 0  0  0 73 65 74 2D 66 
+1A28CE0 	6F 6E 74 88 C4 8C A2  1 
+1A28CE8 	20 40 A0  1 
+   is #glyphs  is min-char
+1A28CEC 	48 B8 A1  1 
+1A28CF0 	B8 8A A2  1 48 B8 A1  1 
+1A28CF8 	A4 8A A2  1 
+   is fontbytes
+1A28CFC 	48 B8 A1  1 
+1A28D00 	74 8A A2  1 
+   dup >r abs is char-height  is char-width  ( r: +-height )
+1A28D04 	40 49 A0  1 
+1A28D08 	BC 45 A0  1 24 4A A0  1 
+1A28D10 	48 B8 A1  1 5C 8A A2  1 
+1A28D18 	48 B8 A1  1 44 8A A2  1 
+   is font-base
+1A28D20 	48 B8 A1  1 2C 8A A2  1 
+
+   \ If +-height is positive, then we use the original packed font
+   \ storage format in which the last scan line of one glyph overlaps
+   \ the first scan line of the next.  If +-height is negative, we
+   \ use an unpacked format in which each glyph is self-contained.
+   r>  dup 0>  if  1-  else  negate  then  fontbytes *  to glyph-bytes
+1A28D28 	D0 45 A0  1 40 49 A0  1 
+1A28D30 	A4 47 A0  1 DC 41 A0  1 
+1A28D38 	10  0  0  0 54 4B A0  1 
+1A28D40 	C8 41 A0  1  8  0  0  0 
+1A28D48 	48 45 A0  1 74 8A A2  1 
+1A28D50 	1C 5F A0  1 48 B8 A1  1 
+1A28D58 	8C 8A A2  1 
+;
+1A28D5C 	58 46 A0  1 
+previous definitions

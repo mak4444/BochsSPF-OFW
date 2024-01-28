@@ -1,0 +1,1277 @@
+
+\ Command line editing.  See "install-line-editing" for functions
+\ implemented and key bindings
+
+d# 80 value display-width
+1A14050 	 0  0 64 69 73 70 6C 61 
+1A14058 	79 2D 77 69 64 74 68 8D 
+1A14060 	2C 40 A1  1 50 40 A0  1 
+1A14068 	98  3  0  0 
+
+only forth also hidden also
+hidden definitions
+
+decimal
+
+headers
+true value display?     \ Turns display update on or off
+1A1406C 	 0  0  0 64 
+1A14070 	69 73 70 6C 61 79 3F 88 
+1A14078 	EC 3F A1  1 50 40 A0  1 
+1A14080 	9C  3  0  0 
+false value accepting?	\ True when "accept" is calling the editor
+1A14084 	 0 61 63 63 
+1A14088 	65 70 74 69 6E 67 3F 8A 
+1A14090 	7C 40 A1  1 50 40 A0  1 
+1A14098 	A0  3  0  0 
+headerless
+
+\ Values used by redisplay code
+
+: beep  ( -- )  display? 0=  if  exit  then   control G (emit  ;
+1A1409C 	 0  0  0 62 
+1A140A0 	65 65 70 84 94 40 A1  1 
+1A140A8 	20 40 A0  1 7C 40 A1  1 
+1A140B0 	24 47 A0  1 DC 41 A0  1 
+1A140B8 	 8  0  0  0 40 46 A0  1 
+1A140C0 	58 41 A0  1  7  0  0  0 
+1A140C8 	18 6C A0  1 58 46 A0  1 
+
+\ Values describing the current edit line
+
+0 value line-start-adr  \ address of start of input buffer
+1A140D0 	 0 6C 69 6E 65 2D 73 74 
+1A140D8 	61 72 74 2D 61 64 72 8E 
+1A140E0 	A8 40 A1  1 50 40 A0  1 
+1A140E8 	A4  3  0  0 
+0 value linelen         \ current size of input line
+1A140EC 	6C 69 6E 65 
+1A140F0 	6C 65 6E 87 E4 40 A1  1 
+1A140F8 	50 40 A0  1 A8  3  0  0 
+0 value #before         \ position of cursor within line
+1A14100 	23 62 65 66 6F 72 65 87 
+1A14108 	F8 40 A1  1 50 40 A0  1 
+1A14110 	AC  3  0  0 
+
+0 value edit-line#
+1A14114 	 0 65 64 69 
+1A14118 	74 2D 6C 69 6E 65 23 8A 
+1A14120 	 C 41 A1  1 50 40 A0  1 
+1A14128 	B0  3  0  0 
+
+\ Positional information derived from the basic information
+
+: #after        ( -- n )        linelen #before -  ;
+1A1412C 	 0 23 61 66 
+1A14130 	74 65 72 86 24 41 A1  1 
+1A14138 	20 40 A0  1 F8 40 A1  1 
+1A14140 	 C 41 A1  1 18 45 A0  1 
+1A14148 	58 46 A0  1 
+: cursor-adr    ( -- adr )      line-start-adr  #before  +  ;
+1A1414C 	 0 63 75 72 
+1A14150 	73 6F 72 2D 61 64 72 8A 
+1A14158 	38 41 A1  1 20 40 A0  1 
+1A14160 	E4 40 A1  1  C 41 A1  1 
+1A14168 	 4 45 A0  1 58 46 A0  1 
+headers
+\ "after" needs a header because it's used by nvalias.fth
+: after         ( -- adr len )  cursor-adr #after  ;
+1A14170 	 0  0 61 66 74 65 72 85 
+1A14178 	5C 41 A1  1 20 40 A0  1 
+1A14180 	5C 41 A1  1 38 41 A1  1 
+1A14188 	58 46 A0  1 
+headerless
+: line-end-adr  ( -- adr )      after +  ;
+1A1418C 	 0  0  0 6C 
+1A14190 	69 6E 65 2D 65 6E 64 2D 
+1A14198 	61 64 72 8C 7C 41 A1  1 
+1A141A0 	20 40 A0  1 7C 41 A1  1 
+1A141A8 	 4 45 A0  1 58 46 A0  1 
+
+\ Size and position of displayable "window" into the text line
+d# 79 value window-width	\ Width of window in characters
+1A141B0 	 0  0  0 77 69 6E 64 6F 
+1A141B8 	77 2D 77 69 64 74 68 8C 
+1A141C0 	A0 41 A1  1 50 40 A0  1 
+1A141C8 	B4  3  0  0 
+0 value window-x		\ Offset from start of line buffer
+1A141CC 	 0  0  0 77 
+1A141D0 	69 6E 64 6F 77 2D 78 88 
+1A141D8 	C4 41 A1  1 50 40 A0  1 
+1A141E0 	B8  3  0  0 
+
+-1 value xdamage	\ The first character that doesn't match the display.
+1A141E4 	78 64 61 6D 
+1A141E8 	61 67 65 87 DC 41 A1  1 
+1A141F0 	50 40 A0  1 BC  3  0  0 
+			\ Offset in characters from start of line buffer.
+
+-1 value ydamage	\ The first line that doesn't match the display.
+1A141F8 	79 64 61 6D 61 67 65 87 
+1A14200 	F0 41 A1  1 50 40 A0  1 
+1A14208 	C0  3  0  0 
+			\ Offset in lines from beginning of buffer.
+
+defer new-line-end  ( new-lineend -- old-lineend )
+1A1420C 	 0  0  0 6E 
+1A14210 	65 77 2D 6C 69 6E 65 2D 
+1A14218 	65 6E 64 8C  4 42 A1  1 
+1A14220 	5C 40 A0  1 C4  3  0  0 
+
+0 value dirty-x			\ Offset from start of window
+1A14228 	64 69 72 74 79 2D 78 87 
+1A14230 	20 42 A1  1 50 40 A0  1 
+1A14238 	C8  3  0  0 
+: (new-line-end)  ( new-lineend -- old-lineend )
+1A1423C 	 0 28 6E 65 
+1A14240 	77 2D 6C 69 6E 65 2D 65 
+1A14248 	6E 64 29 8E 34 42 A1  1 
+1A14250 	20 40 A0  1 
+   dirty-x  swap is dirty-x   ( new-lineend old-lineend )
+1A14254 	34 42 A1  1 
+1A14258 	68 49 A0  1 B8 40 A0  1 
+1A14260 	34 42 A1  1 
+;
+1A14264 	58 46 A0  1 
+' (new-line-end) is new-line-end
+
+: #to-clear  ( -- #spaces )
+1A14268 	 0  0 23 74 6F 2D 63 6C 
+1A14270 	65 61 72 89 50 42 A1  1 
+1A14278 	20 40 A0  1 
+   #out @  new-line-end  #out @  -  0 max
+1A1427C 	5C 6D A0  1 
+1A14280 	5C 4C A0  1 20 42 A1  1 
+1A14288 	5C 6D A0  1 5C 4C A0  1 
+1A14290 	18 45 A0  1 70 6F A0  1 
+1A14298 	9C 4A A0  1 
+;
+1A1429C 	58 46 A0  1 
+
+: new-window-width  ( -- )
+1A142A0 	 0  0  0 6E 65 77 2D 77 
+1A142A8 	69 6E 64 6F 77 2D 77 69 
+1A142B0 	64 74 68 90 78 42 A1  1 
+1A142B8 	20 40 A0  1 
+   \ The 1- leaves room for the cursor
+   display-width 1-  #out @ -  is window-width
+1A142BC 	64 40 A1  1 
+1A142C0 	54 4B A0  1 5C 6D A0  1 
+1A142C8 	5C 4C A0  1 18 45 A0  1 
+1A142D0 	B8 40 A0  1 C4 41 A1  1 
+   0 #out !  0 #line !			\ Re-origin character counter
+1A142D8 	70 6F A0  1 5C 6D A0  1 
+1A142E0 	54 4D A0  1 70 6F A0  1 
+1A142E8 	70 6D A0  1 54 4D A0  1 
+;
+1A142F0 	58 46 A0  1 
+
+false value redisplay-line#?	\ Flag
+1A142F4 	 0  0  0 72 
+1A142F8 	65 64 69 73 70 6C 61 79 
+1A14300 	2D 6C 69 6E 65 23 3F 90 
+1A14308 	B8 42 A1  1 50 40 A0  1 
+1A14310 	CC  3  0  0 
+
+\ Displays a line number.
+defer .line#
+1A14314 	 0 2E 6C 69 
+1A14318 	6E 65 23 86  C 43 A1  1 
+1A14320 	5C 40 A0  1 D0  3  0  0 
+: (.line#)  ( -- )
+1A14328 	 0  0  0 28 2E 6C 69 6E 
+1A14330 	65 23 29 88 20 43 A1  1 
+1A14338 	20 40 A0  1 
+   accepting?  redisplay-line#? 0=  or  if  exit  then
+1A1433C 	94 40 A1  1 
+1A14340 	 C 43 A1  1 24 47 A0  1 
+1A14348 	70 44 A0  1 DC 41 A0  1 
+1A14350 	 8  0  0  0 40 46 A0  1 
+   (cr  0 #out !		\ Left edge of display
+1A14358 	9C 72 A0  1 70 6F A0  1 
+1A14360 	5C 6D A0  1 54 4D A0  1 
+   push-decimal  edit-line#  4 u.r  ." : "  pop-base
+1A14368 	48 F4 A0  1 24 41 A1  1 
+1A14370 	B0 6F A0  1 E4 77 A0  1 
+1A14378 	20 7C A0  1  2 3A 20  0 
+1A14380 	9C F4 A0  1 
+   false is redisplay-line#?
+1A14384 	18 70 A0  1 
+1A14388 	B8 40 A0  1  C 43 A1  1 
+   new-window-width
+1A14390 	B8 42 A1  1 
+;
+1A14394 	58 46 A0  1 
+' (.line#) is .line#
+
+: wtype  ( cursor len -- )  swap window-x +  line-start-adr +  swap type  ;
+1A14398 	 0  0 77 74 79 70 65 85 
+1A143A0 	38 43 A1  1 20 40 A0  1 
+1A143A8 	68 49 A0  1 DC 41 A1  1 
+1A143B0 	 4 45 A0  1 E4 40 A1  1 
+1A143B8 	 4 45 A0  1 68 49 A0  1 
+1A143C0 	 4 6C A0  1 58 46 A0  1 
+: hmove-cursor  ( column# -- )
+1A143C8 	 0  0  0 68 6D 6F 76 65 
+1A143D0 	2D 63 75 72 73 6F 72 8C 
+1A143D8 	A4 43 A1  1 20 40 A0  1 
+   #out @ -  ?dup  if                               ( distance-right )
+1A143E0 	5C 6D A0  1 5C 4C A0  1 
+1A143E8 	18 45 A0  1 B4 70 A0  1 
+1A143F0 	DC 41 A0  1 94  0  0  0 
+      dup 0>  if                                    ( distance-right )
+1A143F8 	40 49 A0  1 A4 47 A0  1 
+1A14400 	DC 41 A0  1 38  0  0  0 
+         \ Move forward n positions on the display.
+         [ifdef] rights  dup 4 >  if  rights  exit  then  [then]
+1A14408 	40 49 A0  1 B0 6F A0  1 
+1A14410 	 4 48 A0  1 DC 41 A0  1 
+1A14418 	 C  0  0  0 44 F7 A0  1 
+1A14420 	40 46 A0  1 
+   
+         #out @  swap  wtype                        ( )
+1A14424 	5C 6D A0  1 
+1A14428 	5C 4C A0  1 68 49 A0  1 
+1A14430 	A4 43 A1  1 
+      else                                          ( distance-right )
+1A14434 	C8 41 A0  1 
+1A14438 	50  0  0  0 
+         negate                                     ( distance-left )
+1A1443C 	48 45 A0  1 
+
+         \ Move backward n positions on the display.
+         \ An optimization for the case where we have cursor control
+         [ifdef] lefts   dup 4 >  if  lefts  exit  then   [then]
+1A14440 	40 49 A0  1 B0 6F A0  1 
+1A14448 	 4 48 A0  1 DC 41 A0  1 
+1A14450 	 C  0  0  0 18 F7 A0  1 
+1A14458 	40 46 A0  1 
+
+         0  ?do  bs (emit  -1 #out +!  loop
+1A1445C 	70 6F A0  1 
+1A14460 	50 42 A0  1 24  0  0  0 
+1A14468 	34 6F A0  1 18 6C A0  1 
+1A14470 	58 41 A0  1 FF FF FF FF 
+1A14478 	5C 6D A0  1  C 4C A0  1 
+1A14480 	F8 41 A0  1 E4 FF FF FF 
+      then
+   then
+;
+1A14488 	58 46 A0  1 
+
+\ Converts buffer-line-oriented coordinates to window-relative coordinates
+: clip-x  ( line-x -- window-x )  window-x -  0 max  window-width min  ;
+1A1448C 	 0 63 6C 69 
+1A14490 	70 2D 78 86 DC 43 A1  1 
+1A14498 	20 40 A0  1 DC 41 A1  1 
+1A144A0 	18 45 A0  1 70 6F A0  1 
+1A144A8 	9C 4A A0  1 C4 41 A1  1 
+1A144B0 	74 4A A0  1 58 46 A0  1 
+
+\ Computes a new position for window-x
+\ Any change in window-x effectively forces a complete redisplay
+: set-window-x  ( new-window-x -- )
+1A144B8 	 0  0  0 73 65 74 2D 77 
+1A144C0 	69 6E 64 6F 77 2D 78 8C 
+1A144C8 	98 44 A1  1 20 40 A0  1 
+   \ Fix things so clipped-redisplay redisplays the entire line
+   \ If xdamage is nonzero, clipped-redisplay will first move the
+   \ cursor to xdamage.
+   dup is xdamage  is window-x
+1A144D0 	40 49 A0  1 B8 40 A0  1 
+1A144D8 	F0 41 A1  1 B8 40 A0  1 
+1A144E0 	DC 41 A1  1 
+;
+1A144E4 	58 46 A0  1 
+
+[ifdef] smooth-hscroll
+\ If the cursor is at either end of the line, we allow it to go
+\ all the way to the end;  Otherwise, we limit it to the adjacent
+\ cell, so that you can always tell what you will delete.
+: #before-min  ( -- n )  #before  #before 0<>  if  1-  then  ;
+: #before-max  ( -- n )  #before  #after  0<>  if  1+  then  ;
+[then]
+
+: ?reframe  ( -- )
+1A144E8 	 0  0  0 3F 72 65 66 72 
+1A144F0 	61 6D 65 88 CC 44 A1  1 
+1A144F8 	20 40 A0  1 
+   \ If we don't have an overflow condition, we cancel the window-x offset
+   linelen window-width <=  window-x 0<>  and  if  0 set-window-x  exit  then
+1A144FC 	F8 40 A1  1 
+1A14500 	C4 41 A1  1  C 49 A0  1 
+1A14508 	DC 41 A1  1 44 47 A0  1 
+1A14510 	5C 44 A0  1 DC 41 A0  1 
+1A14518 	10  0  0  0 70 6F A0  1 
+1A14520 	CC 44 A1  1 40 46 A0  1 
+
+   \ The text doesn't fit, so we must decide where to put it in the window
+
+[ifdef] smooth-hscroll
+   \ If the cursor is out of the window in either direction, set window-x so
+   \ the cursor is back in the window at the end closest to where it was.
+   #before-min  window-x  <  if  #before-min set-window-x   exit  then
+
+   #before-max  window-x window-width +  >=  if
+      #before-max  window-width -  set-window-x
+      exit
+   then
+[else]
+   \ If the cursor is out of the window in either direction, set window-x so
+   \ the cursor is back in the window at the end closest to where it was.
+   #before  window-x  dup window-width +  within  0=  if
+1A14528 	 C 41 A1  1 DC 41 A1  1 
+1A14530 	40 49 A0  1 C4 41 A1  1 
+1A14538 	 4 45 A0  1  8 71 A0  1 
+1A14540 	24 47 A0  1 DC 41 A0  1 
+1A14548 	24  0  0  0 
+      #before  window-width 2/  -  0 max  set-window-x
+1A1454C 	 C 41 A1  1 
+1A14550 	C4 41 A1  1 78 4B A0  1 
+1A14558 	18 45 A0  1 70 6F A0  1 
+1A14560 	9C 4A A0  1 CC 44 A1  1 
+      exit
+1A14568 	40 46 A0  1 
+   then
+[then]
+
+   \ If we get here, the cursor is still in the window, so we leave
+   \ window-x as-is
+;
+1A1456C 	58 46 A0  1 
+
+: clipped-redisplay  ( -- )
+1A14570 	 0  0 63 6C 69 70 70 65 
+1A14578 	64 2D 72 65 64 69 73 70 
+1A14580 	6C 61 79 91 F8 44 A1  1 
+1A14588 	20 40 A0  1 
+   \ Redisplay everything after the first damaged location
+
+   \ The reframer has ensured that #before is in the window.
+
+   xdamage -1 <>  if                                ( )
+1A1458C 	F0 41 A1  1 
+1A14590 	58 41 A0  1 FF FF FF FF 
+1A14598 	44 48 A0  1 DC 41 A0  1 
+1A145A0 	30  0  0  0 
+      \ Move the cursor to the leftmost damaged position
+      xdamage clip-x  dup  hmove-cursor             ( damage )
+1A145A4 	F0 41 A1  1 
+1A145A8 	98 44 A1  1 40 49 A0  1 
+1A145B0 	DC 43 A1  1 
+
+      \ Redraw from the damaged position to the new end-of-line
+      linelen clip-x                                ( damage end )
+1A145B4 	F8 40 A1  1 
+1A145B8 	98 44 A1  1 
+      over - wtype                                  ( )
+1A145BC 	54 49 A0  1 
+1A145C0 	18 45 A0  1 A4 43 A1  1 
+
+      \ If the old end-of=line is greater than the new one, blank the residue
+      #to-clear  spaces                             ( )
+1A145C8 	78 42 A1  1 E8 71 A0  1 
+   then                                             ( )
+
+   #before clip-x hmove-cursor
+1A145D0 	 C 41 A1  1 98 44 A1  1 
+1A145D8 	DC 43 A1  1 
+;
+1A145DC 	58 46 A0  1 
+
+\ Redisplays the editing line, optimizing for common types of changes.
+
+: hredisplay  ( -- )
+1A145E0 	 0 68 72 65 64 69 73 70 
+1A145E8 	6C 61 79 8A 88 45 A1  1 
+1A145F0 	20 40 A0  1 
+   .line#
+1A145F4 	20 43 A1  1 
+   ?reframe
+1A145F8 	F8 44 A1  1 
+   clipped-redisplay
+1A145FC 	88 45 A1  1 
+   -1 is xdamage
+1A14600 	58 41 A0  1 FF FF FF FF 
+1A14608 	B8 40 A0  1 F0 41 A1  1 
+;
+1A14610 	58 46 A0  1 
+
+defer vredisplay  ' noop is vredisplay
+1A14614 	 0 76 72 65 
+1A14618 	64 69 73 70 6C 61 79 8A 
+1A14620 	F0 45 A1  1 5C 40 A0  1 
+1A14628 	D4  3  0  0 
+: redisplay  ( -- )  display?  if  vredisplay  hredisplay  then  ;
+1A1462C 	 0  0 72 65 
+1A14630 	64 69 73 70 6C 61 79 89 
+1A14638 	24 46 A1  1 20 40 A0  1 
+1A14640 	7C 40 A1  1 DC 41 A0  1 
+1A14648 	 C  0  0  0 24 46 A1  1 
+1A14650 	F0 45 A1  1 58 46 A0  1 
+
+defer line-moved
+1A14658 	 0 6C 69 6E 65 2D 6D 6F 
+1A14660 	76 65 64 8A 3C 46 A1  1 
+1A14668 	5C 40 A0  1 D8  3  0  0 
+: (line-moved)  ( -- )     \ Version for 1-line display
+1A14670 	 0  0  0 28 6C 69 6E 65 
+1A14678 	2D 6D 6F 76 65 64 29 8C 
+1A14680 	68 46 A1  1 20 40 A0  1 
+   0 is xdamage  true is redisplay-line#?  0 is window-x
+1A14688 	70 6F A0  1 B8 40 A0  1 
+1A14690 	F0 41 A1  1  4 70 A0  1 
+1A14698 	B8 40 A0  1  C 43 A1  1 
+1A146A0 	70 6F A0  1 B8 40 A0  1 
+1A146A8 	DC 41 A1  1 
+;
+1A146AC 	58 46 A0  1 
+' (line-moved) is line-moved
+
+\ Invalidate the line display values.  The cursor must be on a line
+\ that is clear to the right of the cursor when this is called.
+\ The scrolling area will extend from the current cursor position,
+\ as indicated by the current value of #out, to display-width.
+: clear-line  ( -- )
+1A146B0 	 0 63 6C 65 61 72 2D 6C 
+1A146B8 	69 6E 65 8A 84 46 A1  1 
+1A146C0 	20 40 A0  1 
+   0 is dirty-x                   \ Force update of line end information 
+1A146C4 	70 6F A0  1 
+1A146C8 	B8 40 A0  1 34 42 A1  1 
+   new-window-width  line-moved
+1A146D0 	B8 42 A1  1 68 46 A1  1 
+;
+1A146D8 	58 46 A0  1 
+defer open-display  ( -- )
+1A146DC 	 0  0  0 6F 
+1A146E0 	70 65 6E 2D 64 69 73 70 
+1A146E8 	6C 61 79 8C C0 46 A1  1 
+1A146F0 	5C 40 A0  1 DC  3  0  0 
+defer close-display  ( -- )
+1A146F8 	 0  0 63 6C 6F 73 65 2D 
+1A14700 	64 69 73 70 6C 61 79 8D 
+1A14708 	F0 46 A1  1 5C 40 A0  1 
+1A14710 	E0  3  0  0 
+' clear-line is open-display
+' cr is close-display
+
+\ Goes to a clean line on the display, noting that the old line display
+\ values are now invalid.  This will cause the redisplay code to do a
+\ full redisplay of the current line.
+: fresh-line  ( -- )  display?  if  cr  clear-line  then  ;
+1A14714 	 0 66 72 65 
+1A14718 	73 68 2D 6C 69 6E 65 8A 
+1A14720 	 C 47 A1  1 20 40 A0  1 
+1A14728 	7C 40 A1  1 DC 41 A0  1 
+1A14730 	 C  0  0  0 80 6D A0  1 
+1A14738 	C0 46 A1  1 58 46 A0  1 
+
+defer scroll-down
+1A14740 	73 63 72 6F 6C 6C 2D 64 
+1A14748 	6F 77 6E 8B 24 47 A1  1 
+1A14750 	5C 40 A0  1 E4  3  0  0 
+' fresh-line is scroll-down
+
+\ Movement within a line, which doesn't affect the state of the buffer
+
+headers
+\ Move forward "#chars" positions, but stop at the end of the line.
+: forward-characters  ( #chars -- )  #after min  #before +  is #before  ;
+1A14758 	 0 66 6F 72 77 61 72 64 
+1A14760 	2D 63 68 61 72 61 63 74 
+1A14768 	65 72 73 92 50 47 A1  1 
+1A14770 	20 40 A0  1 38 41 A1  1 
+1A14778 	74 4A A0  1  C 41 A1  1 
+1A14780 	 4 45 A0  1 B8 40 A0  1 
+1A14788 	 C 41 A1  1 58 46 A0  1 
+
+\ Move backward "#chars" positions, but stop at the beginning of the line.
+: backward-characters  ( #chars -- )  #before min  #before swap -  is #before ;
+1A14790 	62 61 63 6B 77 61 72 64 
+1A14798 	2D 63 68 61 72 61 63 74 
+1A147A0 	65 72 73 93 70 47 A1  1 
+1A147A8 	20 40 A0  1  C 41 A1  1 
+1A147B0 	74 4A A0  1  C 41 A1  1 
+1A147B8 	68 49 A0  1 18 45 A0  1 
+1A147C0 	B8 40 A0  1  C 41 A1  1 
+1A147C8 	58 46 A0  1 
+
+: forward-character   ( -- )  1 forward-characters  ;
+1A147CC 	 0  0 66 6F 
+1A147D0 	72 77 61 72 64 2D 63 68 
+1A147D8 	61 72 61 63 74 65 72 91 
+1A147E0 	A8 47 A1  1 20 40 A0  1 
+1A147E8 	80 6F A0  1 70 47 A1  1 
+1A147F0 	58 46 A0  1 
+: backward-character  ( -- )  1 backward-characters  ;
+1A147F4 	 0 62 61 63 
+1A147F8 	6B 77 61 72 64 2D 63 68 
+1A14800 	61 72 61 63 74 65 72 92 
+1A14808 	E4 47 A1  1 20 40 A0  1 
+1A14810 	80 6F A0  1 A8 47 A1  1 
+1A14818 	58 46 A0  1 
+: end-of-line         ( -- )  #after forward-characters  ;
+1A1481C 	65 6E 64 2D 
+1A14820 	6F 66 2D 6C 69 6E 65 8B 
+1A14828 	 C 48 A1  1 20 40 A0  1 
+1A14830 	38 41 A1  1 70 47 A1  1 
+1A14838 	58 46 A0  1 
+: beginning-of-line   ( -- )  #before backward-characters  ;
+1A1483C 	 0  0 62 65 
+1A14840 	67 69 6E 6E 69 6E 67 2D 
+1A14848 	6F 66 2D 6C 69 6E 65 91 
+1A14850 	2C 48 A1  1 20 40 A0  1 
+1A14858 	 C 41 A1  1 A8 47 A1  1 
+1A14860 	58 46 A0  1 
+
+\ Redisplays the current line
+: retype-line  ( -- )  scroll-down  ;
+1A14864 	72 65 74 79 
+1A14868 	70 65 2D 6C 69 6E 65 8B 
+1A14870 	54 48 A1  1 20 40 A0  1 
+1A14878 	50 47 A1  1 58 46 A0  1 
+
+headerless
+
+\ Locates the beginning of the previous (blank-delimited) word.
+\ Doesn't move the cursor or change the display.  Internal.
+
+: find-previous-word  ( -- adr )
+1A14880 	 0 66 69 6E 64 2D 70 72 
+1A14888 	65 76 69 6F 75 73 2D 77 
+1A14890 	6F 72 64 92 74 48 A1  1 
+1A14898 	20 40 A0  1 
+   cursor-adr line-start-adr =  if  line-start-adr exit  then
+1A1489C 	5C 41 A1  1 
+1A148A0 	E4 40 A1  1 24 48 A0  1 
+1A148A8 	DC 41 A0  1  C  0  0  0 
+1A148B0 	E4 40 A1  1 40 46 A0  1 
+   line-start-adr  dup cursor-adr 1-  ?do   ( linestart )
+1A148B8 	E4 40 A1  1 40 49 A0  1 
+1A148C0 	5C 41 A1  1 54 4B A0  1 
+1A148C8 	50 42 A0  1 38  0  0  0 
+      i c@  bl <>  if  drop i leave  then
+1A148D0 	B4 42 A0  1 C4 4C A0  1 
+1A148D8 	28 70 A0  1 44 48 A0  1 
+1A148E0 	DC 41 A0  1 10  0  0  0 
+1A148E8 	30 49 A0  1 B4 42 A0  1 
+1A148F0 	18 43 A0  1 
+   -1 +loop
+1A148F4 	58 41 A0  1 
+1A148F8 	FF FF FF FF 1C 42 A0  1 
+1A14900 	D0 FF FF FF 
+   ( nonblank-adr )
+   line-start-adr  dup  rot  ?do   ( linestart )
+1A14904 	E4 40 A1  1 
+1A14908 	40 49 A0  1 7C 49 A0  1 
+1A14910 	50 42 A0  1 3C  0  0  0 
+      i c@  bl =  if  drop i 1+  leave  then
+1A14918 	B4 42 A0  1 C4 4C A0  1 
+1A14920 	28 70 A0  1 24 48 A0  1 
+1A14928 	DC 41 A0  1 14  0  0  0 
+1A14930 	30 49 A0  1 B4 42 A0  1 
+1A14938 	30 4B A0  1 18 43 A0  1 
+   -1 +loop
+1A14940 	58 41 A0  1 FF FF FF FF 
+1A14948 	1C 42 A0  1 CC FF FF FF 
+;
+1A14950 	58 46 A0  1 
+
+\ Locates the beginning of the next (blank-delimited) word.
+\ Doesn't move the cursor or change the display.  Internal.
+
+: find-next-word  ( -- adr )
+1A14954 	 0 66 69 6E 
+1A14958 	64 2D 6E 65 78 74 2D 77 
+1A14960 	6F 72 64 8E 98 48 A1  1 
+1A14968 	20 40 A0  1 
+   line-end-adr  dup  cursor-adr  ?do  ( bufend-adr )
+1A1496C 	A0 41 A1  1 
+1A14970 	40 49 A0  1 5C 41 A1  1 
+1A14978 	50 42 A0  1 30  0  0  0 
+      i c@  bl =  if  drop i leave  then
+1A14980 	B4 42 A0  1 C4 4C A0  1 
+1A14988 	28 70 A0  1 24 48 A0  1 
+1A14990 	DC 41 A0  1 10  0  0  0 
+1A14998 	30 49 A0  1 B4 42 A0  1 
+1A149A0 	18 43 A0  1 
+   loop
+1A149A4 	F8 41 A0  1 
+1A149A8 	D8 FF FF FF 
+   line-end-adr  dup  rot  ?do  ( bufend-adr )
+1A149AC 	A0 41 A1  1 
+1A149B0 	40 49 A0  1 7C 49 A0  1 
+1A149B8 	50 42 A0  1 30  0  0  0 
+      i c@  bl <>  if  drop i leave  then
+1A149C0 	B4 42 A0  1 C4 4C A0  1 
+1A149C8 	28 70 A0  1 44 48 A0  1 
+1A149D0 	DC 41 A0  1 10  0  0  0 
+1A149D8 	30 49 A0  1 B4 42 A0  1 
+1A149E0 	18 43 A0  1 
+   loop
+1A149E4 	F8 41 A0  1 
+1A149E8 	D8 FF FF FF 
+;
+1A149EC 	58 46 A0  1 
+
+\ This is used by the command completion package; it ought to be elsewhere,
+\ and it also should find the end of the word without going there.
+: end-of-word  ( -- )
+1A149F0 	65 6E 64 2D 6F 66 2D 77 
+1A149F8 	6F 72 64 8B 68 49 A1  1 
+1A14A00 	20 40 A0  1 
+   after bounds  ?do
+1A14A04 	7C 41 A1  1 
+1A14A08 	F0 6D A0  1 50 42 A0  1 
+1A14A10 	24  0  0  0 
+      i c@  bl =  ?leave  forward-character
+1A14A14 	B4 42 A0  1 
+1A14A18 	C4 4C A0  1 28 70 A0  1 
+1A14A20 	24 48 A0  1 34 43 A0  1 
+1A14A28 	E4 47 A1  1 
+   loop
+1A14A2C 	F8 41 A0  1 
+1A14A30 	E4 FF FF FF 
+;
+1A14A34 	58 46 A0  1 
+
+headers
+: forward-word  ( -- )  find-next-word cursor-adr -  forward-characters  ;
+1A14A38 	 0  0  0 66 6F 72 77 61 
+1A14A40 	72 64 2D 77 6F 72 64 8C 
+1A14A48 	 0 4A A1  1 20 40 A0  1 
+1A14A50 	68 49 A1  1 5C 41 A1  1 
+1A14A58 	18 45 A0  1 70 47 A1  1 
+1A14A60 	58 46 A0  1 
+: backward-word  ( -- )
+1A14A64 	 0  0 62 61 
+1A14A68 	63 6B 77 61 72 64 2D 77 
+1A14A70 	6F 72 64 8D 4C 4A A1  1 
+1A14A78 	20 40 A0  1 
+   cursor-adr find-previous-word -  backward-characters
+1A14A7C 	5C 41 A1  1 
+1A14A80 	98 48 A1  1 18 45 A0  1 
+1A14A88 	A8 47 A1  1 
+;
+1A14A8C 	58 46 A0  1 
+
+\ Values describing the buffer that contains multiple editing lines
+
+headerless
+0 value buf-start-adr   \ address of start of input buffer
+1A14A90 	 0  0 62 75 66 2D 73 74 
+1A14A98 	61 72 74 2D 61 64 72 8D 
+1A14AA0 	78 4A A1  1 50 40 A0  1 
+1A14AA8 	E8  3  0  0 
+headers
+\ "buflen" needs a header because it's used by nvalias.fth
+0 value buflen          \ current size of input buffer
+1A14AAC 	 0 62 75 66 
+1A14AB0 	6C 65 6E 86 A4 4A A1  1 
+1A14AB8 	50 40 A0  1 EC  3  0  0 
+headerless
+0 value bufmax          \ maximum size of input buffer
+1A14AC0 	 0 62 75 66 6D 61 78 86 
+1A14AC8 	B8 4A A1  1 50 40 A0  1 
+1A14AD0 	F0  3  0  0 
+
+\ : buf-extent    ( -- adr len )  buf-start-adr  buflen  ;
+\ : buf-end-adr   ( -- n )        buf-extent +  ;
+: buf-end-adr   ( -- adr )   buf-start-adr buflen +  ;
+1A14AD4 	62 75 66 2D 
+1A14AD8 	65 6E 64 2D 61 64 72 8B 
+1A14AE0 	CC 4A A1  1 20 40 A0  1 
+1A14AE8 	A4 4A A1  1 B8 4A A1  1 
+1A14AF0 	 4 45 A0  1 58 46 A0  1 
+: buf#after     ( -- n )     buf-end-adr  cursor-adr -  ;
+1A14AF8 	 0  0 62 75 66 23 61 66 
+1A14B00 	74 65 72 89 E4 4A A1  1 
+1A14B08 	20 40 A0  1 E4 4A A1  1 
+1A14B10 	5C 41 A1  1 18 45 A0  1 
+1A14B18 	58 46 A0  1 
+
+\ The words after this point manipulate the buffer and its cursor
+\ position, calling the display routines as needed to maintain the display.
+
+headers
+81 buffer: kill-buffer
+1A14B1C 	6B 69 6C 6C 
+1A14B20 	2D 62 75 66 66 65 72 8B 
+1A14B28 	 8 4B A1  1 B4 A9 A0  1 
+1A14B30 	F4  3  0  0 51  0  0  0 
+1A14B38 	EC 25 A1  1 
+headerless
+
+\ Deletes "#chars" characters after the cursor.  This affects the characters
+\ in the buffer, but does not update the screen display.  It will delete
+\ newline characters the same as any others.
+
+: (erase-characters)  ( #chars -- )
+1A14B3C 	 0 28 65 72 
+1A14B40 	61 73 65 2D 63 68 61 72 
+1A14B48 	61 63 74 65 72 73 29 92 
+1A14B50 	2C 4B A1  1 20 40 A0  1 
+   >r
+1A14B58 	BC 45 A0  1 
+   r@ 1 >  if  cursor-adr r@  kill-buffer  place  then
+1A14B5C 	E4 45 A0  1 
+1A14B60 	80 6F A0  1  4 48 A0  1 
+1A14B68 	DC 41 A0  1 14  0  0  0 
+1A14B70 	5C 41 A1  1 E4 45 A0  1 
+1A14B78 	2C 4B A1  1 F0 88 A0  1 
+   cursor-adr  dup r@ +  swap  buf#after r@ -  cmove  \ Remove from buffer
+1A14B80 	5C 41 A1  1 40 49 A0  1 
+1A14B88 	E4 45 A0  1  4 45 A0  1 
+1A14B90 	68 49 A0  1  8 4B A1  1 
+1A14B98 	E4 45 A0  1 18 45 A0  1 
+1A14BA0 	10 44 A0  1 
+   buflen r> - is buflen
+1A14BA4 	B8 4A A1  1 
+1A14BA8 	D0 45 A0  1 18 45 A0  1 
+1A14BB0 	B8 40 A0  1 B8 4A A1  1 
+;
+1A14BB8 	58 46 A0  1 
+
+headers
+\ "(insert-characters)" needs a header because it's used by nvalias.fth
+
+\ Inserts characters from "adr len" into the buffer, up to the amount
+\ of space remaining in the buffer.  #inserted is the number that
+\ were actually inserted.  Does not update the display.
+
+: (insert-characters)  ( adr len -- #inserted )
+1A14BBC 	28 69 6E 73 
+1A14BC0 	65 72 74 2D 63 68 61 72 
+1A14BC8 	61 63 74 65 72 73 29 93 
+1A14BD0 	54 4B A1  1 20 40 A0  1 
+   dup buflen +  bufmax  <=  if        ( adr len )
+1A14BD8 	40 49 A0  1 B8 4A A1  1 
+1A14BE0 	 4 45 A0  1 CC 4A A1  1 
+1A14BE8 	 C 49 A0  1 DC 41 A0  1 
+1A14BF0 	64  0  0  0 
+      dup buflen + is buflen           ( adr len )
+1A14BF4 	40 49 A0  1 
+1A14BF8 	B8 4A A1  1  4 45 A0  1 
+1A14C00 	B8 40 A0  1 B8 4A A1  1 
+      dup linelen + is linelen         ( adr len )
+1A14C08 	40 49 A0  1 F8 40 A1  1 
+1A14C10 	 4 45 A0  1 B8 40 A0  1 
+1A14C18 	F8 40 A1  1 
+      cursor-adr   2dup +              ( adr len  src-addr dst-addr )
+1A14C1C 	5C 41 A1  1 
+1A14C20 	C0 49 A0  1  4 45 A0  1 
+      buf#after 3 pick -  cmove>       ( adr len  )
+1A14C28 	 8 4B A1  1 A0 6F A0  1 
+1A14C30 	 C 4A A0  1 18 45 A0  1 
+1A14C38 	34 44 A0  1 
+      tuck cursor-adr  swap cmove      ( len=#inserted )
+1A14C3C 	E8 46 A0  1 
+1A14C40 	5C 41 A1  1 68 49 A0  1 
+1A14C48 	10 44 A0  1 
+   else
+1A14C4C 	C8 41 A0  1 
+1A14C50 	 C  0  0  0 
+      2drop 0                          ( 0 )
+1A14C54 	AC 49 A0  1 
+1A14C58 	70 6F A0  1 
+   then
+;
+1A14C5C 	58 46 A0  1 
+headerless
+
+\ Finds the line length.  Used after moving to a new line.  Internal.
+: update-linelen  ( -- )
+1A14C60 	 0 75 70 64 61 74 65 2D 
+1A14C68 	6C 69 6E 65 6C 65 6E 8E 
+1A14C70 	D4 4B A1  1 20 40 A0  1 
+   buf#after  0  ?do
+1A14C78 	 8 4B A1  1 70 6F A0  1 
+1A14C80 	50 42 A0  1 38  0  0  0 
+      cursor-adr  i ca+ c@  newline =  ?leave
+1A14C88 	5C 41 A1  1 B4 42 A0  1 
+1A14C90 	 4 50 A0  1 C4 4C A0  1 
+1A14C98 	A8 71 A0  1 24 48 A0  1 
+1A14CA0 	34 43 A0  1 
+      linelen 1+ is linelen
+1A14CA4 	F8 40 A1  1 
+1A14CA8 	30 4B A0  1 B8 40 A0  1 
+1A14CB0 	F8 40 A1  1 
+   loop
+1A14CB4 	F8 41 A0  1 
+1A14CB8 	D0 FF FF FF 
+;
+1A14CBC 	58 46 A0  1 
+headers
+: last-line?  ( -- flag )  line-end-adr  buf-end-adr  u>=  ;
+1A14CC0 	 0 6C 61 73 74 2D 6C 69 
+1A14CC8 	6E 65 3F 8A 74 4C A1  1 
+1A14CD0 	20 40 A0  1 A0 41 A1  1 
+1A14CD8 	E4 4A A1  1 CC 48 A0  1 
+1A14CE0 	58 46 A0  1 
+headerless
+: set-line  ( line-start-adr line# -- )
+1A14CE4 	 0  0  0 73 
+1A14CE8 	65 74 2D 6C 69 6E 65 88 
+1A14CF0 	D0 4C A1  1 20 40 A0  1 
+   is edit-line#  is line-start-adr  0 is #before  0 is linelen  update-linelen
+1A14CF8 	B8 40 A0  1 24 41 A1  1 
+1A14D00 	B8 40 A0  1 E4 40 A1  1 
+1A14D08 	70 6F A0  1 B8 40 A0  1 
+1A14D10 	 C 41 A1  1 70 6F A0  1 
+1A14D18 	B8 40 A0  1 F8 40 A1  1 
+1A14D20 	74 4C A1  1 
+;
+1A14D24 	58 46 A0  1 
+: +line  ( -- )
+1A14D28 	 0  0 2B 6C 69 6E 65 85 
+1A14D30 	F4 4C A1  1 20 40 A0  1 
+   last-line?  if
+1A14D38 	D0 4C A1  1 DC 41 A0  1 
+1A14D40 	14  0  0  0 
+      line-end-adr  edit-line#
+1A14D44 	A0 41 A1  1 
+1A14D48 	24 41 A1  1 
+   else
+1A14D4C 	C8 41 A0  1 
+1A14D50 	14  0  0  0 
+      line-end-adr 1+  edit-line# 1+
+1A14D54 	A0 41 A1  1 
+1A14D58 	30 4B A0  1 24 41 A1  1 
+1A14D60 	30 4B A0  1 
+   then
+   set-line
+1A14D64 	F4 4C A1  1 
+;
+1A14D68 	58 46 A0  1 
+: end-line?  ( -- flag )  line-start-adr buf-end-adr u>=  ;
+1A14D6C 	 0  0 65 6E 
+1A14D70 	64 2D 6C 69 6E 65 3F 89 
+1A14D78 	34 4D A1  1 20 40 A0  1 
+1A14D80 	E4 40 A1  1 E4 4A A1  1 
+1A14D88 	CC 48 A0  1 58 46 A0  1 
+: -line  ( -- )
+1A14D90 	 0  0 2D 6C 69 6E 65 85 
+1A14D98 	7C 4D A1  1 20 40 A0  1 
+   buf-start-adr  dup 1+                  ( previous-length buf0 buf1 )
+1A14DA0 	A4 4A A1  1 40 49 A0  1 
+1A14DA8 	30 4B A0  1 
+   dup line-start-adr 1- max  ?do         ( previous-length buf0 )
+1A14DAC 	40 49 A0  1 
+1A14DB0 	E4 40 A1  1 54 4B A0  1 
+1A14DB8 	9C 4A A0  1 50 42 A0  1 
+1A14DC0 	44  0  0  0 
+      i -1 ca+ c@                         ( previous-length buf0 char )
+1A14DC4 	B4 42 A0  1 
+1A14DC8 	58 41 A0  1 FF FF FF FF 
+1A14DD0 	 4 50 A0  1 C4 4C A0  1 
+      newline =  if  drop i leave  then   ( previous-length line-adr )
+1A14DD8 	A8 71 A0  1 24 48 A0  1 
+1A14DE0 	DC 41 A0  1 10  0  0  0 
+1A14DE8 	30 49 A0  1 B4 42 A0  1 
+1A14DF0 	18 43 A0  1 
+   -1 +loop                               ( previous-length line-adr )
+1A14DF4 	58 41 A0  1 
+1A14DF8 	FF FF FF FF 1C 42 A0  1 
+1A14E00 	C4 FF FF FF 
+   edit-line# 1-  set-line                ( previous-length )
+1A14E04 	24 41 A1  1 
+1A14E08 	54 4B A0  1 F4 4C A1  1 
+;
+1A14E10 	58 46 A0  1 
+
+: (to-command-line)  ( -- )
+1A14E14 	 0  0 28 74 
+1A14E18 	6F 2D 63 6F 6D 6D 61 6E 
+1A14E20 	64 2D 6C 69 6E 65 29 91 
+1A14E28 	9C 4D A1  1 20 40 A0  1 
+   0 is #before
+1A14E30 	70 6F A0  1 B8 40 A0  1 
+1A14E38 	 C 41 A1  1 
+   begin  edit-line# 0<  while  +line  repeat
+1A14E3C 	24 41 A1  1 
+1A14E40 	64 47 A0  1 DC 41 A0  1 
+1A14E48 	10  0  0  0 34 4D A1  1 
+1A14E50 	C8 41 A0  1 E8 FF FF FF 
+;
+1A14E58 	58 46 A0  1 
+
+: ?copyline  ( -- )
+1A14E5C 	 0  0 3F 63 
+1A14E60 	6F 70 79 6C 69 6E 65 89 
+1A14E68 	2C 4E A1  1 20 40 A0  1 
+   edit-line#  0<  if
+1A14E70 	24 41 A1  1 64 47 A0  1 
+1A14E78 	DC 41 A0  1 44  0  0  0 
+      #before  line-start-adr  linelen               ( cursor adr len )
+1A14E80 	 C 41 A1  1 E4 40 A1  1 
+1A14E88 	F8 40 A1  1 
+      (to-command-line)                              ( cursor adr len )
+1A14E8C 	2C 4E A1  1 
+      #after  if
+1A14E90 	38 41 A1  1 DC 41 A0  1 
+1A14E98 	18  0  0  0 
+         #after (erase-characters)
+1A14E9C 	38 41 A1  1 
+1A14EA0 	54 4B A1  1 
+         0 is linelen
+1A14EA4 	70 6F A0  1 
+1A14EA8 	B8 40 A0  1 F8 40 A1  1 
+      then                                           ( cursor adr len )
+      (insert-characters) drop                       ( cursor )
+1A14EB0 	D4 4B A1  1 30 49 A0  1 
+      is #before
+1A14EB8 	B8 40 A0  1  C 41 A1  1 
+   then
+;
+1A14EC0 	58 46 A0  1 
+
+: set-ydamage  ( -- )  edit-line# 1+ is ydamage  ;
+1A14EC4 	73 65 74 2D 
+1A14EC8 	79 64 61 6D 61 67 65 8B 
+1A14ED0 	6C 4E A1  1 20 40 A0  1 
+1A14ED8 	24 41 A1  1 30 4B A0  1 
+1A14EE0 	B8 40 A0  1  4 42 A1  1 
+1A14EE8 	58 46 A0  1 
+: set-xdamage  ( -- )  xdamage #before umin  is xdamage  ;
+1A14EEC 	73 65 74 2D 
+1A14EF0 	78 64 61 6D 61 67 65 8B 
+1A14EF8 	D4 4E A1  1 20 40 A0  1 
+1A14F00 	F0 41 A1  1  C 41 A1  1 
+1A14F08 	4C 4A A0  1 B8 40 A0  1 
+1A14F10 	F0 41 A1  1 58 46 A0  1 
+
+\ Insertion and deletion
+
+headers
+
+\ Inserts characters from "adr len" into the buffer, and redisplays
+\ the rest of the line.
+: insert-characters  ( adr len -- )
+1A14F18 	 0  0 69 6E 73 65 72 74 
+1A14F20 	2D 63 68 61 72 61 63 74 
+1A14F28 	65 72 73 91 FC 4E A1  1 
+1A14F30 	20 40 A0  1 
+   ?copyline
+1A14F34 	6C 4E A1  1 
+   (insert-characters)          ( #inserted )
+1A14F38 	D4 4B A1  1 
+   dup  if  set-xdamage  then   ( #inserted )
+1A14F3C 	40 49 A0  1 
+1A14F40 	DC 41 A0  1  8  0  0  0 
+1A14F48 	FC 4E A1  1 
+   forward-characters
+1A14F4C 	70 47 A1  1 
+;
+1A14F50 	58 46 A0  1 
+
+\ Erases characters within a line and redisplays the rest of the line.
+\ "#chars" must not be more than "#after"
+: erase-characters  ( #chars -- )
+1A14F54 	 0  0  0 65 
+1A14F58 	72 61 73 65 2D 63 68 61 
+1A14F60 	72 61 63 74 65 72 73 90 
+1A14F68 	30 4F A1  1 20 40 A0  1 
+   ?copyline
+1A14F70 	6C 4E A1  1 
+   set-xdamage
+1A14F74 	FC 4E A1  1 
+   dup (erase-characters)
+1A14F78 	40 49 A0  1 54 4B A1  1 
+   linelen swap - is linelen
+1A14F80 	F8 40 A1  1 68 49 A0  1 
+1A14F88 	18 45 A0  1 B8 40 A0  1 
+1A14F90 	F8 40 A1  1 
+;
+1A14F94 	58 46 A0  1 
+
+headerless
+nuser ch	\ One-element array used to convert character to "adr len"
+1A14F98 	 0 63 68 82 6C 4F A1  1 
+1A14FA0 	48 40 A0  1 F8  3  0  0 
+
+headers
+: insert-character  ( char -- )  ch c!  ch 1 insert-characters  ;
+1A14FA8 	 0  0  0 69 6E 73 65 72 
+1A14FB0 	74 2D 63 68 61 72 61 63 
+1A14FB8 	74 65 72 90 A0 4F A1  1 
+1A14FC0 	20 40 A0  1 A0 4F A1  1 
+1A14FC8 	B8 4D A0  1 A0 4F A1  1 
+1A14FD0 	80 6F A0  1 30 4F A1  1 
+1A14FD8 	58 46 A0  1 
+: quote-next-character  ( -- )  key insert-character  ;
+1A14FDC 	 0  0  0 71 
+1A14FE0 	75 6F 74 65 2D 6E 65 78 
+1A14FE8 	74 2D 63 68 61 72 61 63 
+1A14FF0 	74 65 72 94 C0 4F A1  1 
+1A14FF8 	20 40 A0  1 50 6C A0  1 
+1A15000 	C0 4F A1  1 58 46 A0  1 
+
+: erase-next-character  ( -- )  #after 1 min  erase-characters  ;
+1A15008 	 0  0  0 65 72 61 73 65 
+1A15010 	2D 6E 65 78 74 2D 63 68 
+1A15018 	61 72 61 63 74 65 72 94 
+1A15020 	F8 4F A1  1 20 40 A0  1 
+1A15028 	38 41 A1  1 80 6F A0  1 
+1A15030 	74 4A A0  1 6C 4F A1  1 
+1A15038 	58 46 A0  1 
+
+: erase-previous-character  ( -- )
+1A1503C 	 0  0  0 65 
+1A15040 	72 61 73 65 2D 70 72 65 
+1A15048 	76 69 6F 75 73 2D 63 68 
+1A15050 	61 72 61 63 74 65 72 98 
+1A15058 	24 50 A1  1 20 40 A0  1 
+   #before 1 min  dup backward-characters  erase-characters
+1A15060 	 C 41 A1  1 80 6F A0  1 
+1A15068 	74 4A A0  1 40 49 A0  1 
+1A15070 	A8 47 A1  1 6C 4F A1  1 
+;
+1A15078 	58 46 A0  1 
+
+\ EMACS-style "kill-line".  If executed in the middle of a line, kills
+\ the rest of the line.  If executed at the end of a line, kills the
+\ "newline", thus joining the next line to the end of the current one.
+
+: kill-to-end-of-line  ( -- )
+1A1507C 	6B 69 6C 6C 
+1A15080 	2D 74 6F 2D 65 6E 64 2D 
+1A15088 	6F 66 2D 6C 69 6E 65 93 
+1A15090 	5C 50 A1  1 20 40 A0  1 
+   #after  ?dup  if
+1A15098 	38 41 A1  1 B4 70 A0  1 
+1A150A0 	DC 41 A0  1 10  0  0  0 
+      erase-characters				\ Kill rest of line
+1A150A8 	6C 4F A1  1 
+   else
+1A150AC 	C8 41 A0  1 
+1A150B0 	34  0  0  0 
+      accepting? 0=  if
+1A150B4 	94 40 A1  1 
+1A150B8 	24 47 A0  1 DC 41 A0  1 
+1A150C0 	24  0  0  0 
+         \ Join lines unless we're already at the end of the file
+         buf#after  if
+1A150C4 	 8 4B A1  1 
+1A150C8 	DC 41 A0  1 18  0  0  0 
+            1 (erase-characters)
+1A150D0 	80 6F A0  1 54 4B A1  1 
+            update-linelen
+1A150D8 	74 4C A1  1 
+            set-xdamage  set-ydamage
+1A150DC 	FC 4E A1  1 
+1A150E0 	D4 4E A1  1 
+         then
+      then
+   then
+;
+1A150E4 	58 46 A0  1 
+: erase-next-word  ( -- )  find-next-word cursor-adr -  erase-characters  ;
+1A150E8 	65 72 61 73 65 2D 6E 65 
+1A150F0 	78 74 2D 77 6F 72 64 8F 
+1A150F8 	94 50 A1  1 20 40 A0  1 
+1A15100 	68 49 A1  1 5C 41 A1  1 
+1A15108 	18 45 A0  1 6C 4F A1  1 
+1A15110 	58 46 A0  1 
+: erase-previous-word  ( -- )
+1A15114 	65 72 61 73 
+1A15118 	65 2D 70 72 65 76 69 6F 
+1A15120 	75 73 2D 77 6F 72 64 93 
+1A15128 	FC 50 A1  1 20 40 A0  1 
+   cursor-adr  backward-word  cursor-adr -  erase-characters
+1A15130 	5C 41 A1  1 78 4A A1  1 
+1A15138 	5C 41 A1  1 18 45 A0  1 
+1A15140 	6C 4F A1  1 
+;
+1A15144 	58 46 A0  1 
+: beginning-of-file  ( -- )  buf-start-adr 0 set-line  ;
+1A15148 	 0  0 62 65 67 69 6E 6E 
+1A15150 	69 6E 67 2D 6F 66 2D 66 
+1A15158 	69 6C 65 91 2C 51 A1  1 
+1A15160 	20 40 A0  1 A4 4A A1  1 
+1A15168 	70 6F A0  1 F4 4C A1  1 
+1A15170 	58 46 A0  1 
+
+headerless
+
+defer to-goal-column  ( -- )
+1A15174 	 0 74 6F 2D 
+1A15178 	67 6F 61 6C 2D 63 6F 6C 
+1A15180 	75 6D 6E 8E 60 51 A1  1 
+1A15188 	5C 40 A0  1 FC  3  0  0 
+' end-of-line is to-goal-column
+
+headers
+defer deny-history?   \ Turns off history access for security
+1A15190 	 0  0 64 65 6E 79 2D 68 
+1A15198 	69 73 74 6F 72 79 3F 8D 
+1A151A0 	88 51 A1  1 5C 40 A0  1 
+1A151A8 	 0  4  0  0 
+' false is deny-history?
+
+\ Goes to the next line, if there is one
+: next-line  ( -- )
+1A151AC 	 0  0 6E 65 
+1A151B0 	78 74 2D 6C 69 6E 65 89 
+1A151B8 	A4 51 A1  1 20 40 A0  1 
+   accepting? deny-history?  and  if  exit  then
+1A151C0 	94 40 A1  1 A4 51 A1  1 
+1A151C8 	5C 44 A0  1 DC 41 A0  1 
+1A151D0 	 8  0  0  0 40 46 A0  1 
+   last-line? 0=  if
+1A151D8 	D0 4C A1  1 24 47 A0  1 
+1A151E0 	DC 41 A0  1 24  0  0  0 
+      line-moved
+1A151E8 	68 46 A1  1 
+      +line to-goal-column
+1A151EC 	34 4D A1  1 
+1A151F0 	88 51 A1  1 
+      accepting? 0=  if  scroll-down  then
+1A151F4 	94 40 A1  1 
+1A151F8 	24 47 A0  1 DC 41 A0  1 
+1A15200 	 8  0  0  0 50 47 A1  1 
+   then
+;
+1A15208 	58 46 A0  1 
+
+\ Goes to the previous line
+: previous-line  ( -- )
+1A1520C 	 0  0 70 72 
+1A15210 	65 76 69 6F 75 73 2D 6C 
+1A15218 	69 6E 65 8D BC 51 A1  1 
+1A15220 	20 40 A0  1 
+   accepting? deny-history?  and  if  exit  then
+1A15224 	94 40 A1  1 
+1A15228 	A4 51 A1  1 5C 44 A0  1 
+1A15230 	DC 41 A0  1  8  0  0  0 
+1A15238 	40 46 A0  1 
+   buf-start-adr  line-start-adr  <  if  line-moved -line to-goal-column  then
+1A1523C 	A4 4A A1  1 
+1A15240 	E4 40 A1  1 E4 47 A0  1 
+1A15248 	DC 41 A0  1 10  0  0  0 
+1A15250 	68 46 A1  1 9C 4D A1  1 
+1A15258 	88 51 A1  1 
+;
+1A1525C 	58 46 A0  1 
+
+\ : forward-lines  ( #lines -- )   0  ?do  next-line  loop  ;
+\ : backward-lines  ( #lines -- )   0  ?do  previous-line  loop  ;
+
+: split-line  ( -- )
+1A15260 	 0 73 70 6C 69 74 2D 6C 
+1A15268 	69 6E 65 8A 20 52 A1  1 
+1A15270 	20 40 A0  1 
+   accepting?  if  beep exit  then
+1A15274 	94 40 A1  1 
+1A15278 	DC 41 A0  1  C  0  0  0 
+1A15280 	A8 40 A1  1 40 46 A0  1 
+
+   newline ch c!  ch 1 (insert-characters)  if
+1A15288 	A8 71 A0  1 A0 4F A1  1 
+1A15290 	B8 4D A0  1 A0 4F A1  1 
+1A15298 	80 6F A0  1 D4 4B A1  1 
+1A152A0 	DC 41 A0  1 18  0  0  0 
+      set-xdamage  set-ydamage
+1A152A8 	FC 4E A1  1 D4 4E A1  1 
+      #before is linelen    \ Erase the rest of the line
+1A152B0 	 C 41 A1  1 B8 40 A0  1 
+1A152B8 	F8 40 A1  1 
+   then
+;
+1A152BC 	58 46 A0  1 
+: new-line  ( -- )  split-line  next-line  ;
+1A152C0 	 0  0  0 6E 65 77 2D 6C 
+1A152C8 	69 6E 65 88 70 52 A1  1 
+1A152D0 	20 40 A0  1 70 52 A1  1 
+1A152D8 	BC 51 A1  1 58 46 A0  1 
+: list-file  ( -- )
+1A152E0 	 0  0 6C 69 73 74 2D 66 
+1A152E8 	69 6C 65 89 D0 52 A1  1 
+1A152F0 	20 40 A0  1 
+   accepting? deny-history? and  if  exit  then
+1A152F4 	94 40 A1  1 
+1A152F8 	A4 51 A1  1 5C 44 A0  1 
+1A15300 	DC 41 A0  1  8  0  0  0 
+1A15308 	40 46 A0  1 
+   #before line-start-adr edit-line#    ( #before adr line# )
+1A1530C 	 C 41 A1  1 
+1A15310 	E4 40 A1  1 24 41 A1  1 
+   beginning-of-file                    ( #before adr line# )
+1A15318 	60 51 A1  1 
+   begin                                ( #before adr line# )
+      line-moved retype-line redisplay  ( #before adr line# )
+1A1531C 	68 46 A1  1 
+1A15320 	74 48 A1  1 3C 46 A1  1 
+   exit? last-line? or  0=  while       ( #before adr line# )
+1A15328 	34  D A1  1 D0 4C A1  1 
+1A15330 	70 44 A0  1 24 47 A0  1 
+1A15338 	DC 41 A0  1 10  0  0  0 
+      +line                             ( #before adr line# )
+1A15340 	34 4D A1  1 
+   repeat                               ( #before adr line# )
+1A15344 	C8 41 A0  1 
+1A15348 	D4 FF FF FF 
+   set-line  is #before
+1A1534C 	F4 4C A1  1 
+1A15350 	B8 40 A0  1  C 41 A1  1 
+   retype-line
+1A15358 	74 48 A1  1 
+;
+1A1535C 	58 46 A0  1 
+: yank  ( -- )  kill-buffer count insert-characters  ;
+1A15360 	 0  0  0 79 61 6E 6B 84 
+1A15368 	F0 52 A1  1 20 40 A0  1 
+1A15370 	2C 4B A1  1 BC 53 A0  1 
+1A15378 	30 4F A1  1 58 46 A0  1 
+
+defer recenter  ( -- )
+1A15380 	 0  0  0 72 65 63 65 6E 
+1A15388 	74 65 72 88 6C 53 A1  1 
+1A15390 	5C 40 A0  1  4  4  0  0 
+' list-file is recenter
+
+: one-line-display  ( -- )
+1A15398 	 0  0  0 6F 6E 65 2D 6C 
+1A153A0 	69 6E 65 2D 64 69 73 70 
+1A153A8 	6C 61 79 90 90 53 A1  1 
+1A153B0 	20 40 A0  1 
+   ['] clear-line      is open-display
+1A153B4 	60 53 A0  1 
+1A153B8 	C0 46 A1  1 98 40 A0  1 
+1A153C0 	F0 46 A1  1 
+   ['] cr              is close-display
+1A153C4 	60 53 A0  1 
+1A153C8 	80 6D A0  1 98 40 A0  1 
+1A153D0 	 C 47 A1  1 
+   ['] noop            is vredisplay
+1A153D4 	60 53 A0  1 
+1A153D8 	64 4F A0  1 98 40 A0  1 
+1A153E0 	24 46 A1  1 
+   ['] (new-line-end)  is new-line-end
+1A153E4 	60 53 A0  1 
+1A153E8 	50 42 A1  1 98 40 A0  1 
+1A153F0 	20 42 A1  1 
+   ['] (.line#)        is .line#
+1A153F4 	60 53 A0  1 
+1A153F8 	38 43 A1  1 98 40 A0  1 
+1A15400 	20 43 A1  1 
+   ['] (line-moved)    is line-moved
+1A15404 	60 53 A0  1 
+1A15408 	84 46 A1  1 98 40 A0  1 
+1A15410 	68 46 A1  1 
+   ['] end-of-line     is to-goal-column
+1A15414 	60 53 A0  1 
+1A15418 	2C 48 A1  1 98 40 A0  1 
+1A15420 	88 51 A1  1 
+   ['] fresh-line      is scroll-down
+1A15424 	60 53 A0  1 
+1A15428 	24 47 A1  1 98 40 A0  1 
+1A15430 	50 47 A1  1 
+   ['] list-file       is recenter
+1A15434 	60 53 A0  1 
+1A15438 	F0 52 A1  1 98 40 A0  1 
+1A15440 	90 53 A1  1 
+;
+1A15444 	58 46 A0  1 
+
+headers

@@ -1,0 +1,429 @@
+id: @(#)memlist.fth 2.9 05/04/08
+purpose: Common routines for memory list manipulation
+
+headers
+listnode
+   /n field >adr
+1A326BC 	 0  0  0 3E 
+1A326C0 	61 64 72 84 50 26 A3  1 
+1A326C8 	50 EE A0  1  4  0  0  0 
+   /n field >size
+1A326D0 	 0  0 3E 73 69 7A 65 85 
+1A326D8 	C8 26 A3  1 50 EE A0  1 
+1A326E0 	 8  0  0  0 
+nodetype: memrange
+1A326E4 	 0  0  0 6D 
+1A326E8 	65 6D 72 61 6E 67 65 88 
+1A326F0 	DC 26 A3  1 AC 71 A1  1 
+1A326F8 	 0  A  0  0 
+
+headerless
+\ local variable for use by memory list code
+0 value prev-node	\ The node preceding (above) the insertion point
+1A326FC 	 0  0 70 72 
+1A32700 	65 76 2D 6E 6F 64 65 89 
+1A32708 	F4 26 A3  1 50 40 A0  1 
+1A32710 	 8  A  0  0 
+0 value next-node	\ The node following (below) the insertion point
+1A32714 	 0  0 6E 65 
+1A32718 	78 74 2D 6E 6F 64 65 89 
+1A32720 	 C 27 A3  1 50 40 A0  1 
+1A32728 	 C  A  0  0 
+0 value memlist		\ The memory list we're working on
+1A3272C 	6D 65 6D 6C 
+1A32730 	69 73 74 87 24 27 A3  1 
+1A32738 	50 40 A0  1 10  A  0  0 
+defer ?splice	( adr node -- )  \ Routine to free spanning resources
+1A32740 	3F 73 70 6C 69 63 65 87 
+1A32748 	38 27 A3  1 5C 40 A0  1 
+1A32750 	14  A  0  0 
+
+headers
+: node-range  ( node -- adr size )  dup >adr @  swap >size @  ;
+1A32754 	 0 6E 6F 64 
+1A32758 	65 2D 72 61 6E 67 65 8A 
+1A32760 	4C 27 A3  1 20 40 A0  1 
+1A32768 	40 49 A0  1 C8 26 A3  1 
+1A32770 	5C 4C A0  1 68 49 A0  1 
+1A32778 	DC 26 A3  1 5C 4C A0  1 
+1A32780 	58 46 A0  1 
+headerless
+\ Convenience functions
+
+: prev-start  ( -- adr )  prev-node >adr @  ;
+1A32784 	 0 70 72 65 
+1A32788 	76 2D 73 74 61 72 74 8A 
+1A32790 	64 27 A3  1 20 40 A0  1 
+1A32798 	 C 27 A3  1 C8 26 A3  1 
+1A327A0 	5C 4C A0  1 58 46 A0  1 
+: next-end  ( -- adr )  next-node node-range +  ;
+1A327A8 	 0  0  0 6E 65 78 74 2D 
+1A327B0 	65 6E 64 88 94 27 A3  1 
+1A327B8 	20 40 A0  1 24 27 A3  1 
+1A327C0 	64 27 A3  1  4 45 A0  1 
+1A327C8 	58 46 A0  1 
+
+\ Allocates and initializes a new memory node
+headers
+: set-node  ( adr size -- node )
+1A327CC 	 0  0  0 73 
+1A327D0 	65 74 2D 6E 6F 64 65 88 
+1A327D8 	B8 27 A3  1 20 40 A0  1 
+   memrange allocate-node                 ( adr' size' node )
+1A327E0 	F4 26 A3  1 34 74 A1  1 
+   tuck >size !  tuck >adr !              ( node )
+1A327E8 	E8 46 A0  1 DC 26 A3  1 
+1A327F0 	54 4D A0  1 E8 46 A0  1 
+1A327F8 	C8 26 A3  1 54 4D A0  1 
+;
+1A32800 	58 46 A0  1 
+headerless
+\ Expands the address range adr,len out to page boundaries in both directions.
+
+: >page-boundaries  ( adr len -- page-aligned-adr page-multiple-len )
+1A32804 	 0  0  0 3E 
+1A32808 	70 61 67 65 2D 62 6F 75 
+1A32810 	6E 64 61 72 69 65 73 90 
+1A32818 	DC 27 A3  1 20 40 A0  1 
+   bounds                                        ( top-adr bottom-adr )
+1A32820 	F0 6D A0  1 
+   pagesize round-down  swap pagesize round-up   ( bottom-adr' top-adr' )
+1A32824 	50 7F A2  1 
+1A32828 	80 91 A0  1 68 49 A0  1 
+1A32830 	50 7F A2  1 A4 91 A0  1 
+   over -                                        ( adr' len' )
+1A32838 	54 49 A0  1 18 45 A0  1 
+;
+1A32840 	58 46 A0  1 
+
+
+\ Used with "find-node" to locate the pair of nodes around "adr"
+
+: lower?  ( adr node -- adr flag )  >adr @  over u<=  ;
+1A32844 	 0 6C 6F 77 
+1A32848 	65 72 3F 86 1C 28 A3  1 
+1A32850 	20 40 A0  1 C8 26 A3  1 
+1A32858 	5C 4C A0  1 54 49 A0  1 
+1A32860 	88 48 A0  1 58 46 A0  1 
+
+
+\ Used with "find-node" to locate a memory node at least as big as "size"
+
+: big-enough?  ( size node-adr -- size flag )  >size @  over u>=  ;
+1A32868 	62 69 67 2D 65 6E 6F 75 
+1A32870 	67 68 3F 8B 50 28 A3  1 
+1A32878 	20 40 A0  1 DC 26 A3  1 
+1A32880 	5C 4C A0  1 54 49 A0  1 
+1A32888 	CC 48 A0  1 58 46 A0  1 
+
+
+\ Handle possible singularity at 0
+: handle-0  ( end-adr start-adr -- end-adr' start-adr' )
+1A32890 	 0  0  0 68 61 6E 64 6C 
+1A32898 	65 2D 30 88 78 28 A3  1 
+1A328A0 	20 40 A0  1 
+   2dup =  if  exit  then               \ Don't do it for 0-length ranges
+1A328A4 	C0 49 A0  1 
+1A328A8 	24 48 A0  1 DC 41 A0  1 
+1A328B0 	 8  0  0  0 40 46 A0  1 
+   over  0=  if  nip -1 swap  then
+1A328B8 	54 49 A0  1 24 47 A0  1 
+1A328C0 	DC 41 A0  1 14  0  0  0 
+1A328C8 	FC 46 A0  1 58 41 A0  1 
+1A328D0 	FF FF FF FF 68 49 A0  1 
+;
+1A328D8 	58 46 A0  1 
+
+\ Used with "find-node" to locate a memory node containing the range adr,len
+
+: (contained?)  ( adr1 len1 adr2 len2 -- adr1 len1 flag )
+1A328DC 	 0  0  0 28 
+1A328E0 	63 6F 6E 74 61 69 6E 65 
+1A328E8 	64 3F 29 8C A0 28 A3  1 
+1A328F0 	20 40 A0  1 
+   bounds handle-0              ( adr len  node-end node-start )
+1A328F4 	F0 6D A0  1 
+1A328F8 	A0 28 A3  1 
+   2over bounds handle-0        ( adr len  node-end,start end,start )
+1A328FC 	D8 49 A0  1 
+1A32900 	F0 6D A0  1 A0 28 A3  1 
+   rot u>= -rot  u>=  and       ( adr len flag )
+1A32908 	7C 49 A0  1 CC 48 A0  1 
+1A32910 	94 49 A0  1 CC 48 A0  1 
+1A32918 	5C 44 A0  1 
+;
+1A3291C 	58 46 A0  1 
+: contained?  ( adr len node-adr -- adr len flag )  node-range  (contained?)  ;
+1A32920 	 0 63 6F 6E 74 61 69 6E 
+1A32928 	65 64 3F 8A F0 28 A3  1 
+1A32930 	20 40 A0  1 64 27 A3  1 
+1A32938 	F0 28 A3  1 58 46 A0  1 
+
+\ Frees the range of memory "adr size", adding it to the free list "list".
+\ Every attempt is made to add the memory range to an existing node, and
+\ to join adjacent nodes into one larger node.  When memory is added to an
+\ existing node, or when nodes are joined, the defer word "?splice" is
+\ called with the join address as an argument, allowing for spanning
+\ resources (e.g. PMEGS) to be freed if possible.
+: free-memrange  ( adr size list -- )
+1A32940 	 0  0 66 72 65 65 2D 6D 
+1A32948 	65 6D 72 61 6E 67 65 8D 
+1A32950 	30 29 A3  1 20 40 A0  1 
+   over 0=  if  3drop exit  then
+1A32958 	54 49 A0  1 24 47 A0  1 
+1A32960 	DC 41 A0  1  C  0  0  0 
+1A32968 	90 52 A0  1 40 46 A0  1 
+   is memlist                             ( adr size )
+1A32970 	B8 40 A0  1 38 27 A3  1 
+
+   swap memlist  ['] lower?  find-node    ( size adr prev-node this-node|0 )
+1A32978 	68 49 A0  1 38 27 A3  1 
+1A32980 	60 53 A0  1 50 28 A3  1 
+1A32988 	88 72 A1  1 
+   is next-node  is prev-node             ( size adr )
+1A3298C 	B8 40 A0  1 
+1A32990 	24 27 A3  1 B8 40 A0  1 
+1A32998 	 C 27 A3  1 
+
+   \ Error check to catch attempts to free already-free memory.
+
+   next-node  if                          ( size adr )
+1A3299C 	24 27 A3  1 
+1A329A0 	DC 41 A0  1 48  0  0  0 
+      dup  next-node >adr @  next-end  within
+1A329A8 	40 49 A0  1 24 27 A3  1 
+1A329B0 	C8 26 A3  1 5C 4C A0  1 
+1A329B8 	B8 27 A3  1  8 71 A0  1 
+      abort" Freeing memory that is already free"
+1A329C0 	 8 81 A0  1 23 46 72 65 
+1A329C8 	65 69 6E 67 20 6D 65 6D 
+1A329D0 	6F 72 79 20 74 68 61 74 
+1A329D8 	20 69 73 20 61 6C 72 65 
+1A329E0 	61 64 79 20 66 72 65 65 
+1A329E8 	 0  0  0  0 
+   then                                   ( size adr )
+
+   \ Try to add this node to the end of the lower piece in the available list
+
+   next-node  if                          ( size adr )
+1A329EC 	24 27 A3  1 
+1A329F0 	DC 41 A0  1 A8  0  0  0 
+      dup next-end =  if                  ( size adr )
+1A329F8 	40 49 A0  1 B8 27 A3  1 
+1A32A00 	24 48 A0  1 DC 41 A0  1 
+1A32A08 	94  0  0  0 
+
+         \ This piece can be added to the end of the lower piece
+
+         swap  next-node >size +!         ( adr )
+1A32A0C 	68 49 A0  1 
+1A32A10 	24 27 A3  1 DC 26 A3  1 
+1A32A18 	 C 4C A0  1 
+	 next-node ?splice                ( )  \ Perhaps free PMEG
+1A32A1C 	24 27 A3  1 
+1A32A20 	4C 27 A3  1 
+
+	 \ Now try to collapse 2 adjacent nodes
+	 prev-node memlist <>  if                             ( )
+1A32A24 	 C 27 A3  1 
+1A32A28 	38 27 A3  1 44 48 A0  1 
+1A32A30 	DC 41 A0  1 64  0  0  0 
+	    next-end prev-start =  if                         ( )
+1A32A38 	B8 27 A3  1 94 27 A3  1 
+1A32A40 	24 48 A0  1 DC 41 A0  1 
+1A32A48 	50  0  0  0 
+               next-end                                       ( splice-adr )
+1A32A4C 	B8 27 A3  1 
+               next-node >size @  prev-node >size +!          ( splice-adr )
+1A32A50 	24 27 A3  1 DC 26 A3  1 
+1A32A58 	5C 4C A0  1  C 27 A3  1 
+1A32A60 	DC 26 A3  1  C 4C A0  1 
+               next-node >adr  @  prev-node >adr   !          ( splice-adr )
+1A32A68 	24 27 A3  1 C8 26 A3  1 
+1A32A70 	5C 4C A0  1  C 27 A3  1 
+1A32A78 	C8 26 A3  1 54 4D A0  1 
+	       prev-node delete-after  memrange free-node     ( splice-adr )
+1A32A80 	 C 27 A3  1 58 72 A1  1 
+1A32A88 	F4 26 A3  1 88 74 A1  1 
+               prev-node ?splice          ( )  \ Perhaps free PMEG
+1A32A90 	 C 27 A3  1 4C 27 A3  1 
+	    then
+         then
+
+         exit
+1A32A98 	40 46 A0  1 
+      then
+   then
+
+   \ Try to add this node to the start of the upper piece in the available list
+   prev-node memlist <>  if               ( size adr )
+1A32A9C 	 C 27 A3  1 
+1A32AA0 	38 27 A3  1 44 48 A0  1 
+1A32AA8 	DC 41 A0  1 48  0  0  0 
+      2dup +  prev-start =  if            ( size adr )
+1A32AB0 	C0 49 A0  1  4 45 A0  1 
+1A32AB8 	94 27 A3  1 24 48 A0  1 
+1A32AC0 	DC 41 A0  1 30  0  0  0 
+         2dup prev-node >adr !            ( size adr size )
+1A32AC8 	C0 49 A0  1  C 27 A3  1 
+1A32AD0 	C8 26 A3  1 54 4D A0  1 
+         prev-node >size +!               ( size adr )
+1A32AD8 	 C 27 A3  1 DC 26 A3  1 
+1A32AE0 	 C 4C A0  1 
+         +  prev-node ?splice             ( )  \ Perhaps free PMEG
+1A32AE4 	 4 45 A0  1 
+1A32AE8 	 C 27 A3  1 4C 27 A3  1 
+	 exit
+1A32AF0 	40 46 A0  1 
+      then
+   then                                   ( size adr )
+
+   \ Oh bother!  We have to create another node
+   swap set-node prev-node insert-after
+1A32AF4 	68 49 A0  1 
+1A32AF8 	DC 27 A3  1  C 27 A3  1 
+1A32B00 	28 72 A1  1 
+;
+1A32B04 	58 46 A0  1 
+
+: suitable?  ( alignment size node-adr -- alignment size flag )
+1A32B08 	 0  0 73 75 69 74 61 62 
+1A32B10 	6C 65 3F 89 54 29 A3  1 
+1A32B18 	20 40 A0  1 
+   >r r@ >adr @  2 pick round-up          ( alignment size aligned-adr )
+1A32B1C 	BC 45 A0  1 
+1A32B20 	E4 45 A0  1 C8 26 A3  1 
+1A32B28 	5C 4C A0  1 90 6F A0  1 
+1A32B30 	 C 4A A0  1 A4 91 A0  1 
+   r> node-range -rot -                   ( alignment size node-size waste )
+1A32B38 	D0 45 A0  1 64 27 A3  1 
+1A32B40 	94 49 A0  1 18 45 A0  1 
+   2dup u<=  if  2drop false  exit  then  ( alignment size node-size waste )
+1A32B48 	C0 49 A0  1 88 48 A0  1 
+1A32B50 	DC 41 A0  1 10  0  0  0 
+1A32B58 	AC 49 A0  1 18 70 A0  1 
+1A32B60 	40 46 A0  1 
+   -                                      ( alignment size aln-node-size )
+1A32B64 	18 45 A0  1 
+   over u>=                               ( alignment size flag )
+1A32B68 	54 49 A0  1 CC 48 A0  1 
+;   
+1A32B70 	58 46 A0  1 
+: end-piece-aligned?  ( aln size -- flag )
+1A32B74 	 0 65 6E 64 
+1A32B78 	2D 70 69 65 63 65 2D 61 
+1A32B80 	6C 69 67 6E 65 64 3F 92 
+1A32B88 	18 2B A3  1 20 40 A0  1 
+   next-end           ( aln size end-adr )
+1A32B90 	B8 27 A3  1 
+   swap - dup rot     ( adr adr aln )
+1A32B94 	68 49 A0  1 
+1A32B98 	18 45 A0  1 40 49 A0  1 
+1A32BA0 	7C 49 A0  1 
+   round-up =         ( flag )
+1A32BA4 	A4 91 A0  1 
+1A32BA8 	24 48 A0  1 
+;
+1A32BAC 	58 46 A0  1 
+
+: allocate-memrange  ( alignment size list -- phys-adr false | true )
+1A32BB0 	 0  0 61 6C 6C 6F 63 61 
+1A32BB8 	74 65 2D 6D 65 6D 72 61 
+1A32BC0 	6E 67 65 91 8C 2B A3  1 
+1A32BC8 	20 40 A0  1 
+
+   ['] suitable?  find-node is next-node  is prev-node ( aln+ size+ )
+1A32BCC 	60 53 A0  1 
+1A32BD0 	18 2B A3  1 88 72 A1  1 
+1A32BD8 	B8 40 A0  1 24 27 A3  1 
+1A32BE0 	B8 40 A0  1  C 27 A3  1 
+
+   next-node 0=  if  2drop true  exit  then               ( aln+ size+ )
+1A32BE8 	24 27 A3  1 24 47 A0  1 
+1A32BF0 	DC 41 A0  1 10  0  0  0 
+1A32BF8 	AC 49 A0  1  4 70 A0  1 
+1A32C00 	40 46 A0  1 
+
+   2dup  end-piece-aligned?  if                           ( aln+ size+ )
+1A32C04 	C0 49 A0  1 
+1A32C08 	8C 2B A3  1 DC 41 A0  1 
+1A32C10 	64  0  0  0 
+      dup  next-node >size @ =  if                        ( aln+ size+ )
+1A32C14 	40 49 A0  1 
+1A32C18 	24 27 A3  1 DC 26 A3  1 
+1A32C20 	5C 4C A0  1 24 48 A0  1 
+1A32C28 	DC 41 A0  1 28  0  0  0 
+         \ Node is exactly the right size; return the
+         \ address and remove the node from the list
+         next-node >adr @                                 ( aln+ size+ adr )
+1A32C30 	24 27 A3  1 C8 26 A3  1 
+1A32C38 	5C 4C A0  1 
+         prev-node delete-after  memrange free-node       ( aln+ size+ adr )
+1A32C3C 	 C 27 A3  1 
+1A32C40 	58 72 A1  1 F4 26 A3  1 
+1A32C48 	88 74 A1  1 
+      else                                                ( aln+ size+ )
+1A32C4C 	C8 41 A0  1 
+1A32C50 	1C  0  0  0 
+         \ Node is bigger than requested size.  Decrease the size of the
+         \ node's region and return the last part of its address range.
+         dup negate next-node >size +!                    ( aln+ size+ )
+1A32C54 	40 49 A0  1 
+1A32C58 	48 45 A0  1 24 27 A3  1 
+1A32C60 	DC 26 A3  1  C 4C A0  1 
+         next-end                                         ( aln+ size+ adr )
+1A32C68 	B8 27 A3  1 
+      then
+   else         \ The piece was not already aligned       ( aln+ size+ )
+1A32C6C 	C8 41 A0  1 
+1A32C70 	8C  0  0  0 
+
+      \ Change the size of the current node to reflect only the
+      \ fragment after the allocated piece.
+
+      next-end  over - 2 pick round-down                  ( aln+ size+ adr )
+1A32C74 	B8 27 A3  1 
+1A32C78 	54 49 A0  1 18 45 A0  1 
+1A32C80 	90 6F A0  1  C 4A A0  1 
+1A32C88 	80 91 A0  1 
+      2dup +  dup  next-end swap -      ( aln+ size+ adr frag-adr frag-len )
+1A32C8C 	C0 49 A0  1 
+1A32C90 	 4 45 A0  1 40 49 A0  1 
+1A32C98 	B8 27 A3  1 68 49 A0  1 
+1A32CA0 	18 45 A0  1 
+      next-node >adr @ >r                                 \ Save for later
+1A32CA4 	24 27 A3  1 
+1A32CA8 	C8 26 A3  1 5C 4C A0  1 
+1A32CB0 	BC 45 A0  1 
+      next-node >size !  next-node >adr !                 ( aln+ size+ adr )
+1A32CB4 	24 27 A3  1 
+1A32CB8 	DC 26 A3  1 54 4D A0  1 
+1A32CC0 	24 27 A3  1 C8 26 A3  1 
+1A32CC8 	54 4D A0  1 
+
+      r> 2dup -                         ( aln+ size+ adr frag-adr frag-len )
+1A32CCC 	D0 45 A0  1 
+1A32CD0 	C0 49 A0  1 18 45 A0  1 
+      dup if                            ( aln+ size+ adr frag-adr frag-len )
+1A32CD8 	40 49 A0  1 DC 41 A0  1 
+1A32CE0 	18  0  0  0 
+         \ Create a new node for the fragment before the allocated range.
+         \ We don't have to worry about splicing it to adjacent nodes,
+         \ because we know that it came from the beginning of an existing
+         \ separate node.
+         set-node next-node insert-after                  ( aln+ size+ adr )
+1A32CE4 	DC 27 A3  1 
+1A32CE8 	24 27 A3  1 28 72 A1  1 
+      else                              ( aln+ size+ adr frag-adr frag-len )
+1A32CF0 	C8 41 A0  1  8  0  0  0 
+         \ There is no fragment before the allocated range.
+         2drop                                            ( aln+ size+ adr )
+1A32CF8 	AC 49 A0  1 
+      then                                                ( aln+ size+ adr )
+   then                                                   ( aln+ size+ adr )
+   nip nip  false                                         ( adr false )
+1A32CFC 	FC 46 A0  1 
+1A32D00 	FC 46 A0  1 18 70 A0  1 
+;
+1A32D08 	58 46 A0  1 
+headers

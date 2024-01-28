@@ -1,0 +1,113 @@
+purpose: IDE bus package implementing a "ide" device-type interface.
+
+
+cr .( my-#adr-cells=) .s .( |) here origin - .h .( |)  my-#adr-cells . cr 
+
+hex
+
+create include-secondary-ide \ mmo
+1A3E79C 	 0  0 69 6E 
+1A3E7A0 	63 6C 75 64 65 2D 73 65 
+1A3E7A8 	63 6F 6E 64 61 72 79 2D 
+1A3E7B0 	69 64 65 95  0  0 A0  1 
+1A3E7B8 	30 40 A0  1 
+
+\ Map the device into virtual address space
+: (map)  ( -- pri-chip-base pri-dor sec-chip-base sec-dor )
+1A3E7BC 	 0  0 28 6D 
+1A3E7C0 	61 70 29 85 B8 E7 A3  1 
+1A3E7C8 	20 40 A0  1 
+   my-address my-space 8 " map-in" $call-parent
+1A3E7CC 	20 10 A2  1 
+1A3E7D0 	AC  3 A2  1 F0 6F A0  1 
+1A3E7D8 	9C 53 A0  1  6 6D 61 70 
+1A3E7E0 	2D 69 6E  0 DC 31 A2  1 
+   h# 3f6     my-space 1 " map-in" $call-parent
+1A3E7E8 	58 41 A0  1 F6  3  0  0 
+1A3E7F0 	AC  3 A2  1 80 6F A0  1 
+1A3E7F8 	9C 53 A0  1  6 6D 61 70 
+1A3E800 	2D 69 6E  0 DC 31 A2  1 
+[ifdef] include-secondary-ide
+   h# 170     my-space 8 " map-in" $call-parent
+1A3E808 	58 41 A0  1 70  1  0  0 
+1A3E810 	AC  3 A2  1 F0 6F A0  1 
+1A3E818 	9C 53 A0  1  6 6D 61 70 
+1A3E820 	2D 69 6E  0 DC 31 A2  1 
+   h# 376     my-space 1 " map-in" $call-parent
+1A3E828 	58 41 A0  1 76  3  0  0 
+1A3E830 	AC  3 A2  1 80 6F A0  1 
+1A3E838 	9C 53 A0  1  6 6D 61 70 
+1A3E840 	2D 69 6E  0 DC 31 A2  1 
+[else]
+   0 0
+[then]
+;
+1A3E848 	58 46 A0  1 
+
+\ Release the mapping resources used by the device
+: (unmap)  ( pri-chip-base pri-dor sec-chip-base sec-dor -- )
+1A3E84C 	28 75 6E 6D 
+1A3E850 	61 70 29 87 C8 E7 A3  1 
+1A3E858 	20 40 A0  1 
+[ifdef] include-secondary-ide
+   8  " map-out" $call-parent
+1A3E85C 	F0 6F A0  1 
+1A3E860 	9C 53 A0  1  7 6D 61 70 
+1A3E868 	2D 6F 75 74  0  0  0  0 
+1A3E870 	DC 31 A2  1 
+   1  " map-out" $call-parent
+1A3E874 	80 6F A0  1 
+1A3E878 	9C 53 A0  1  7 6D 61 70 
+1A3E880 	2D 6F 75 74  0  0  0  0 
+1A3E888 	DC 31 A2  1 
+[else]
+   2drop
+[then]
+   8  " map-out" $call-parent
+1A3E88C 	F0 6F A0  1 
+1A3E890 	9C 53 A0  1  7 6D 61 70 
+1A3E898 	2D 6F 75 74  0  0  0  0 
+1A3E8A0 	DC 31 A2  1 
+   1  " map-out" $call-parent
+1A3E8A4 	80 6F A0  1 
+1A3E8A8 	9C 53 A0  1  7 6D 61 70 
+1A3E8B0 	2D 6F 75 74  0  0  0  0 
+1A3E8B8 	DC 31 A2  1 
+;
+1A3E8BC 	58 46 A0  1 
+
+: int+  ( adr len n -- adr' len' )  encode-int encode+  ;
+1A3E8C0 	 0  0  0 69 6E 74 2B 84 
+1A3E8C8 	58 E8 A3  1 20 40 A0  1 
+1A3E8D0 	40 F7 A1  1 F0 F5 A1  1 
+1A3E8D8 	58 46 A0  1 
+
+0 0 encode-bytes
+cr .( encode-bytes=) .s .( |) here origin - .h .( |)  my-#adr-cells . cr 
+h# 1f0 1  encode-phys
+1A3E8DC 	 0  0  0  1 
+1A3E8E0 	 0  0  1 F0 
+cr .( encode-1f0=) .s .( |) here origin - .h cr 
+  encode+
+cr .( encode-1f0+=) .s .( |) here origin - .h cr 
+  8 int+
+1A3E8E4 	 0  0  0  8 
+cr .( encode-8=) .s .( |) here origin - .h cr 
+
+h# 3f6 1  encode-phys  encode+
+1A3E8E8 	 0  0  0  1  0  0  3 F6 
+cr .( encode-3f6=) .s cr
+  2 int+
+1A3E8F0 	 0  0  0  2 
+[ifdef] include-secondary-ide
+h# 170 1  encode-phys  encode+  8 int+
+1A3E8F4 	 0  0  0  1 
+1A3E8F8 	 0  0  1 70  0  0  0  8 
+h# 376 1  encode-phys  encode+  2 int+
+1A3E900 	 0  0  0  1  0  0  3 76 
+1A3E908 	 0  0  0  2 
+[then]
+" reg" property
+1A3E90C 	72 65 67 83 
+1A3E910 	 0  0 A0  1 BC 13 A2  1 
+1A3E918 	3C  0  0  0 30  0  0  0 

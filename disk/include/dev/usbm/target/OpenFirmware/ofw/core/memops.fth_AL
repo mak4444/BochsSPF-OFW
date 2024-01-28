@@ -1,0 +1,55 @@
+purpose: Internal interfaces to memory node operations
+
+headers
+variable memory-node   ' memory-node  " memory" chosen-variable
+1A27E48 	6D 65 6D 6F 72 79 2D 6E 
+1A27E50 	6F 64 65 8B 2C 7E A2  1 
+1A27E58 	48 40 A0  1 1C  8  0  0 
+1A27E60 	 0 6D 65 6D 6F 72 79 86 
+1A27E68 	BC 78 A2  1 F0 52 A2  1 
+1A27E70 	58 7E A2  1 
+
+: $call-mem-method ( ??? method$ -- ???  )  memory-node @  $call-method  ;
+1A27E74 	 0  0  0 24 
+1A27E78 	63 61 6C 6C 2D 6D 65 6D 
+1A27E80 	2D 6D 65 74 68 6F 64 90 
+1A27E88 	58 7E A2  1 20 40 A0  1 
+1A27E90 	58 7E A2  1 5C 4C A0  1 
+1A27E98 	B4 31 A2  1 58 46 A0  1 
+
+: mem-claim  ( [ phys.. ] size align -- base.. )  " claim" $call-mem-method  ;
+1A27EA0 	 0  0 6D 65 6D 2D 63 6C 
+1A27EA8 	61 69 6D 89 8C 7E A2  1 
+1A27EB0 	20 40 A0  1 9C 53 A0  1 
+1A27EB8 	 5 63 6C 61 69 6D  0  0 
+1A27EC0 	8C 7E A2  1 58 46 A0  1 
+: mem-release  ( phys.. size -- )  " release" $call-mem-method  ;
+1A27EC8 	6D 65 6D 2D 72 65 6C 65 
+1A27ED0 	61 73 65 8B B0 7E A2  1 
+1A27ED8 	20 40 A0  1 9C 53 A0  1 
+1A27EE0 	 7 72 65 6C 65 61 73 65 
+1A27EE8 	 0  0  0  0 8C 7E A2  1 
+1A27EF0 	58 46 A0  1 
+: mem-mode  ( -- mode )  " mode" $call-mem-method  ;
+1A27EF4 	 0  0  0 6D 
+1A27EF8 	65 6D 2D 6D 6F 64 65 88 
+1A27F00 	D8 7E A2  1 20 40 A0  1 
+1A27F08 	9C 53 A0  1  4 6D 6F 64 
+1A27F10 	65  0  0  0 8C 7E A2  1 
+1A27F18 	58 46 A0  1 
+
+\ get-memory can be used by init-program modules instead of mem-claim
+\ to avoid the need to know system-specific details
+: get-memory  ( adr len -- )
+1A27F1C 	 0 67 65 74 
+1A27F20 	2D 6D 65 6D 6F 72 79 8A 
+1A27F28 	 4 7F A2  1 20 40 A0  1 
+\ [ '#adr-cells @ 2 = ] [if]
+\   0 swap  0 mem-claim 2drop
+\ [else]
+   0 mem-claim drop
+1A27F30 	70 6F A0  1 B0 7E A2  1 
+1A27F38 	30 49 A0  1 
+\ [then]
+;
+1A27F3C 	58 46 A0  1 

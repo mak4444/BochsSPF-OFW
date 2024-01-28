@@ -1,0 +1,505 @@
+
+\ Command completion package a la TENEX.
+
+headerless
+
+decimal
+only forth also definitions
+vocabulary command-completion
+1A16630 	 0 63 6F 6D 6D 61 6E 64 
+1A16638 	2D 63 6F 6D 70 6C 65 74 
+1A16640 	69 6F 6E 92 CC 65 A1  1 
+1A16648 	E0 B6 A0  1 50  4  0  0 
+1A16650 	14 5B A1  1  0  0  0  0 
+only forth also hidden also command-completion definitions
+
+\ Interfaces to the line editing routines
+defer find-end ( -- )        \ Move the cursor to the end of the word
+1A16658 	 0  0  0 66 69 6E 64 2D 
+1A16660 	65 6E 64 88  0  0 A0  1 
+1A16668 	5C 40 A0  1 54  4  0  0 
+defer cinsert  ( char -- )   \ Insert a character into the line
+1A16670 	63 69 6E 73 65 72 74 87 
+1A16678 	68 66 A1  1 5C 40 A0  1 
+1A16680 	58  4  0  0 
+defer cerase   ( -- )        \ Delete the character before the cursor
+1A16684 	 0 63 65 72 
+1A16688 	61 73 65 86 7C 66 A1  1 
+1A16690 	5C 40 A0  1 5C  4  0  0 
+
+\ Some variables are hijacked from the line editing code and used here:
+\ line-start-adr #before
+
+\ Index of char at the beginning of the latest word in the input buffer
+variable start-of-word
+1A16698 	 0  0 73 74 61 72 74 2D 
+1A166A0 	6F 66 2D 77 6F 72 64 8D 
+1A166A8 	90 66 A1  1 48 40 A0  1 
+1A166B0 	60  4  0  0 
+
+20 constant #candidates-max
+1A166B4 	23 63 61 6E 
+1A166B8 	64 69 64 61 74 65 73 2D 
+1A166C0 	6D 61 78 8F AC 66 A1  1 
+1A166C8 	68 40 A0  1 14  0  0  0 
+variable #candidates   0 #candidates !
+1A166D0 	23 63 61 6E 64 69 64 61 
+1A166D8 	74 65 73 8B C8 66 A1  1 
+1A166E0 	48 40 A0  1 64  4  0  0 
+#candidates-max /n*  buffer: candidates
+1A166E8 	 0 63 61 6E 64 69 64 61 
+1A166F0 	74 65 73 8A E0 66 A1  1 
+1A166F8 	B4 A9 A0  1 68  4  0  0 
+1A16700 	50  0  0  0 A0 5F A1  1 
+variable overflow
+1A16708 	 0  0  0 6F 76 65 72 66 
+1A16710 	6C 6F 77 88 F8 66 A1  1 
+1A16718 	48 40 A0  1 6C  4  0  0 
+
+: word-to-string  ( -- str )
+1A16720 	 0 77 6F 72 64 2D 74 6F 
+1A16728 	2D 73 74 72 69 6E 67 8E 
+1A16730 	18 67 A1  1 20 40 A0  1 
+   line-start-adr  start-of-word @  +  ( addr of start of word )
+1A16738 	E4 40 A1  1 AC 66 A1  1 
+1A16740 	5C 4C A0  1  4 45 A0  1 
+   #before         start-of-word @  -  ( start-addr len )
+1A16748 	 C 41 A1  1 AC 66 A1  1 
+1A16750 	5C 4C A0  1 18 45 A0  1 
+   'word  place
+1A16758 	B4 C8 A0  1 F0 88 A0  1 
+   'word
+1A16760 	B4 C8 A0  1 
+;
+1A16764 	58 46 A0  1 
+
+: collect-string  ( -- str )
+1A16768 	 0 63 6F 6C 6C 65 63 74 
+1A16770 	2D 73 74 72 69 6E 67 8E 
+1A16778 	34 67 A1  1 20 40 A0  1 
+   \ Finds start of this word and the current length of the word and
+   \ leaves the address of a packed string which contains that word
+   find-end
+1A16780 	68 66 A1  1 
+   #before    start-of-word !
+1A16784 	 C 41 A1  1 
+1A16788 	AC 66 A1  1 54 4D A0  1 
+   #before  if
+1A16790 	 C 41 A1  1 DC 41 A0  1 
+1A16798 	5C  0  0  0 
+       line-start-adr  #before  1-  bounds  ( bufend bufstart )
+1A1679C 	E4 40 A1  1 
+1A167A0 	 C 41 A1  1 54 4B A0  1 
+1A167A8 	F0 6D A0  1 
+       swap  ( bufstart bufend )  do    \ Loop runs backwards over buffer
+1A167AC 	68 49 A0  1 
+1A167B0 	88 42 A0  1 40  0  0  0 
+          i c@  bl =  if  leave  then
+1A167B8 	B4 42 A0  1 C4 4C A0  1 
+1A167C0 	28 70 A0  1 24 48 A0  1 
+1A167C8 	DC 41 A0  1  8  0  0  0 
+1A167D0 	18 43 A0  1 
+          -1 start-of-word +!
+1A167D4 	58 41 A0  1 
+1A167D8 	FF FF FF FF AC 66 A1  1 
+1A167E0 	 C 4C A0  1 
+       -1 +loop
+1A167E4 	58 41 A0  1 
+1A167E8 	FF FF FF FF 1C 42 A0  1 
+1A167F0 	C8 FF FF FF 
+   then
+   word-to-string  ( str )
+1A167F4 	34 67 A1  1 
+;
+1A167F8 	58 46 A0  1 
+
+: substring?  ( pstr anf -- f )
+1A167FC 	 0 73 75 62 
+1A16800 	73 74 72 69 6E 67 3F 8A 
+1A16808 	7C 67 A1  1 20 40 A0  1 
+
+   name>string  rot count 2swap  ( pstr-adr,len name-adr,len )
+1A16810 	58 74 A0  1 7C 49 A0  1 
+1A16818 	BC 53 A0  1 F4 49 A0  1 
+
+   \ It's not a substring if the string is longer than the name
+   2 pick  <  if  2drop drop false exit  then  ( pstr-adr pstr-len name-adr )
+1A16820 	90 6F A0  1  C 4A A0  1 
+1A16828 	E4 47 A0  1 DC 41 A0  1 
+1A16830 	14  0  0  0 AC 49 A0  1 
+1A16838 	30 49 A0  1 18 70 A0  1 
+1A16840 	40 46 A0  1 
+
+   true swap 2swap   ( true name-adr pstr-adr pstr-len )
+1A16844 	 4 70 A0  1 
+1A16848 	68 49 A0  1 F4 49 A0  1 
+   bounds  ?do       ( flag name-adr )
+1A16850 	F0 6D A0  1 50 42 A0  1 
+1A16858 	3C  0  0  0 
+      dup c@  i c@ <>  if  swap 0= swap  leave   then  ( flag name-adr )
+1A1685C 	40 49 A0  1 
+1A16860 	C4 4C A0  1 B4 42 A0  1 
+1A16868 	C4 4C A0  1 44 48 A0  1 
+1A16870 	DC 41 A0  1 14  0  0  0 
+1A16878 	68 49 A0  1 24 47 A0  1 
+1A16880 	68 49 A0  1 18 43 A0  1 
+      1+             ( flag name-adr' )
+1A16888 	30 4B A0  1 
+   loop              ( flag name-adr'' )
+1A1688C 	F8 41 A0  1 
+1A16890 	CC FF FF FF 
+   drop
+1A16894 	30 49 A0  1 
+;
+1A16898 	58 46 A0  1 
+
+: new-candidate  ( anf -- )
+1A1689C 	 0  0 6E 65 
+1A168A0 	77 2D 63 61 6E 64 69 64 
+1A168A8 	61 74 65 8D  C 68 A1  1 
+1A168B0 	20 40 A0  1 
+   #candidates @  #candidates-max >=  if  drop overflow on  exit  then
+1A168B4 	E0 66 A1  1 
+1A168B8 	5C 4C A0  1 C8 66 A1  1 
+1A168C0 	EC 48 A0  1 DC 41 A0  1 
+1A168C8 	14  0  0  0 30 49 A0  1 
+1A168D0 	18 67 A1  1 E0 4B A0  1 
+1A168D8 	40 46 A0  1 
+   candidates #candidates @ na+   !   (  )
+1A168DC 	F8 66 A1  1 
+1A168E0 	E0 66 A1  1 5C 4C A0  1 
+1A168E8 	48 50 A0  1 54 4D A0  1 
+   1 #candidates +!
+1A168F0 	80 6F A0  1 E0 66 A1  1 
+1A168F8 	 C 4C A0  1 
+;
+1A168FC 	58 46 A0  1 
+
+: find-candidates-in-voc  ( str voc -- str )
+1A16900 	 0 66 69 6E 64 2D 63 61 
+1A16908 	6E 64 69 64 61 74 65 73 
+1A16910 	2D 69 6E 2D 76 6F 63 96 
+1A16918 	B0 68 A1  1 20 40 A0  1 
+   follow
+1A16920 	38 BC A0  1 
+   begin  another?  while
+1A16924 	68 BC A0  1 
+1A16928 	DC 41 A0  1 2C  0  0  0 
+      2dup substring?  if  new-candidate  else  drop  then
+1A16930 	C0 49 A0  1  C 68 A1  1 
+1A16938 	DC 41 A0  1 10  0  0  0 
+1A16940 	B0 68 A1  1 C8 41 A0  1 
+1A16948 	 8  0  0  0 30 49 A0  1 
+   repeat
+1A16950 	C8 41 A0  1 D0 FF FF FF 
+   ( str )
+;
+1A16958 	58 46 A0  1 
+
+: find-candidates  ( str -- )
+1A1695C 	66 69 6E 64 
+1A16960 	2D 63 61 6E 64 69 64 61 
+1A16968 	74 65 73 8F 1C 69 A1  1 
+1A16970 	20 40 A0  1 
+   #candidates off  overflow off
+1A16974 	E0 66 A1  1 
+1A16978 	F8 4B A0  1 18 67 A1  1 
+1A16980 	F8 4B A0  1 
+   prior off        ( str )
+1A16984 	54 C0 A0  1 
+1A16988 	F8 4B A0  1 
+   dup c@ 0=  if  drop  exit  then     \ Don't bother with null search strings
+1A1698C 	40 49 A0  1 
+1A16990 	C4 4C A0  1 24 47 A0  1 
+1A16998 	DC 41 A0  1  C  0  0  0 
+1A169A0 	30 49 A0  1 40 46 A0  1 
+   \ Maybe it would be better to search all the vocabularies in the system?
+   context  #vocs /link *  bounds  do
+1A169A8 	DC A3 A0  1 C8 A3 A0  1 
+1A169B0 	78 73 A0  1 1C 5F A0  1 
+1A169B8 	F0 6D A0  1 88 42 A0  1 
+1A169C0 	54  0  0  0 
+      i another-link?  if                ( str voc )
+1A169C4 	B4 42 A0  1 
+1A169C8 	90 59 A0  1 DC 41 A0  1 
+1A169D0 	38  0  0  0 
+         dup prior @ over prior !  = if  ( str voc )
+1A169D4 	40 49 A0  1 
+1A169D8 	54 C0 A0  1 5C 4C A0  1 
+1A169E0 	54 49 A0  1 54 C0 A0  1 
+1A169E8 	54 4D A0  1 24 48 A0  1 
+1A169F0 	DC 41 A0  1 10  0  0  0 
+            drop                         ( str )
+1A169F8 	30 49 A0  1 
+         else
+1A169FC 	C8 41 A0  1 
+1A16A00 	 8  0  0  0 
+	    find-candidates-in-voc       ( str )
+1A16A04 	1C 69 A1  1 
+         then
+      then                               ( str )
+   /link +loop
+1A16A08 	78 73 A0  1 1C 42 A0  1 
+1A16A10 	B4 FF FF FF 
+   drop
+1A16A14 	30 49 A0  1 
+;
+1A16A18 	58 46 A0  1 
+\ True if "char" is different from the "char#"-th character in name
+: cclash?  ( char# char anf -- char# char flag )
+1A16A1C 	63 63 6C 61 
+1A16A20 	73 68 3F 87 70 69 A1  1 
+1A16A28 	20 40 A0  1 
+   name>string        ( char# char str-adr count )
+1A16A2C 	58 74 A0  1 
+   3 pick <=  if      ( char# char str-adr )
+1A16A30 	A0 6F A0  1  C 4A A0  1 
+1A16A38 	 C 49 A0  1 DC 41 A0  1 
+1A16A40 	14  0  0  0 
+      drop true       \ str too short is a clash
+1A16A44 	30 49 A0  1 
+1A16A48 	 4 70 A0  1 
+   else               ( char# char str-adr )
+1A16A4C 	C8 41 A0  1 
+1A16A50 	1C  0  0  0 
+      2 pick +  c@ over <>
+1A16A54 	90 6F A0  1 
+1A16A58 	 C 4A A0  1  4 45 A0  1 
+1A16A60 	C4 4C A0  1 54 49 A0  1 
+1A16A68 	44 48 A0  1 
+   then
+;
+1A16A6C 	58 46 A0  1 
+
+\ If all the candidate words have the same character in the "char#"-th
+\ position, leave that character and true, otherwise just leave false.
+: candidates-agree?  ( char# -- char true | false )
+1A16A70 	 0  0 63 61 6E 64 69 64 
+1A16A78 	61 74 65 73 2D 61 67 72 
+1A16A80 	65 65 3F 91 28 6A A1  1 
+1A16A88 	20 40 A0  1 
+
+\ if the test string is the same length as the first candidate,
+\ then the first candidate has no char at position char#, so there
+\ can be no agreement.  Since the test string is a substring of all
+\ candidates, the > condition should not happen
+
+   candidates @  name>string               ( char# name-adr name-len )
+1A16A8C 	F8 66 A1  1 
+1A16A90 	5C 4C A0  1 58 74 A0  1 
+   2 pick =  if  2drop false  exit  then   ( char# name-adr )
+1A16A98 	90 6F A0  1  C 4A A0  1 
+1A16AA0 	24 48 A0  1 DC 41 A0  1 
+1A16AA8 	10  0  0  0 AC 49 A0  1 
+1A16AB0 	18 70 A0  1 40 46 A0  1 
+   over + c@                               ( char# char )
+1A16AB8 	54 49 A0  1  4 45 A0  1 
+1A16AC0 	C4 4C A0  1 
+
+   \ now test all other candidates to see if their "char#"-th character
+   \ is the same as that of the first candidate
+
+   true -rot                               ( true char# char )
+1A16AC4 	 4 70 A0  1 
+1A16AC8 	94 49 A0  1 
+
+   candidates na1+  #candidates @  1-  /n*  bounds  ?do   ( flag char# char )
+1A16ACC 	F8 66 A1  1 
+1A16AD0 	CC 50 A0  1 E0 66 A1  1 
+1A16AD8 	5C 4C A0  1 54 4B A0  1 
+1A16AE0 	98 51 A0  1 F0 6D A0  1 
+1A16AE8 	50 42 A0  1 38  0  0  0 
+       i @ cclash?  if                                    ( flag char# char )
+1A16AF0 	B4 42 A0  1 5C 4C A0  1 
+1A16AF8 	28 6A A1  1 DC 41 A0  1 
+1A16B00 	18  0  0  0 
+          rot drop  false -rot  leave
+1A16B04 	7C 49 A0  1 
+1A16B08 	30 49 A0  1 18 70 A0  1 
+1A16B10 	94 49 A0  1 18 43 A0  1 
+       then
+   /n +loop                                               ( flag char# char )
+1A16B18 	40 51 A0  1 1C 42 A0  1 
+1A16B20 	D0 FF FF FF 
+   rot if   nip true   else   2drop false   then
+1A16B24 	7C 49 A0  1 
+1A16B28 	DC 41 A0  1 14  0  0  0 
+1A16B30 	FC 46 A0  1  4 70 A0  1 
+1A16B38 	C8 41 A0  1  C  0  0  0 
+1A16B40 	AC 49 A0  1 18 70 A0  1 
+;
+1A16B48 	58 46 A0  1 
+: expand-initial-substring  ( -- )
+1A16B4C 	 0  0  0 65 
+1A16B50 	78 70 61 6E 64 2D 69 6E 
+1A16B58 	69 74 69 61 6C 2D 73 75 
+1A16B60 	62 73 74 72 69 6E 67 98 
+1A16B68 	88 6A A1  1 20 40 A0  1 
+   #before  start-of-word @  -
+1A16B70 	 C 41 A1  1 AC 66 A1  1 
+1A16B78 	5C 4C A0  1 18 45 A0  1 
+   begin                         ( current-length )
+         dup candidates-agree?   ( current-len [ char true ] | false )
+1A16B80 	40 49 A0  1 88 6A A1  1 
+   while
+1A16B88 	DC 41 A0  1 14  0  0  0 
+         cinsert  1+             ( current-length )
+1A16B90 	7C 66 A1  1 30 4B A0  1 
+   repeat
+1A16B98 	C8 41 A0  1 E4 FF FF FF 
+   drop
+1A16BA0 	30 49 A0  1 
+;
+1A16BA4 	58 46 A0  1 
+
+h# 34 buffer: candidate
+1A16BA8 	 0  0 63 61 6E 64 69 64 
+1A16BB0 	61 74 65 89 6C 6B A1  1 
+1A16BB8 	B4 A9 A0  1 70  4  0  0 
+1A16BC0 	34  0  0  0 F8 66 A1  1 
+
+\ True if there is only one candidate or if all the names are the same.
+: one-candidate?  ( -- flag )
+1A16BC8 	 0 6F 6E 65 2D 63 61 6E 
+1A16BD0 	64 69 64 61 74 65 3F 8E 
+1A16BD8 	B8 6B A1  1 20 40 A0  1 
+
+   \ We can't just compare the pointers, because we are checking for
+   \ different words with the same name.
+
+   candidates @ name>string  candidate place
+1A16BE0 	F8 66 A1  1 5C 4C A0  1 
+1A16BE8 	58 74 A0  1 B8 6B A1  1 
+1A16BF0 	F0 88 A0  1 
+   true
+1A16BF4 	 4 70 A0  1 
+   candidates  #candidates @ /n*  bounds  ?do  ( flag )
+1A16BF8 	F8 66 A1  1 E0 66 A1  1 
+1A16C00 	5C 4C A0  1 98 51 A0  1 
+1A16C08 	F0 6D A0  1 50 42 A0  1 
+1A16C10 	3C  0  0  0 
+      i @  name>string  candidate count        ( flag )
+1A16C14 	B4 42 A0  1 
+1A16C18 	5C 4C A0  1 58 74 A0  1 
+1A16C20 	B8 6B A1  1 BC 53 A0  1 
+      $=  0=  if  0= leave  then               ( flag )
+1A16C28 	88 8D A0  1 24 47 A0  1 
+1A16C30 	DC 41 A0  1  C  0  0  0 
+1A16C38 	24 47 A0  1 18 43 A0  1 
+   /n +loop                                    ( flag )
+1A16C40 	40 51 A0  1 1C 42 A0  1 
+1A16C48 	CC FF FF FF 
+;
+1A16C4C 	58 46 A0  1 
+
+0 [if]
+: do-erase  ( -- ) \ Side effect: span and bufcursor may be reduced
+   begin
+      word-to-string   ( addr )
+      dup c@ 0=  if  drop exit  then	\ Stop if the entire word is gone
+      find-candidates
+      #candidates @ 0=
+   while
+      cerase
+   repeat
+;
+[then]
+
+: do-expand  ( -- )
+1A16C50 	 0  0 64 6F 2D 65 78 70 
+1A16C58 	61 6E 64 89 DC 6B A1  1 
+1A16C60 	20 40 A0  1 
+   expand-initial-substring
+1A16C64 	6C 6B A1  1 
+
+   \ Beep if the expansion does not result in a unique choice
+   one-candidate?  if  bl cinsert  else beep  then
+1A16C68 	DC 6B A1  1 DC 41 A0  1 
+1A16C70 	14  0  0  0 28 70 A0  1 
+1A16C78 	7C 66 A1  1 C8 41 A0  1 
+1A16C80 	 8  0  0  0 A8 40 A1  1 
+;
+1A16C88 	58 46 A0  1 
+
+: expand-word  ( -- )
+1A16C8C 	65 78 70 61 
+1A16C90 	6E 64 2D 77 6F 72 64 8B 
+1A16C98 	60 6C A1  1 20 40 A0  1 
+   collect-string find-candidates  ( )
+1A16CA0 	7C 67 A1  1 70 69 A1  1 
+   #candidates @  if   do-expand   else
+1A16CA8 	E0 66 A1  1 5C 4C A0  1 
+1A16CB0 	DC 41 A0  1 10  0  0  0 
+1A16CB8 	60 6C A1  1 C8 41 A0  1 
+1A16CC0 	 8  0  0  0 
+[ifdef] do-erase  do-erase  [else]  beep  [then]
+1A16CC4 	A8 40 A1  1 
+   then
+;
+1A16CC8 	58 46 A0  1 
+
+: show-candidates  ( -- )
+1A16CCC 	73 68 6F 77 
+1A16CD0 	2D 63 61 6E 64 69 64 61 
+1A16CD8 	74 65 73 8F 9C 6C A1  1 
+1A16CE0 	20 40 A0  1 
+   td 64 rmargin !
+1A16CE4 	58 41 A0  1 
+1A16CE8 	40  0  0  0 94 13 A1  1 
+1A16CF0 	54 4D A0  1 
+   candidates #candidates  @  /n* bounds  ?do  ?cr  i @ .id  /n +loop
+1A16CF4 	F8 66 A1  1 
+1A16CF8 	E0 66 A1  1 5C 4C A0  1 
+1A16D00 	98 51 A0  1 F0 6D A0  1 
+1A16D08 	50 42 A0  1 20  0  0  0 
+1A16D10 	E8 13 A1  1 B4 42 A0  1 
+1A16D18 	5C 4C A0  1 A8 9A A0  1 
+1A16D20 	40 51 A0  1 1C 42 A0  1 
+1A16D28 	E8 FF FF FF 
+   overflow @  if  ." ..."  then
+1A16D2C 	18 67 A1  1 
+1A16D30 	5C 4C A0  1 DC 41 A0  1 
+1A16D38 	10  0  0  0 20 7C A0  1 
+1A16D40 	 3 2E 2E 2E  0  0  0  0 
+;
+1A16D48 	58 46 A0  1 
+
+: do-show  ( -- )
+1A16D4C 	64 6F 2D 73 
+1A16D50 	68 6F 77 87 E0 6C A1  1 
+1A16D58 	20 40 A0  1 
+   cr
+1A16D5C 	80 6D A0  1 
+   collect-string  dup c@  if       ( str )
+1A16D60 	7C 67 A1  1 40 49 A0  1 
+1A16D68 	C4 4C A0  1 DC 41 A0  1 
+1A16D70 	14  0  0  0 
+      find-candidates show-candidates
+1A16D74 	70 69 A1  1 
+1A16D78 	E0 6C A1  1 
+   else
+1A16D7C 	C8 41 A0  1 
+1A16D80 	60  0  0  0 
+      drop ." Any word at all is a candidate." cr
+1A16D84 	30 49 A0  1 
+1A16D88 	20 7C A0  1 1F 41 6E 79 
+1A16D90 	20 77 6F 72 64 20 61 74 
+1A16D98 	20 61 6C 6C 20 69 73 20 
+1A16DA0 	61 20 63 61 6E 64 69 64 
+1A16DA8 	61 74 65 2E  0  0  0  0 
+1A16DB0 	80 6D A0  1 
+           ." Use words to see the entire dictionary"
+1A16DB4 	20 7C A0  1 
+1A16DB8 	26 55 73 65 20 77 6F 72 
+1A16DC0 	64 73 20 74 6F 20 73 65 
+1A16DC8 	65 20 74 68 65 20 65 6E 
+1A16DD0 	74 69 72 65 20 64 69 63 
+1A16DD8 	74 69 6F 6E 61 72 79  0 
+   then
+   retype-line
+1A16DE0 	74 48 A1  1 
+;
+1A16DE4 	58 46 A0  1 
+headers
+
+only forth also definitions

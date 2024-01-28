@@ -1,0 +1,90 @@
+\ This section introduces a new set of words:
+\  $case  $of  $endof  $endcase
+\ The semantics are very similar to the standard
+\ Forth case statement.
+
+\ Example of use:
+\ : foo ( $ -- )
+\   ( $ ) $case
+\      " abc" $of  ." The string starts with abc" $endof
+\      " xyz" $of  ." Oh, it's an xyz string"     $endof
+\      ( $ ) ." **** It was " 2dup type
+\   $endcase ( $ )
+
+\ The default clause is optional.
+\ When an $of clause is executed, the remaining selector string (past
+\ the matched string) remains on the string.  It is the user's
+\ responsibility to dispose of the string.
+\ When a default clause is executed, the entire selector string is
+\ on the stack.  The default clause must drop the selector, e.g., 2drop.
+
+\ At run time, ($of) tests the top of the stack against the selector.
+
+\ If the first N characters of the string supplied to $case are
+\ the same, the selector string is shortened and the following
+\ forth code is executed.  If the first characters are not the
+\ same, execution continues at the point just following the
+\ the matching $endof
+
+\needs substring? fload ${BP}/forth/lib/substrin.fth
+
+: ($of)  ( arg$ sel$ -- arg$' )
+1A11814 	 0  0 28 24 
+1A11818 	6F 66 29 85 90 17 A1  1 
+1A11820 	20 40 A0  1 
+   4dup 2swap substring?  if
+1A11824 	EC 16 A1  1 
+1A11828 	F4 49 A0  1 84 16 A1  1 
+1A11830 	DC 41 A0  1 20  0  0  0 
+      nip /string
+1A11838 	FC 46 A0  1 3C 85 A0  1 
+      r> cell+ >r      \ Return to next word in $of clause
+1A11840 	D0 45 A0  1 E4 50 A0  1 
+1A11848 	BC 45 A0  1 
+   else
+1A1184C 	C8 41 A0  1 
+1A11850 	1C  0  0  0 
+      2drop
+1A11854 	AC 49 A0  1 
+      r>  dup @ +  >r  \ Skip to matching $endof
+1A11858 	D0 45 A0  1 40 49 A0  1 
+1A11860 	5C 4C A0  1  4 45 A0  1 
+1A11868 	BC 45 A0  1 
+   then
+;
+1A1186C 	58 46 A0  1 
+
+: $case   ( -- 0 )   +level  0                             ; immediate
+1A11870 	 0  0 24 63 61 73 65 C5 
+1A11878 	20 18 A1  1 20 40 A0  1 
+1A11880 	 4 83 A0  1 70 6F A0  1 
+1A11888 	58 46 A0  1 
+: $of     ( -- >m )  ['] ($of)     +>mark                  ; immediate
+1A1188C 	24 6F 66 C3 
+1A11890 	7C 18 A1  1 20 40 A0  1 
+1A11898 	60 53 A0  1 20 18 A1  1 
+1A118A0 	D4 96 A0  1 58 46 A0  1 
+: $endof  ( >m -- )  ['] ($endof)  +>mark  but  ->resolve  ; immediate
+1A118A8 	 0 24 65 6E 64 6F 66 C6 
+1A118B0 	94 18 A1  1 20 40 A0  1 
+1A118B8 	60 53 A0  1 98 43 A0  1 
+1A118C0 	D4 96 A0  1 70 97 A0  1 
+1A118C8 	1C 97 A0  1 58 46 A0  1 
+
+: $endcase  ( 0 [ >m ... ] -- )
+1A118D0 	 0  0  0 24 65 6E 64 63 
+1A118D8 	61 73 65 C8 B4 18 A1  1 
+1A118E0 	20 40 A0  1 
+   compile ($endcase)
+1A118E4 	8C 75 A0  1 
+1A118E8 	B0 43 A0  1 
+   begin  ?dup  while  ->resolve  repeat
+1A118EC 	B4 70 A0  1 
+1A118F0 	DC 41 A0  1 10  0  0  0 
+1A118F8 	1C 97 A0  1 C8 41 A0  1 
+1A11900 	EC FF FF FF 
+   -level
+1A11904 	98 83 A0  1 
+; immediate
+1A11908 	58 46 A0  1 
+

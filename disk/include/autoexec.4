@@ -1,0 +1,162 @@
+cr .( autuexec.4) cr
+
+\- \EOF : \EOF  BEGIN REFILL 0= UNTIL  POSTPONE \ ;
+
+fl d:include\dev\usbm\ofw\core\filecmds.fth 
+
+: dds s" debug see see see" eval ;
+
+: ss s" dir u:" eval ;
+: ss1 s" dev /pci/isa@1 ls" evaluate ;
+: zz  s" /pci/isa@1/ide@i1f0/disk:" $dir ;
+\ s" /isa@1/ide@i1f0/disk:" $dir
+: sss    s" /" show-devs ;
+: ss> parse-word show-devs ;
+\ >data token@
+\ eof
+\ : xx 16 0 do i . i interrupt-handler@ (see) loop ;
+\ : ii s" c:cbfs.fth" included ;
+
+: SKK  " shift?" in-mux-ih $call-method ;
+: ssk  ( -- )  " /keyboard" " shift?" execute-device-method drop ;
+
+: KKK BEGIN KEY DUP .H ssk . BL = UNTIL ;
+
+: GGS BEGIN  stdin-getchar \  console-key
+ DUP .H BL = UNTIL ;
+
+
+dev /pci
+-1 to pcimsg?	\ Optional Debug Msgs
+-1 to probemsg?	\ Optional Probing Msgs
+device-end
+
+
+\ debug (.error)
+: xxx s" qwerty" included ;
+: xx22 22 abort" xxxz\x\zx" ;
+
+\- BREAK : BREAK POSTPONE EXIT POSTPONE THEN ; IMMEDIATE
+
+
+\ xx22
+
+\ fl d:fff.4 dev u: pwd words
+fl d:include\fm\mmterm.4 
+: GGG BEGIN GKEY \ stdin-getchar \  console-key
+ DUP .H BL = UNTIL ;
+
+fl d:include\fm\FPCNUM.4
+NEWLT
+
+\- 1+! : 1+! 1 SWAP +! ;
+\- CELL- : CELL- 4 - ;
+
+\- LCOUNT         : LCOUNT   CELL+ DUP CELL- @ ;
+
+0xFFFF VALUE VIEW-SIZE
+
+\- CLIPBOARD CREATE      CLIPBOARD 0 , VIEW-SIZE ALLOT
+
+\  VIEW_BUF CREATE VIEW_BUF      VIEW-SIZE CELL+ ALLOT VIEW_BUF OFF
+
+\- VIEW_BUF VIEW-SIZE ALLOCATE THROW VALUE VIEW_BUF
+
+\- VECT : VECT defer ;
+\- 0! : 0! off ;
+
+: EDITFILESAVE -1 abort" EDITFILESAVE do" ;
+: ZRENAME-FILE -1 abort" ZRENAME-FILE do" ;
+
+0 VALUE CLIPBOARD#
+
+: CLIPBOARD! TO CLIPBOARD# CLIPBOARD CLIPBOARD# MOVE ;
+
+: CLIPBOARD? ( -- u)
+  CLIPBOARD# ;
+
+: CLIPBOARD@ ( -- c-addr u)
+  CLIPBOARD CLIPBOARD# ;
+
+: h. .h ;
+
+
+: fm-exec
+
+[IFDEF] c-ega-emit
+   ['] type	behavior >r
+   ['] (emit	behavior >r
+   ['] cr	behavior >r
+   ['] c-ega-emit       is (emit
+   ['] default-type     is type
+   ['] fm_cr		is cr
+[THEN]
+  #out @ >R
+
+ catch
+   r> #out !
+
+[IFDEF] c-ega-emit
+      r> is cr
+      r> is (emit
+      r> is type
+[THEN]
+
+ throw
+;
+
+
+fl d:include\fm\view.F \ s" d:include\fm\FPCNUM.4" $view
+\ view d:view.4
+
+: $mdir
+
+   dup  if   ?add\  separator?  else  true  then        ( pattern$ no-name? )
+
+   if  string2 pack  " *" rot $cat  string2 count  then
+
+   begin-search
+   begin  another-match?  while           ( 8*attributes name$ )
+      type cr
+  5drop 3drop
+      exit?  if  close-search exit  then
+   repeat
+;
+
+
+
+fl d:include\fm\fm.4 
+
+
+
+\ DIR_DRAW
+\ FRAME_DRAW
+\ FMTABDO
+\ FMDIR_DRAW
+
+: dn.. drive-name count ?type ;
+
+: .cpu
+ 0 cpuid@ .
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+
+ h# 80000002 cpuid@
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+
+ h# 80000003 cpuid@
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+ h# 80000004 cpuid@
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+  dup emit 8 >>  dup emit 8 >>  dup emit 8 >>  emit
+
+;

@@ -1,0 +1,194 @@
+purpose: Machine-dependent interfaces used by the decompiler
+hex
+
+: low-dictionary-adr  ( -- adr )  origin  init-user-area +  user-size +  ;
+1A1C68C 	 0 6C 6F 77 
+1A1C690 	2D 64 69 63 74 69 6F 6E 
+1A1C698 	61 72 79 2D 61 64 72 92 
+1A1C6A0 	54 C0 A1  1 20 40 A0  1 
+1A1C6A8 	50 55 A0  1 24 60 A0  1 
+1A1C6B0 	 4 45 A0  1 E8 65 A0  1 
+1A1C6B8 	 4 45 A0  1 58 46 A0  1 
+
+nuser debug-next  \ Pointer to "next"
+1A1C6C0 	 0 64 65 62 75 67 2D 6E 
+1A1C6C8 	65 78 74 8A A4 C6 A1  1 
+1A1C6D0 	48 40 A0  1 E8  4  0  0 
+vocabulary bug   bug also definitions
+1A1C6D8 	62 75 67 83 D0 C6 A1  1 
+1A1C6E0 	E0 B6 A0  1 EC  4  0  0 
+1A1C6E8 	94 7A A1  1  0  0  0  0 
+nuser 'debug   \ code field for high level trace
+1A1C6F0 	 0 27 64 65 62 75 67 86 
+1A1C6F8 	 0  0 A0  1 48 40 A0  1 
+1A1C700 	F0  4  0  0 
+nuser <ip      \ lower limit of ip
+1A1C704 	3C 69 70 83 
+1A1C708 	FC C6 A1  1 48 40 A0  1 
+1A1C710 	F4  4  0  0 
+nuser ip>      \ upper limit of ip
+1A1C714 	69 70 3E 83 
+1A1C718 	 C C7 A1  1 48 40 A0  1 
+1A1C720 	F8  4  0  0 
+nuser cnt      \ how many times thru debug next
+1A1C724 	63 6E 74 83 
+1A1C728 	1C C7 A1  1 48 40 A0  1 
+1A1C730 	FC  4  0  0 
+
+label _flush_cache  ( -- )
+1A1C734 	 0  0  0 5F 
+1A1C738 	66 6C 75 73 68 5F 63 61 
+1A1C740 	63 68 65 8C 2C C7 A1  1 
+1A1C748 	30 40 A0  1 
+   ret
+1A1C74C 	C3 
+end-code
+
+label _disable_cache  ( -- )
+1A1C74D 	5F 64 69 
+1A1C750 	73 61 62 6C 65 5F 63 61 
+1A1C758 	63 68 65 8E 48 C7 A1  1 
+1A1C760 	30 40 A0  1 
+   ret
+1A1C764 	C3 
+end-code
+
+\ Change all the next routines in the indicated range to jump through
+\ the user area vector
+code slow-next  ( high low -- )
+1A1C765 	 0 73 6C 
+1A1C768 	6F 77 2D 6E 65 78 74 89 
+1A1C770 	60 C7 A1  1 78 C7 A1  1 
+   ax pop   ax pop
+1A1C778 	58 58 
+   _disable_cache #) call
+1A1C77A 	E8 E5 FF FF FF 
+   h# a7ff #  ax  mov		\ disp [up] jmp
+1A1C77F 	B8 
+1A1C780 	FF A7  0  0 
+   op: ax  0 [up]  mov
+1A1C784 	66 89  7 
+   'user# debug-next #  ax  mov	  \ 'disp' is user area offset of debug-next
+1A1C787 	B8 
+1A1C788 	E8  4  0  0 
+   ax      2 [up]  mov
+1A1C78C 	89 47  2 
+   _flush_cache #) call
+1A1C78F 	E8 
+1A1C790 	B8 FF FF FF 
+c;
+1A1C794 	FF E7 
+
+\ Fix the NEXT routine in the user area to use the non-debug code.
+code fast-next  ( high low -- )
+1A1C796 	66 61 
+1A1C798 	73 74 2D 6E 65 78 74 89 
+1A1C7A0 	74 C7 A1  1 A8 C7 A1  1 
+   ax pop   ax pop
+1A1C7A8 	58 58 
+   _disable_cache #)  call
+1A1C7AA 	E8 B5 FF FF FF 
+
+\+ rel  h# 8bf801ad #  ax mov	ax 0 [up]  mov	\ ax lods  up w add
+\+ rel  h# fffb0118 #  ax mov	ax 4 [up]  mov	\ 0 [w] bx mov  up bx add
+\+ rel  h# 909090e3 #  ax mov	ax 8 [up]  mov	\ bx jmp  nop nop nop
+
+\- rel  h# 9020ffad #  ax mov	ax 0 [up]  mov	\ ax lods  0 [w] jmp  nop
+1A1C7AF 	B8 
+1A1C7B0 	AD FF 20 90 89  7 
+
+   _flush_cache #)    call
+1A1C7B6 	E8 91 
+1A1C7B8 	FF FF FF 
+c;
+1A1C7BB 	FF E7 
+
+label normal-next
+1A1C7BD 	 0  0  0 
+1A1C7C0 	6E 6F 72 6D 61 6C 2D 6E 
+1A1C7C8 	65 78 74 8B A4 C7 A1  1 
+1A1C7D0 	30 40 A0  1 
+   \ We have to expand the code for NEXT in-line here, because if
+   \ we let the assembler macro do it, we'll end up with a jump right back
+   \ to this routine
+\+ rel  ax lods  up w add   0 [w] bx mov  up bx add   bx jmp
+\- rel  ax lods  0 [w] jmp
+1A1C7D4 	AD FF 20 
+end-code
+
+label debnext
+1A1C7D7 	 0 
+1A1C7D8 	64 65 62 6E 65 78 74 87 
+1A1C7E0 	D0 C7 A1  1 30 40 A0  1 
+   'user <ip   ip  cmp
+1A1C7E8 	3B B7 F4  4  0  0 
+   u>= if
+1A1C7EE 	72 38 
+      'user ip>   ip  cmp
+1A1C7F0 	3B B7 F8  4  0  0 
+      u< if
+1A1C7F6 	73 30 
+         'user cnt  ax  mov
+1A1C7F8 	8B 87 FC  4  0  0 
+	 ax             inc
+1A1C7FE 	40 
+         ax  'user cnt  mov
+1A1C7FF 	89 
+1A1C800 	87 FC  4  0  0 
+         2 #        ax  cmp
+1A1C805 	3D  2  0 
+1A1C808 	 0  0 
+	 = if
+1A1C80A 	75 1C 
+            ax ax sub
+1A1C80C 	29 C0 
+	    ax  'user cnt         mov
+1A1C80E 	89 87 
+1A1C810 	FC  4  0  0 
+\            normal-next #)   ax   lea
+	    make-even 				\ word-align address
+\- rel      normal-next   dup #)   ax   lea
+1A1C814 	8D  5 D4 C7 
+1A1C818 	A1  1 
+\- rel      -4 allot  token, 			\ relocate address
+
+\+ rel      normal-next origin -  #  ax  mov
+\+ rel      up ax add
+
+            ax  'user debug-next  mov
+1A1C81A 	89 87 E8  4  0  0 
+
+            'user 'debug     w    mov
+1A1C820 	8B 87 F0  4  0  0 
+\+ rel      up w add  0 [w] bx mov  up bx add   bx jmp
+\- rel      0 [w]                 jmp
+1A1C826 	FF 20 
+         then
+      then
+   then
+   \ We have to expand the code for NEXT in-line here, because if
+   \ we let the assembler macro do it, we'll end up with a jump right back
+   \ to this routine
+\+ rel   ax lods  up w add   0 [w] bx mov  up bx add   bx jmp
+\- rel   ax lods   0 [w] jmp		\ Next
+1A1C828 	AD FF 20 
+end-code
+
+\ Fix the next routine to use the debug version
+: pnext   (s -- )  debnext debug-next !  ;
+1A1C82B 	 0  0  0 70 6E 
+1A1C830 	65 78 74 85 E4 C7 A1  1 
+1A1C838 	20 40 A0  1 E4 C7 A1  1 
+1A1C840 	D0 C6 A1  1 54 4D A0  1 
+1A1C848 	58 46 A0  1 
+
+\ Turn off debugging
+: unbug   (s -- )  normal-next debug-next !  ;
+1A1C84C 	 0  0 75 6E 
+1A1C850 	62 75 67 85 38 C8 A1  1 
+1A1C858 	20 40 A0  1 D0 C7 A1  1 
+1A1C860 	D0 C6 A1  1 54 4D A0  1 
+1A1C868 	58 46 A0  1 
+
+forth definitions
+unbug

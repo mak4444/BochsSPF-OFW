@@ -1,0 +1,28 @@
+
+
+\ True if we are running in a "flat" memory space with all segment
+\ selectors referring to the same address range.  This is generally
+\ the case when running under Win32 or Unix, but not when running
+\ native or under DOS, VCPI, or DPMI.
+false value flat?
+1A0EF37 	 0 
+1A0EF38 	 0  0 66 6C 61 74 3F 85 
+1A0EF40 	30 EF A0  1 50 40 A0  1 
+1A0EF48 	F8  2  0  0 
+
+
+\ Later, when Forth takes over interrupt vector 13, the following
+\ defer words should be set to save and restore vector 13.
+\ Typically, that would be done in catchexc.fth
+
+defer wrapper-vectors  ' noop is wrapper-vectors
+1A0EF4C 	77 72 61 70 
+1A0EF50 	70 65 72 2D 76 65 63 74 
+1A0EF58 	6F 72 73 8F 44 EF A0  1 
+1A0EF60 	5C 40 A0  1 FC  2  0  0 
+defer forth-vectors    ' noop is forth-vectors
+1A0EF68 	 0  0 66 6F 72 74 68 2D 
+1A0EF70 	76 65 63 74 6F 72 73 8D 
+1A0EF78 	60 EF A0  1 5C 40 A0  1 
+1A0EF80 	 0  3  0  0 
+

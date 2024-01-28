@@ -1,0 +1,131 @@
+purpose: Data that is common to all format recognizers
+
+-1 instance value size-low
+1A30964 	 0  0  0 73 
+1A30968 	69 7A 65 2D 6C 6F 77 88 
+1A30970 	 0  0 A0  1 C0 FE A1  1 
+1A30978 	18  0  0  0 
+-1 instance value size-high
+1A3097C 	 0  0 73 69 
+1A30980 	7A 65 2D 68 69 67 68 89 
+1A30988 	74  9 A3  1 C0 FE A1  1 
+1A30990 	1C  0  0  0 
+0 instance value partition-type
+1A30994 	 0 70 61 72 
+1A30998 	74 69 74 69 6F 6E 2D 74 
+1A309A0 	79 70 65 8E 8C  9 A3  1 
+1A309A8 	C0 FE A1  1 20  0  0  0 
+h# 81 constant minix-type
+1A309B0 	 0 6D 69 6E 69 78 2D 74 
+1A309B8 	79 70 65 8A A8  9 A3  1 
+1A309C0 	68 40 A0  1 81  0  0  0 
+h# 83 constant ext2fs-type
+1A309C8 	65 78 74 32 66 73 2D 74 
+1A309D0 	79 70 65 8B C0  9 A3  1 
+1A309D8 	68 40 A0  1 83  0  0  0 
+h# a5 constant ufs-type
+1A309E0 	 0  0  0 75 66 73 2D 74 
+1A309E8 	79 70 65 88 D8  9 A3  1 
+1A309F0 	68 40 A0  1 A5  0  0  0 
+h# 96 constant iso-type
+1A309F8 	 0  0  0 69 73 6F 2D 74 
+1A30A00 	79 70 65 88 F0  9 A3  1 
+1A30A08 	68 40 A0  1 96  0  0  0 
+h# ee constant gpt-type
+1A30A10 	 0  0  0 67 70 74 2D 74 
+1A30A18 	79 70 65 88  8  A A3  1 
+1A30A20 	68 40 A0  1 EE  0  0  0 
+
+0 value ufs-partition
+1A30A28 	 0  0 75 66 73 2D 70 61 
+1A30A30 	72 74 69 74 69 6F 6E 8D 
+1A30A38 	20  A A3  1 50 40 A0  1 
+1A30A40 	9C  9  0  0 
+0 0 instance 2value partition-name$
+1A30A44 	70 61 72 74 
+1A30A48 	69 74 69 6F 6E 2D 6E 61 
+1A30A50 	6D 65 24 8F 3C  A A3  1 
+1A30A58 	B8 FF A1  1 24  0  0  0 
+0 instance value #part
+1A30A60 	 0  0 23 70 61 72 74 85 
+1A30A68 	58  A A3  1 C0 FE A1  1 
+1A30A70 	2C  0  0  0 
+
+0 instance value /sector  \ Set in open by calling parent's block-size method
+1A30A74 	2F 73 65 63 
+1A30A78 	74 6F 72 87 6C  A A3  1 
+1A30A80 	C0 FE A1  1 30  0  0  0 
+0 instance value sector-buf
+1A30A88 	 0 73 65 63 74 6F 72 2D 
+1A30A90 	62 75 66 8A 80  A A3  1 
+1A30A98 	C0 FE A1  1 34  0  0  0 
+
+0 instance value sector-offset
+1A30AA0 	 0  0 73 65 63 74 6F 72 
+1A30AA8 	2D 6F 66 66 73 65 74 8D 
+1A30AB0 	98  A A3  1 C0 FE A1  1 
+1A30AB8 	38  0  0  0 
+
+: sector-alloc  ( -- )  /sector alloc-mem to sector-buf  ;
+1A30ABC 	 0  0  0 73 
+1A30AC0 	65 63 74 6F 72 2D 61 6C 
+1A30AC8 	6C 6F 63 8C B4  A A3  1 
+1A30AD0 	20 40 A0  1 80  A A3  1 
+1A30AD8 	F0 6C A0  1 48 B8 A1  1 
+1A30AE0 	98  A A3  1 58 46 A0  1 
+: sector-free  ( -- )  sector-buf /sector free-mem  ;
+1A30AE8 	73 65 63 74 6F 72 2D 66 
+1A30AF0 	72 65 65 8B D0  A A3  1 
+1A30AF8 	20 40 A0  1 98  A A3  1 
+1A30B00 	80  A A3  1  8 6D A0  1 
+1A30B08 	58 46 A0  1 
+
+\ For ISO-9660 CD-ROMs, ISO-9660 flash or hard drives, and GPT
+: read-hw-sector  ( sector# -- )
+1A30B0C 	 0 72 65 61 
+1A30B10 	64 2D 68 77 2D 73 65 63 
+1A30B18 	74 6F 72 8E F8  A A3  1 
+1A30B20 	20 40 A0  1 
+   sector-offset +  /sector um*  " seek" $call-parent  abort" Seek failed"
+1A30B24 	B4  A A3  1 
+1A30B28 	 4 45 A0  1 80  A A3  1 
+1A30B30 	50 5D A0  1 9C 53 A0  1 
+1A30B38 	 4 73 65 65 6B  0  0  0 
+1A30B40 	DC 31 A2  1  8 81 A0  1 
+1A30B48 	 B 53 65 65 6B 20 66 61 
+1A30B50 	69 6C 65 64  0  0  0  0 
+   sector-buf /sector  " read" $call-parent  /sector <> abort" Read failed"
+1A30B58 	98  A A3  1 80  A A3  1 
+1A30B60 	9C 53 A0  1  4 72 65 61 
+1A30B68 	64  0  0  0 DC 31 A2  1 
+1A30B70 	80  A A3  1 44 48 A0  1 
+1A30B78 	 8 81 A0  1  B 52 65 61 
+1A30B80 	64 20 66 61 69 6C 65 64 
+1A30B88 	 0  0  0  0 
+;
+1A30B8C 	58 46 A0  1 
+\ For everything else
+: read-sector  ( sector# -- )
+1A30B90 	72 65 61 64 2D 73 65 63 
+1A30B98 	74 6F 72 8B 20  B A3  1 
+1A30BA0 	20 40 A0  1 
+   sector-offset +  h# 200 um*  " seek" $call-parent  abort" Seek failed"
+1A30BA4 	B4  A A3  1 
+1A30BA8 	 4 45 A0  1 58 41 A0  1 
+1A30BB0 	 0  2  0  0 50 5D A0  1 
+1A30BB8 	9C 53 A0  1  4 73 65 65 
+1A30BC0 	6B  0  0  0 DC 31 A2  1 
+1A30BC8 	 8 81 A0  1  B 53 65 65 
+1A30BD0 	6B 20 66 61 69 6C 65 64 
+1A30BD8 	 0  0  0  0 
+   sector-buf h# 200  " read" $call-parent  h# 200 <> abort" Read failed"
+1A30BDC 	98  A A3  1 
+1A30BE0 	58 41 A0  1  0  2  0  0 
+1A30BE8 	9C 53 A0  1  4 72 65 61 
+1A30BF0 	64  0  0  0 DC 31 A2  1 
+1A30BF8 	58 41 A0  1  0  2  0  0 
+1A30C00 	44 48 A0  1  8 81 A0  1 
+1A30C08 	 B 52 65 61 64 20 66 61 
+1A30C10 	69 6C 65 64  0  0  0  0 
+;
+1A30C18 	58 46 A0  1 

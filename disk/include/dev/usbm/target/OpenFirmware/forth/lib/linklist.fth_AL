@@ -1,0 +1,310 @@
+
+\ Linked list words.  Assumes a singly-linked list, where the
+\ first element in each list node is the link.  Links point to links,
+\ and the last link contains 0.
+\
+\ list:  \ name  ( -- )   Child: ( -- list )
+\	Defines a named list.
+\
+\ listnode   ( -- offset )
+\	Used like "struct" to begin the creation of a list node structure
+\	The link field is automatically included in the structure.
+\
+\ nodetype:  \ name  ( size -- )   Child: ( -- nodetype )
+\	Defines a new named node type.  Example:
+\
+\		listnode
+\			/n field >node-data
+\		nodetype: integer-node
+\
+\ node-length  ( nodetype -- len )
+\	Returns the length of a node of the indicated type.
+\
+\ allocate-node  ( nodetype -- node )
+\	Allocates a node of the indicated type.
+\
+\ more-nodes  ( #nodes nodetype -- )
+\	Adds "#nodes" more nodes to the free list for the indicated node type.
+\	Automatically executed by "allocate-node" if necessary.
+\
+\ free-node  ( node nodetype -- )
+\	Returns the indicated node to the free list for the indicated node
+\	type.
+\
+\ insert-after  ( new-node-adr prev-node-adr -- )
+\	Inserts "new-node" into a linked list after "prev-node" (and before
+\	the node which was the successor of "prev-node").
+\
+\ delete-after  ( prev-node -- deleted-node )
+\	Removes the node AFTER the argument node.  The deleted node is
+\	returned so its memory can be freed or whatever.
+\
+\ find-node  ( ??? list acf -- ??? prev-node this-node|0 )
+\	Searches the linked list "list", executing the procedure "acf"
+\	for each node in the list.  Returns the node for which "acf"
+\	returned "true", and also the preceding node.  See the comments
+\	in the code for more information.
+\
+\ find-node?  ( ??? list acf -- ??? false | ??? node true )
+\	Searches the linked list "list", executing the procedure "acf"
+\	for each node in the list.  Returns the node and true if found,
+\	or false if not found.
+
+alias list: variable
+1A17148 	 0  0 6C 69 73 74 3A A5 
+1A17150 	20 71 A1  1 94 F2 A0  1 
+
+alias listnode /n
+1A17158 	 0  0  0 6C 69 73 74 6E 
+1A17160 	6F 64 65 A8 54 71 A1  1 
+1A17168 	40 51 A0  1 
+
+: nodetype:  \ name  ( size -- )
+1A1716C 	 0  0 6E 6F 
+1A17170 	64 65 74 79 70 65 3A 89 
+1A17178 	68 71 A1  1 20 40 A0  1 
+   aligned  create 2 /n* user#,  0 over ! na1+ !     \ Free list, size
+1A17180 	EC 5C A0  1 A8 A2 A0  1 
+1A17188 	90 6F A0  1 98 51 A0  1 
+1A17190 	84 9A A0  1 70 6F A0  1 
+1A17198 	54 49 A0  1 54 4D A0  1 
+1A171A0 	CC 50 A0  1 54 4D A0  1 
+   does> >user
+1A171A8 	50 A3 A0  1 90 90 90 E8 
+1A171B0 	C8 CE FE FF C8 74 A0  1 
+;
+1A171B8 	58 46 A0  1 
+: node-length  ( nodetype -- len )  na1+ @  ;
+1A171BC 	6E 6F 64 65 
+1A171C0 	2D 6C 65 6E 67 74 68 8B 
+1A171C8 	7C 71 A1  1 20 40 A0  1 
+1A171D0 	CC 50 A0  1 5C 4C A0  1 
+1A171D8 	58 46 A0  1 
+
+alias >next-node @     ( node-adr -- next-node-adr )
+1A171DC 	 0 3E 6E 65 
+1A171E0 	78 74 2D 6E 6F 64 65 AA 
+1A171E8 	CC 71 A1  1 5C 4C A0  1 
+
+: list-end?  ( node-adr -- flag )  >next-node @ 0=  ;
+1A171F0 	 0  0 6C 69 73 74 2D 65 
+1A171F8 	6E 64 3F 89 EC 71 A1  1 
+1A17200 	20 40 A0  1 5C 4C A0  1 
+1A17208 	5C 4C A0  1 24 47 A0  1 
+1A17210 	58 46 A0  1 
+
+\ Inserts "new-node" into a linked list after "prev-node" (and before
+\ the node which was the successor of "prev-node").
+
+: insert-after  ( new-node-adr prev-node-adr -- )
+1A17214 	 0  0  0 69 
+1A17218 	6E 73 65 72 74 2D 61 66 
+1A17220 	74 65 72 8C  0 72 A1  1 
+1A17228 	20 40 A0  1 
+   2dup >next-node    ( new-node prev-node  new-node succ-node )
+1A1722C 	C0 49 A0  1 
+1A17230 	5C 4C A0  1 
+   swap !             ( new-node prev-node  )
+1A17234 	68 49 A0  1 
+1A17238 	54 4D A0  1 
+   !                  ( )
+1A1723C 	54 4D A0  1 
+;
+1A17240 	58 46 A0  1 
+
+\ Delete-after removes the node AFTER the argument node
+\ The deleted node is returned so its memory can be freed or whatever.
+
+: delete-after  ( prev-node -- deleted-node )  dup @ tuck @ swap !  ;
+1A17244 	 0  0  0 64 
+1A17248 	65 6C 65 74 65 2D 61 66 
+1A17250 	74 65 72 8C 28 72 A1  1 
+1A17258 	20 40 A0  1 40 49 A0  1 
+1A17260 	5C 4C A0  1 E8 46 A0  1 
+1A17268 	5C 4C A0  1 68 49 A0  1 
+1A17270 	54 4D A0  1 58 46 A0  1 
+
+
+\ find-node  traverses the list, executing "acf" between each pair of nodes.
+\ When "acf" returns true, find-node returns the addresses of the pair of
+\ nodes.  If the list is exhausted before "acf" returns true, the last node
+\ and 0 is returned.
+
+\ "acf" is called as:
+\     ( ??? node-data-adr -- ??? flag )
+\
+\ ??? is whatever was on the stack underneath "list" and "acf" when "find-node"
+\ was called.  It would typically be a test value used by the "acf" function.
+\ "acf" is only called with valid node addresses, assuming that the list is
+\ well-formed.  In other words, "acf" will not be called with either the
+\ list head node or with the null node past the end of the list.
+
+\ The data and return stack manipulations in find-node are pretty grim.
+\ Reasons:
+\ (a) We want the stack diagram for the action routine to be clean in order
+\     to make find-node easy to use.  Thus we do not wish to expose the
+\     loop information on the data stack when the action routine is called.
+\ (b) The arguments to the action routine are arbitrary in number, thus
+\     we cannot store loop information underneath them.
+\ (c) This routine needs to be reentrant, since it is used by the alarm
+\     interrupt handler.  Thus we cannot use variables.
+
+: find-node  ( ??? list acf -- ??? prev-node this-node|0 )
+1A17278 	 0  0 66 69 6E 64 2D 6E 
+1A17280 	6F 64 65 89 58 72 A1  1 
+1A17288 	20 40 A0  1 
+   \ Guard against null lists
+   over 0=  if  drop 0 exit  then
+1A1728C 	54 49 A0  1 
+1A17290 	24 47 A0  1 DC 41 A0  1 
+1A17298 	10  0  0  0 30 49 A0  1 
+1A172A0 	70 6F A0  1 40 46 A0  1 
+   >r >r 0 >r                    ( ??? )       ( r: acf list 0 )
+1A172A8 	BC 45 A0  1 BC 45 A0  1 
+1A172B0 	70 6F A0  1 BC 45 A0  1 
+   begin                         ( ??? )       ( r: acf prev-node old-node )
+      r> drop  r>                ( ??? new-this-node )        ( r: acf )
+1A172B8 	D0 45 A0  1 30 49 A0  1 
+1A172C0 	D0 45 A0  1 
+      dup >next-node dup 0=  if  ( ??? this-node next-node )  ( r: acf )
+1A172C4 	40 49 A0  1 
+1A172C8 	5C 4C A0  1 40 49 A0  1 
+1A172D0 	24 47 A0  1 DC 41 A0  1 
+1A172D8 	10  0  0  0 
+         r> drop exit            ( ??? last-node 0 )          ( r: acf )
+1A172DC 	D0 45 A0  1 
+1A172E0 	30 49 A0  1 40 46 A0  1 
+      then		         ( ??? this-node next-node )  ( r: acf )
+      tuck r@ -rot  >r >r        ( ??? data-adr acf ) ( r: acf next this )
+1A172E8 	E8 46 A0  1 E4 45 A0  1 
+1A172F0 	94 49 A0  1 BC 45 A0  1 
+1A172F8 	BC 45 A0  1 
+      execute                    ( ??? flag )         ( r: acf next this )
+1A172FC 	98 41 A0  1 
+   until                         ( ??? )              ( r: acf next this )
+1A17300 	DC 41 A0  1 B4 FF FF FF 
+   r> r> r> drop                 ( ??? prev-node this-node )
+1A17308 	D0 45 A0  1 D0 45 A0  1 
+1A17310 	D0 45 A0  1 30 49 A0  1 
+;
+1A17318 	58 46 A0  1 
+
+: find-node?  ( ??? list acf -- ??? false | ??? node true )
+1A1731C 	 0 66 69 6E 
+1A17320 	64 2D 6E 6F 64 65 3F 8A 
+1A17328 	88 72 A1  1 20 40 A0  1 
+   find-node ?dup  if   ( ??? prev-node this-node )
+1A17330 	88 72 A1  1 B4 70 A0  1 
+1A17338 	DC 41 A0  1 14  0  0  0 
+      nip true          ( ??? node true )
+1A17340 	FC 46 A0  1  4 70 A0  1 
+   else                 ( ??? prev-node )
+1A17348 	C8 41 A0  1  C  0  0  0 
+      drop false        ( ??? false )
+1A17350 	30 49 A0  1 18 70 A0  1 
+   then                 ( ??? false | ??? node true )
+;
+1A17358 	58 46 A0  1 
+
+\ Here's how "find-node" could be used to locate the insertion point
+\ for a list sorted in ascending order of the second field.
+
+\ : larger?  ( key node-data-adr -- key flag )  na1+ @ over u>  ;
+\ : insertion-point  ( key list -- node )   ['] larger?  find-node  drop  ;
+
+
+\ Locates the last node in the list.  The routine used with "find-node"
+\ is "0=", which always returns "false" because find-node is guaranteed
+\ not to call its test routine with a 0 node.
+
+: last-node  ( list -- node-adr )  ['] 0=  find-node  drop  ;
+1A1735C 	 0  0 6C 61 
+1A17360 	73 74 2D 6E 6F 64 65 89 
+1A17368 	2C 73 A1  1 20 40 A0  1 
+1A17370 	60 53 A0  1 24 47 A0  1 
+1A17378 	88 72 A1  1 30 49 A0  1 
+1A17380 	58 46 A0  1 
+
+\ Add new nodes to the free list of "nodetype", from the block of memory
+\ "adr len", whose length must be a multiple of that nodetype's node length.
+: add-nodes  ( adr len nodetype -- )
+1A17384 	 0  0 61 64 
+1A17388 	64 2D 6E 6F 64 65 73 89 
+1A17390 	6C 73 A1  1 20 40 A0  1 
+   dup node-length                     ( adr len nodetype /node )
+1A17398 	40 49 A0  1 CC 71 A1  1 
+
+   \ Find the end of the free list
+   swap last-node                      ( adr len /node last-node )
+1A173A0 	68 49 A0  1 6C 73 A1  1 
+
+   \ Link new nodes onto free list
+   2swap bounds  ?do                   ( /node prev-node )
+1A173A8 	F4 49 A0  1 F0 6D A0  1 
+1A173B0 	50 42 A0  1 20  0  0  0 
+      i swap !  i                      ( /node prev-node' )
+1A173B8 	B4 42 A0  1 68 49 A0  1 
+1A173C0 	54 4D A0  1 B4 42 A0  1 
+   over +loop                          ( /node prev-node' )
+1A173C8 	54 49 A0  1 1C 42 A0  1 
+1A173D0 	E8 FF FF FF 
+   0 swap !   drop                     ( )
+1A173D4 	70 6F A0  1 
+1A173D8 	68 49 A0  1 54 4D A0  1 
+1A173E0 	30 49 A0  1 
+;
+1A173E4 	58 46 A0  1 
+
+\ Adds "#nodes" more nodes to the free list for the indicated node type.
+\ Automatically executed by "allocate-node" if necessary.
+
+: more-nodes  ( #nodes nodetype -- )
+1A173E8 	 0 6D 6F 72 65 2D 6E 6F 
+1A173F0 	64 65 73 8A 94 73 A1  1 
+1A173F8 	20 40 A0  1 
+   tuck node-length *                  ( nodetype total-size )
+1A173FC 	E8 46 A0  1 
+1A17400 	CC 71 A1  1 1C 5F A0  1 
+   dup alloc-mem                       ( nodetype total-size adr )
+1A17408 	40 49 A0  1 F0 6C A0  1 
+   swap rot  add-nodes
+1A17410 	68 49 A0  1 7C 49 A0  1 
+1A17418 	94 73 A1  1 
+;
+1A1741C 	58 46 A0  1 
+
+\ Allocates a node of the indicated type by removing a node from the
+\ free list.  If the free list start out empty, allocate-node first
+\ calls more-nodes to populate the free list.
+
+: allocate-node  ( nodetype -- node )
+1A17420 	 0  0 61 6C 6C 6F 63 61 
+1A17428 	74 65 2D 6E 6F 64 65 8D 
+1A17430 	F8 73 A1  1 20 40 A0  1 
+   dup @  0=  if                       ( nodetype )
+1A17438 	40 49 A0  1 5C 4C A0  1 
+1A17440 	24 47 A0  1 DC 41 A0  1 
+1A17448 	14  0  0  0 
+      d# 10 over more-nodes            ( nodetype )
+1A1744C 	58 41 A0  1 
+1A17450 	 A  0  0  0 54 49 A0  1 
+1A17458 	F8 73 A1  1 
+   then
+
+   dup >next-node dup >next-node       ( nodetype first-node second-node )
+1A1745C 	40 49 A0  1 
+1A17460 	5C 4C A0  1 40 49 A0  1 
+1A17468 	5C 4C A0  1 
+   rot !                               ( first-node )
+1A1746C 	7C 49 A0  1 
+1A17470 	54 4D A0  1 
+;
+1A17474 	58 46 A0  1 
+
+\ Adds the node to the free list for the indicated node type.
+
+: free-node  ( node nodetype -- )  insert-after  ;
+1A17478 	 0  0 66 72 65 65 2D 6E 
+1A17480 	6F 64 65 89 34 74 A1  1 
+1A17488 	20 40 A0  1 28 72 A1  1 
+1A17490 	58 46 A0  1 

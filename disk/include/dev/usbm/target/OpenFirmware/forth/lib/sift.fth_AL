@@ -1,0 +1,162 @@
+
+also hidden
+only forth also hidden also definitions
+decimal
+headerless
+
+variable sift-vocabulary
+1A16EC0 	73 69 66 74 2D 76 6F 63 
+1A16EC8 	61 62 75 6C 61 72 79 8F 
+1A16ED0 	88 65 A1  1 48 40 A0  1 
+1A16ED8 	74  4  0  0 
+
+headers
+
+\ Leave a "hook" for showing the name of the vocabulary
+\ only once, the first time a matching name is found.
+\ Showing the name of a device can be plugged in here also...
+defer .voc     ' noop is .voc
+1A16EDC 	 0  0  0 2E 
+1A16EE0 	76 6F 63 84 D4 6E A1  1 
+1A16EE8 	5C 40 A0  1 78  4  0  0 
+
+: .in  ( -- )  ??cr tabstops @ spaces  ." In "  ;
+1A16EF0 	2E 69 6E 83 E8 6E A1  1 
+1A16EF8 	20 40 A0  1  0 A1 A0  1 
+1A16F00 	38 14 A1  1 5C 4C A0  1 
+1A16F08 	E8 71 A0  1 20 7C A0  1 
+1A16F10 	 3 49 6E 20  0  0  0  0 
+1A16F18 	58 46 A0  1 
+
+headerless
+: .vocab  ( -- )
+1A16F1C 	 0 2E 76 6F 
+1A16F20 	63 61 62 86 F8 6E A1  1 
+1A16F28 	20 40 A0  1 
+   .in ['] vocabulary .name space
+1A16F2C 	F8 6E A1  1 
+1A16F30 	60 53 A0  1 28 B7 A0  1 
+1A16F38 	C8 9A A0  1 CC 71 A0  1 
+   sift-vocabulary @ .name cr
+1A16F40 	D4 6E A1  1 5C 4C A0  1 
+1A16F48 	C8 9A A0  1 80 6D A0  1 
+   ['] noop is .voc
+1A16F50 	60 53 A0  1 64 4F A0  1 
+1A16F58 	98 40 A0  1 E8 6E A1  1 
+;
+1A16F60 	58 46 A0  1 
+
+\ Show the "sifted" name, preceded by its  cfa  in parentheses.
+\ Show the name of the vocabulary only the first time.
+\ Control the display with  exit?
+: .sift?  ( nfa -- exit? )
+1A16F64 	 0 2E 73 69 
+1A16F68 	66 74 3F 86 28 6F A1  1 
+1A16F70 	20 40 A0  1 
+   .voc
+1A16F74 	E8 6E A1  1 
+   exit? tuck  if  drop exit  then 		( exit? nfa )
+1A16F78 	34  D A1  1 E8 46 A0  1 
+1A16F80 	DC 41 A0  1  C  0  0  0 
+1A16F88 	30 49 A0  1 40 46 A0  1 
+   dup  name>				 	( exit? nfa cfa )
+1A16F90 	40 49 A0  1  8 74 A0  1 
+   over n>flags c@  h# 20 and  if  token@  then	  \ Handle aliases
+1A16F98 	54 49 A0  1 BC 73 A0  1 
+1A16FA0 	C4 4C A0  1 58 41 A0  1 
+1A16FA8 	20  0  0  0 5C 44 A0  1 
+1A16FB0 	DC 41 A0  1  8  0  0  0 
+1A16FB8 	 C 54 A0  1 
+   fake-name			 		( nfa fstr )
+1A16FBC 	EC B7 A0  1 
+   over name>string nip
+1A16FC0 	54 49 A0  1 58 74 A0  1 
+1A16FC8 	FC 46 A0  1 
+   over name>string nip + 3 + .tab
+1A16FCC 	54 49 A0  1 
+1A16FD0 	58 74 A0  1 FC 46 A0  1 
+1A16FD8 	 4 45 A0  1 A0 6F A0  1 
+1A16FE0 	 4 45 A0  1 AC 14 A1  1 
+  .id .id 2 spaces
+1A16FE8 	A8 9A A0  1 A8 9A A0  1 
+1A16FF0 	90 6F A0  1 E8 71 A0  1 
+;
+1A16FF8 	58 46 A0  1 
+
+headers
+forth definitions
+
+\ Sift through the given vocabulary, using the sift-string given.
+\ Control the display with  exit?
+: vsift?  ( adr len voc-acf -- adr len exit? )
+1A16FFC 	 0 76 73 69 
+1A17000 	66 74 3F 86 48 66 A1  1 
+1A17008 	20 40 A0  1 
+   dup sift-vocabulary !  follow
+1A1700C 	40 49 A0  1 
+1A17010 	D4 6E A1  1 54 4D A0  1 
+1A17018 	38 BC A0  1 
+   begin  another?  while			( adr len nfa )
+1A1701C 	68 BC A0  1 
+1A17020 	DC 41 A0  1 44  0  0  0 
+      3dup name>string sindex			( adr len nfa indx|-1 )
+1A17028 	A4 52 A0  1 58 74 A0  1 
+1A17030 	 8 17 A1  1 
+      1+ if  .sift? ?dup if exit then
+1A17034 	30 4B A0  1 
+1A17038 	DC 41 A0  1 20  0  0  0 
+1A17040 	70 6F A1  1 B4 70 A0  1 
+1A17048 	DC 41 A0  1  8  0  0  0 
+1A17050 	40 46 A0  1 
+	else   drop
+1A17054 	C8 41 A0  1 
+1A17058 	 8  0  0  0 30 49 A0  1 
+	then
+   repeat	   false
+1A17060 	C8 41 A0  1 B8 FF FF FF 
+1A17068 	18 70 A0  1 
+;
+1A1706C 	58 46 A0  1 
+
+\ Sift through all the vocabularies for the string given
+\ on the stack as  addr,len
+: $sift ( addr len -- )
+1A17070 	 0  0 24 73 69 66 74 85 
+1A17078 	 8 70 A1  1 20 40 A0  1 
+   voc-link  begin  another-link?  while	( addr len v-link )
+1A17080 	74 B6 A0  1 90 59 A0  1 
+1A17088 	DC 41 A0  1 48  0  0  0 
+      ['] .vocab is .voc
+1A17090 	60 53 A0  1 28 6F A1  1 
+1A17098 	98 40 A0  1 E8 6E A1  1 
+      voc> >r r@ vsift? r> swap  if  3drop exit  then
+1A170A0 	38 B6 A0  1 BC 45 A0  1 
+1A170A8 	E4 45 A0  1  8 70 A1  1 
+1A170B0 	D0 45 A0  1 68 49 A0  1 
+1A170B8 	DC 41 A0  1  C  0  0  0 
+1A170C0 	90 52 A0  1 40 46 A0  1 
+      >voc-link		
+1A170C8 	50 B6 A0  1 
+   repeat  2drop
+1A170CC 	C8 41 A0  1 
+1A170D0 	B4 FF FF FF AC 49 A0  1 
+;
+1A170D8 	58 46 A0  1 
+
+\  Same thing, only the string is given on the stack in packed format
+: sift  ( str -- )  count $sift  ;
+1A170DC 	 0  0  0 73 
+1A170E0 	69 66 74 84 7C 70 A1  1 
+1A170E8 	20 40 A0  1 BC 53 A0  1 
+1A170F0 	7C 70 A1  1 58 46 A0  1 
+
+\  Same thing, only the string is given in the input stream.
+: sifting  \ name  ( -- )
+1A170F8 	73 69 66 74 69 6E 67 87 
+1A17100 	E8 70 A1  1 20 40 A0  1 
+   safe-parse-word $sift
+1A17108 	88 93 A0  1 7C 70 A1  1 
+;
+1A17110 	58 46 A0  1 
+
+only forth also definitions

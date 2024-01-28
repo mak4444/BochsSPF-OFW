@@ -1,0 +1,572 @@
+purpose: Display driver for EGA/VGA in text mode
+
+\ 0 0  " "  " /"  begin-package
+
+hex
+headers
+
+" ega-text" device-name
+1A38658 	65 67 61 2D 74 65 78 74 
+1A38660 	 0  0  0 6E 61 6D 65 84 
+1A38668 	 0  0 A0  1 BC 13 A2  1 
+1A38670 	18  0  0  0  9  0  0  0 
+" display"                      device-type
+1A38678 	64 69 73 70 6C 61 79  0 
+1A38680 	64 65 76 69 63 65 5F 74 
+1A38688 	79 70 65 8B 6C 86 A3  1 
+1A38690 	BC 13 A2  1 1C  0  0  0 
+1A38698 	 8  0  0  0 
+0 0  encode-bytes  " iso6429-1983-colors"  property
+1A3869C 	69 73 6F 36 
+1A386A0 	34 32 39 2D 31 39 38 33 
+1A386A8 	2D 63 6F 6C 6F 72 73 93 
+1A386B0 	90 86 A3  1 BC 13 A2  1 
+1A386B8 	1C  0  0  0  0  0  0  0 
+
+d# 80 constant #ega-columns
+1A386C0 	 0  0  0 23 65 67 61 2D 
+1A386C8 	63 6F 6C 75 6D 6E 73 8C 
+1A386D0 	 0  0 A0  1 68 40 A0  1 
+1A386D8 	50  0  0  0 
+d# 25 constant #ega-lines
+1A386DC 	 0 23 65 67 
+1A386E0 	61 2D 6C 69 6E 65 73 8A 
+1A386E8 	D4 86 A3  1 68 40 A0  1 
+1A386F0 	19  0  0  0 
+#ega-lines #ega-columns * constant #chars
+1A386F4 	 0 23 63 68 
+1A386F8 	61 72 73 86 EC 86 A3  1 
+1A38700 	68 40 A0  1 D0  7  0  0 
+#chars 2* constant /ega
+1A38708 	 0  0  0 2F 65 67 61 84 
+1A38710 	 0 87 A3  1 68 40 A0  1 
+1A38718 	A0  F  0  0 
+7 value attributes
+1A3871C 	 0 61 74 74 
+1A38720 	72 69 62 75 74 65 73 8A 
+1A38728 	14 87 A3  1 50 40 A0  1 
+1A38730 	28  B  0  0 
+
+: background  ( -- n )
+1A38734 	 0 62 61 63 
+1A38738 	6B 67 72 6F 75 6E 64 8A 
+1A38740 	2C 87 A3  1 20 40 A0  1 
+   inverse?  if  foreground-color  else  background-color  then
+1A38748 	2C 89 A2  1 DC 41 A0  1 
+1A38750 	10  0  0  0 DC 89 A2  1 
+1A38758 	C8 41 A0  1  8  0  0  0 
+1A38760 	FC 89 A2  1 
+;
+1A38764 	58 46 A0  1 
+: foreground  ( -- n )
+1A38768 	 0 66 6F 72 65 67 72 6F 
+1A38770 	75 6E 64 8A 44 87 A3  1 
+1A38778 	20 40 A0  1 
+   inverse?  if  background-color  else  foreground-color  then
+1A3877C 	2C 89 A2  1 
+1A38780 	DC 41 A0  1 10  0  0  0 
+1A38788 	FC 89 A2  1 C8 41 A0  1 
+1A38790 	 8  0  0  0 DC 89 A2  1 
+;
+1A38798 	58 46 A0  1 
+: set-attributes  ( -- )
+1A3879C 	 0 73 65 74 
+1A387A0 	2D 61 74 74 72 69 62 75 
+1A387A8 	74 65 73 8E 78 87 A3  1 
+1A387B0 	20 40 A0  1 
+   background 7 and  4 lshift  foreground or  to attributes
+1A387B4 	44 87 A3  1 
+1A387B8 	E0 6F A0  1 5C 44 A0  1 
+1A387C0 	B0 6F A0  1 9C 44 A0  1 
+1A387C8 	78 87 A3  1 70 44 A0  1 
+1A387D0 	B8 40 A0  1 2C 87 A3  1 
+;
+1A387D8 	58 46 A0  1 
+
+0 value ega
+1A387DC 	65 67 61 83 
+1A387E0 	B0 87 A3  1 50 40 A0  1 
+1A387E8 	2C  B  0  0 
+: fill-text  ( len value -- )
+1A387EC 	 0  0 66 69 
+1A387F0 	6C 6C 2D 74 65 78 74 89 
+1A387F8 	E4 87 A3  1 20 40 A0  1 
+   ega rot 2*  bounds  do  dup i c!  2 +loop  drop
+1A38800 	E4 87 A3  1 7C 49 A0  1 
+1A38808 	A0 4B A0  1 F0 6D A0  1 
+1A38810 	88 42 A0  1 1C  0  0  0 
+1A38818 	40 49 A0  1 B4 42 A0  1 
+1A38820 	B8 4D A0  1 90 6F A0  1 
+1A38828 	1C 42 A0  1 EC FF FF FF 
+1A38830 	30 49 A0  1 
+;
+1A38834 	58 46 A0  1 
+: fill-attrs  ( len value -- )
+1A38838 	 0 66 69 6C 6C 2D 61 74 
+1A38840 	74 72 73 8A FC 87 A3  1 
+1A38848 	20 40 A0  1 
+   ega rot 2*  bounds  do  dup i 1+ c!  2 +loop  drop
+1A3884C 	E4 87 A3  1 
+1A38850 	7C 49 A0  1 A0 4B A0  1 
+1A38858 	F0 6D A0  1 88 42 A0  1 
+1A38860 	20  0  0  0 40 49 A0  1 
+1A38868 	B4 42 A0  1 30 4B A0  1 
+1A38870 	B8 4D A0  1 90 6F A0  1 
+1A38878 	1C 42 A0  1 E8 FF FF FF 
+1A38880 	30 49 A0  1 
+;
+1A38884 	58 46 A0  1 
+
+\ On many chipsets, to access the CRT registers you have to do things
+\ like turning on the I/O enable in the PCI command register for the
+\ display controller.  And on some chipsets the screen blanks if you
+\ try to touch the CRT registers.
+\ : crt-setup  ( index -- data-adr )  h# 03d4 pc!  h# 03d5  ;
+\ : crt!  ( b index -- )  crt-setup pc!  ;
+\ : crt@  ( index -- b )  crt-setup pc@  ;
+
+: ega-screen-adr  ( column# line# -- adr )  #columns *  + 2*  ega +  ;
+1A38888 	 0 65 67 61 2D 73 63 72 
+1A38890 	65 65 6E 2D 61 64 72 8E 
+1A38898 	48 88 A3  1 20 40 A0  1 
+1A388A0 	1C 87 A2  1 1C 5F A0  1 
+1A388A8 	 4 45 A0  1 A0 4B A0  1 
+1A388B0 	E4 87 A3  1  4 45 A0  1 
+1A388B8 	58 46 A0  1 
+: ega-line-adr  ( line# -- adr )  0 swap ega-screen-adr  ;
+1A388BC 	 0  0  0 65 
+1A388C0 	67 61 2D 6C 69 6E 65 2D 
+1A388C8 	61 64 72 8C 9C 88 A3  1 
+1A388D0 	20 40 A0  1 70 6F A0  1 
+1A388D8 	68 49 A0  1 9C 88 A3  1 
+1A388E0 	58 46 A0  1 
+: ega-column-adr ( column# -- adr )  line# ega-screen-adr  ;
+1A388E4 	 0 65 67 61 
+1A388E8 	2D 63 6F 6C 75 6D 6E 2D 
+1A388F0 	61 64 72 8E D0 88 A3  1 
+1A388F8 	20 40 A0  1 54 86 A2  1 
+1A38900 	9C 88 A3  1 58 46 A0  1 
+: ega-cursor-adr  ( -- adr )  column# line#  ega-screen-adr  ;
+1A38908 	 0 65 67 61 2D 63 75 72 
+1A38910 	73 6F 72 2D 61 64 72 8E 
+1A38918 	F8 88 A3  1 20 40 A0  1 
+1A38920 	40 86 A2  1 54 86 A2  1 
+1A38928 	9C 88 A3  1 58 46 A0  1 
+
+: ega-draw-character  ( char -- )
+1A38930 	 0 65 67 61 2D 64 72 61 
+1A38938 	77 2D 63 68 61 72 61 63 
+1A38940 	74 65 72 92 1C 89 A3  1 
+1A38948 	20 40 A0  1 
+   set-attributes  ega-cursor-adr tuck c!  attributes swap 1+ c!
+1A3894C 	B0 87 A3  1 
+1A38950 	1C 89 A3  1 E8 46 A0  1 
+1A38958 	B8 4D A0  1 2C 87 A3  1 
+1A38960 	68 49 A0  1 30 4B A0  1 
+1A38968 	B8 4D A0  1 
+;
+1A3896C 	58 46 A0  1 
+: ega-reset-screen  ( -- )  ( TBD )  ;
+1A38970 	 0  0  0 65 67 61 2D 72 
+1A38978 	65 73 65 74 2D 73 63 72 
+1A38980 	65 65 6E 90 48 89 A3  1 
+1A38988 	20 40 A0  1 58 46 A0  1 
+
+\ Exchange foreground and background
+: flop  ( attr-byte -- attr-byte' )
+1A38990 	 0  0  0 66 6C 6F 70 84 
+1A38998 	88 89 A3  1 20 40 A0  1 
+   dup h# 88 and  over 4 lshift h# 70 and or  swap 4 rshift 7 and  or
+1A389A0 	40 49 A0  1 58 41 A0  1 
+1A389A8 	88  0  0  0 5C 44 A0  1 
+1A389B0 	54 49 A0  1 B0 6F A0  1 
+1A389B8 	9C 44 A0  1 58 41 A0  1 
+1A389C0 	70  0  0  0 5C 44 A0  1 
+1A389C8 	70 44 A0  1 68 49 A0  1 
+1A389D0 	B0 6F A0  1 B4 44 A0  1 
+1A389D8 	E0 6F A0  1 5C 44 A0  1 
+1A389E0 	70 44 A0  1 
+;
+1A389E4 	58 46 A0  1 
+: ega-toggle-cursor  ( -- )
+1A389E8 	 0  0 65 67 61 2D 74 6F 
+1A389F0 	67 67 6C 65 2D 63 75 72 
+1A389F8 	73 6F 72 91 9C 89 A3  1 
+1A38A00 	20 40 A0  1 
+   set-attributes
+1A38A04 	B0 87 A3  1 
+   ega-cursor-adr 1+               ( attribute-adr )
+1A38A08 	1C 89 A3  1 30 4B A0  1 
+   dup c@  flop  swap c!           ( )
+1A38A10 	40 49 A0  1 C4 4C A0  1 
+1A38A18 	9C 89 A3  1 68 49 A0  1 
+1A38A20 	B8 4D A0  1 
+
+\ Code for the hardware cursor; unwise to use it because accessing
+\ the CRT registers often requires external setup.
+\  line# #ega-columns *  column# +  wbsplit  h# e crt!  h# f crt!
+;
+1A38A24 	58 46 A0  1 
+: ega-erase-screen  ( -- )
+1A38A28 	 0  0  0 65 67 61 2D 65 
+1A38A30 	72 61 73 65 2D 73 63 72 
+1A38A38 	65 65 6E 90  0 8A A3  1 
+1A38A40 	20 40 A0  1 
+   #chars attributes fill-attrs  #chars bl fill-text
+1A38A44 	 0 87 A3  1 
+1A38A48 	2C 87 A3  1 48 88 A3  1 
+1A38A50 	 0 87 A3  1 28 70 A0  1 
+1A38A58 	FC 87 A3  1 
+;
+1A38A5C 	58 46 A0  1 
+: ega-invert-screen  ( -- )
+1A38A60 	 0  0 65 67 61 2D 69 6E 
+1A38A68 	76 65 72 74 2D 73 63 72 
+1A38A70 	65 65 6E 91 40 8A A3  1 
+1A38A78 	20 40 A0  1 
+   ega /ega  bounds  do  i 1+  c@  flop  i 1+ c!  2 +loop
+1A38A7C 	E4 87 A3  1 
+1A38A80 	14 87 A3  1 F0 6D A0  1 
+1A38A88 	88 42 A0  1 2C  0  0  0 
+1A38A90 	B4 42 A0  1 30 4B A0  1 
+1A38A98 	C4 4C A0  1 9C 89 A3  1 
+1A38AA0 	B4 42 A0  1 30 4B A0  1 
+1A38AA8 	B8 4D A0  1 90 6F A0  1 
+1A38AB0 	1C 42 A0  1 DC FF FF FF 
+;
+1A38AB8 	58 46 A0  1 
+: ega-blink-screen  ( -- )  ega-invert-screen  d# 100 ms  ega-invert-screen  ;
+1A38ABC 	 0  0  0 65 
+1A38AC0 	67 61 2D 62 6C 69 6E 6B 
+1A38AC8 	2D 73 63 72 65 65 6E 90 
+1A38AD0 	78 8A A3  1 20 40 A0  1 
+1A38AD8 	78 8A A3  1 58 41 A0  1 
+1A38AE0 	64  0  0  0 60 E0 A1  1 
+1A38AE8 	78 8A A3  1 58 46 A0  1 
+
+: ega-bytes/line  ( -- n )  #ega-columns 2*  ;
+1A38AF0 	 0 65 67 61 2D 62 79 74 
+1A38AF8 	65 73 2F 6C 69 6E 65 8E 
+1A38B00 	D4 8A A3  1 20 40 A0  1 
+1A38B08 	D4 86 A3  1 A0 4B A0  1 
+1A38B10 	58 46 A0  1 
+: blank-chars  ( adr #chars -- )
+1A38B14 	62 6C 61 6E 
+1A38B18 	6B 2D 63 68 61 72 73 8B 
+1A38B20 	 4 8B A3  1 20 40 A0  1 
+   2*  bounds  ?do  bl i c!  attributes i 1+ c!  2 +loop
+1A38B28 	A0 4B A0  1 F0 6D A0  1 
+1A38B30 	50 42 A0  1 2C  0  0  0 
+1A38B38 	28 70 A0  1 B4 42 A0  1 
+1A38B40 	B8 4D A0  1 2C 87 A3  1 
+1A38B48 	B4 42 A0  1 30 4B A0  1 
+1A38B50 	B8 4D A0  1 90 6F A0  1 
+1A38B58 	1C 42 A0  1 DC FF FF FF 
+;
+1A38B60 	58 46 A0  1 
+: ega-erase-lines  ( last-line-adr first-line-adr -- )
+1A38B64 	65 67 61 2D 
+1A38B68 	65 72 61 73 65 2D 6C 69 
+1A38B70 	6E 65 73 8F 24 8B A3  1 
+1A38B78 	20 40 A0  1 
+   ?do   i  #ega-columns blank-chars  ega-bytes/line +loop
+1A38B7C 	50 42 A0  1 
+1A38B80 	1C  0  0  0 B4 42 A0  1 
+1A38B88 	D4 86 A3  1 24 8B A3  1 
+1A38B90 	 4 8B A3  1 1C 42 A0  1 
+1A38B98 	EC FF FF FF 
+;
+1A38B9C 	58 46 A0  1 
+: ega-cursor-y  ( -- line-adr )  line# ega-line-adr  ;
+1A38BA0 	 0  0  0 65 67 61 2D 63 
+1A38BA8 	75 72 73 6F 72 2D 79 8C 
+1A38BB0 	78 8B A3  1 20 40 A0  1 
+1A38BB8 	54 86 A2  1 D0 88 A3  1 
+1A38BC0 	58 46 A0  1 
+: ega-window-bottom  ( -- line-adr )  #lines ega-line-adr  ;
+1A38BC4 	 0  0 65 67 
+1A38BC8 	61 2D 77 69 6E 64 6F 77 
+1A38BD0 	2D 62 6F 74 74 6F 6D 91 
+1A38BD8 	B4 8B A3  1 20 40 A0  1 
+1A38BE0 	 4 87 A2  1 D0 88 A3  1 
+1A38BE8 	58 46 A0  1 
+: ega-break-low   ( delta-#lines -- line-adr )
+1A38BEC 	 0  0 65 67 
+1A38BF0 	61 2D 62 72 65 61 6B 2D 
+1A38BF8 	6C 6F 77 8D DC 8B A3  1 
+1A38C00 	20 40 A0  1 
+   line# +  #lines min  ega-line-adr
+1A38C04 	54 86 A2  1 
+1A38C08 	 4 45 A0  1  4 87 A2  1 
+1A38C10 	74 4A A0  1 D0 88 A3  1 
+;
+1A38C18 	58 46 A0  1 
+: ega-break-high  ( delta-#lines -- line-adr )
+1A38C1C 	 0 65 67 61 
+1A38C20 	2D 62 72 65 61 6B 2D 68 
+1A38C28 	69 67 68 8E  0 8C A3  1 
+1A38C30 	20 40 A0  1 
+   #lines swap -  0 max  ega-line-adr
+1A38C34 	 4 87 A2  1 
+1A38C38 	68 49 A0  1 18 45 A0  1 
+1A38C40 	70 6F A0  1 9C 4A A0  1 
+1A38C48 	D0 88 A3  1 
+;
+1A38C4C 	58 46 A0  1 
+: ega-delete-lines  ( delta-#lines -- )
+1A38C50 	 0  0  0 65 67 61 2D 64 
+1A38C58 	65 6C 65 74 65 2D 6C 69 
+1A38C60 	6E 65 73 90 30 8C A3  1 
+1A38C68 	20 40 A0  1 
+   dup ega-break-high swap ega-break-low  ( break-high break-low )
+1A38C6C 	40 49 A0  1 
+1A38C70 	30 8C A3  1 68 49 A0  1 
+1A38C78 	 0 8C A3  1 
+   ega-cursor-y  over ega-window-bottom swap -  ( b-hi b-lo curs-y bottom-blo )
+1A38C7C 	B4 8B A3  1 
+1A38C80 	54 49 A0  1 DC 8B A3  1 
+1A38C88 	68 49 A0  1 18 45 A0  1 
+   move                                   ( break-high )
+1A38C90 	F4 4A A0  1 
+   ega-window-bottom swap  ega-erase-lines
+1A38C94 	DC 8B A3  1 
+1A38C98 	68 49 A0  1 78 8B A3  1 
+;
+1A38CA0 	58 46 A0  1 
+
+: ega-insert-lines  ( delta-#lines -- )
+1A38CA4 	 0  0  0 65 
+1A38CA8 	67 61 2D 69 6E 73 65 72 
+1A38CB0 	74 2D 6C 69 6E 65 73 90 
+1A38CB8 	68 8C A3  1 20 40 A0  1 
+   ega-break-high  ega-window-bottom   ( break-line-adr bottom-line-adr )
+1A38CC0 	30 8C A3  1 DC 8B A3  1 
+   swap ega-bytes/line -               ( bottom break-high- )
+1A38CC8 	68 49 A0  1  4 8B A3  1 
+1A38CD0 	18 45 A0  1 
+   ega-cursor-y   swap                 ( bottom  cursor-y break-high- )
+1A38CD4 	B4 8B A3  1 
+1A38CD8 	68 49 A0  1 
+   2dup <  if                          ( bottom  cursor-y break-high- )
+1A38CDC 	C0 49 A0  1 
+1A38CE0 	E4 47 A0  1 DC 41 A0  1 
+1A38CE8 	40  0  0  0 
+      do                                          ( bottom' )
+1A38CEC 	88 42 A0  1 
+1A38CF0 	30  0  0  0 
+         ega-bytes/line -  i over  ega-bytes/line 2*  move   ( bottom- )
+1A38CF4 	 4 8B A3  1 
+1A38CF8 	18 45 A0  1 B4 42 A0  1 
+1A38D00 	54 49 A0  1  4 8B A3  1 
+1A38D08 	A0 4B A0  1 F4 4A A0  1 
+      ega-bytes/line negate +loop      ( break-low-adr )
+1A38D10 	 4 8B A3  1 48 45 A0  1 
+1A38D18 	1C 42 A0  1 D8 FF FF FF 
+   else                                ( bottom  cursor-y break-high- )
+1A38D20 	C8 41 A0  1  8  0  0  0 
+      2drop                            ( break-low-adr )
+1A38D28 	AC 49 A0  1 
+   then                                ( break-low-adr )
+   ega-cursor-y  ega-erase-lines
+1A38D2C 	B4 8B A3  1 
+1A38D30 	78 8B A3  1 
+;
+1A38D34 	58 46 A0  1 
+: ega-move-chars  ( source-col# dest-col# -- )
+1A38D38 	 0 65 67 61 2D 6D 6F 76 
+1A38D40 	65 2D 63 68 61 72 73 8E 
+1A38D48 	BC 8C A3  1 20 40 A0  1 
+   2dup max  #columns swap -                 ( src-col# dst-col# #chars )
+1A38D50 	C0 49 A0  1 9C 4A A0  1 
+1A38D58 	1C 87 A2  1 68 49 A0  1 
+1A38D60 	18 45 A0  1 
+   2* -rot                                   ( #bytes src-col# dst-col# )
+1A38D64 	A0 4B A0  1 
+1A38D68 	94 49 A0  1 
+   swap ega-column-adr  swap ega-column-adr  ( #bytes src-adr dst-adr )
+1A38D6C 	68 49 A0  1 
+1A38D70 	F8 88 A3  1 68 49 A0  1 
+1A38D78 	F8 88 A3  1 
+   rot move
+1A38D7C 	7C 49 A0  1 
+1A38D80 	F4 4A A0  1 
+;
+1A38D84 	58 46 A0  1 
+: ega-erase-chars  ( #chars start-col# -- )
+1A38D88 	65 67 61 2D 65 72 61 73 
+1A38D90 	65 2D 63 68 61 72 73 8F 
+1A38D98 	4C 8D A3  1 20 40 A0  1 
+   ega-column-adr  swap  blank-chars
+1A38DA0 	F8 88 A3  1 68 49 A0  1 
+1A38DA8 	24 8B A3  1 
+;
+1A38DAC 	58 46 A0  1 
+: ega-insert-characters  ( n -- )
+1A38DB0 	 0  0 65 67 61 2D 69 6E 
+1A38DB8 	73 65 72 74 2D 63 68 61 
+1A38DC0 	72 61 63 74 65 72 73 95 
+1A38DC8 	9C 8D A3  1 20 40 A0  1 
+   #columns column# - min  dup
+1A38DD0 	1C 87 A2  1 40 86 A2  1 
+1A38DD8 	18 45 A0  1 74 4A A0  1 
+1A38DE0 	40 49 A0  1 
+   column# +   column# swap     ( #chars' cursor-col# cursor+count-col# )
+1A38DE4 	40 86 A2  1 
+1A38DE8 	 4 45 A0  1 40 86 A2  1 
+1A38DF0 	68 49 A0  1 
+   ega-move-chars  ( #chars' )  column#  ega-erase-chars
+1A38DF4 	4C 8D A3  1 
+1A38DF8 	40 86 A2  1 9C 8D A3  1 
+;
+1A38E00 	58 46 A0  1 
+: ega-delete-characters  ( #chars -- )
+1A38E04 	 0  0 65 67 
+1A38E08 	61 2D 64 65 6C 65 74 65 
+1A38E10 	2D 63 68 61 72 61 63 74 
+1A38E18 	65 72 73 95 CC 8D A3  1 
+1A38E20 	20 40 A0  1 
+   #columns column# - min  dup  ( #chars' #chars' )
+1A38E24 	1C 87 A2  1 
+1A38E28 	40 86 A2  1 18 45 A0  1 
+1A38E30 	74 4A A0  1 40 49 A0  1 
+   column# +  column#           ( #chars' cursor+count-col#  cursor-col# )
+1A38E38 	40 86 A2  1  4 45 A0  1 
+1A38E40 	40 86 A2  1 
+   ega-move-chars  ( #chars' )  #columns over -  ega-erase-chars
+1A38E44 	4C 8D A3  1 
+1A38E48 	1C 87 A2  1 54 49 A0  1 
+1A38E50 	18 45 A0  1 9C 8D A3  1 
+;
+1A38E58 	58 46 A0  1 
+
+: ega-draw-logo  ( line# addr width height -- )  2drop 2drop  ;
+1A38E5C 	 0  0 65 67 
+1A38E60 	61 2D 64 72 61 77 2D 6C 
+1A38E68 	6F 67 6F 8D 20 8E A3  1 
+1A38E70 	20 40 A0  1 AC 49 A0  1 
+1A38E78 	AC 49 A0  1 58 46 A0  1 
+
+: ega-install  ( -- )
+1A38E80 	65 67 61 2D 69 6E 73 74 
+1A38E88 	61 6C 6C 8B 70 8E A3  1 
+1A38E90 	20 40 A0  1 
+   h# b8000 /ega  " map-in" $call-parent  to ega
+1A38E94 	58 41 A0  1 
+1A38E98 	 0 80  B  0 14 87 A3  1 
+1A38EA0 	9C 53 A0  1  6 6D 61 70 
+1A38EA8 	2D 69 6E  0 DC 31 A2  1 
+1A38EB0 	B8 40 A0  1 E4 87 A3  1 
+
+   set-attributes
+1A38EB8 	B0 87 A3  1 
+
+\ Accessing the hardware cursor is a lot of trouble.
+\ There are two things that can go wrong:
+\ 1) The I/O space enable can be off in the display's PCI config register
+\ 2) The CRT registers can be locked
+\   d# 0 h# a crt!  d# 15 h# b crt!   \ Block cursor
+
+   #ega-columns to #columns  #ega-lines to #lines
+1A38EBC 	D4 86 A3  1 
+1A38EC0 	48 B8 A1  1 1C 87 A2  1 
+1A38EC8 	EC 86 A3  1 48 B8 A1  1 
+1A38ED0 	 4 87 A2  1 
+   
+   true to 16-color?
+1A38ED4 	 4 70 A0  1 
+1A38ED8 	48 B8 A1  1 14 8A A2  1 
+
+   ['] ega-reset-screen   	is reset-screen
+1A38EE0 	60 53 A0  1 88 89 A3  1 
+1A38EE8 	48 B8 A1  1 8C 88 A2  1 
+   ['] ega-toggle-cursor	is toggle-cursor
+1A38EF0 	60 53 A0  1  0 8A A3  1 
+1A38EF8 	48 B8 A1  1 C4 88 A2  1 
+   ['] ega-erase-screen	        is erase-screen
+1A38F00 	60 53 A0  1 40 8A A3  1 
+1A38F08 	48 B8 A1  1 A8 88 A2  1 
+   ['] ega-blink-screen	        is blink-screen
+1A38F10 	60 53 A0  1 D4 8A A3  1 
+1A38F18 	48 B8 A1  1 54 88 A2  1 
+   ['] ega-invert-screen	is invert-screen
+1A38F20 	60 53 A0  1 78 8A A3  1 
+1A38F28 	48 B8 A1  1 70 88 A2  1 
+   ['] ega-insert-characters	is insert-characters
+1A38F30 	60 53 A0  1 CC 8D A3  1 
+1A38F38 	48 B8 A1  1 E0 87 A2  1 
+   ['] ega-delete-characters	is delete-characters
+1A38F40 	60 53 A0  1 20 8E A3  1 
+1A38F48 	48 B8 A1  1  0 88 A2  1 
+   ['] ega-insert-lines	        is insert-lines
+1A38F50 	60 53 A0  1 BC 8C A3  1 
+1A38F58 	48 B8 A1  1 1C 88 A2  1 
+   ['] ega-delete-lines         is delete-lines
+1A38F60 	60 53 A0  1 68 8C A3  1 
+1A38F68 	48 B8 A1  1 38 88 A2  1 
+   ['] ega-draw-character	is draw-character
+1A38F70 	60 53 A0  1 48 89 A3  1 
+1A38F78 	48 B8 A1  1 C0 87 A2  1 
+   ['] ega-draw-logo		is draw-logo
+1A38F80 	60 53 A0  1 70 8E A3  1 
+1A38F88 	48 B8 A1  1 DC 88 A2  1 
+;
+1A38F90 	58 46 A0  1 
+: ega-remove  ( -- )
+1A38F94 	 0 65 67 61 
+1A38F98 	2D 72 65 6D 6F 76 65 8A 
+1A38FA0 	90 8E A3  1 20 40 A0  1 
+   ega /ega  " map-out" $call-parent
+1A38FA8 	E4 87 A3  1 14 87 A3  1 
+1A38FB0 	9C 53 A0  1  7 6D 61 70 
+1A38FB8 	2D 6F 75 74  0  0  0  0 
+1A38FC0 	DC 31 A2  1 
+;
+1A38FC4 	58 46 A0  1 
+
+: ega-selftest  ( -- failed? )  false  ;
+1A38FC8 	 0  0  0 65 67 61 2D 73 
+1A38FD0 	65 6C 66 74 65 73 74 8C 
+1A38FD8 	A4 8F A3  1 20 40 A0  1 
+1A38FE0 	18 70 A0  1 58 46 A0  1 
+
+headers
+
+: probe  ( -- )
+1A38FE8 	 0  0 70 72 6F 62 65 85 
+1A38FF0 	DC 8F A3  1 20 40 A0  1 
+   ['] ega-install  is-install
+1A38FF8 	60 53 A0  1 90 8E A3  1 
+1A39000 	AC A2 A2  1 
+   ['] ega-remove   is-remove
+1A39004 	60 53 A0  1 
+1A39008 	A4 8F A3  1 40 A3 A2  1 
+   ['] ega-selftest is-selftest
+1A39010 	60 53 A0  1 DC 8F A3  1 
+1A39018 	80 A3 A2  1 
+;
+1A3901C 	58 46 A0  1 
+probe
+1A39020 	69 6E 73 74 61 6C 6C A7 
+1A39028 	F4 8F A3  1 90 8E A3  1 
+1A39030 	 0  0  0 6F 70 65 6E A4 
+1A39038 	2C 90 A3  1 8C A0 A2  1 
+1A39040 	 0  0 77 72 69 74 65 A5 
+1A39048 	3C 90 A3  1 38 A1 A2  1 
+1A39050 	 0  0 64 72 61 77 2D 6C 
+1A39058 	6F 67 6F A9 4C 90 A3  1 
+1A39060 	DC 88 A2  1 72 65 73 74 
+1A39068 	6F 72 65 A7 60 90 A3  1 
+1A39070 	8C 88 A2  1  0 72 65 6D 
+1A39078 	6F 76 65 A6 70 90 A3  1 
+1A39080 	A4 8F A3  1  0  0 63 6C 
+1A39088 	6F 73 65 A5 80 90 A3  1 
+1A39090 	18 A0 A2  1  0  0 64 69 
+1A39098 	73 70 2D 74 65 73 74 A9 
+1A390A0 	90 90 A3  1 DC 8F A3  1 
+1A390A8 	 0  0  0 73 65 6C 66 74 
+1A390B0 	65 73 74 A8 A4 90 A3  1 
+1A390B8 	B4 9F A2  1 
+
+\ end-package
+\ 
+\ devalias screen /ega-text

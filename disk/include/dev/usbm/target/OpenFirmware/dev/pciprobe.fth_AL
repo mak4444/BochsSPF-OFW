@@ -1,0 +1,42 @@
+purpose: PCI probing user interface commands
+
+: probe-pci  ( -- )
+1A3846C 	 0  0 70 72 
+1A38470 	6F 62 65 2D 70 63 69 89 
+1A38478 	20 84 A3  1 20 40 A0  1 
+   " /pci" open-dev  ?dup  if   ( ihandle )
+1A38480 	9C 53 A0  1  4 2F 70 63 
+1A38488 	69  0  0  0 FC 3E A2  1 
+1A38490 	B4 70 A0  1 DC 41 A0  1 
+1A38498 	A4  0  0  0 
+      iselect
+1A3849C 	3C 40 A2  1 
+\      " pci-probe-list" eval
+" 0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f,10,11,12,13,14,15,16,17,18,19,1a,1b,1c,1d,1e,1f"
+1A384A0 	9C 53 A0  1 4F 30 2C 31 
+1A384A8 	2C 32 2C 33 2C 34 2C 35 
+1A384B0 	2C 36 2C 37 2C 38 2C 39 
+1A384B8 	2C 61 2C 62 2C 63 2C 64 
+1A384C0 	2C 65 2C 66 2C 31 30 2C 
+1A384C8 	31 31 2C 31 32 2C 31 33 
+1A384D0 	2C 31 34 2C 31 35 2C 31 
+1A384D8 	36 2C 31 37 2C 31 38 2C 
+1A384E0 	31 39 2C 31 61 2C 31 62 
+1A384E8 	2C 31 63 2C 31 64 2C 31 
+1A384F0 	65 2C 31 66  0  0  0  0 
+ CR  ."  master-probe eval=" HERE .H
+1A384F8 	80 6D A0  1 20 7C A0  1 
+1A38500 	13 20 6D 61 73 74 65 72 
+1A38508 	2D 70 72 6F 62 65 20 65 
+1A38510 	76 61 6C 3D  0  0  0  0 
+1A38518 	70 54 A0  1 10  E A1  1 
+  " master-probe" eval
+1A38520 	9C 53 A0  1  C 6D 61 73 
+1A38528 	74 65 72 2D 70 72 6F 62 
+1A38530 	65  0  0  0 D8 E5 A0  1 
+      unselect-dev
+1A38538 	50 41 A2  1 
+
+   then
+;
+1A3853C 	58 46 A0  1 

@@ -1,0 +1,238 @@
+\ Display and modify the saved state of the machine.
+\
+\ This code is highly machine-dependent.  This version is for the x86
+\
+\ Defines:
+\
+\ %eax %ebx %ecx %edx %ebp %esp %esi %edi %cs %ds %es %fs %gs %eflags
+
+hex
+
+only forth hidden also forth also definitions
+
+headerless
+
+3 actions
+1A1BBC0 	F8 BB A1  1 E4 BB A1  1 
+1A1BBC8 	 3  0  0  0 
+action:  @ >state  le-@  ;
+1A1BBCC 	90 90 90 E8 
+1A1BBD0 	A8 84 FE FF 5C 4C A0  1 
+1A1BBD8 	CC BA A1  1 38 4C A0  1 
+1A1BBE0 	58 46 A0  1 
+action:  @ >state  le-!  ; ( to )
+1A1BBE4 	20 40 A0  1 
+1A1BBE8 	5C 4C A0  1 CC BA A1  1 
+1A1BBF0 	30 4D A0  1 58 46 A0  1 
+action:  @ >state        ; ( addr )
+1A1BBF8 	20 40 A0  1 5C 4C A0  1 
+1A1BC00 	CC BA A1  1 58 46 A0  1 
+: register  \ name  ( -- )
+1A1BC08 	 0  0  0 72 65 67 69 73 
+1A1BC10 	74 65 72 88 A4 BB A1  1 
+1A1BC18 	20 40 A0  1 
+   create /n alloc-reg ,
+1A1BC1C 	A8 A2 A0  1 
+1A1BC20 	40 51 A0  1 A4 BB A1  1 
+1A1BC28 	98 55 A0  1 
+   use-actions
+1A1BC2C 	60 53 A0  1 
+1A1BC30 	CC BB A1  1 E0 57 A0  1 
+;
+1A1BC38 	58 46 A0  1 
+action-adr-t to doregister
+3 actions
+1A1BC3C 	74 BC A1  1 
+1A1BC40 	60 BC A1  1  3  0  0  0 
+action:  @ >state  le-w@  ;
+1A1BC48 	90 90 90 E8 2C 84 FE FF 
+1A1BC50 	5C 4C A0  1 CC BA A1  1 
+1A1BC58 	80 4C A0  1 58 46 A0  1 
+action:  @ >state  le-w!  ; ( to )
+1A1BC60 	20 40 A0  1 5C 4C A0  1 
+1A1BC68 	CC BA A1  1 90 4D A0  1 
+1A1BC70 	58 46 A0  1 
+action:  @ >state      ; ( addr )
+1A1BC74 	20 40 A0  1 
+1A1BC78 	5C 4C A0  1 CC BA A1  1 
+1A1BC80 	58 46 A0  1 
+: wregister  \ name  ( -- )
+1A1BC84 	 0  0 77 72 
+1A1BC88 	65 67 69 73 74 65 72 89 
+1A1BC90 	18 BC A1  1 20 40 A0  1 
+   create /n alloc-reg ,
+1A1BC98 	A8 A2 A0  1 40 51 A0  1 
+1A1BCA0 	A4 BB A1  1 98 55 A0  1 
+   use-actions
+1A1BCA8 	60 53 A0  1 48 BC A1  1 
+1A1BCB0 	E0 57 A0  1 
+;
+1A1BCB4 	58 46 A0  1 
+headers
+
+\ The following register save layout mimics the format of a
+\ Task State Segment
+
+wregister %tlink
+1A1BCB8 	 0 25 74 6C 69 6E 6B 86 
+1A1BCC0 	94 BC A1  1 48 BC A1  1 
+1A1BCC8 	 0  0  0  0 
+register %esp0   wregister %ss0
+1A1BCCC 	 0  0 25 65 
+1A1BCD0 	73 70 30 85 C4 BC A1  1 
+1A1BCD8 	CC BB A1  1  4  0  0  0 
+1A1BCE0 	 0  0  0 25 73 73 30 84 
+1A1BCE8 	D8 BC A1  1 48 BC A1  1 
+1A1BCF0 	 8  0  0  0 
+register %esp1   wregister %ss1
+1A1BCF4 	 0  0 25 65 
+1A1BCF8 	73 70 31 85 EC BC A1  1 
+1A1BD00 	CC BB A1  1  C  0  0  0 
+1A1BD08 	 0  0  0 25 73 73 31 84 
+1A1BD10 	 0 BD A1  1 48 BC A1  1 
+1A1BD18 	10  0  0  0 
+register %esp2   wregister %ss2
+1A1BD1C 	 0  0 25 65 
+1A1BD20 	73 70 32 85 14 BD A1  1 
+1A1BD28 	CC BB A1  1 14  0  0  0 
+1A1BD30 	 0  0  0 25 73 73 32 84 
+1A1BD38 	28 BD A1  1 48 BC A1  1 
+1A1BD40 	18  0  0  0 
+register %cr3
+1A1BD44 	 0  0  0 25 
+1A1BD48 	63 72 33 84 3C BD A1  1 
+1A1BD50 	CC BB A1  1 1C  0  0  0 
+register %eip
+1A1BD58 	 0  0  0 25 65 69 70 84 
+1A1BD60 	50 BD A1  1 CC BB A1  1 
+1A1BD68 	20  0  0  0 
+register %eflags
+1A1BD6C 	25 65 66 6C 
+1A1BD70 	61 67 73 87 64 BD A1  1 
+1A1BD78 	CC BB A1  1 24  0  0  0 
+
+register %eax  register %ecx  register %edx  register %ebx
+1A1BD80 	 0  0  0 25 65 61 78 84 
+1A1BD88 	78 BD A1  1 CC BB A1  1 
+1A1BD90 	28  0  0  0  0  0  0 25 
+1A1BD98 	65 63 78 84 8C BD A1  1 
+1A1BDA0 	CC BB A1  1 2C  0  0  0 
+1A1BDA8 	 0  0  0 25 65 64 78 84 
+1A1BDB0 	A0 BD A1  1 CC BB A1  1 
+1A1BDB8 	30  0  0  0  0  0  0 25 
+1A1BDC0 	65 62 78 84 B4 BD A1  1 
+1A1BDC8 	CC BB A1  1 34  0  0  0 
+register %esp  register %ebp  register %esi  register %edi
+1A1BDD0 	 0  0  0 25 65 73 70 84 
+1A1BDD8 	C8 BD A1  1 CC BB A1  1 
+1A1BDE0 	38  0  0  0  0  0  0 25 
+1A1BDE8 	65 62 70 84 DC BD A1  1 
+1A1BDF0 	CC BB A1  1 3C  0  0  0 
+1A1BDF8 	 0  0  0 25 65 73 69 84 
+1A1BE00 	F0 BD A1  1 CC BB A1  1 
+1A1BE08 	40  0  0  0  0  0  0 25 
+1A1BE10 	65 64 69 84  4 BE A1  1 
+1A1BE18 	CC BB A1  1 44  0  0  0 
+
+wregister %es  wregister %cs  wregister %ss  wregister %ds
+1A1BE20 	25 65 73 83 18 BE A1  1 
+1A1BE28 	48 BC A1  1 48  0  0  0 
+1A1BE30 	25 63 73 83 28 BE A1  1 
+1A1BE38 	48 BC A1  1 4C  0  0  0 
+1A1BE40 	25 73 73 83 38 BE A1  1 
+1A1BE48 	48 BC A1  1 50  0  0  0 
+1A1BE50 	25 64 73 83 48 BE A1  1 
+1A1BE58 	48 BC A1  1 54  0  0  0 
+wregister %fs  wregister %gs
+1A1BE60 	25 66 73 83 58 BE A1  1 
+1A1BE68 	48 BC A1  1 58  0  0  0 
+1A1BE70 	25 67 73 83 68 BE A1  1 
+1A1BE78 	48 BC A1  1 5C  0  0  0 
+wregister %ldt
+1A1BE80 	 0  0  0 25 6C 64 74 84 
+1A1BE88 	78 BE A1  1 48 BC A1  1 
+1A1BE90 	60  0  0  0 
+register  %tio
+1A1BE94 	 0  0  0 25 
+1A1BE98 	74 69 6F 84 8C BE A1  1 
+1A1BEA0 	CC BB A1  1 64  0  0  0 
+
+\ The following registers are not present in a Task State Segment
+
+register int#
+1A1BEA8 	 0  0  0 69 6E 74 23 84 
+1A1BEB0 	A0 BE A1  1 CC BB A1  1 
+1A1BEB8 	68  0  0  0 
+register %error
+1A1BEBC 	 0 25 65 72 
+1A1BEC0 	72 6F 72 86 B4 BE A1  1 
+1A1BEC8 	CC BB A1  1 6C  0  0  0 
+
+alias rup %edi  alias rip %esi  alias rrp %ebp  alias rsp %esp
+1A1BED0 	72 75 70 A3 C8 BE A1  1 
+1A1BED8 	18 BE A1  1 72 69 70 A3 
+1A1BEE0 	D8 BE A1  1  4 BE A1  1 
+1A1BEE8 	72 72 70 A3 E4 BE A1  1 
+1A1BEF0 	F0 BD A1  1 72 73 70 A3 
+1A1BEF8 	F0 BE A1  1 DC BD A1  1 
+alias rpc %eip  alias %pc %eip
+1A1BF00 	72 70 63 A3 FC BE A1  1 
+1A1BF08 	64 BD A1  1 25 70 63 A3 
+1A1BF10 	 8 BF A1  1 64 BD A1  1 
+
+\ System registers, not visible to most application programs
+\ wregister %ldtr   wregister %tr  register %gdtr  register %idtr
+
+\ State information needed by the firmware; not machine registers
+register watchdog        register %state-valid   register %restartable?
+1A1BF18 	 0  0  0 77 61 74 63 68 
+1A1BF20 	64 6F 67 88 14 BF A1  1 
+1A1BF28 	CC BB A1  1 70  0  0  0 
+1A1BF30 	 0  0  0 25 73 74 61 74 
+1A1BF38 	65 2D 76 61 6C 69 64 8C 
+1A1BF40 	28 BF A1  1 CC BB A1  1 
+1A1BF48 	74  0  0  0  0  0 25 72 
+1A1BF50 	65 73 74 61 72 74 61 62 
+1A1BF58 	6C 65 3F 8D 44 BF A1  1 
+1A1BF60 	CC BB A1  1 78  0  0  0 
+register %saved-my-self  register sig#
+1A1BF68 	 0 25 73 61 76 65 64 2D 
+1A1BF70 	6D 79 2D 73 65 6C 66 8E 
+1A1BF78 	60 BF A1  1 CC BB A1  1 
+1A1BF80 	7C  0  0  0  0  0  0 73 
+1A1BF88 	69 67 23 84 7C BF A1  1 
+1A1BF90 	CC BB A1  1 80  0  0  0 
+
+\ Following words defined here to satisfy the
+\ references to these "variables" anywhere else
+: saved-my-self ( -- addr )  addr %saved-my-self  ;
+1A1BF98 	 0  0 73 61 76 65 64 2D 
+1A1BFA0 	6D 79 2D 73 65 6C 66 8D 
+1A1BFA8 	90 BF A1  1 20 40 A0  1 
+1A1BFB0 	5C B8 A1  1 7C BF A1  1 
+1A1BFB8 	58 46 A0  1 
+: state-valid   ( -- addr )  addr %state-valid    ;
+1A1BFBC 	73 74 61 74 
+1A1BFC0 	65 2D 76 61 6C 69 64 8B 
+1A1BFC8 	AC BF A1  1 20 40 A0  1 
+1A1BFD0 	5C B8 A1  1 44 BF A1  1 
+1A1BFD8 	58 46 A0  1 
+: restartable?  ( -- addr )  addr %restartable?   ;
+1A1BFDC 	 0  0  0 72 
+1A1BFE0 	65 73 74 61 72 74 61 62 
+1A1BFE8 	6C 65 3F 8C CC BF A1  1 
+1A1BFF0 	20 40 A0  1 5C B8 A1  1 
+1A1BFF8 	60 BF A1  1 58 46 A0  1 
+
+: offset-of  \ reg-name  ( -- offset )
+1A1C000 	 0  0 6F 66 66 73 65 74 
+1A1C008 	2D 6F 66 89 F0 BF A1  1 
+1A1C010 	20 40 A0  1 
+   ' >body @
+1A1C014 	F8 95 A0  1 
+1A1C018 	E4 59 A0  1 5C 4C A0  1 
+;
+1A1C020 	58 46 A0  1 
+decimal
+
+only forth also definitions

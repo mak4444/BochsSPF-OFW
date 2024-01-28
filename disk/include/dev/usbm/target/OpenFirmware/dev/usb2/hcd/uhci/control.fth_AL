@@ -1,0 +1,445 @@
+purpose: UHCI USB Controller control pipe transaction processing
+
+hex
+headers
+
+\ Local temporary variables (common for control, bulk & interrupt)
+
+\ my-dev and my-real-dev are created here to deal with set-address.
+\ Normally my-dev and my-real-dev are both of the value of target.
+\ However, during set-address, target=my-dev=0, my-real-dev is the
+\ address to be assigned to my-real-dev.  The correct path to get
+\ a device's characteristics is via my-real-dev.
+
+0 value my-dev					\ Equals to target
+1A5075C 	 0 6D 79 2D 
+1A50760 	64 65 76 86 54  7 A5  1 
+1A50768 	50 40 A0  1 68  E  0  0 
+0 value my-real-dev				\ Path to dev's characteristics
+1A50770 	6D 79 2D 72 65 61 6C 2D 
+1A50778 	64 65 76 8B 68  7 A5  1 
+1A50780 	50 40 A0  1 6C  E  0  0 
+0 value my-dev/pipe				\ Device/pipe for ED
+1A50788 	6D 79 2D 64 65 76 2F 70 
+1A50790 	69 70 65 8B 80  7 A5  1 
+1A50798 	50 40 A0  1 70  E  0  0 
+
+0 value my-speed				\ Speed of my-real-dev
+1A507A0 	 0  0  0 6D 79 2D 73 70 
+1A507A8 	65 65 64 88 98  7 A5  1 
+1A507B0 	50 40 A0  1 74  E  0  0 
+0 value my-maxpayload				\ Pipe's max payload
+1A507B8 	 0  0 6D 79 2D 6D 61 78 
+1A507C0 	70 61 79 6C 6F 61 64 8D 
+1A507C8 	B0  7 A5  1 50 40 A0  1 
+1A507D0 	78  E  0  0 
+
+0 value my-#tds					\ # of input or output qTDs
+1A507D4 	6D 79 2D 23 
+1A507D8 	74 64 73 87 CC  7 A5  1 
+1A507E0 	50 40 A0  1 7C  E  0  0 
+
+0 value my-buf					\ Virtual address of data buffer
+1A507E8 	 0 6D 79 2D 62 75 66 86 
+1A507F0 	E0  7 A5  1 50 40 A0  1 
+1A507F8 	80  E  0  0 
+0 value my-buf-phys				\ Physical address of data buffer
+1A507FC 	6D 79 2D 62 
+1A50800 	75 66 2D 70 68 79 73 8B 
+1A50808 	F4  7 A5  1 50 40 A0  1 
+1A50810 	84  E  0  0 
+0 value /my-buf					\ Size of data buffer
+1A50814 	2F 6D 79 2D 
+1A50818 	62 75 66 87  C  8 A5  1 
+1A50820 	50 40 A0  1 88  E  0  0 
+
+0 value my-td					\ Current TD head
+1A50828 	 0  0 6D 79 2D 74 64 85 
+1A50830 	20  8 A5  1 50 40 A0  1 
+1A50838 	8C  E  0  0 
+0 value my-qh					\ Current QH
+1A5083C 	 0  0 6D 79 
+1A50840 	2D 71 68 85 34  8 A5  1 
+1A50848 	50 40 A0  1 90  E  0  0 
+
+: set-real-dev  ( real-dev target -- )		\ For set-address only
+1A50850 	 0  0  0 73 65 74 2D 72 
+1A50858 	65 61 6C 2D 64 65 76 8C 
+1A50860 	48  8 A5  1 20 40 A0  1 
+   to my-dev to my-real-dev
+1A50868 	B8 40 A0  1 68  7 A5  1 
+1A50870 	B8 40 A0  1 80  7 A5  1 
+;
+1A50878 	58 46 A0  1 
+
+: set-my-char  ( pipe -- )
+1A5087C 	73 65 74 2D 
+1A50880 	6D 79 2D 63 68 61 72 8B 
+1A50888 	64  8 A5  1 20 40 A0  1 
+   dup d# 15 << my-dev 8 << or to my-dev/pipe	( pipe )
+1A50890 	40 49 A0  1 58 41 A0  1 
+1A50898 	 F  0  0  0 C8 44 A0  1 
+1A508A0 	68  7 A5  1 F0 6F A0  1 
+1A508A8 	C8 44 A0  1 70 44 A0  1 
+1A508B0 	B8 40 A0  1 98  7 A5  1 
+   my-real-dev dup di-speed@			( pipe dev speed )
+1A508B8 	80  7 A5  1 40 49 A0  1 
+1A508C0 	10 42 A4  1 
+   speed-low =  if  TD_CTRL_LOW  else  TD_CTRL_FULL  then  to my-speed
+1A508C4 	80 2E A4  1 
+1A508C8 	24 48 A0  1 DC 41 A0  1 
+1A508D0 	10  0  0  0 88 F1 A4  1 
+1A508D8 	C8 41 A0  1  8  0  0  0 
+1A508E0 	A4 F1 A4  1 B8 40 A0  1 
+1A508E8 	B0  7 A5  1 
+   di-maxpayload@  to my-maxpayload		( )
+1A508EC 	6C 43 A4  1 
+1A508F0 	B8 40 A0  1 CC  7 A5  1 
+;
+1A508F8 	58 46 A0  1 
+: process-control-args  ( buf phy len -- )
+1A508FC 	 0  0  0 70 
+1A50900 	72 6F 63 65 73 73 2D 63 
+1A50908 	6F 6E 74 72 6F 6C 2D 61 
+1A50910 	72 67 73 94 8C  8 A5  1 
+1A50918 	20 40 A0  1 
+   to /my-buf to my-buf-phys to my-buf
+1A5091C 	B8 40 A0  1 
+1A50920 	20  8 A5  1 B8 40 A0  1 
+1A50928 	 C  8 A5  1 B8 40 A0  1 
+1A50930 	F4  7 A5  1 
+   clear-usb-error
+1A50934 	F8 3F A4  1 
+   set-my-dev
+1A50938 	20 51 A4  1 
+   0 set-my-char
+1A5093C 	70 6F A0  1 
+1A50940 	8C  8 A5  1 
+;
+1A50944 	58 46 A0  1 
+
+: alloc-control-qhtds  ( extra-tds -- )
+1A50948 	61 6C 6C 6F 63 2D 63 6F 
+1A50950 	6E 74 72 6F 6C 2D 71 68 
+1A50958 	74 64 73 93 18  9 A5  1 
+1A50960 	20 40 A0  1 
+   >r
+1A50964 	BC 45 A0  1 
+   my-maxpayload /my-buf    ( maxpayload /buf )
+1A50968 	CC  7 A5  1 20  8 A5  1 
+   over round-up            ( maxpayload /buf-rounded )
+1A50970 	54 49 A0  1 D8 35 A4  1 
+   swap /  dup to my-#tds   ( maxpayload #tds )
+1A50978 	68 49 A0  1 98 5F A0  1 
+1A50980 	40 49 A0  1 B8 40 A0  1 
+1A50988 	E0  7 A5  1 
+   dup  if  data-timeout  else  nodata-timeout  then  to timeout  ( maxpayload #tds )
+1A5098C 	40 49 A0  1 
+1A50990 	DC 41 A0  1 10  0  0  0 
+1A50998 	14 3B A4  1 C8 41 A0  1 
+1A509A0 	 8  0  0  0 F8 3A A4  1 
+1A509A8 	B8 40 A0  1  0 FC A4  1 
+   r> + alloc-qhtds  to my-td  to my-qh
+1A509B0 	D0 45 A0  1  4 45 A0  1 
+1A509B8 	CC F8 A4  1 B8 40 A0  1 
+1A509C0 	34  8 A5  1 B8 40 A0  1 
+1A509C8 	48  8 A5  1 
+;
+1A509CC 	58 46 A0  1 
+
+: fill-setup-td  ( sbuf sphy slen -- )
+1A509D0 	 0  0 66 69 6C 6C 2D 73 
+1A509D8 	65 74 75 70 2D 74 64 8D 
+1A509E0 	60  9 A5  1 20 40 A0  1 
+   TD_STAT_ACTIVE TD_CTRL_C_ERR3 or my-speed or
+1A509E8 	F0 F1 A4  1 70 F1 A4  1 
+1A509F0 	70 44 A0  1 B0  7 A5  1 
+1A509F8 	70 44 A0  1 
+   my-td >hctd-stat le-l!
+1A509FC 	34  8 A5  1 
+1A50A00 	E8 EF A4  1 5C 35 A4  1 
+   ( slen ) 1- d# 21 << TD_PID_SETUP or my-dev/pipe or
+1A50A08 	54 4B A0  1 58 41 A0  1 
+1A50A10 	15  0  0  0 C8 44 A0  1 
+1A50A18 	44 F3 A4  1 70 44 A0  1 
+1A50A20 	98  7 A5  1 70 44 A0  1 
+   my-td >hctd-token le-l!
+1A50A28 	34  8 A5  1  0 F0 A4  1 
+1A50A30 	5C 35 A4  1 
+   ( sphy ) my-td 2dup >hctd-buf le-l!
+1A50A34 	34  8 A5  1 
+1A50A38 	C0 49 A0  1 18 F0 A4  1 
+1A50A40 	5C 35 A4  1 
+   >td-pbuf l!
+1A50A44 	88 F0 A4  1 
+1A50A48 	7C 4D A0  1 
+   ( sbuf ) my-td >td-buf l!
+1A50A4C 	34  8 A5  1 
+1A50A50 	70 F0 A4  1 7C 4D A0  1 
+;
+1A50A58 	58 46 A0  1 
+: my-buf++ ( len -- )
+1A50A5C 	 0  0  0 6D 
+1A50A60 	79 2D 62 75 66 2B 2B 88 
+1A50A68 	E4  9 A5  1 20 40 A0  1 
+   /my-buf     over - to /my-buf
+1A50A70 	20  8 A5  1 54 49 A0  1 
+1A50A78 	18 45 A0  1 B8 40 A0  1 
+1A50A80 	20  8 A5  1 
+   my-buf-phys over + to my-buf-phys
+1A50A84 	 C  8 A5  1 
+1A50A88 	54 49 A0  1  4 45 A0  1 
+1A50A90 	B8 40 A0  1  C  8 A5  1 
+   my-buf      swap + to my-buf
+1A50A98 	F4  7 A5  1 68 49 A0  1 
+1A50AA0 	 4 45 A0  1 B8 40 A0  1 
+1A50AA8 	F4  7 A5  1 
+;
+1A50AAC 	58 46 A0  1 
+: fill-control-io-tds  ( dir -- std )
+1A50AB0 	66 69 6C 6C 2D 63 6F 6E 
+1A50AB8 	74 72 6F 6C 2D 69 6F 2D 
+1A50AC0 	74 64 73 93 6C  A A5  1 
+1A50AC8 	20 40 A0  1 
+   my-td >td-next l@				( dir td )
+1A50ACC 	34  8 A5  1 
+1A50AD0 	5C F0 A4  1 6C 4C A0  1 
+   my-#tds 0  ?do				( dir td )
+1A50AD8 	E0  7 A5  1 70 6F A0  1 
+1A50AE0 	50 42 A0  1 D0  0  0  0 
+      TD_STAT_ACTIVE TD_CTRL_C_ERR3 or		( dir td stat )
+1A50AE8 	F0 F1 A4  1 70 F1 A4  1 
+1A50AF0 	70 44 A0  1 
+      my-speed or				( dir td stat' )
+1A50AF4 	B0  7 A5  1 
+1A50AF8 	70 44 A0  1 
+      over >hctd-stat le-l!			( dir td )
+1A50AFC 	54 49 A0  1 
+1A50B00 	E8 EF A4  1 5C 35 A4  1 
+      /my-buf my-maxpayload min dup 1- d# 21 <<	( dir td /buf token )
+1A50B08 	20  8 A5  1 CC  7 A5  1 
+1A50B10 	74 4A A0  1 40 49 A0  1 
+1A50B18 	54 4B A0  1 58 41 A0  1 
+1A50B20 	15  0  0  0 C8 44 A0  1 
+      i 1 and 0=  if  TD_TOKEN_DATA1 or  then   ( dir td /buf token' )
+1A50B28 	B4 42 A0  1 80 6F A0  1 
+1A50B30 	5C 44 A0  1 24 47 A0  1 
+1A50B38 	DC 41 A0  1  C  0  0  0 
+1A50B40 	90 F3 A4  1 70 44 A0  1 
+      3 pick or my-dev/pipe or			( dir td /buf token' )
+1A50B48 	A0 6F A0  1  C 4A A0  1 
+1A50B50 	70 44 A0  1 98  7 A5  1 
+1A50B58 	70 44 A0  1 
+      2 pick >hctd-token le-l!			( dir td /buf )
+1A50B5C 	90 6F A0  1 
+1A50B60 	 C 4A A0  1  0 F0 A4  1 
+1A50B68 	5C 35 A4  1 
+      my-buf-phys 2 pick 2dup >hctd-buf le-l!	( dir td /buf pbuf td )
+1A50B6C 	 C  8 A5  1 
+1A50B70 	90 6F A0  1  C 4A A0  1 
+1A50B78 	C0 49 A0  1 18 F0 A4  1 
+1A50B80 	5C 35 A4  1 
+      >td-pbuf l!				( dir td /buf )
+1A50B84 	88 F0 A4  1 
+1A50B88 	7C 4D A0  1 
+      my-buf 2 pick >td-buf l!			( dir td /buf )
+1A50B8C 	F4  7 A5  1 
+1A50B90 	90 6F A0  1  C 4A A0  1 
+1A50B98 	70 F0 A4  1 7C 4D A0  1 
+      my-buf++					( dir td )
+1A50BA0 	6C  A A5  1 
+      >td-next l@				( dir td' )
+1A50BA4 	5C F0 A4  1 
+1A50BA8 	6C 4C A0  1 
+   loop	 nip					( std )
+1A50BAC 	F8 41 A0  1 
+1A50BB0 	38 FF FF FF FC 46 A0  1 
+;
+1A50BB8 	58 46 A0  1 
+: fill-status-td  ( std control -- )
+1A50BBC 	 0 66 69 6C 
+1A50BC0 	6C 2D 73 74 61 74 75 73 
+1A50BC8 	2D 74 64 8E C8  A A5  1 
+1A50BD0 	20 40 A0  1 
+   TD_NULL_DATA_SIZE d# 21 << or TD_TOKEN_DATA1 or
+1A50BD4 	F4 F2 A4  1 
+1A50BD8 	58 41 A0  1 15  0  0  0 
+1A50BE0 	C8 44 A0  1 70 44 A0  1 
+1A50BE8 	90 F3 A4  1 70 44 A0  1 
+   my-dev/pipe or  over >hctd-token le-l!
+1A50BF0 	98  7 A5  1 70 44 A0  1 
+1A50BF8 	54 49 A0  1  0 F0 A4  1 
+1A50C00 	5C 35 A4  1 
+   TD_STAT_ACTIVE TD_CTRL_IOC or my-speed or
+1A50C04 	F0 F1 A4  1 
+1A50C08 	D4 F1 A4  1 70 44 A0  1 
+1A50C10 	B0  7 A5  1 70 44 A0  1 
+   swap >hctd-stat le-l!
+1A50C18 	68 49 A0  1 E8 EF A4  1 
+1A50C20 	5C 35 A4  1 
+;
+1A50C24 	58 46 A0  1 
+
+\ ---------------------------------------------------------------------------
+\ CONTROL pipe operations
+\ ---------------------------------------------------------------------------
+
+: (control-get)  ( sbuf sphy slen buf phy len -- actual usberr )
+1A50C28 	 0  0 28 63 6F 6E 74 72 
+1A50C30 	6F 6C 2D 67 65 74 29 8D 
+1A50C38 	D0  B A5  1 20 40 A0  1 
+   process-control-args				( sbuf sphy slen )
+1A50C40 	18  9 A5  1 
+   /my-buf 0=  if  3drop 0 USB_ERR_INV_OP exit  then
+1A50C44 	20  8 A5  1 
+1A50C48 	24 47 A0  1 DC 41 A0  1 
+1A50C50 	14  0  0  0 A4 3E A4  1 
+1A50C58 	70 6F A0  1 E0 2D A4  1 
+1A50C60 	40 46 A0  1 
+   2 alloc-control-qhtds			( sbuf sphy slen )
+1A50C64 	90 6F A0  1 
+1A50C68 	60  9 A5  1 
+
+   \ SETUP TD
+   fill-setup-td				( )
+1A50C6C 	E4  9 A5  1 
+
+   \ IN TD
+   TD_PID_IN fill-control-io-tds		( std )
+1A50C70 	5C F3 A4  1 C8  A A5  1 
+
+   \ Status TD (OUT)
+   TD_PID_OUT fill-status-td			( )
+1A50C78 	74 F3 A4  1 D0  B A5  1 
+
+   \ Start control transaction
+   my-qh my-speed insert-ctrl-qh		( )
+1A50C80 	48  8 A5  1 B0  7 A5  1 
+1A50C88 	60 FB A4  1 
+
+   \ Process results
+   my-qh done?  if
+1A50C8C 	48  8 A5  1 
+1A50C90 	7C FD A4  1 DC 41 A0  1 
+1A50C98 	10  0  0  0 
+      0						( actual )	\ System error, timeout
+1A50C9C 	70 6F A0  1 
+   else
+1A50CA0 	C8 41 A0  1 5C  0  0  0 
+      my-td error?  if
+1A50CA8 	34  8 A5  1 4C FE A4  1 
+1A50CB0 	DC 41 A0  1 10  0  0  0 
+         0					( actual )	\ USB error
+1A50CB8 	70 6F A0  1 
+      else
+1A50CBC 	C8 41 A0  1 
+1A50CC0 	40  0  0  0 
+         my-td >td-next l@ dup my-#tds get-actual		( td actual )
+1A50CC4 	34  8 A5  1 
+1A50CC8 	5C F0 A4  1 6C 4C A0  1 
+1A50CD0 	40 49 A0  1 E0  7 A5  1 
+1A50CD8 	BC FE A4  1 
+         over >td-buf l@ rot >td-pbuf l@ 2 pick dma-pull	( actual )
+1A50CDC 	54 49 A0  1 
+1A50CE0 	70 F0 A4  1 6C 4C A0  1 
+1A50CE8 	7C 49 A0  1 88 F0 A4  1 
+1A50CF0 	6C 4C A0  1 90 6F A0  1 
+1A50CF8 	 C 4A A0  1 34 36 A4  1 
+      then
+   then
+
+   my-qh dup remove-qh  free-qhtds		( actual )
+1A50D00 	48  8 A5  1 40 49 A0  1 
+1A50D08 	E4 FA A4  1 58 F9 A4  1 
+   usb-error					( actual usberr )
+1A50D10 	DC 3F A4  1 
+;
+1A50D14 	58 46 A0  1 
+
+: (control-set)  ( sbuf sphy slen buf phy len -- usberr )
+1A50D18 	 0  0 28 63 6F 6E 74 72 
+1A50D20 	6F 6C 2D 73 65 74 29 8D 
+1A50D28 	3C  C A5  1 20 40 A0  1 
+   process-control-args				( sbuf sphy slen )
+1A50D30 	18  9 A5  1 
+   2 alloc-control-qhtds			( sbuf sphy slen )
+1A50D34 	90 6F A0  1 
+1A50D38 	60  9 A5  1 
+
+   \ SETUP TD
+   fill-setup-td				( )
+1A50D3C 	E4  9 A5  1 
+
+   \ OUT TD
+   TD_PID_OUT fill-control-io-tds		( std )
+1A50D40 	74 F3 A4  1 C8  A A5  1 
+
+   \ Status TD (IN)
+   TD_PID_IN fill-status-td			( )
+1A50D48 	5C F3 A4  1 D0  B A5  1 
+
+   \ Start control transaction
+   my-qh my-speed insert-ctrl-qh
+1A50D50 	48  8 A5  1 B0  7 A5  1 
+1A50D58 	60 FB A4  1 
+
+   \ Process results
+   my-qh done? 0=  if   my-td error? drop  then
+1A50D5C 	48  8 A5  1 
+1A50D60 	7C FD A4  1 24 47 A0  1 
+1A50D68 	DC 41 A0  1 10  0  0  0 
+1A50D70 	34  8 A5  1 4C FE A4  1 
+1A50D78 	30 49 A0  1 
+
+   my-qh dup remove-qh  free-qhtds
+1A50D7C 	48  8 A5  1 
+1A50D80 	40 49 A0  1 E4 FA A4  1 
+1A50D88 	58 F9 A4  1 
+   usb-error					( usberr )
+1A50D8C 	DC 3F A4  1 
+;
+1A50D90 	58 46 A0  1 
+
+: (control-set-nostat)  ( sbuf sphy slen buf phy len -- usberr )
+1A50D94 	 0  0  0 28 
+1A50D98 	63 6F 6E 74 72 6F 6C 2D 
+1A50DA0 	73 65 74 2D 6E 6F 73 74 
+1A50DA8 	61 74 29 94 2C  D A5  1 
+1A50DB0 	20 40 A0  1 
+   process-control-args				( sbuf sphy slen )
+1A50DB4 	18  9 A5  1 
+   1 alloc-control-qhtds			( sbuf sphy slen )
+1A50DB8 	80 6F A0  1 60  9 A5  1 
+
+   \ SETUP TD
+   fill-setup-td				( )
+1A50DC0 	E4  9 A5  1 
+
+   \ OUT TD
+   TD_PID_OUT fill-control-io-tds drop		( )
+1A50DC4 	74 F3 A4  1 
+1A50DC8 	C8  A A5  1 30 49 A0  1 
+
+   \ Start control transaction
+   my-qh my-speed insert-ctrl-qh
+1A50DD0 	48  8 A5  1 B0  7 A5  1 
+1A50DD8 	60 FB A4  1 
+
+   \ Process results
+   my-qh done? 0=  if   my-td error? drop  then
+1A50DDC 	48  8 A5  1 
+1A50DE0 	7C FD A4  1 24 47 A0  1 
+1A50DE8 	DC 41 A0  1 10  0  0  0 
+1A50DF0 	34  8 A5  1 4C FE A4  1 
+1A50DF8 	30 49 A0  1 
+
+   my-qh dup remove-qh  free-qhtds
+1A50DFC 	48  8 A5  1 
+1A50E00 	40 49 A0  1 E4 FA A4  1 
+1A50E08 	58 F9 A4  1 
+   usb-error					( usberr )
+1A50E0C 	DC 3F A4  1 
+;
+1A50E10 	58 46 A0  1 
+
+headers

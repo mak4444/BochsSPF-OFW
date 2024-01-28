@@ -1,0 +1,108 @@
+purpose: USB Data Packet Manipulation
+
+hex
+headers
+
+\ XXX This code assumes the device and configuration descriptors are ok.
+
+false value class-in-dev?
+1A4392C 	 0  0 63 6C 
+1A43930 	61 73 73 2D 69 6E 2D 64 
+1A43938 	65 76 3F 8D 1C 39 A4  1 
+1A43940 	50 40 A0  1 C4  D  0  0 
+
+: find-desc  ( adr type -- adr' )
+1A43948 	 0  0 66 69 6E 64 2D 64 
+1A43950 	65 73 63 89 40 39 A4  1 
+1A43958 	20 40 A0  1 
+   swap  begin  ?dup  while		( type adr )
+1A4395C 	68 49 A0  1 
+1A43960 	B4 70 A0  1 DC 41 A0  1 
+1A43968 	44  0  0  0 
+      dup 1+ c@ 2 pick =  if  0  else  dup c@ +  then
+1A4396C 	40 49 A0  1 
+1A43970 	30 4B A0  1 C4 4C A0  1 
+1A43978 	90 6F A0  1  C 4A A0  1 
+1A43980 	24 48 A0  1 DC 41 A0  1 
+1A43988 	10  0  0  0 70 6F A0  1 
+1A43990 	C8 41 A0  1 10  0  0  0 
+1A43998 	40 49 A0  1 C4 4C A0  1 
+1A439A0 	 4 45 A0  1 
+					( type adr' )
+   repeat  nip				( adr )
+1A439A4 	C8 41 A0  1 
+1A439A8 	B8 FF FF FF FC 46 A0  1 
+;
+1A439B0 	58 46 A0  1 
+
+: find-intf-desc  ( adr intfidx -- adr )
+1A439B4 	 0 66 69 6E 
+1A439B8 	64 2D 69 6E 74 66 2D 64 
+1A439C0 	65 73 63 8E 58 39 A4  1 
+1A439C8 	20 40 A0  1 
+   swap  begin				( intfidx adr )
+1A439CC 	68 49 A0  1 
+      INTERFACE find-desc		( intfidx adr' )
+1A439D0 	 8 32 A4  1 58 39 A4  1 
+   swap ?dup  while			( adr intfidx )
+1A439D8 	68 49 A0  1 B4 70 A0  1 
+1A439E0 	DC 41 A0  1 20  0  0  0 
+      1- swap				( intfidx' adr )
+1A439E8 	54 4B A0  1 68 49 A0  1 
+      dup c@ +				( intfidx adr' )
+1A439F0 	40 49 A0  1 C4 4C A0  1 
+1A439F8 	 4 45 A0  1 
+   repeat
+1A439FC 	C8 41 A0  1 
+1A43A00 	D0 FF FF FF 
+;
+1A43A04 	58 46 A0  1 
+
+: unicode$>ascii$  ( adr -- actual )
+1A43A08 	75 6E 69 63 6F 64 65 24 
+1A43A10 	3E 61 73 63 69 69 24 8F 
+1A43A18 	C8 39 A4  1 20 40 A0  1 
+   dup c@ 2 - 2/ swap 2 + over 0  ?do	( actual adr' )
+1A43A20 	40 49 A0  1 C4 4C A0  1 
+1A43A28 	90 6F A0  1 18 45 A0  1 
+1A43A30 	78 4B A0  1 68 49 A0  1 
+1A43A38 	90 6F A0  1  4 45 A0  1 
+1A43A40 	54 49 A0  1 70 6F A0  1 
+1A43A48 	50 42 A0  1 6C  0  0  0 
+      dup i 2* 1+ + c@ 0=  if		\ ASCII
+1A43A50 	40 49 A0  1 B4 42 A0  1 
+1A43A58 	A0 4B A0  1 30 4B A0  1 
+1A43A60 	 4 45 A0  1 C4 4C A0  1 
+1A43A68 	24 47 A0  1 DC 41 A0  1 
+1A43A70 	20  0  0  0 
+         dup i 2* + c@			( actual adr c )
+1A43A74 	40 49 A0  1 
+1A43A78 	B4 42 A0  1 A0 4B A0  1 
+1A43A80 	 4 45 A0  1 C4 4C A0  1 
+      else				\ Non-ascii
+1A43A88 	C8 41 A0  1  C  0  0  0 
+         ascii ?			( actual adr c )
+1A43A90 	58 41 A0  1 3F  0  0  0 
+      then
+      over 2 - i + c!			( actual adr )
+1A43A98 	54 49 A0  1 90 6F A0  1 
+1A43AA0 	18 45 A0  1 B4 42 A0  1 
+1A43AA8 	 4 45 A0  1 B8 4D A0  1 
+   loop  drop
+1A43AB0 	F8 41 A0  1 9C FF FF FF 
+1A43AB8 	30 49 A0  1 
+;
+1A43ABC 	58 46 A0  1 
+
+\ XXX In the future, maybe we can decode more languages.
+: encoded$>ascii$  ( adr lang -- actual )
+1A43AC0 	65 6E 63 6F 64 65 64 24 
+1A43AC8 	3E 61 73 63 69 69 24 8F 
+1A43AD0 	1C 3A A4  1 20 40 A0  1 
+   drop unicode$>ascii$
+1A43AD8 	30 49 A0  1 1C 3A A4  1 
+;
+1A43AE0 	58 46 A0  1 
+
+headers
+

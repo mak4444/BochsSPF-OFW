@@ -1,0 +1,47 @@
+\ Cluster access
+
+\ mmo private
+
+: cl#>sector#  ( cluster# -- sector# )
+1A2CC14 	63 6C 23 3E 
+1A2CC18 	73 65 63 74 6F 72 23 8B 
+1A2CC20 	 4 CC A2  1 20 40 A0  1 
+   2 -  spc c@ *  cl-sector0 l@ +
+1A2CC28 	90 6F A0  1 18 45 A0  1 
+1A2CC30 	58 BC A2  1 C4 4C A0  1 
+1A2CC38 	1C 5F A0  1 6C BB A2  1 
+1A2CC40 	6C 4C A0  1  4 45 A0  1 
+;
+1A2CC48 	58 46 A0  1 
+: cl>sector  ( cluster# #clusters -- sector# #sectors )
+1A2CC4C 	 0  0 63 6C 
+1A2CC50 	3E 73 65 63 74 6F 72 89 
+1A2CC58 	24 CC A2  1 20 40 A0  1 
+   swap  cl#>sector#                ( #clusters sector# )
+1A2CC60 	68 49 A0  1 24 CC A2  1 
+   swap  spc c@ *                   ( sector# #sectors )
+1A2CC68 	68 49 A0  1 58 BC A2  1 
+1A2CC70 	C4 4C A0  1 1C 5F A0  1 
+;
+1A2CC78 	58 46 A0  1 
+
+: read-clusters  ( cluster# #clusters adr -- error? )
+1A2CC7C 	 0  0 72 65 
+1A2CC80 	61 64 2D 63 6C 75 73 74 
+1A2CC88 	65 72 73 8D 5C CC A2  1 
+1A2CC90 	20 40 A0  1 
+   >r  cl>sector  r>  read-sectors
+1A2CC94 	BC 45 A0  1 
+1A2CC98 	5C CC A2  1 D0 45 A0  1 
+1A2CCA0 	4C BE A2  1 
+;
+1A2CCA4 	58 46 A0  1 
+: write-clusters  ( cluster# #clusters adr -- error? )
+1A2CCA8 	 0 77 72 69 74 65 2D 63 
+1A2CCB0 	6C 75 73 74 65 72 73 8E 
+1A2CCB8 	90 CC A2  1 20 40 A0  1 
+   >r  cl>sector  r>  write-sectors
+1A2CCC0 	BC 45 A0  1 5C CC A2  1 
+1A2CCC8 	D0 45 A0  1 8C BE A2  1 
+;
+1A2CCD0 	58 46 A0  1 

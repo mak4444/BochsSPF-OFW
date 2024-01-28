@@ -1,0 +1,972 @@
+purpose: SCSI disk package implementing a "block" device-type interface.
+
+
+: scsidiskfth 
+1A4D980 	73 63 73 69 64 69 73 6B 
+1A4D988 	66 74 68 8B  4 C4 A4  1 
+1A4D990 	20 40 A0  1 
+hex
+1A4D994 	C0 8D A0  1 
+
+" block" device-type
+1A4D998 	9C 53 A0  1  5 62 6C 6F 
+1A4D9A0 	63 6B  0  0 B8 49 A2  1 
+" disk"  encode-string  " compatible" property
+1A4D9A8 	9C 53 A0  1  4 64 69 73 
+1A4D9B0 	6B  0  0  0 A0 F6 A1  1 
+1A4D9B8 	9C 53 A0  1  A 63 6F 6D 
+1A4D9C0 	70 61 74 69 62 6C 65  0 
+1A4D9C8 	BC 14 A2  1 
+" usbdisk" " iconname" string-property
+1A4D9CC 	9C 53 A0  1 
+1A4D9D0 	 7 75 73 62 64 69 73 6B 
+1A4D9D8 	 0  0  0  0 9C 53 A0  1 
+1A4D9E0 	 8 69 63 6F 6E 6E 61 6D 
+1A4D9E8 	65  0  0  0 C8 48 A2  1 
+
+scsicomfth \ fload d:include\dev\usbm\device\storage\scsicom.fth	\ Utility routines for SCSI commands
+1A4D9F0 	90 A6 A4  1 
+
+hex
+1A4D9F4 	C0 8D A0  1 
+
+\ 0 means no timeout
+ " : set-timeout  ( msecs -- )  "" set-timeout"" $call-parent  ;" eval
+1A4D9F8 	9C 53 A0  1 3B 3A 20 73 
+1A4DA00 	65 74 2D 74 69 6D 65 6F 
+1A4DA08 	75 74 20 20 28 20 6D 73 
+1A4DA10 	65 63 73 20 2D 2D 20 29 
+1A4DA18 	20 20 22 20 73 65 74 2D 
+1A4DA20 	74 69 6D 65 6F 75 74 22 
+1A4DA28 	20 24 63 61 6C 6C 2D 70 
+1A4DA30 	61 72 65 6E 74 20 20 3B 
+1A4DA38 	 0  0  0  0 D8 E5 A0  1 
+
+s" 0 instance value offset-low" eval     \ Offset to start of partition
+1A4DA40 	9C 53 A0  1 1B 30 20 69 
+1A4DA48 	6E 73 74 61 6E 63 65 20 
+1A4DA50 	76 61 6C 75 65 20 6F 66 
+1A4DA58 	66 73 65 74 2D 6C 6F 77 
+1A4DA60 	 0  0  0  0 D8 E5 A0  1 
+s" 0 instance value offset-high" eval
+1A4DA68 	9C 53 A0  1 1C 30 20 69 
+1A4DA70 	6E 73 74 61 6E 63 65 20 
+1A4DA78 	76 61 6C 75 65 20 6F 66 
+1A4DA80 	66 73 65 74 2D 68 69 67 
+1A4DA88 	68  0  0  0 D8 E5 A0  1 
+
+external
+1A4DA90 	90 B2 A2  1 
+s" 0 instance value label-package" eval
+1A4DA94 	9C 53 A0  1 
+1A4DA98 	1E 30 20 69 6E 73 74 61 
+1A4DAA0 	6E 63 65 20 76 61 6C 75 
+1A4DAA8 	65 20 6C 61 62 65 6C 2D 
+1A4DAB0 	70 61 63 6B 61 67 65  0 
+1A4DAB8 	D8 E5 A0  1 
+s" true value report-failure" eval
+1A4DABC 	9C 53 A0  1 
+1A4DAC0 	19 74 72 75 65 20 76 61 
+1A4DAC8 	6C 75 65 20 72 65 70 6F 
+1A4DAD0 	72 74 2D 66 61 69 6C 75 
+1A4DAD8 	72 65  0  0 D8 E5 A0  1 
+headers
+1A4DAE0 	74 25 A3  1 
+
+\ Sets offset-low and offset-high, reflecting the starting location of the
+\ partition specified by the "my-args" string.
+
+s" : init-label-package" eval  ( -- okay? )
+1A4DAE4 	9C 53 A0  1 
+1A4DAE8 	14 3A 20 69 6E 69 74 2D 
+1A4DAF0 	6C 61 62 65 6C 2D 70 61 
+1A4DAF8 	63 6B 61 67 65  0  0  0 
+1A4DB00 	D8 E5 A0  1 
+s"    0 to offset-high  0 to offset-low" eval
+1A4DB04 	9C 53 A0  1 
+1A4DB08 	24 20 20 20 30 20 74 6F 
+1A4DB10 	20 6F 66 66 73 65 74 2D 
+1A4DB18 	68 69 67 68 20 20 30 20 
+1A4DB20 	74 6F 20 6F 66 66 73 65 
+1A4DB28 	74 2D 6C 6F 77  0  0  0 
+1A4DB30 	D8 E5 A0  1 
+ "    my-args  "" disk-label""  $open-package to label-package" eval
+1A4DB34 	9C 53 A0  1 
+1A4DB38 	39 20 20 20 6D 79 2D 61 
+1A4DB40 	72 67 73 20 20 22 20 64 
+1A4DB48 	69 73 6B 2D 6C 61 62 65 
+1A4DB50 	6C 22 20 20 24 6F 70 65 
+1A4DB58 	6E 2D 70 61 63 6B 61 67 
+1A4DB60 	65 20 74 6F 20 6C 61 62 
+1A4DB68 	65 6C 2D 70 61 63 6B 61 
+1A4DB70 	67 65  0  0 D8 E5 A0  1 
+s"    label-package dup  if" eval
+1A4DB78 	9C 53 A0  1 18 20 20 20 
+1A4DB80 	6C 61 62 65 6C 2D 70 61 
+1A4DB88 	63 6B 61 67 65 20 64 75 
+1A4DB90 	70 20 20 69 66  0  0  0 
+1A4DB98 	D8 E5 A0  1 
+ "       0 0  "" offset"" label-package $call-method to offset-high to offset-low" eval
+1A4DB9C 	9C 53 A0  1 
+1A4DBA0 	4C 20 20 20 20 20 20 30 
+1A4DBA8 	20 30 20 20 22 20 6F 66 
+1A4DBB0 	66 73 65 74 22 20 6C 61 
+1A4DBB8 	62 65 6C 2D 70 61 63 6B 
+1A4DBC0 	61 67 65 20 24 63 61 6C 
+1A4DBC8 	6C 2D 6D 65 74 68 6F 64 
+1A4DBD0 	20 74 6F 20 6F 66 66 73 
+1A4DBD8 	65 74 2D 68 69 67 68 20 
+1A4DBE0 	74 6F 20 6F 66 66 73 65 
+1A4DBE8 	74 2D 6C 6F 77  0  0  0 
+1A4DBF0 	D8 E5 A0  1 
+s"    else" eval
+1A4DBF4 	9C 53 A0  1 
+1A4DBF8 	 7 20 20 20 65 6C 73 65 
+1A4DC00 	 0  0  0  0 D8 E5 A0  1 
+s"       report-failure  if" eval
+1A4DC08 	9C 53 A0  1 18 20 20 20 
+1A4DC10 	20 20 20 72 65 70 6F 72 
+1A4DC18 	74 2D 66 61 69 6C 75 72 
+1A4DC20 	65 20 20 69 66  0  0  0 
+1A4DC28 	D8 E5 A0  1 
+ "          ."" Can't open disk label package""  cr" eval
+1A4DC2C 	9C 53 A0  1 
+1A4DC30 	2E 20 20 20 20 20 20 20 
+1A4DC38 	20 20 2E 22 20 43 61 6E 
+1A4DC40 	27 74 20 6F 70 65 6E 20 
+1A4DC48 	64 69 73 6B 20 6C 61 62 
+1A4DC50 	65 6C 20 70 61 63 6B 61 
+1A4DC58 	67 65 22 20 20 63 72  0 
+1A4DC60 	D8 E5 A0  1 
+s"       then" eval
+1A4DC64 	9C 53 A0  1 
+1A4DC68 	 A 20 20 20 20 20 20 74 
+1A4DC70 	68 65 6E  0 D8 E5 A0  1 
+s"    then ;" eval
+1A4DC78 	9C 53 A0  1  9 20 20 20 
+1A4DC80 	74 68 65 6E 20 3B  0  0 
+1A4DC88 	D8 E5 A0  1 
+
+\ Checks to see if a device is ready
+
+s" : unit-ready?" eval  ( -- ready? )
+1A4DC8C 	9C 53 A0  1 
+1A4DC90 	 D 3A 20 75 6E 69 74 2D 
+1A4DC98 	72 65 61 64 79 3F  0  0 
+1A4DCA0 	D8 E5 A0  1 
+ "    "" ""(00 00 00 00 00 00)"" drop  no-data-command  0= ;" eval
+1A4DCA4 	9C 53 A0  1 
+1A4DCA8 	36 20 20 20 22 20 22 28 
+1A4DCB0 	30 30 20 30 30 20 30 30 
+1A4DCB8 	20 30 30 20 30 30 20 30 
+1A4DCC0 	30 29 22 20 64 72 6F 70 
+1A4DCC8 	20 20 6E 6F 2D 64 61 74 
+1A4DCD0 	61 2D 63 6F 6D 6D 61 6E 
+1A4DCD8 	64 20 20 30 3D 20 3B  0 
+1A4DCE0 	D8 E5 A0  1 
+
+\ Some devices require a second TEST UNIT READY, despite returning
+\ CHECK CONDITION, with sense NOT READY and MEDIUM NOT PRESENT.
+
+s" : retry-unit-ready?" eval  ( -- ready? )
+1A4DCE4 	9C 53 A0  1 
+1A4DCE8 	13 3A 20 72 65 74 72 79 
+1A4DCF0 	2D 75 6E 69 74 2D 72 65 
+1A4DCF8 	61 64 79 3F  0  0  0  0 
+1A4DD00 	D8 E5 A0  1 
+s"    unit-ready?  ?dup  if  exit  then" eval
+1A4DD04 	9C 53 A0  1 
+1A4DD08 	24 20 20 20 75 6E 69 74 
+1A4DD10 	2D 72 65 61 64 79 3F 20 
+1A4DD18 	20 3F 64 75 70 20 20 69 
+1A4DD20 	66 20 20 65 78 69 74 20 
+1A4DD28 	20 74 68 65 6E  0  0  0 
+1A4DD30 	D8 E5 A0  1 
+s"    unit-ready? ;" eval
+1A4DD34 	9C 53 A0  1 
+1A4DD38 	10 20 20 20 75 6E 69 74 
+1A4DD40 	2D 72 65 61 64 79 3F 20 
+1A4DD48 	3B  0  0  0 D8 E5 A0  1 
+
+\ Ensures that the disk is spinning, but doesn't wait forever
+
+s" create sstart-cmd  h# 1b c, 0 c, 0 c, 0 c, 1 c, 0 c," eval
+1A4DD50 	9C 53 A0  1 34 63 72 65 
+1A4DD58 	61 74 65 20 73 73 74 61 
+1A4DD60 	72 74 2D 63 6D 64 20 20 
+1A4DD68 	68 23 20 31 62 20 63 2C 
+1A4DD70 	20 30 20 63 2C 20 30 20 
+1A4DD78 	63 2C 20 30 20 63 2C 20 
+1A4DD80 	31 20 63 2C 20 30 20 63 
+1A4DD88 	2C  0  0  0 D8 E5 A0  1 
+
+s" : timed-spin" eval  ( -- error? )
+1A4DD90 	9C 53 A0  1  C 3A 20 74 
+1A4DD98 	69 6D 65 64 2D 73 70 69 
+1A4DDA0 	6E  0  0  0 D8 E5 A0  1 
+s"    0 0 true  sstart-cmd 6  -1 retry-command?  nip  ?dup  if" eval  ( error-code )
+1A4DDA8 	9C 53 A0  1 3B 20 20 20 
+1A4DDB0 	30 20 30 20 74 72 75 65 
+1A4DDB8 	20 20 73 73 74 61 72 74 
+1A4DDC0 	2D 63 6D 64 20 36 20 20 
+1A4DDC8 	2D 31 20 72 65 74 72 79 
+1A4DDD0 	2D 63 6F 6D 6D 61 6E 64 
+1A4DDD8 	3F 20 20 6E 69 70 20 20 
+1A4DDE0 	3F 64 75 70 20 20 69 66 
+1A4DDE8 	 0  0  0  0 D8 E5 A0  1 
+      \ true on top of the stack indicates a hardware error.
+      \ We don't treat "illegal request" as an error because some drives
+      \ don't support the start command.  Everything else other than
+      \ success is considered an error.
+s"       5 <>" eval                                       ( error? )
+1A4DDF0 	9C 53 A0  1  A 20 20 20 
+1A4DDF8 	20 20 20 35 20 3C 3E  0 
+1A4DE00 	D8 E5 A0  1 
+s"    else      false" eval                                      ( false )
+1A4DE04 	9C 53 A0  1 
+1A4DE08 	12 20 20 20 65 6C 73 65 
+1A4DE10 	20 20 20 20 20 20 66 61 
+1A4DE18 	6C 73 65  0 D8 E5 A0  1 
+s"    then" eval                                          ( error? )
+1A4DE20 	9C 53 A0  1  7 20 20 20 
+1A4DE28 	74 68 65 6E  0  0  0  0 
+1A4DE30 	D8 E5 A0  1 
+s"    0 set-timeout ;" eval
+1A4DE34 	9C 53 A0  1 
+1A4DE38 	12 20 20 20 30 20 73 65 
+1A4DE40 	74 2D 74 69 6D 65 6F 75 
+1A4DE48 	74 20 3B  0 D8 E5 A0  1 
+
+s" create read-capacity-cmd h# 25 c, 0 c, 0 c, 0 c, 0 c, 0 c, 0 c, 0 c, 0 c, 0 c," eval
+1A4DE50 	9C 53 A0  1 4E 63 72 65 
+1A4DE58 	61 74 65 20 72 65 61 64 
+1A4DE60 	2D 63 61 70 61 63 69 74 
+1A4DE68 	79 2D 63 6D 64 20 68 23 
+1A4DE70 	20 32 35 20 63 2C 20 30 
+1A4DE78 	20 63 2C 20 30 20 63 2C 
+1A4DE80 	20 30 20 63 2C 20 30 20 
+1A4DE88 	63 2C 20 30 20 63 2C 20 
+1A4DE90 	30 20 63 2C 20 30 20 63 
+1A4DE98 	2C 20 30 20 63 2C 20 30 
+1A4DEA0 	20 63 2C  0 D8 E5 A0  1 
+
+s" : get-capacity" eval  ( -- false | block-size #blocks false true )
+1A4DEA8 	9C 53 A0  1  E 3A 20 67 
+1A4DEB0 	65 74 2D 63 61 70 61 63 
+1A4DEB8 	69 74 79  0 D8 E5 A0  1 
+s"    8  read-capacity-cmd 0a  0  short-data-command  if  false" eval
+1A4DEC0 	9C 53 A0  1 3C 20 20 20 
+1A4DEC8 	38 20 20 72 65 61 64 2D 
+1A4DED0 	63 61 70 61 63 69 74 79 
+1A4DED8 	2D 63 6D 64 20 30 61 20 
+1A4DEE0 	20 30 20 20 73 68 6F 72 
+1A4DEE8 	74 2D 64 61 74 61 2D 63 
+1A4DEF0 	6F 6D 6D 61 6E 64 20 20 
+1A4DEF8 	69 66 20 20 66 61 6C 73 
+1A4DF00 	65  0  0  0 D8 E5 A0  1 
+s"    else" eval                                        ( adr len )
+1A4DF08 	9C 53 A0  1  7 20 20 20 
+1A4DF10 	65 6C 73 65  0  0  0  0 
+1A4DF18 	D8 E5 A0  1 
+s"       8 <>  if  drop false exit  then" eval          ( adr )
+1A4DF1C 	9C 53 A0  1 
+1A4DF20 	25 20 20 20 20 20 20 38 
+1A4DF28 	20 3C 3E 20 20 69 66 20 
+1A4DF30 	20 64 72 6F 70 20 66 61 
+1A4DF38 	6C 73 65 20 65 78 69 74 
+1A4DF40 	20 20 74 68 65 6E  0  0 
+1A4DF48 	D8 E5 A0  1 
+s"       dup 4 + 4c@  swap 4c@  1+  false true" eval
+1A4DF4C 	9C 53 A0  1 
+1A4DF50 	2B 20 20 20 20 20 20 64 
+1A4DF58 	75 70 20 34 20 2B 20 34 
+1A4DF60 	63 40 20 20 73 77 61 70 
+1A4DF68 	20 34 63 40 20 20 31 2B 
+1A4DF70 	20 20 66 61 6C 73 65 20 
+1A4DF78 	74 72 75 65  0  0  0  0 
+1A4DF80 	D8 E5 A0  1 
+s"    then ;" eval
+1A4DF84 	9C 53 A0  1 
+1A4DF88 	 9 20 20 20 74 68 65 6E 
+1A4DF90 	20 3B  0  0 D8 E5 A0  1 
+
+s" notdef" $find ?dup
+1A4DF98 	9C 53 A0  1  6 6E 6F 74 
+1A4DFA0 	64 65 66  0 C4 93 A0  1 
+1A4DFA8 	B4 70 A0  1 
+if
+1A4DFAC 	DC 41 A0  1 
+1A4DFB0 	CC  0  0  0 
+\ This is a "read for nothing", discarding the result.  It's a
+\ workaround for a problem with the "Silicon Motion SMI331" controller
+\ as used in the "Transcend TS2GUSD-S3" USB / MicroSD reader.  That
+\ device stalls "read capacity" commands until you do the first block
+\ read. The first block read stalls too, but afterwards everything works. 
+s" : nonce-read" eval  ( -- )
+1A4DFB4 	9C 53 A0  1 
+1A4DFB8 	 C 3A 20 6E 6F 6E 63 65 
+1A4DFC0 	2D 72 65 61 64  0  0  0 
+1A4DFC8 	D8 E5 A0  1 
+s"    d# 512 dma-alloc  >r" eval
+1A4DFCC 	9C 53 A0  1 
+1A4DFD0 	17 20 20 20 64 23 20 35 
+1A4DFD8 	31 32 20 64 6D 61 2D 61 
+1A4DFE0 	6C 6C 6F 63 20 20 3E 72 
+1A4DFE8 	 0  0  0  0 D8 E5 A0  1 
+ "    r@ d# 512 true  "" ""(28 00 00 00 00 00 00 00 01 00)"" " eval ( data$ in? cmd$ )
+1A4DFF0 	9C 53 A0  1 37 20 20 20 
+1A4DFF8 	72 40 20 64 23 20 35 31 
+1A4E000 	32 20 74 72 75 65 20 20 
+1A4E008 	22 20 22 28 32 38 20 30 
+1A4E010 	30 20 30 30 20 30 30 20 
+1A4E018 	30 30 20 30 30 20 30 30 
+1A4E020 	20 30 30 20 30 31 20 30 
+1A4E028 	30 29 22 20  0  0  0  0 
+1A4E030 	D8 E5 A0  1 
+s"    0  retry-command? 2drop" eval
+1A4E034 	9C 53 A0  1 
+1A4E038 	1A 20 20 20 30 20 20 72 
+1A4E040 	65 74 72 79 2D 63 6F 6D 
+1A4E048 	6D 61 6E 64 3F 20 32 64 
+1A4E050 	72 6F 70  0 D8 E5 A0  1 
+s"    r> d# 512 dma-free ;" eval
+1A4E058 	9C 53 A0  1 17 20 20 20 
+1A4E060 	72 3E 20 64 23 20 35 31 
+1A4E068 	32 20 64 6D 61 2D 66 72 
+1A4E070 	65 65 20 3B  0  0  0  0 
+1A4E078 	D8 E5 A0  1 
+then 2drop
+1A4E07C 	AC 49 A0  1 
+
+s" : read-block-extent" eval  ( -- true | block-size #blocks false )
+1A4E080 	9C 53 A0  1 13 3A 20 72 
+1A4E088 	65 61 64 2D 62 6C 6F 63 
+1A4E090 	6B 2D 65 78 74 65 6E 74 
+1A4E098 	 0  0  0  0 D8 E5 A0  1 
+   \ Try "read capacity" a few times.  Support for that command is
+   \ mandatory, but some devices aren't ready for it immediately.
+s"    d# 20  0  do" eval
+1A4E0A0 	9C 53 A0  1  F 20 20 20 
+1A4E0A8 	64 23 20 32 30 20 20 30 
+1A4E0B0 	20 20 64 6F  0  0  0  0 
+1A4E0B8 	D8 E5 A0  1 
+s"       get-capacity  if  unloop exit  then" eval  ( )
+1A4E0BC 	9C 53 A0  1 
+1A4E0C0 	29 20 20 20 20 20 20 67 
+1A4E0C8 	65 74 2D 63 61 70 61 63 
+1A4E0D0 	69 74 79 20 20 69 66 20 
+1A4E0D8 	20 75 6E 6C 6F 6F 70 20 
+1A4E0E0 	65 78 69 74 20 20 74 68 
+1A4E0E8 	65 6E  0  0 D8 E5 A0  1 
+s"       d# 200 ms" eval
+1A4E0F0 	9C 53 A0  1  F 20 20 20 
+1A4E0F8 	20 20 20 64 23 20 32 30 
+1A4E100 	30 20 6D 73  0  0  0  0 
+1A4E108 	D8 E5 A0  1 
+s"    loop" eval
+1A4E10C 	9C 53 A0  1 
+1A4E110 	 7 20 20 20 6C 6F 6F 70 
+1A4E118 	 0  0  0  0 D8 E5 A0  1 
+
+s" notdef" $find ?dup
+1A4E120 	9C 53 A0  1  6 6E 6F 74 
+1A4E128 	64 65 66  0 C4 93 A0  1 
+1A4E130 	B4 70 A0  1 
+if
+1A4E134 	DC 41 A0  1 
+1A4E138 	9C  0  0  0 
+   \ At least one device stalls read-capacity until the first block read
+s"    nonce-read" eval
+1A4E13C 	9C 53 A0  1 
+1A4E140 	 D 20 20 20 6E 6F 6E 63 
+1A4E148 	65 2D 72 65 61 64  0  0 
+1A4E150 	D8 E5 A0  1 
+
+   \ Retry it a few more times
+s"    d# 18  0  do" eval
+1A4E154 	9C 53 A0  1 
+1A4E158 	 F 20 20 20 64 23 20 31 
+1A4E160 	38 20 20 30 20 20 64 6F 
+1A4E168 	 0  0  0  0 D8 E5 A0  1 
+s"       get-capacity  if  unloop exit  then" eval
+1A4E170 	9C 53 A0  1 29 20 20 20 
+1A4E178 	20 20 20 67 65 74 2D 63 
+1A4E180 	61 70 61 63 69 74 79 20 
+1A4E188 	20 69 66 20 20 75 6E 6C 
+1A4E190 	6F 6F 70 20 65 78 69 74 
+1A4E198 	20 20 74 68 65 6E  0  0 
+1A4E1A0 	D8 E5 A0  1 
+s"       d# 200 ms" eval
+1A4E1A4 	9C 53 A0  1 
+1A4E1A8 	 F 20 20 20 20 20 20 64 
+1A4E1B0 	23 20 32 30 30 20 6D 73 
+1A4E1B8 	 0  0  0  0 D8 E5 A0  1 
+s"    loop" eval
+1A4E1C0 	9C 53 A0  1  7 20 20 20 
+1A4E1C8 	6C 6F 6F 70  0  0  0  0 
+1A4E1D0 	D8 E5 A0  1 
+then 2drop
+1A4E1D4 	AC 49 A0  1 
+
+   \ If it fails, we just guess.  Some devices violate the spec and
+   \ fail to implement read_capacity
+s"    d# 512  h# ffffffff  false ;" eval
+1A4E1D8 	9C 53 A0  1 1F 20 20 20 
+1A4E1E0 	64 23 20 35 31 32 20 20 
+1A4E1E8 	68 23 20 66 66 66 66 66 
+1A4E1F0 	66 66 66 20 20 66 61 6C 
+1A4E1F8 	73 65 20 3B  0  0  0  0 
+1A4E200 	D8 E5 A0  1 
+
+s" report-geometry" $find ?dup
+1A4E204 	9C 53 A0  1 
+1A4E208 	 F 72 65 70 6F 72 74 2D 
+1A4E210 	67 65 6F 6D 65 74 72 79 
+1A4E218 	 0  0  0  0 C4 93 A0  1 
+1A4E220 	B4 70 A0  1 
+if
+1A4E224 	DC 41 A0  1 
+1A4E228 	8C  1  0  0 
+s" create mode-sense-geometry    h# 1a c, 0 c, 4 c, 0 c, d# 36 c, 0 c," eval
+1A4E22C 	9C 53 A0  1 
+1A4E230 	43 63 72 65 61 74 65 20 
+1A4E238 	6D 6F 64 65 2D 73 65 6E 
+1A4E240 	73 65 2D 67 65 6F 6D 65 
+1A4E248 	74 72 79 20 20 20 20 68 
+1A4E250 	23 20 31 61 20 63 2C 20 
+1A4E258 	30 20 63 2C 20 34 20 63 
+1A4E260 	2C 20 30 20 63 2C 20 64 
+1A4E268 	23 20 33 36 20 63 2C 20 
+1A4E270 	30 20 63 2C  0  0  0  0 
+1A4E278 	D8 E5 A0  1 
+
+\ The sector/track value reported below is an average, because modern SCSI
+\ disks often have variable geometry - fewer sectors on the inner cylinders
+\ and spare sectors and tracks located at various places on the disk.
+\ If you multiply the sectors/track number obtained from the format info
+\ mode sense code page by the heads and cylinders obtained from the geometry
+\ page, the number of blocks thus calculated usually exceeds the number of
+\ logical blocks reported in the mode sense block descriptor, often by a
+\ factor of about 25%.
+
+\ Return true for error, otherwise disk geometry and false
+s" : geometry" eval  ( -- true | sectors/track #heads #cylinders false )
+1A4E27C 	9C 53 A0  1 
+1A4E280 	 A 3A 20 67 65 6F 6D 65 
+1A4E288 	74 72 79  0 D8 E5 A0  1 
+s"    d# 36  mode-sense-geometry  6  2" eval  ( len cmd$ #retries )
+1A4E290 	9C 53 A0  1 23 20 20 20 
+1A4E298 	64 23 20 33 36 20 20 6D 
+1A4E2A0 	6F 64 65 2D 73 65 6E 73 
+1A4E2A8 	65 2D 67 65 6F 6D 65 74 
+1A4E2B0 	72 79 20 20 36 20 20 32 
+1A4E2B8 	 0  0  0  0 D8 E5 A0  1 
+s"    short-data-command  if  true exit  then" eval   ( adr len )
+1A4E2C0 	9C 53 A0  1 2A 20 20 20 
+1A4E2C8 	73 68 6F 72 74 2D 64 61 
+1A4E2D0 	74 61 2D 63 6F 6D 6D 61 
+1A4E2D8 	6E 64 20 20 69 66 20 20 
+1A4E2E0 	74 72 75 65 20 65 78 69 
+1A4E2E8 	74 20 20 74 68 65 6E  0 
+1A4E2F0 	D8 E5 A0  1 
+s"    d# 36 <>  if  drop true exit  then" eval        ( adr )
+1A4E2F4 	9C 53 A0  1 
+1A4E2F8 	25 20 20 20 64 23 20 33 
+1A4E300 	36 20 3C 3E 20 20 69 66 
+1A4E308 	20 20 64 72 6F 70 20 74 
+1A4E310 	72 75 65 20 65 78 69 74 
+1A4E318 	20 20 74 68 65 6E  0  0 
+1A4E320 	D8 E5 A0  1 
+s"    >r" eval                                ( r: adr )
+1A4E324 	9C 53 A0  1 
+1A4E328 	 5 20 20 20 3E 72  0  0 
+1A4E330 	D8 E5 A0  1 
+s"    r@ d# 17 + c@   r@ d# 14 + 3c@" eval   ( heads cylinders )
+1A4E334 	9C 53 A0  1 
+1A4E338 	21 20 20 20 72 40 20 64 
+1A4E340 	23 20 31 37 20 2B 20 63 
+1A4E348 	40 20 20 20 72 40 20 64 
+1A4E350 	23 20 31 34 20 2B 20 33 
+1A4E358 	63 40  0  0 D8 E5 A0  1 
+s"    2dup *  r> d# 4 + 4c@" eval             ( heads cylinders heads*cylinders #blocks )
+1A4E360 	9C 53 A0  1 18 20 20 20 
+1A4E368 	32 64 75 70 20 2A 20 20 
+1A4E370 	72 3E 20 64 23 20 34 20 
+1A4E378 	2B 20 34 63 40  0  0  0 
+1A4E380 	D8 E5 A0  1 
+s"    swap /  -rot" eval                      ( sectors/track heads cylinders )
+1A4E384 	9C 53 A0  1 
+1A4E388 	 F 20 20 20 73 77 61 70 
+1A4E390 	20 2F 20 20 2D 72 6F 74 
+1A4E398 	 0  0  0  0 D8 E5 A0  1 
+s"    false ;" eval
+1A4E3A0 	9C 53 A0  1  A 20 20 20 
+1A4E3A8 	66 61 6C 73 65 20 3B  0 
+1A4E3B0 	D8 E5 A0  1 
+then 2drop
+1A4E3B4 	AC 49 A0  1 
+
+\ This method is called by the deblocker
+
+s" 0 value #blocks" eval
+1A4E3B8 	9C 53 A0  1  F 30 20 76 
+1A4E3C0 	61 6C 75 65 20 23 62 6C 
+1A4E3C8 	6F 63 6B 73  0  0  0  0 
+1A4E3D0 	D8 E5 A0  1 
+s" 0 value block-size" eval
+1A4E3D4 	9C 53 A0  1 
+1A4E3D8 	12 30 20 76 61 6C 75 65 
+1A4E3E0 	20 62 6C 6F 63 6B 2D 73 
+1A4E3E8 	69 7A 65  0 D8 E5 A0  1 
+
+headers
+1A4E3F0 	74 25 A3  1 
+
+\ Read or write "#blks" blocks starting at "block#" into memory at "addr"
+\ Input? is true for reading or false for writing.
+\ command is  8  for reading or  h# a  for writing
+\ We use the 6-byte forms of the disk read and write commands where possible.
+
+s" : 2c!  ( n addr -- )  >r lbsplit 2drop  r> +c!         c!  ;" eval
+1A4E3F4 	9C 53 A0  1 
+1A4E3F8 	3C 3A 20 32 63 21 20 20 
+1A4E400 	28 20 6E 20 61 64 64 72 
+1A4E408 	20 2D 2D 20 29 20 20 3E 
+1A4E410 	72 20 6C 62 73 70 6C 69 
+1A4E418 	74 20 32 64 72 6F 70 20 
+1A4E420 	20 72 3E 20 2B 63 21 20 
+1A4E428 	20 20 20 20 20 20 20 20 
+1A4E430 	63 21 20 20 3B  0  0  0 
+1A4E438 	D8 E5 A0  1 
+s" : 4c!  ( n addr -- )  >r lbsplit        r> +c! +c! +c! c!  ;" eval
+1A4E43C 	9C 53 A0  1 
+1A4E440 	3C 3A 20 34 63 21 20 20 
+1A4E448 	28 20 6E 20 61 64 64 72 
+1A4E450 	20 2D 2D 20 29 20 20 3E 
+1A4E458 	72 20 6C 62 73 70 6C 69 
+1A4E460 	74 20 20 20 20 20 20 20 
+1A4E468 	20 72 3E 20 2B 63 21 20 
+1A4E470 	2B 63 21 20 2B 63 21 20 
+1A4E478 	63 21 20 20 3B  0  0  0 
+1A4E480 	D8 E5 A0  1 
+
+s" : r/w-blocks" eval  ( addr block# #blks input? command -- actual# )
+1A4E484 	9C 53 A0  1 
+1A4E488 	 C 3A 20 72 2F 77 2D 62 
+1A4E490 	6C 6F 63 6B 73  0  0  0 
+1A4E498 	D8 E5 A0  1 
+s"    cmdbuf /cmdbuf erase" eval
+1A4E49C 	9C 53 A0  1 
+1A4E4A0 	17 20 20 20 63 6D 64 62 
+1A4E4A8 	75 66 20 2F 63 6D 64 62 
+1A4E4B0 	75 66 20 65 72 61 73 65 
+1A4E4B8 	 0  0  0  0 D8 E5 A0  1 
+s" use-short-form" $find ?dup
+1A4E4C0 	9C 53 A0  1  E 75 73 65 
+1A4E4C8 	2D 73 68 6F 72 74 2D 66 
+1A4E4D0 	6F 72 6D  0 C4 93 A0  1 
+1A4E4D8 	B4 70 A0  1 
+if
+1A4E4DC 	DC 41 A0  1 
+1A4E4E0 	40  0  0  0 
+s"    2over  h# 100 u>  swap h# 200000 u>=  or  if" eval  ( addr block# #blks dir cmd )
+1A4E4E4 	9C 53 A0  1 
+1A4E4E8 	2F 20 20 20 32 6F 76 65 
+1A4E4F0 	72 20 20 68 23 20 31 30 
+1A4E4F8 	30 20 75 3E 20 20 73 77 
+1A4E500 	61 70 20 68 23 20 32 30 
+1A4E508 	30 30 30 30 20 75 3E 3D 
+1A4E510 	20 20 6F 72 20 20 69 66 
+1A4E518 	 0  0  0  0 D8 E5 A0  1 
+then 2drop
+1A4E520 	AC 49 A0  1 
+      \ Use 10-byte form
+s"       h# 20 or  0 cb!" eval  \ 28 (read) or 2a (write)  ( addr block# #blks dir )
+1A4E524 	9C 53 A0  1 
+1A4E528 	15 20 20 20 20 20 20 68 
+1A4E530 	23 20 32 30 20 6F 72 20 
+1A4E538 	20 30 20 63 62 21  0  0 
+1A4E540 	D8 E5 A0  1 
+s"       -rot swap" eval                                   ( addr dir #blks block# )
+1A4E544 	9C 53 A0  1 
+1A4E548 	 F 20 20 20 20 20 20 2D 
+1A4E550 	72 6F 74 20 73 77 61 70 
+1A4E558 	 0  0  0  0 D8 E5 A0  1 
+s"       cmdbuf 2 + 4c!" eval                              ( addr dir #blks )
+1A4E560 	9C 53 A0  1 14 20 20 20 
+1A4E568 	20 20 20 63 6D 64 62 75 
+1A4E570 	66 20 32 20 2B 20 34 63 
+1A4E578 	21  0  0  0 D8 E5 A0  1 
+s"       dup cmdbuf 7 + 2c!" eval                          ( addr dir #blks )
+1A4E580 	9C 53 A0  1 18 20 20 20 
+1A4E588 	20 20 20 64 75 70 20 63 
+1A4E590 	6D 64 62 75 66 20 37 20 
+1A4E598 	2B 20 32 63 21  0  0  0 
+1A4E5A0 	D8 E5 A0  1 
+s"       d# 10" eval                                       ( addr dir #blks cmdlen )
+1A4E5A4 	9C 53 A0  1 
+1A4E5A8 	 B 20 20 20 20 20 20 64 
+1A4E5B0 	23 20 31 30  0  0  0  0 
+1A4E5B8 	D8 E5 A0  1 
+s" use-short-form" $find ?dup
+1A4E5BC 	9C 53 A0  1 
+1A4E5C0 	 E 75 73 65 2D 73 68 6F 
+1A4E5C8 	72 74 2D 66 6F 72 6D  0 
+1A4E5D0 	C4 93 A0  1 B4 70 A0  1 
+if
+1A4E5D8 	DC 41 A0  1 B0  0  0  0 
+s"    else" eval                                           ( addr block# #blks dir cmd )
+1A4E5E0 	9C 53 A0  1  7 20 20 20 
+1A4E5E8 	65 6C 73 65  0  0  0  0 
+1A4E5F0 	D8 E5 A0  1 
+      \ Use 6-byte form
+s"       0 cb!" eval                                       ( addr block# #blks dir )
+1A4E5F4 	9C 53 A0  1 
+1A4E5F8 	 B 20 20 20 20 20 20 30 
+1A4E600 	20 63 62 21  0  0  0  0 
+1A4E608 	D8 E5 A0  1 
+s"       -rot swap" eval                                   ( addr dir #blks block# )
+1A4E60C 	9C 53 A0  1 
+1A4E610 	 F 20 20 20 20 20 20 2D 
+1A4E618 	72 6F 74 20 73 77 61 70 
+1A4E620 	 0  0  0  0 D8 E5 A0  1 
+s"       cmdbuf 1+ 3c!" eval                               ( addr dir #blks )
+1A4E628 	9C 53 A0  1 13 20 20 20 
+1A4E630 	20 20 20 63 6D 64 62 75 
+1A4E638 	66 20 31 2B 20 33 63 21 
+1A4E640 	 0  0  0  0 D8 E5 A0  1 
+s"       dup 4 cb!" eval                                   ( addr dir #blks )
+1A4E648 	9C 53 A0  1  F 20 20 20 
+1A4E650 	20 20 20 64 75 70 20 34 
+1A4E658 	20 63 62 21  0  0  0  0 
+1A4E660 	D8 E5 A0  1 
+s"       6" eval                                           ( addr dir #blks cmdlen )
+1A4E664 	9C 53 A0  1 
+1A4E668 	 7 20 20 20 20 20 20 36 
+1A4E670 	 0  0  0  0 D8 E5 A0  1 
+s"    then" eval
+1A4E678 	9C 53 A0  1  7 20 20 20 
+1A4E680 	74 68 65 6E  0  0  0  0 
+1A4E688 	D8 E5 A0  1 
+then 2drop
+1A4E68C 	AC 49 A0  1 
+s"    swap" eval                                           ( addr dir cmdlen #blks )
+1A4E690 	9C 53 A0  1  7 20 20 20 
+1A4E698 	73 77 61 70  0  0  0  0 
+1A4E6A0 	D8 E5 A0  1 
+s"    dup >r" eval                                         ( addr input? cmdlen #blks )
+1A4E6A4 	9C 53 A0  1 
+1A4E6A8 	 9 20 20 20 64 75 70 20 
+1A4E6B0 	3E 72  0  0 D8 E5 A0  1 
+s"    block-size *  -rot  cmdbuf swap  -1" eval  ( data-adr,len in? cmd-adr,len #retries )
+1A4E6B8 	9C 53 A0  1 26 20 20 20 
+1A4E6C0 	62 6C 6F 63 6B 2D 73 69 
+1A4E6C8 	7A 65 20 2A 20 20 2D 72 
+1A4E6D0 	6F 74 20 20 63 6D 64 62 
+1A4E6D8 	75 66 20 73 77 61 70 20 
+1A4E6E0 	20 2D 31  0 D8 E5 A0  1 
+s"    retry-command?  nip  if" eval                        ( r: #blks )
+1A4E6E8 	9C 53 A0  1 1A 20 20 20 
+1A4E6F0 	72 65 74 72 79 2D 63 6F 
+1A4E6F8 	6D 6D 61 6E 64 3F 20 20 
+1A4E700 	6E 69 70 20 20 69 66  0 
+1A4E708 	D8 E5 A0  1 
+s"       r> drop 0" eval
+1A4E70C 	9C 53 A0  1 
+1A4E710 	 F 20 20 20 20 20 20 72 
+1A4E718 	3E 20 64 72 6F 70 20 30 
+1A4E720 	 0  0  0  0 D8 E5 A0  1 
+s"    else" eval
+1A4E728 	9C 53 A0  1  7 20 20 20 
+1A4E730 	65 6C 73 65  0  0  0  0 
+1A4E738 	D8 E5 A0  1 
+s"       r>" eval
+1A4E73C 	9C 53 A0  1 
+1A4E740 	 8 20 20 20 20 20 20 72 
+1A4E748 	3E  0  0  0 D8 E5 A0  1 
+s"    then ;" eval   ( actual# )
+1A4E750 	9C 53 A0  1  9 20 20 20 
+1A4E758 	74 68 65 6E 20 3B  0  0 
+1A4E760 	D8 E5 A0  1 
+
+\ These three methods are called by the deblocker.
+
+s" : max-transfer  ( -- n )   parent-max-transfer  ;" eval
+1A4E764 	9C 53 A0  1 
+1A4E768 	31 3A 20 6D 61 78 2D 74 
+1A4E770 	72 61 6E 73 66 65 72 20 
+1A4E778 	20 28 20 2D 2D 20 6E 20 
+1A4E780 	29 20 20 20 70 61 72 65 
+1A4E788 	6E 74 2D 6D 61 78 2D 74 
+1A4E790 	72 61 6E 73 66 65 72 20 
+1A4E798 	20 3B  0  0 D8 E5 A0  1 
+s" : read-blocks   ( addr block# #blocks -- #read )   true  d# 8  r/w-blocks  ;" eval
+1A4E7A0 	9C 53 A0  1 4C 3A 20 72 
+1A4E7A8 	65 61 64 2D 62 6C 6F 63 
+1A4E7B0 	6B 73 20 20 20 28 20 61 
+1A4E7B8 	64 64 72 20 62 6C 6F 63 
+1A4E7C0 	6B 23 20 23 62 6C 6F 63 
+1A4E7C8 	6B 73 20 2D 2D 20 23 72 
+1A4E7D0 	65 61 64 20 29 20 20 20 
+1A4E7D8 	74 72 75 65 20 20 64 23 
+1A4E7E0 	20 38 20 20 72 2F 77 2D 
+1A4E7E8 	62 6C 6F 63 6B 73 20 20 
+1A4E7F0 	3B  0  0  0 D8 E5 A0  1 
+s" : write-blocks  ( addr block# #blocks -- #written )  false d# 10 r/w-blocks  ;" eval
+1A4E7F8 	9C 53 A0  1 4E 3A 20 77 
+1A4E800 	72 69 74 65 2D 62 6C 6F 
+1A4E808 	63 6B 73 20 20 28 20 61 
+1A4E810 	64 64 72 20 62 6C 6F 63 
+1A4E818 	6B 23 20 23 62 6C 6F 63 
+1A4E820 	6B 73 20 2D 2D 20 23 77 
+1A4E828 	72 69 74 74 65 6E 20 29 
+1A4E830 	20 20 66 61 6C 73 65 20 
+1A4E838 	64 23 20 31 30 20 72 2F 
+1A4E840 	77 2D 62 6C 6F 63 6B 73 
+1A4E848 	20 20 3B  0 D8 E5 A0  1 
+
+\ Methods used by external clients
+
+s" 0 value open-count" eval
+1A4E850 	9C 53 A0  1 12 30 20 76 
+1A4E858 	61 6C 75 65 20 6F 70 65 
+1A4E860 	6E 2D 63 6F 75 6E 74  0 
+1A4E868 	D8 E5 A0  1 
+
+s" : open" eval  ( -- flag )
+1A4E86C 	9C 53 A0  1 
+1A4E870 	 6 3A 20 6F 70 65 6E  0 
+1A4E878 	D8 E5 A0  1 
+s"    my-unit parent-set-address" eval
+1A4E87C 	9C 53 A0  1 
+1A4E880 	1D 20 20 20 6D 79 2D 75 
+1A4E888 	6E 69 74 20 70 61 72 65 
+1A4E890 	6E 74 2D 73 65 74 2D 61 
+1A4E898 	64 64 72 65 73 73  0  0 
+1A4E8A0 	D8 E5 A0  1 
+s"    open-count  if" eval
+1A4E8A4 	9C 53 A0  1 
+1A4E8A8 	11 20 20 20 6F 70 65 6E 
+1A4E8B0 	2D 63 6F 75 6E 74 20 20 
+1A4E8B8 	69 66  0  0 D8 E5 A0  1 
+s"       d# 2000 set-timeout" eval
+1A4E8C0 	9C 53 A0  1 19 20 20 20 
+1A4E8C8 	20 20 20 64 23 20 32 30 
+1A4E8D0 	30 30 20 73 65 74 2D 74 
+1A4E8D8 	69 6D 65 6F 75 74  0  0 
+1A4E8E0 	D8 E5 A0  1 
+s"    else" eval
+1A4E8E4 	9C 53 A0  1 
+1A4E8E8 	 7 20 20 20 65 6C 73 65 
+1A4E8F0 	 0  0  0  0 D8 E5 A0  1 
+
+      \ Set timeout to 45 sec: some large (>1GB) drives take
+      \ up to 30 secs to spin up.
+s"       d# 45 d# 1000 *  set-timeout" eval
+1A4E8F8 	9C 53 A0  1 22 20 20 20 
+1A4E900 	20 20 20 64 23 20 34 35 
+1A4E908 	20 64 23 20 31 30 30 30 
+1A4E910 	20 2A 20 20 73 65 74 2D 
+1A4E918 	74 69 6D 65 6F 75 74  0 
+1A4E920 	D8 E5 A0  1 
+
+s"       retry-unit-ready?  0=  if  false  exit  then" eval
+1A4E924 	9C 53 A0  1 
+1A4E928 	32 20 20 20 20 20 20 72 
+1A4E930 	65 74 72 79 2D 75 6E 69 
+1A4E938 	74 2D 72 65 61 64 79 3F 
+1A4E940 	20 20 30 3D 20 20 69 66 
+1A4E948 	20 20 66 61 6C 73 65 20 
+1A4E950 	20 65 78 69 74 20 20 74 
+1A4E958 	68 65 6E  0 D8 E5 A0  1 
+
+      \ It might be a good idea to do an inquiry here to determine the
+      \ device configuration, checking the result to see if the device
+      \ really is a disk.
+
+      \ Make sure the disk is spinning
+
+s"       timed-spin  if  false exit  then" eval
+1A4E960 	9C 53 A0  1 26 20 20 20 
+1A4E968 	20 20 20 74 69 6D 65 64 
+1A4E970 	2D 73 70 69 6E 20 20 69 
+1A4E978 	66 20 20 66 61 6C 73 65 
+1A4E980 	20 65 78 69 74 20 20 74 
+1A4E988 	68 65 6E  0 D8 E5 A0  1 
+
+s"       read-block-extent  if  false exit  then" eval  ( block-size #blocks )
+1A4E990 	9C 53 A0  1 2D 20 20 20 
+1A4E998 	20 20 20 72 65 61 64 2D 
+1A4E9A0 	62 6C 6F 63 6B 2D 65 78 
+1A4E9A8 	74 65 6E 74 20 20 69 66 
+1A4E9B0 	20 20 66 61 6C 73 65 20 
+1A4E9B8 	65 78 69 74 20 20 74 68 
+1A4E9C0 	65 6E  0  0 D8 E5 A0  1 
+s"       to #blocks  to block-size" eval
+1A4E9C8 	9C 53 A0  1 1F 20 20 20 
+1A4E9D0 	20 20 20 74 6F 20 23 62 
+1A4E9D8 	6C 6F 63 6B 73 20 20 74 
+1A4E9E0 	6F 20 62 6C 6F 63 6B 2D 
+1A4E9E8 	73 69 7A 65  0  0  0  0 
+1A4E9F0 	D8 E5 A0  1 
+
+s"       d# 2000 set-timeout" eval
+1A4E9F4 	9C 53 A0  1 
+1A4E9F8 	19 20 20 20 20 20 20 64 
+1A4EA00 	23 20 32 30 30 30 20 73 
+1A4EA08 	65 74 2D 74 69 6D 65 6F 
+1A4EA10 	75 74  0  0 D8 E5 A0  1 
+s"       init-deblocker  0=  if  false exit  then" eval
+1A4EA18 	9C 53 A0  1 2E 20 20 20 
+1A4EA20 	20 20 20 69 6E 69 74 2D 
+1A4EA28 	64 65 62 6C 6F 63 6B 65 
+1A4EA30 	72 20 20 30 3D 20 20 69 
+1A4EA38 	66 20 20 66 61 6C 73 65 
+1A4EA40 	20 65 78 69 74 20 20 74 
+1A4EA48 	68 65 6E  0 D8 E5 A0  1 
+s"    then" eval
+1A4EA50 	9C 53 A0  1  7 20 20 20 
+1A4EA58 	74 68 65 6E  0  0  0  0 
+1A4EA60 	D8 E5 A0  1 
+
+s"    init-label-package  0=  if" eval
+1A4EA64 	9C 53 A0  1 
+1A4EA68 	1D 20 20 20 69 6E 69 74 
+1A4EA70 	2D 6C 61 62 65 6C 2D 70 
+1A4EA78 	61 63 6B 61 67 65 20 20 
+1A4EA80 	30 3D 20 20 69 66  0  0 
+1A4EA88 	D8 E5 A0  1 
+s"       open-count 0=  if" eval
+1A4EA8C 	9C 53 A0  1 
+1A4EA90 	17 20 20 20 20 20 20 6F 
+1A4EA98 	70 65 6E 2D 63 6F 75 6E 
+1A4EAA0 	74 20 30 3D 20 20 69 66 
+1A4EAA8 	 0  0  0  0 D8 E5 A0  1 
+s"          deblocker close-package" eval
+1A4EAB0 	9C 53 A0  1 20 20 20 20 
+1A4EAB8 	20 20 20 20 20 20 64 65 
+1A4EAC0 	62 6C 6F 63 6B 65 72 20 
+1A4EAC8 	63 6C 6F 73 65 2D 70 61 
+1A4EAD0 	63 6B 61 67 65  0  0  0 
+1A4EAD8 	D8 E5 A0  1 
+s"       then" eval
+1A4EADC 	9C 53 A0  1 
+1A4EAE0 	 A 20 20 20 20 20 20 74 
+1A4EAE8 	68 65 6E  0 D8 E5 A0  1 
+s"       false exit" eval
+1A4EAF0 	9C 53 A0  1 10 20 20 20 
+1A4EAF8 	20 20 20 66 61 6C 73 65 
+1A4EB00 	20 65 78 69 74  0  0  0 
+1A4EB08 	D8 E5 A0  1 
+s"    then" eval
+1A4EB0C 	9C 53 A0  1 
+1A4EB10 	 7 20 20 20 74 68 65 6E 
+1A4EB18 	 0  0  0  0 D8 E5 A0  1 
+s"    open-count 1+ to open-count" eval
+1A4EB20 	9C 53 A0  1 1E 20 20 20 
+1A4EB28 	6F 70 65 6E 2D 63 6F 75 
+1A4EB30 	6E 74 20 31 2B 20 74 6F 
+1A4EB38 	20 6F 70 65 6E 2D 63 6F 
+1A4EB40 	75 6E 74  0 D8 E5 A0  1 
+
+s"    true ;" eval
+1A4EB48 	9C 53 A0  1  9 20 20 20 
+1A4EB50 	74 72 75 65 20 3B  0  0 
+1A4EB58 	D8 E5 A0  1 
+s" : close" eval  ( -- )
+1A4EB5C 	9C 53 A0  1 
+1A4EB60 	 7 3A 20 63 6C 6F 73 65 
+1A4EB68 	 0  0  0  0 D8 E5 A0  1 
+s"    open-count dup  1- 0 max to open-count" eval  ( old-open-count )
+1A4EB70 	9C 53 A0  1 29 20 20 20 
+1A4EB78 	6F 70 65 6E 2D 63 6F 75 
+1A4EB80 	6E 74 20 64 75 70 20 20 
+1A4EB88 	31 2D 20 30 20 6D 61 78 
+1A4EB90 	20 74 6F 20 6F 70 65 6E 
+1A4EB98 	2D 63 6F 75 6E 74  0  0 
+1A4EBA0 	D8 E5 A0  1 
+s"    label-package close-package" eval             ( old-open-count )
+1A4EBA4 	9C 53 A0  1 
+1A4EBA8 	1E 20 20 20 6C 61 62 65 
+1A4EBB0 	6C 2D 70 61 63 6B 61 67 
+1A4EBB8 	65 20 63 6C 6F 73 65 2D 
+1A4EBC0 	70 61 63 6B 61 67 65  0 
+1A4EBC8 	D8 E5 A0  1 
+s"    1 =  if" eval
+1A4EBCC 	9C 53 A0  1 
+1A4EBD0 	 A 20 20 20 31 20 3D 20 
+1A4EBD8 	20 69 66  0 D8 E5 A0  1 
+s"       deblocker close-package" eval
+1A4EBE0 	9C 53 A0  1 1D 20 20 20 
+1A4EBE8 	20 20 20 64 65 62 6C 6F 
+1A4EBF0 	63 6B 65 72 20 63 6C 6F 
+1A4EBF8 	73 65 2D 70 61 63 6B 61 
+1A4EC00 	67 65  0  0 D8 E5 A0  1 
+s"    then ;" eval
+1A4EC08 	9C 53 A0  1  9 20 20 20 
+1A4EC10 	74 68 65 6E 20 3B  0  0 
+1A4EC18 	D8 E5 A0  1 
+
+s" : seek" eval  ( offset.low offset.high -- okay? )
+1A4EC1C 	9C 53 A0  1 
+1A4EC20 	 6 3A 20 73 65 65 6B  0 
+1A4EC28 	D8 E5 A0  1 
+ "    offset-low offset-high d+  "" seek""   deblocker $call-method ;" eval
+1A4EC2C 	9C 53 A0  1 
+1A4EC30 	40 20 20 20 6F 66 66 73 
+1A4EC38 	65 74 2D 6C 6F 77 20 6F 
+1A4EC40 	66 66 73 65 74 2D 68 69 
+1A4EC48 	67 68 20 64 2B 20 20 22 
+1A4EC50 	20 73 65 65 6B 22 20 20 
+1A4EC58 	20 64 65 62 6C 6F 63 6B 
+1A4EC60 	65 72 20 24 63 61 6C 6C 
+1A4EC68 	2D 6D 65 74 68 6F 64 20 
+1A4EC70 	3B  0  0  0 D8 E5 A0  1 
+
+ " : read  ( addr len -- actual-len )  "" read""  deblocker $call-method  ;" eval
+1A4EC78 	9C 53 A0  1 46 3A 20 72 
+1A4EC80 	65 61 64 20 20 28 20 61 
+1A4EC88 	64 64 72 20 6C 65 6E 20 
+1A4EC90 	2D 2D 20 61 63 74 75 61 
+1A4EC98 	6C 2D 6C 65 6E 20 29 20 
+1A4ECA0 	20 22 20 72 65 61 64 22 
+1A4ECA8 	20 20 64 65 62 6C 6F 63 
+1A4ECB0 	6B 65 72 20 24 63 61 6C 
+1A4ECB8 	6C 2D 6D 65 74 68 6F 64 
+1A4ECC0 	20 20 3B  0 D8 E5 A0  1 
+ " : write ( addr len -- actual-len )  "" write"" deblocker $call-method  ;" eval
+1A4ECC8 	9C 53 A0  1 46 3A 20 77 
+1A4ECD0 	72 69 74 65 20 28 20 61 
+1A4ECD8 	64 64 72 20 6C 65 6E 20 
+1A4ECE0 	2D 2D 20 61 63 74 75 61 
+1A4ECE8 	6C 2D 6C 65 6E 20 29 20 
+1A4ECF0 	20 22 20 77 72 69 74 65 
+1A4ECF8 	22 20 64 65 62 6C 6F 63 
+1A4ED00 	6B 65 72 20 24 63 61 6C 
+1A4ED08 	6C 2D 6D 65 74 68 6F 64 
+1A4ED10 	20 20 3B  0 D8 E5 A0  1 
+ " : load  ( addr -- size )            "" load""  label-package $call-method  ;" eval
+1A4ED18 	9C 53 A0  1 4A 3A 20 6C 
+1A4ED20 	6F 61 64 20 20 28 20 61 
+1A4ED28 	64 64 72 20 2D 2D 20 73 
+1A4ED30 	69 7A 65 20 29 20 20 20 
+1A4ED38 	20 20 20 20 20 20 20 20 
+1A4ED40 	20 22 20 6C 6F 61 64 22 
+1A4ED48 	20 20 6C 61 62 65 6C 2D 
+1A4ED50 	70 61 63 6B 61 67 65 20 
+1A4ED58 	24 63 61 6C 6C 2D 6D 65 
+1A4ED60 	74 68 6F 64 20 20 3B  0 
+1A4ED68 	D8 E5 A0  1 
+ " : size  ( -- d.size )  "" size"" label-package $call-method  ;" eval
+1A4ED6C 	9C 53 A0  1 
+1A4ED70 	3C 3A 20 73 69 7A 65 20 
+1A4ED78 	20 28 20 2D 2D 20 64 2E 
+1A4ED80 	73 69 7A 65 20 29 20 20 
+1A4ED88 	22 20 73 69 7A 65 22 20 
+1A4ED90 	6C 61 62 65 6C 2D 70 61 
+1A4ED98 	63 6B 61 67 65 20 24 63 
+1A4EDA0 	61 6C 6C 2D 6D 65 74 68 
+1A4EDA8 	6F 64 20 20 3B  0  0  0 
+1A4EDB0 	D8 E5 A0  1 
+;
+1A4EDB4 	58 46 A0  1 

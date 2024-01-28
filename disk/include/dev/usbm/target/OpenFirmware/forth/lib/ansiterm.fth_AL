@@ -1,0 +1,299 @@
+purpose: Terminal control for ANSI terminals
+
+headerless
+: .esc[        ( -- )     control [ (emit  [char] [ (emit  ;
+1A0F4B8 	 0  0 2E 65 73 63 5B 85 
+1A0F4C0 	9C F4 A0  1 20 40 A0  1 
+1A0F4C8 	58 41 A0  1 1B  0  0  0 
+1A0F4D0 	18 6C A0  1 58 41 A0  1 
+1A0F4D8 	5B  0  0  0 18 6C A0  1 
+1A0F4E0 	58 46 A0  1 
+: .esc[x       ( c -- )   .esc[ (emit  ;
+1A0F4E4 	 0 2E 65 73 
+1A0F4E8 	63 5B 78 86 C4 F4 A0  1 
+1A0F4F0 	20 40 A0  1 C4 F4 A0  1 
+1A0F4F8 	18 6C A0  1 58 46 A0  1 
+: put-n        ( n -- )   push-decimal  (.) (type  pop-base  ;
+1A0F500 	 0  0 70 75 74 2D 6E 85 
+1A0F508 	F0 F4 A0  1 20 40 A0  1 
+1A0F510 	48 F4 A0  1 10 78 A0  1 
+1A0F518 	F0 6B A0  1 9C F4 A0  1 
+1A0F520 	58 46 A0  1 
+: .esc[nx      ( n c -- n )  .esc[ over put-n (emit  ;
+1A0F524 	2E 65 73 63 
+1A0F528 	5B 6E 78 87  C F5 A0  1 
+1A0F530 	20 40 A0  1 C4 F4 A0  1 
+1A0F538 	54 49 A0  1  C F5 A0  1 
+1A0F540 	18 6C A0  1 58 46 A0  1 
+headers
+
+: left         ( -- )     [char] D .esc[x  -1 #out  +!  ;
+1A0F548 	 0  0  0 6C 65 66 74 84 
+1A0F550 	30 F5 A0  1 20 40 A0  1 
+1A0F558 	58 41 A0  1 44  0  0  0 
+1A0F560 	F0 F4 A0  1 58 41 A0  1 
+1A0F568 	FF FF FF FF 5C 6D A0  1 
+1A0F570 	 C 4C A0  1 58 46 A0  1 
+: right        ( -- )     [char] C .esc[x   1 #out  +!  ;
+1A0F578 	 0  0 72 69 67 68 74 85 
+1A0F580 	54 F5 A0  1 20 40 A0  1 
+1A0F588 	58 41 A0  1 43  0  0  0 
+1A0F590 	F0 F4 A0  1 80 6F A0  1 
+1A0F598 	5C 6D A0  1  C 4C A0  1 
+1A0F5A0 	58 46 A0  1 
+: up           ( -- )     [char] A .esc[x  -1 #line +!  ;
+1A0F5A4 	 0 75 70 82 
+1A0F5A8 	84 F5 A0  1 20 40 A0  1 
+1A0F5B0 	58 41 A0  1 41  0  0  0 
+1A0F5B8 	F0 F4 A0  1 58 41 A0  1 
+1A0F5C0 	FF FF FF FF 70 6D A0  1 
+1A0F5C8 	 C 4C A0  1 58 46 A0  1 
+: down         ( -- )     [char] B .esc[x   1 #line +!  ;
+1A0F5D0 	 0  0  0 64 6F 77 6E 84 
+1A0F5D8 	AC F5 A0  1 20 40 A0  1 
+1A0F5E0 	58 41 A0  1 42  0  0  0 
+1A0F5E8 	F0 F4 A0  1 80 6F A0  1 
+1A0F5F0 	70 6D A0  1  C 4C A0  1 
+1A0F5F8 	58 46 A0  1 
+: insert-char  ( c -- )   [char] @ .esc[x  (emit ;
+1A0F5FC 	69 6E 73 65 
+1A0F600 	72 74 2D 63 68 61 72 8B 
+1A0F608 	DC F5 A0  1 20 40 A0  1 
+1A0F610 	58 41 A0  1 40  0  0  0 
+1A0F618 	F0 F4 A0  1 18 6C A0  1 
+1A0F620 	58 46 A0  1 
+: delete-char  ( -- )     [char] P .esc[x  ;
+1A0F624 	64 65 6C 65 
+1A0F628 	74 65 2D 63 68 61 72 8B 
+1A0F630 	 C F6 A0  1 20 40 A0  1 
+1A0F638 	58 41 A0  1 50  0  0  0 
+1A0F640 	F0 F4 A0  1 58 46 A0  1 
+: kill-line    ( -- )     [char] K .esc[x  ;
+1A0F648 	 0  0 6B 69 6C 6C 2D 6C 
+1A0F650 	69 6E 65 89 34 F6 A0  1 
+1A0F658 	20 40 A0  1 58 41 A0  1 
+1A0F660 	4B  0  0  0 F0 F4 A0  1 
+1A0F668 	58 46 A0  1 
+: kill-screen  ( -- )     [char] J .esc[x  ;
+1A0F66C 	6B 69 6C 6C 
+1A0F670 	2D 73 63 72 65 65 6E 8B 
+1A0F678 	58 F6 A0  1 20 40 A0  1 
+1A0F680 	58 41 A0  1 4A  0  0  0 
+1A0F688 	F0 F4 A0  1 58 46 A0  1 
+: insert-line  ( -- )     [char] L .esc[x  ;
+1A0F690 	69 6E 73 65 72 74 2D 6C 
+1A0F698 	69 6E 65 8B 7C F6 A0  1 
+1A0F6A0 	20 40 A0  1 58 41 A0  1 
+1A0F6A8 	4C  0  0  0 F0 F4 A0  1 
+1A0F6B0 	58 46 A0  1 
+: delete-line  ( -- )     [char] M .esc[x  ;
+1A0F6B4 	64 65 6C 65 
+1A0F6B8 	74 65 2D 6C 69 6E 65 8B 
+1A0F6C0 	A0 F6 A0  1 20 40 A0  1 
+1A0F6C8 	58 41 A0  1 4D  0  0  0 
+1A0F6D0 	F0 F4 A0  1 58 46 A0  1 
+: inverse-video ( -- )    [char] 7 .esc[x  [char] m (emit  ;
+1A0F6D8 	 0  0 69 6E 76 65 72 73 
+1A0F6E0 	65 2D 76 69 64 65 6F 8D 
+1A0F6E8 	C4 F6 A0  1 20 40 A0  1 
+1A0F6F0 	58 41 A0  1 37  0  0  0 
+1A0F6F8 	F0 F4 A0  1 58 41 A0  1 
+1A0F700 	6D  0  0  0 18 6C A0  1 
+1A0F708 	58 46 A0  1 
+
+: lefts        ( n -- )   [char] D .esc[nx  negate #out  +!  ;
+1A0F70C 	 0  0 6C 65 
+1A0F710 	66 74 73 85 EC F6 A0  1 
+1A0F718 	20 40 A0  1 58 41 A0  1 
+1A0F720 	44  0  0  0 30 F5 A0  1 
+1A0F728 	48 45 A0  1 5C 6D A0  1 
+1A0F730 	 C 4C A0  1 58 46 A0  1 
+: rights       ( n -- )   [char] C .esc[nx         #out  +!  ;
+1A0F738 	 0 72 69 67 68 74 73 86 
+1A0F740 	18 F7 A0  1 20 40 A0  1 
+1A0F748 	58 41 A0  1 43  0  0  0 
+1A0F750 	30 F5 A0  1 5C 6D A0  1 
+1A0F758 	 C 4C A0  1 58 46 A0  1 
+: ups          ( n -- )   [char] A .esc[nx  negate #line +!  ;
+1A0F760 	75 70 73 83 44 F7 A0  1 
+1A0F768 	20 40 A0  1 58 41 A0  1 
+1A0F770 	41  0  0  0 30 F5 A0  1 
+1A0F778 	48 45 A0  1 70 6D A0  1 
+1A0F780 	 C 4C A0  1 58 46 A0  1 
+: downs        ( n -- )   [char] B .esc[nx         #line +!  ;
+1A0F788 	 0  0 64 6F 77 6E 73 85 
+1A0F790 	68 F7 A0  1 20 40 A0  1 
+1A0F798 	58 41 A0  1 42  0  0  0 
+1A0F7A0 	30 F5 A0  1 70 6D A0  1 
+1A0F7A8 	 C 4C A0  1 58 46 A0  1 
+
+\ Cancel all character attributes - boldness, underline, reverse video, etc.
+: cancel       ( -- )     [char] m .esc[x  ;
+1A0F7B0 	 0 63 61 6E 63 65 6C 86 
+1A0F7B8 	94 F7 A0  1 20 40 A0  1 
+1A0F7C0 	58 41 A0  1 6D  0  0  0 
+1A0F7C8 	F0 F4 A0  1 58 46 A0  1 
+
+\ Cancel inverse video.  This sequence is not universally supported.
+: not-dark     ( -- )     [char] 2 .esc[x  [char] 7 (emit  [char] m (emit  ;
+1A0F7D0 	 0  0  0 6E 6F 74 2D 64 
+1A0F7D8 	61 72 6B 88 BC F7 A0  1 
+1A0F7E0 	20 40 A0  1 58 41 A0  1 
+1A0F7E8 	32  0  0  0 F0 F4 A0  1 
+1A0F7F0 	58 41 A0  1 37  0  0  0 
+1A0F7F8 	18 6C A0  1 58 41 A0  1 
+1A0F800 	6D  0  0  0 18 6C A0  1 
+1A0F808 	58 46 A0  1 
+
+defer light  ' cancel is light
+1A0F80C 	 0  0 6C 69 
+1A0F810 	67 68 74 85 E0 F7 A0  1 
+1A0F818 	5C 40 A0  1 18  3  0  0 
+defer dark   ' inverse-video is dark
+1A0F820 	 0  0  0 64 61 72 6B 84 
+1A0F828 	18 F8 A0  1 5C 40 A0  1 
+1A0F830 	1C  3  0  0 
+
+: at-xy  ( col row -- )
+1A0F834 	 0  0 61 74 
+1A0F838 	2D 78 79 85 2C F8 A0  1 
+1A0F840 	20 40 A0  1 
+    2dup #line !  #out !
+1A0F844 	C0 49 A0  1 
+1A0F848 	70 6D A0  1 54 4D A0  1 
+1A0F850 	5C 6D A0  1 54 4D A0  1 
+    .esc[   1+ put-n  [char] ; (emit  1+ put-n  [char] H (emit
+1A0F858 	C4 F4 A0  1 30 4B A0  1 
+1A0F860 	 C F5 A0  1 58 41 A0  1 
+1A0F868 	3B  0  0  0 18 6C A0  1 
+1A0F870 	30 4B A0  1  C F5 A0  1 
+1A0F878 	58 41 A0  1 48  0  0  0 
+1A0F880 	18 6C A0  1 
+;
+1A0F884 	58 46 A0  1 
+: page         ( -- )  0 0 at-xy  kill-screen  ;
+1A0F888 	 0  0  0 70 61 67 65 84 
+1A0F890 	40 F8 A0  1 20 40 A0  1 
+1A0F898 	70 6F A0  1 70 6F A0  1 
+1A0F8A0 	40 F8 A0  1 7C F6 A0  1 
+1A0F8A8 	58 46 A0  1 
+
+true value ansi-colors?
+1A0F8AC 	 0  0  0 61 
+1A0F8B0 	6E 73 69 2D 63 6F 6C 6F 
+1A0F8B8 	72 73 3F 8C 94 F8 A0  1 
+1A0F8C0 	50 40 A0  1 20  3  0  0 
+
+headerless
+: color:  ( adr len "name" -- )
+1A0F8C8 	 0 63 6F 6C 6F 72 3A 86 
+1A0F8D0 	C0 F8 A0  1 20 40 A0  1 
+   create ",
+1A0F8D8 	A8 A2 A0  1 24 89 A0  1 
+   does> ansi-colors? if  .esc[  count (type  [char] m (emit  else  drop  then
+1A0F8E0 	50 A3 A0  1 90 90 90 E8 
+1A0F8E8 	90 47 FF FF C0 F8 A0  1 
+1A0F8F0 	DC 41 A0  1 24  0  0  0 
+1A0F8F8 	C4 F4 A0  1 BC 53 A0  1 
+1A0F900 	F0 6B A0  1 58 41 A0  1 
+1A0F908 	6D  0  0  0 18 6C A0  1 
+1A0F910 	C8 41 A0  1  8  0  0  0 
+1A0F918 	30 49 A0  1 
+;
+1A0F91C 	58 46 A0  1 
+headers
+" 0"    color: default-colors
+1A0F920 	 0 64 65 66 61 75 6C 74 
+1A0F928 	2D 63 6F 6C 6F 72 73 8E 
+1A0F930 	D4 F8 A0  1 E4 F8 A0  1 
+1A0F938 	 1 30  0  0 
+" 1"    color: bright
+1A0F93C 	 0 62 72 69 
+1A0F940 	67 68 74 86 34 F9 A0  1 
+1A0F948 	E4 F8 A0  1  1 31  0  0 
+" 2"    color: dim
+1A0F950 	64 69 6D 83 48 F9 A0  1 
+1A0F958 	E4 F8 A0  1  1 32  0  0 
+" 4"	color: underline
+1A0F960 	 0  0 75 6E 64 65 72 6C 
+1A0F968 	69 6E 65 89 58 F9 A0  1 
+1A0F970 	E4 F8 A0  1  1 34  0  0 
+" 30"   color: black-letters
+1A0F978 	 0  0 62 6C 61 63 6B 2D 
+1A0F980 	6C 65 74 74 65 72 73 8D 
+1A0F988 	70 F9 A0  1 E4 F8 A0  1 
+1A0F990 	 2 33 30  0 
+" 31"   color: red-letters
+1A0F994 	72 65 64 2D 
+1A0F998 	6C 65 74 74 65 72 73 8B 
+1A0F9A0 	8C F9 A0  1 E4 F8 A0  1 
+1A0F9A8 	 2 33 31  0 
+" 32"   color: green-letters
+1A0F9AC 	 0  0 67 72 
+1A0F9B0 	65 65 6E 2D 6C 65 74 74 
+1A0F9B8 	65 72 73 8D A4 F9 A0  1 
+1A0F9C0 	E4 F8 A0  1  2 33 32  0 
+" 33"   color: yellow-letters
+1A0F9C8 	 0 79 65 6C 6C 6F 77 2D 
+1A0F9D0 	6C 65 74 74 65 72 73 8E 
+1A0F9D8 	C0 F9 A0  1 E4 F8 A0  1 
+1A0F9E0 	 2 33 33  0 
+" 34"   color: blue-letters
+1A0F9E4 	 0  0  0 62 
+1A0F9E8 	6C 75 65 2D 6C 65 74 74 
+1A0F9F0 	65 72 73 8C DC F9 A0  1 
+1A0F9F8 	E4 F8 A0  1  2 33 34  0 
+" 35"   color: magenta-letters
+1A0FA00 	6D 61 67 65 6E 74 61 2D 
+1A0FA08 	6C 65 74 74 65 72 73 8F 
+1A0FA10 	F8 F9 A0  1 E4 F8 A0  1 
+1A0FA18 	 2 33 35  0 
+" 36"   color: cyan-letters
+1A0FA1C 	 0  0  0 63 
+1A0FA20 	79 61 6E 2D 6C 65 74 74 
+1A0FA28 	65 72 73 8C 14 FA A0  1 
+1A0FA30 	E4 F8 A0  1  2 33 36  0 
+" 37"   color: white-letters
+1A0FA38 	 0  0 77 68 69 74 65 2D 
+1A0FA40 	6C 65 74 74 65 72 73 8D 
+1A0FA48 	30 FA A0  1 E4 F8 A0  1 
+1A0FA50 	 2 33 37  0 
+" 40"   color: black-screen
+1A0FA54 	 0  0  0 62 
+1A0FA58 	6C 61 63 6B 2D 73 63 72 
+1A0FA60 	65 65 6E 8C 4C FA A0  1 
+1A0FA68 	E4 F8 A0  1  2 34 30  0 
+" 41"   color: red-screen
+1A0FA70 	 0 72 65 64 2D 73 63 72 
+1A0FA78 	65 65 6E 8A 68 FA A0  1 
+1A0FA80 	E4 F8 A0  1  2 34 31  0 
+" 42"   color: green-screen
+1A0FA88 	 0  0  0 67 72 65 65 6E 
+1A0FA90 	2D 73 63 72 65 65 6E 8C 
+1A0FA98 	80 FA A0  1 E4 F8 A0  1 
+1A0FAA0 	 2 34 32  0 
+" 43"   color: yellow-screen
+1A0FAA4 	 0  0 79 65 
+1A0FAA8 	6C 6C 6F 77 2D 73 63 72 
+1A0FAB0 	65 65 6E 8D 9C FA A0  1 
+1A0FAB8 	E4 F8 A0  1  2 34 33  0 
+" 44"   color: blue-screen
+1A0FAC0 	62 6C 75 65 2D 73 63 72 
+1A0FAC8 	65 65 6E 8B B8 FA A0  1 
+1A0FAD0 	E4 F8 A0  1  2 34 34  0 
+" 45"   color: magenta-screen
+1A0FAD8 	 0 6D 61 67 65 6E 74 61 
+1A0FAE0 	2D 73 63 72 65 65 6E 8E 
+1A0FAE8 	D0 FA A0  1 E4 F8 A0  1 
+1A0FAF0 	 2 34 35  0 
+" 46"   color: cyan-screen
+1A0FAF4 	63 79 61 6E 
+1A0FAF8 	2D 73 63 72 65 65 6E 8B 
+1A0FB00 	EC FA A0  1 E4 F8 A0  1 
+1A0FB08 	 2 34 36  0 
+" 47"   color: white-screen
+1A0FB0C 	 0  0  0 77 
+1A0FB10 	68 69 74 65 2D 73 63 72 
+1A0FB18 	65 65 6E 8C  4 FB A0  1 
+1A0FB20 	E4 F8 A0  1  2 34 37  0 
+

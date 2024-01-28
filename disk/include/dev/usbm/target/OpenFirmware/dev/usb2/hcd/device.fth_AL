@@ -1,0 +1,1994 @@
+
+hex
+headers
+
+defer make-dev-property-hook  ( speed dev port -- )
+1A45D68 	 0 6D 61 6B 65 2D 64 65 
+1A45D70 	76 2D 70 72 6F 70 65 72 
+1A45D78 	74 79 2D 68 6F 6F 6B 96 
+1A45D80 	1C 5D A4  1 5C 40 A0  1 
+1A45D88 	 4  E  0  0 
+' 3drop to make-dev-property-hook
+
+\ Buffers for descriptor manipulation
+0 value cfg-desc-buf			\ Configuration Descriptor
+1A45D8C 	 0  0  0 63 
+1A45D90 	66 67 2D 64 65 73 63 2D 
+1A45D98 	62 75 66 8C 84 5D A4  1 
+1A45DA0 	50 40 A0  1  8  E  0  0 
+0 value dev-desc-buf			\ Device Descriptor
+1A45DA8 	 0  0  0 64 65 76 2D 64 
+1A45DB0 	65 73 63 2D 62 75 66 8C 
+1A45DB8 	A0 5D A4  1 50 40 A0  1 
+1A45DC0 	 C  E  0  0 
+0 value d$-desc-buf			\ Device String Descriptor
+1A45DC4 	64 24 2D 64 
+1A45DC8 	65 73 63 2D 62 75 66 8B 
+1A45DD0 	BC 5D A4  1 50 40 A0  1 
+1A45DD8 	10  E  0  0 
+0 value v$-desc-buf			\ Vendor String Descriptor
+1A45DDC 	76 24 2D 64 
+1A45DE0 	65 73 63 2D 62 75 66 8B 
+1A45DE8 	D4 5D A4  1 50 40 A0  1 
+1A45DF0 	14  E  0  0 
+0 value s$-desc-buf			\ Serial Number String Descriptor
+1A45DF4 	73 24 2D 64 
+1A45DF8 	65 73 63 2D 62 75 66 8B 
+1A45E00 	EC 5D A4  1 50 40 A0  1 
+1A45E08 	18  E  0  0 
+
+0 value /cfg-desc-buf			\ Length of data in cfg-desc-buf
+1A45E0C 	 0  0 2F 63 
+1A45E10 	66 67 2D 64 65 73 63 2D 
+1A45E18 	62 75 66 8D  4 5E A4  1 
+1A45E20 	50 40 A0  1 1C  E  0  0 
+0 value /dev-desc-buf			\ Length of data in dev-desc-buf
+1A45E28 	 0  0 2F 64 65 76 2D 64 
+1A45E30 	65 73 63 2D 62 75 66 8D 
+1A45E38 	20 5E A4  1 50 40 A0  1 
+1A45E40 	20  E  0  0 
+0 value /d$-desc-buf			\ Length of data in d$-desc-buf
+1A45E44 	 0  0  0 2F 
+1A45E48 	64 24 2D 64 65 73 63 2D 
+1A45E50 	62 75 66 8C 3C 5E A4  1 
+1A45E58 	50 40 A0  1 24  E  0  0 
+0 value /v$-desc-buf			\ Length of data in v$-desc-buf
+1A45E60 	 0  0  0 2F 76 24 2D 64 
+1A45E68 	65 73 63 2D 62 75 66 8C 
+1A45E70 	58 5E A4  1 50 40 A0  1 
+1A45E78 	28  E  0  0 
+0 value /s$-desc-buf			\ Length of data in s$-desc-buf
+1A45E7C 	 0  0  0 2F 
+1A45E80 	73 24 2D 64 65 73 63 2D 
+1A45E88 	62 75 66 8C 74 5E A4  1 
+1A45E90 	50 40 A0  1 2C  E  0  0 
+
+: alloc-pkt-buf  ( -- )
+1A45E98 	 0  0 61 6C 6C 6F 63 2D 
+1A45EA0 	70 6B 74 2D 62 75 66 8D 
+1A45EA8 	90 5E A4  1 20 40 A0  1 
+   cfg-desc-buf 0=  if
+1A45EB0 	A0 5D A4  1 24 47 A0  1 
+1A45EB8 	DC 41 A0  1 90  0  0  0 
+      /cfg alloc-mem dup to cfg-desc-buf /cfg erase
+1A45EC0 	C0 2E A4  1 F0 6C A0  1 
+1A45EC8 	40 49 A0  1 B8 40 A0  1 
+1A45ED0 	A0 5D A4  1 C0 2E A4  1 
+1A45ED8 	F0 72 A0  1 
+      /cfg alloc-mem dup to dev-desc-buf /cfg erase
+1A45EDC 	C0 2E A4  1 
+1A45EE0 	F0 6C A0  1 40 49 A0  1 
+1A45EE8 	B8 40 A0  1 BC 5D A4  1 
+1A45EF0 	C0 2E A4  1 F0 72 A0  1 
+      /str alloc-mem dup to d$-desc-buf /str erase
+1A45EF8 	D4 2E A4  1 F0 6C A0  1 
+1A45F00 	40 49 A0  1 B8 40 A0  1 
+1A45F08 	D4 5D A4  1 D4 2E A4  1 
+1A45F10 	F0 72 A0  1 
+      /str alloc-mem dup to v$-desc-buf /str erase
+1A45F14 	D4 2E A4  1 
+1A45F18 	F0 6C A0  1 40 49 A0  1 
+1A45F20 	B8 40 A0  1 EC 5D A4  1 
+1A45F28 	D4 2E A4  1 F0 72 A0  1 
+      /str alloc-mem dup to s$-desc-buf /str erase
+1A45F30 	D4 2E A4  1 F0 6C A0  1 
+1A45F38 	40 49 A0  1 B8 40 A0  1 
+1A45F40 	 4 5E A4  1 D4 2E A4  1 
+1A45F48 	F0 72 A0  1 
+   then
+;
+1A45F4C 	58 46 A0  1 
+: free-pkt-buf  ( -- )
+1A45F50 	 0  0  0 66 72 65 65 2D 
+1A45F58 	70 6B 74 2D 62 75 66 8C 
+1A45F60 	AC 5E A4  1 20 40 A0  1 
+   cfg-desc-buf ?dup  if  /cfg free-mem  0 to cfg-desc-buf  then
+1A45F68 	A0 5D A4  1 B4 70 A0  1 
+1A45F70 	DC 41 A0  1 18  0  0  0 
+1A45F78 	C0 2E A4  1  8 6D A0  1 
+1A45F80 	70 6F A0  1 B8 40 A0  1 
+1A45F88 	A0 5D A4  1 
+   dev-desc-buf ?dup  if  /cfg free-mem  0 to dev-desc-buf  then
+1A45F8C 	BC 5D A4  1 
+1A45F90 	B4 70 A0  1 DC 41 A0  1 
+1A45F98 	18  0  0  0 C0 2E A4  1 
+1A45FA0 	 8 6D A0  1 70 6F A0  1 
+1A45FA8 	B8 40 A0  1 BC 5D A4  1 
+   d$-desc-buf  ?dup  if  /str free-mem  0 to d$-desc-buf   then
+1A45FB0 	D4 5D A4  1 B4 70 A0  1 
+1A45FB8 	DC 41 A0  1 18  0  0  0 
+1A45FC0 	D4 2E A4  1  8 6D A0  1 
+1A45FC8 	70 6F A0  1 B8 40 A0  1 
+1A45FD0 	D4 5D A4  1 
+   v$-desc-buf  ?dup  if  /str free-mem  0 to v$-desc-buf   then
+1A45FD4 	EC 5D A4  1 
+1A45FD8 	B4 70 A0  1 DC 41 A0  1 
+1A45FE0 	18  0  0  0 D4 2E A4  1 
+1A45FE8 	 8 6D A0  1 70 6F A0  1 
+1A45FF0 	B8 40 A0  1 EC 5D A4  1 
+   s$-desc-buf  ?dup  if  /str free-mem  0 to s$-desc-buf   then
+1A45FF8 	 4 5E A4  1 B4 70 A0  1 
+1A46000 	DC 41 A0  1 18  0  0  0 
+1A46008 	D4 2E A4  1  8 6D A0  1 
+1A46010 	70 6F A0  1 B8 40 A0  1 
+1A46018 	 4 5E A4  1 
+;
+1A4601C 	58 46 A0  1 
+
+: dev-desc@  ( index -- byte )  dev-desc-buf + c@  ;
+1A46020 	 0  0 64 65 76 2D 64 65 
+1A46028 	73 63 40 89 64 5F A4  1 
+1A46030 	20 40 A0  1 BC 5D A4  1 
+1A46038 	 4 45 A0  1 C4 4C A0  1 
+1A46040 	58 46 A0  1 
+: asso-class?  ( -- asso? )
+1A46044 	61 73 73 6F 
+1A46048 	2D 63 6C 61 73 73 3F 8B 
+1A46050 	30 60 A4  1 20 40 A0  1 
+   4 dev-desc@ h# ef =  5 dev-desc@ 2 =  and  6 dev-desc@ 1 =  and
+1A46058 	B0 6F A0  1 30 60 A4  1 
+1A46060 	58 41 A0  1 EF  0  0  0 
+1A46068 	24 48 A0  1 C0 6F A0  1 
+1A46070 	30 60 A4  1 90 6F A0  1 
+1A46078 	24 48 A0  1 5C 44 A0  1 
+1A46080 	D0 6F A0  1 30 60 A4  1 
+1A46088 	80 6F A0  1 24 48 A0  1 
+1A46090 	5C 44 A0  1 
+;
+1A46094 	58 46 A0  1 
+: get-class  ( -- class subclass protocol )
+1A46098 	 0  0 67 65 74 2D 63 6C 
+1A460A0 	61 73 73 89 54 60 A4  1 
+1A460A8 	20 40 A0  1 
+   asso-class?  if
+1A460AC 	54 60 A4  1 
+1A460B0 	DC 41 A0  1 58  0  0  0 
+      \ Class is in interface association descriptor
+      true to class-in-dev?
+1A460B8 	 4 70 A0  1 B8 40 A0  1 
+1A460C0 	40 39 A4  1 
+      cfg-desc-buf INTERFACE_ASSO find-desc	( intf-adr )
+1A460C4 	A0 5D A4  1 
+1A460C8 	3C 32 A4  1 58 39 A4  1 
+      >r  r@ 4 + c@  r@ 5 + c@   r> 6 + c@	( class subclass protocol )
+1A460D0 	BC 45 A0  1 E4 45 A0  1 
+1A460D8 	B0 6F A0  1  4 45 A0  1 
+1A460E0 	C4 4C A0  1 E4 45 A0  1 
+1A460E8 	C0 6F A0  1  4 45 A0  1 
+1A460F0 	C4 4C A0  1 D0 45 A0  1 
+1A460F8 	D0 6F A0  1  4 45 A0  1 
+1A46100 	C4 4C A0  1 
+   else
+1A46104 	C8 41 A0  1 
+1A46108 	88  0  0  0 
+   4 dev-desc@ ?dup  if			        ( class )
+1A4610C 	B0 6F A0  1 
+1A46110 	30 60 A4  1 B4 70 A0  1 
+1A46118 	DC 41 A0  1 28  0  0  0 
+      \ Class is in device descriptor
+      true to class-in-dev?			( class )
+1A46120 	 4 70 A0  1 B8 40 A0  1 
+1A46128 	40 39 A4  1 
+      5 dev-desc@  6 dev-desc@			( class subclass protocol )
+1A4612C 	C0 6F A0  1 
+1A46130 	30 60 A4  1 D0 6F A0  1 
+1A46138 	30 60 A4  1 
+   else
+1A4613C 	C8 41 A0  1 
+1A46140 	50  0  0  0 
+      \ Class is in interface descriptor
+      false to class-in-dev?
+1A46144 	18 70 A0  1 
+1A46148 	B8 40 A0  1 40 39 A4  1 
+      cfg-desc-buf my-address find-intf-desc	( intf-adr )
+1A46150 	A0 5D A4  1 20 10 A2  1 
+1A46158 	C8 39 A4  1 
+      >r  r@ 5 + c@  r@ 6 + c@   r> 7 + c@	( class subclass protocol )
+1A4615C 	BC 45 A0  1 
+1A46160 	E4 45 A0  1 C0 6F A0  1 
+1A46168 	 4 45 A0  1 C4 4C A0  1 
+1A46170 	E4 45 A0  1 D0 6F A0  1 
+1A46178 	 4 45 A0  1 C4 4C A0  1 
+1A46180 	D0 45 A0  1 E0 6F A0  1 
+1A46188 	 4 45 A0  1 C4 4C A0  1 
+   then  then
+;
+1A46190 	58 46 A0  1 
+
+: make-class-properties  ( -- )
+1A46194 	 0  0 6D 61 
+1A46198 	6B 65 2D 63 6C 61 73 73 
+1A461A0 	2D 70 72 6F 70 65 72 74 
+1A461A8 	69 65 73 95 A8 60 A4  1 
+1A461B0 	20 40 A0  1 
+   get-class  ( class subclass protocol )
+1A461B4 	A8 60 A4  1 
+   " protocol" int-property
+1A461B8 	9C 53 A0  1  8 70 72 6F 
+1A461C0 	74 6F 63 6F 6C  0  0  0 
+1A461C8 	30 3B A4  1 
+   " subclass" int-property
+1A461CC 	9C 53 A0  1 
+1A461D0 	 8 73 75 62 63 6C 61 73 
+1A461D8 	73  0  0  0 30 3B A4  1 
+   " class"    int-property
+1A461E0 	9C 53 A0  1  5 63 6C 61 
+1A461E8 	73 73  0  0 30 3B A4  1 
+;
+1A461F0 	58 46 A0  1 
+
+: make-name-property  ( -- )
+1A461F4 	 0 6D 61 6B 
+1A461F8 	65 2D 6E 61 6D 65 2D 70 
+1A46200 	72 6F 70 65 72 74 79 92 
+1A46208 	B0 61 A4  1 20 40 A0  1 
+   get-class-properties				( class subclass protocol )
+1A46210 	 C 5A A4  1 
+   swap rot					( protocol subclass class )
+1A46214 	68 49 A0  1 
+1A46218 	7C 49 A0  1 
+   case
+      1  of  2drop " audio"  endof		( name$ )
+1A4621C 	80 6F A0  1 
+1A46220 	48 43 A0  1 1C  0  0  0 
+1A46228 	AC 49 A0  1 9C 53 A0  1 
+1A46230 	 5 61 75 64 69 6F  0  0 
+1A46238 	6C 43 A0  1 A8  2  0  0 
+      2  of  2drop " network"  endof		( name$ )
+1A46240 	90 6F A0  1 48 43 A0  1 
+1A46248 	20  0  0  0 AC 49 A0  1 
+1A46250 	9C 53 A0  1  7 6E 65 74 
+1A46258 	77 6F 72 6B  0  0  0  0 
+1A46260 	6C 43 A0  1 80  2  0  0 
+      3  of  case
+1A46268 	A0 6F A0  1 48 43 A0  1 
+1A46270 	 0  1  0  0 
+             1  of  case
+1A46274 	80 6F A0  1 
+1A46278 	48 43 A0  1 D4  0  0  0 
+                      1  of  " keyboard"  endof
+1A46280 	80 6F A0  1 48 43 A0  1 
+1A46288 	1C  0  0  0 9C 53 A0  1 
+1A46290 	 8 6B 65 79 62 6F 61 72 
+1A46298 	64  0  0  0 6C 43 A0  1 
+1A462A0 	A8  0  0  0 
+                      2  of  " mouse"  endof
+1A462A4 	90 6F A0  1 
+1A462A8 	48 43 A0  1 18  0  0  0 
+1A462B0 	9C 53 A0  1  5 6D 6F 75 
+1A462B8 	73 65  0  0 6C 43 A0  1 
+1A462C0 	88  0  0  0 
+		      4  of  " joystick"  endof
+1A462C4 	B0 6F A0  1 
+1A462C8 	48 43 A0  1 1C  0  0  0 
+1A462D0 	9C 53 A0  1  8 6A 6F 79 
+1A462D8 	73 74 69 63 6B  0  0  0 
+1A462E0 	6C 43 A0  1 64  0  0  0 
+		      5  of  " gamepad"  endof
+1A462E8 	C0 6F A0  1 48 43 A0  1 
+1A462F0 	1C  0  0  0 9C 53 A0  1 
+1A462F8 	 7 67 61 6D 65 70 61 64 
+1A46300 	 0  0  0  0 6C 43 A0  1 
+1A46308 	40  0  0  0 
+		      39 of  " hatswitch"  endof
+1A4630C 	58 41 A0  1 
+1A46310 	39  0  0  0 48 43 A0  1 
+1A46318 	1C  0  0  0 9C 53 A0  1 
+1A46320 	 9 68 61 74 73 77 69 74 
+1A46328 	63 68  0  0 6C 43 A0  1 
+1A46330 	18  0  0  0 
+                      ( default )  " device" rot
+1A46334 	9C 53 A0  1 
+1A46338 	 6 64 65 76 69 63 65  0 
+1A46340 	7C 49 A0  1 
+                    endcase
+1A46344 	84 43 A0  1 
+                    endof
+1A46348 	6C 43 A0  1 1C  0  0  0 
+             ( default ) nip " hid" rot
+1A46350 	FC 46 A0  1 9C 53 A0  1 
+1A46358 	 3 68 69 64  0  0  0  0 
+1A46360 	7C 49 A0  1 
+             endcase
+1A46364 	84 43 A0  1 
+             endof
+1A46368 	6C 43 A0  1 78  1  0  0 
+      7  of  2drop " printer"  endof		( name$ )
+1A46370 	E0 6F A0  1 48 43 A0  1 
+1A46378 	20  0  0  0 AC 49 A0  1 
+1A46380 	9C 53 A0  1  7 70 72 69 
+1A46388 	6E 74 65 72  0  0  0  0 
+1A46390 	6C 43 A0  1 50  1  0  0 
+      8  of  case
+1A46398 	F0 6F A0  1 48 43 A0  1 
+1A463A0 	 0  1  0  0 
+             1  of  drop " flash"  endof
+1A463A4 	80 6F A0  1 
+1A463A8 	48 43 A0  1 1C  0  0  0 
+1A463B0 	30 49 A0  1 9C 53 A0  1 
+1A463B8 	 5 66 6C 61 73 68  0  0 
+1A463C0 	6C 43 A0  1 D4  0  0  0 
+             2  of  drop " cdrom"  endof
+1A463C8 	90 6F A0  1 48 43 A0  1 
+1A463D0 	1C  0  0  0 30 49 A0  1 
+1A463D8 	9C 53 A0  1  5 63 64 72 
+1A463E0 	6F 6D  0  0 6C 43 A0  1 
+1A463E8 	B0  0  0  0 
+             3  of  drop " tape"  endof
+1A463EC 	A0 6F A0  1 
+1A463F0 	48 43 A0  1 1C  0  0  0 
+1A463F8 	30 49 A0  1 9C 53 A0  1 
+1A46400 	 4 74 61 70 65  0  0  0 
+1A46408 	6C 43 A0  1 8C  0  0  0 
+             4  of  drop " floppy"  endof
+1A46410 	B0 6F A0  1 48 43 A0  1 
+1A46418 	1C  0  0  0 30 49 A0  1 
+1A46420 	9C 53 A0  1  6 66 6C 6F 
+1A46428 	70 70 79  0 6C 43 A0  1 
+1A46430 	68  0  0  0 
+             5  of  drop " scsi"  endof		\ removable
+1A46434 	C0 6F A0  1 
+1A46438 	48 43 A0  1 1C  0  0  0 
+1A46440 	30 49 A0  1 9C 53 A0  1 
+1A46448 	 4 73 63 73 69  0  0  0 
+1A46450 	6C 43 A0  1 44  0  0  0 
+             6  of  drop " scsi"  endof
+1A46458 	D0 6F A0  1 48 43 A0  1 
+1A46460 	1C  0  0  0 30 49 A0  1 
+1A46468 	9C 53 A0  1  4 73 63 73 
+1A46470 	69  0  0  0 6C 43 A0  1 
+1A46478 	20  0  0  0 
+             ( default ) nip " storage" rot
+1A4647C 	FC 46 A0  1 
+1A46480 	9C 53 A0  1  7 73 74 6F 
+1A46488 	72 61 67 65  0  0  0  0 
+1A46490 	7C 49 A0  1 
+             endcase
+1A46494 	84 43 A0  1 
+             endof
+1A46498 	6C 43 A0  1 48  0  0  0 
+      9  of  2drop " hub"  endof		( name$ )
+1A464A0 	58 41 A0  1  9  0  0  0 
+1A464A8 	48 43 A0  1 1C  0  0  0 
+1A464B0 	AC 49 A0  1 9C 53 A0  1 
+1A464B8 	 3 68 75 62  0  0  0  0 
+1A464C0 	6C 43 A0  1 20  0  0  0 
+      ( default )  nip nip " device" rot	( name$ )
+1A464C8 	FC 46 A0  1 FC 46 A0  1 
+1A464D0 	9C 53 A0  1  6 64 65 76 
+1A464D8 	69 63 65  0 7C 49 A0  1 
+   endcase
+1A464E0 	84 43 A0  1 
+   device-name
+1A464E4 	20 49 A2  1 
+;
+1A464E8 	58 46 A0  1 
+
+: get-vid  ( adr -- vendor product rev )
+1A464EC 	67 65 74 2D 
+1A464F0 	76 69 64 87  C 62 A4  1 
+1A464F8 	20 40 A0  1 
+   dev-desc-buf 8 + le-w@   dev-desc-buf d# 10 + le-w@  dev-desc-buf c + le-w@
+1A464FC 	BC 5D A4  1 
+1A46500 	F0 6F A0  1  4 45 A0  1 
+1A46508 	38 34 A4  1 BC 5D A4  1 
+1A46510 	58 41 A0  1  A  0  0  0 
+1A46518 	 4 45 A0  1 38 34 A4  1 
+1A46520 	BC 5D A4  1 58 41 A0  1 
+1A46528 	 C  0  0  0  4 45 A0  1 
+1A46530 	38 34 A4  1 
+;
+1A46534 	58 46 A0  1 
+
+: make-vendor-properties  ( -- )
+1A46538 	 0 6D 61 6B 65 2D 76 65 
+1A46540 	6E 64 6F 72 2D 70 72 6F 
+1A46548 	70 65 72 74 69 65 73 96 
+1A46550 	F8 64 A4  1 20 40 A0  1 
+   get-vid			( vendor product rev )
+1A46558 	F8 64 A4  1 
+   " release"   int-property
+1A4655C 	9C 53 A0  1 
+1A46560 	 7 72 65 6C 65 61 73 65 
+1A46568 	 0  0  0  0 30 3B A4  1 
+   " device-id" int-property
+1A46570 	9C 53 A0  1  9 64 65 76 
+1A46578 	69 63 65 2D 69 64  0  0 
+1A46580 	30 3B A4  1 
+   " vendor-id" int-property
+1A46584 	9C 53 A0  1 
+1A46588 	 9 76 65 6E 64 6F 72 2D 
+1A46590 	69 64  0  0 30 3B A4  1 
+;
+1A46598 	58 46 A0  1 
+
+\ A little tool so "make-compatible-property" reads better
+0 value sadr
+1A4659C 	 0  0  0 73 
+1A465A0 	61 64 72 84 54 65 A4  1 
+1A465A8 	50 40 A0  1 30  E  0  0 
+0 value slen
+1A465B0 	 0  0  0 73 6C 65 6E 84 
+1A465B8 	A8 65 A4  1 50 40 A0  1 
+1A465C0 	34  E  0  0 
+: +$  ( add$ -- )
+1A465C4 	 0 2B 24 82 
+1A465C8 	BC 65 A4  1 20 40 A0  1 
+   sadr slen 2swap encode-string encode+  to slen  to sadr
+1A465D0 	A8 65 A4  1 BC 65 A4  1 
+1A465D8 	F4 49 A0  1 A0 F6 A1  1 
+1A465E0 	F0 F5 A1  1 B8 40 A0  1 
+1A465E8 	BC 65 A4  1 B8 40 A0  1 
+1A465F0 	A8 65 A4  1 
+;
+1A465F4 	58 46 A0  1 
+: usb,class#>     ( n -- )  " usb,class" $hold  0 u#> ;     \ Prepends: usb,class
+1A465F8 	75 73 62 2C 63 6C 61 73 
+1A46600 	73 23 3E 8B CC 65 A4  1 
+1A46608 	20 40 A0  1 9C 53 A0  1 
+1A46610 	 9 75 73 62 2C 63 6C 61 
+1A46618 	73 73  0  0 B8 5A A4  1 
+1A46620 	70 6F A0  1 E0 76 A0  1 
+1A46628 	58 46 A0  1 
+: #usb,class#>    ( n -- )  u#s drop  usb,class#>  ;        \ Prepends: usb,classN
+1A4662C 	 0  0  0 23 
+1A46630 	75 73 62 2C 63 6C 61 73 
+1A46638 	73 23 3E 8C  8 66 A4  1 
+1A46640 	20 40 A0  1 BC 76 A0  1 
+1A46648 	30 49 A0  1  8 66 A4  1 
+1A46650 	58 46 A0  1 
+: usbif#>         ( n -- )  " usbif" $hold  0 u#> ;         \ Prepends: usbif
+1A46654 	75 73 62 69 
+1A46658 	66 23 3E 87 40 66 A4  1 
+1A46660 	20 40 A0  1 9C 53 A0  1 
+1A46668 	 5 75 73 62 69 66  0  0 
+1A46670 	B8 5A A4  1 70 6F A0  1 
+1A46678 	E0 76 A0  1 58 46 A0  1 
+: #usbif#>        ( n -- )  u#s drop  usbif#>  ;            \ Prepends: usbifN
+1A46680 	 0  0  0 23 75 73 62 69 
+1A46688 	66 23 3E 88 60 66 A4  1 
+1A46690 	20 40 A0  1 BC 76 A0  1 
+1A46698 	30 49 A0  1 60 66 A4  1 
+1A466A0 	58 46 A0  1 
+: usbif,class#>   ( n -- )  " usbif,class" $hold  0 u#> ;   \ Prepends: usbif,class
+1A466A4 	 0  0 75 73 
+1A466A8 	62 69 66 2C 63 6C 61 73 
+1A466B0 	73 23 3E 8D 90 66 A4  1 
+1A466B8 	20 40 A0  1 9C 53 A0  1 
+1A466C0 	 B 75 73 62 69 66 2C 63 
+1A466C8 	6C 61 73 73  0  0  0  0 
+1A466D0 	B8 5A A4  1 70 6F A0  1 
+1A466D8 	E0 76 A0  1 58 46 A0  1 
+: #usbif,class#>  ( n -- )  u#s drop  usbif,class#>  ;      \ Prepends: usbif,classN
+1A466E0 	 0 23 75 73 62 69 66 2C 
+1A466E8 	63 6C 61 73 73 23 3E 8E 
+1A466F0 	B8 66 A4  1 20 40 A0  1 
+1A466F8 	BC 76 A0  1 30 49 A0  1 
+1A46700 	B8 66 A4  1 58 46 A0  1 
+: #class,         ( n -- )  u#s drop " ,class" $hold  ;     \ Prepends: class,N
+1A46708 	23 63 6C 61 73 73 2C 87 
+1A46710 	F4 66 A4  1 20 40 A0  1 
+1A46718 	BC 76 A0  1 30 49 A0  1 
+1A46720 	9C 53 A0  1  6 2C 63 6C 
+1A46728 	61 73 73  0 B8 5A A4  1 
+1A46730 	58 46 A0  1 
+
+: make-compatible-property  ( -- )
+1A46734 	 0  0  0 6D 
+1A46738 	61 6B 65 2D 63 6F 6D 70 
+1A46740 	61 74 69 62 6C 65 2D 70 
+1A46748 	72 6F 70 65 72 74 79 98 
+1A46750 	14 67 A4  1 20 40 A0  1 
+   0 0 encode-bytes  to slen  to sadr		\ Initial empty string
+1A46758 	70 6F A0  1 70 6F A0  1 
+1A46760 	14 F6 A1  1 B8 40 A0  1 
+1A46768 	BC 65 A4  1 B8 40 A0  1 
+1A46770 	A8 65 A4  1 
+
+   push-hex
+1A46774 	5C F4 A0  1 
+
+   get-vendor-properties			( vendor product rev )
+1A46778 	68 5A A4  1 
+   3dup      <# #. #, #usb#>  +$		( v p r )	\ usbV,product.rev
+1A4677C 	78 3E A4  1 
+1A46780 	 8 76 A0  1 80 5B A4  1 
+1A46788 	5C 5B A4  1 40 5B A4  1 
+1A46790 	CC 65 A4  1 
+   drop 2dup <#    #, #usb#>  +$		( v p )		\ usbV,product
+1A46794 	30 49 A0  1 
+1A46798 	C0 49 A0  1  8 76 A0  1 
+1A467A0 	5C 5B A4  1 40 5B A4  1 
+1A467A8 	CC 65 A4  1 
+   drop						( vendor )
+1A467AC 	30 49 A0  1 
+
+   get-class-properties				( vendor class subclass protocol )
+1A467B0 	 C 5A A4  1 
+   2 pick 0<>  if       			( vendor class subclass protocol )
+1A467B4 	90 6F A0  1 
+1A467B8 	 C 4A A0  1 44 47 A0  1 
+1A467C0 	DC 41 A0  1 50  1  0  0 
+      class-in-dev?  if
+1A467C8 	40 39 A4  1 DC 41 A0  1 
+1A467D0 	A8  0  0  0 
+         4dup          <# #. #. #class, #usb#>         +$  ( v c s p )  \ usbV,classC.S.P
+1A467D4 	C0 3E A4  1 
+1A467D8 	 8 76 A0  1 80 5B A4  1 
+1A467E0 	80 5B A4  1 14 67 A4  1 
+1A467E8 	40 5B A4  1 CC 65 A4  1 
+         4dup  drop    <#    #. #class, #usb#>         +$  ( v c s p )  \ usbV,classC,S
+1A467F0 	C0 3E A4  1 30 49 A0  1 
+1A467F8 	 8 76 A0  1 80 5B A4  1 
+1A46800 	14 67 A4  1 40 5B A4  1 
+1A46808 	CC 65 A4  1 
+         4dup 2drop    <#       #class, #usb#>         +$  ( v c s p )  \ usbV,classC
+1A4680C 	C0 3E A4  1 
+1A46810 	AC 49 A0  1  8 76 A0  1 
+1A46818 	14 67 A4  1 40 5B A4  1 
+1A46820 	CC 65 A4  1 
+         3dup          <# #. #.         #usb,class#>   +$  ( v c s p )  \ usb,classC.S.P
+1A46824 	78 3E A4  1 
+1A46828 	 8 76 A0  1 80 5B A4  1 
+1A46830 	80 5B A4  1 40 66 A4  1 
+1A46838 	CC 65 A4  1 
+         2 pick 2 pick <# #.            #usb,class#>   +$  ( v c s p )  \ usb,classC,S
+1A4683C 	90 6F A0  1 
+1A46840 	 C 4A A0  1 90 6F A0  1 
+1A46848 	 C 4A A0  1  8 76 A0  1 
+1A46850 	80 5B A4  1 40 66 A4  1 
+1A46858 	CC 65 A4  1 
+         2 pick        <#               #usb,class#>   +$  ( v c s p )  \ usb,classC
+1A4685C 	90 6F A0  1 
+1A46860 	 C 4A A0  1  8 76 A0  1 
+1A46868 	40 66 A4  1 CC 65 A4  1 
+      else
+1A46870 	C8 41 A0  1 A0  0  0  0 
+         4dup          <# #. #. #class, #usbif#>       +$  ( v c s p )  \ usbifV,classC.S.P
+1A46878 	C0 3E A4  1  8 76 A0  1 
+1A46880 	80 5B A4  1 80 5B A4  1 
+1A46888 	14 67 A4  1 90 66 A4  1 
+1A46890 	CC 65 A4  1 
+         4dup  drop    <#    #. #class, #usbif#>       +$  ( v c s p )  \ usbifV,classC,S
+1A46894 	C0 3E A4  1 
+1A46898 	30 49 A0  1  8 76 A0  1 
+1A468A0 	80 5B A4  1 14 67 A4  1 
+1A468A8 	90 66 A4  1 CC 65 A4  1 
+         4dup 2drop    <#       #class, #usbif#>       +$  ( v c s p )  \ usbifV,classC
+1A468B0 	C0 3E A4  1 AC 49 A0  1 
+1A468B8 	 8 76 A0  1 14 67 A4  1 
+1A468C0 	90 66 A4  1 CC 65 A4  1 
+         3dup          <# #. #.         #usbif,class#> +$  ( v c s p )  \ usbif,classC.S.P
+1A468C8 	78 3E A4  1  8 76 A0  1 
+1A468D0 	80 5B A4  1 80 5B A4  1 
+1A468D8 	F4 66 A4  1 CC 65 A4  1 
+         2 pick 2 pick <# #.            #usbif,class#> +$  ( v c s p )  \ usbif,classC,S
+1A468E0 	90 6F A0  1  C 4A A0  1 
+1A468E8 	90 6F A0  1  C 4A A0  1 
+1A468F0 	 8 76 A0  1 80 5B A4  1 
+1A468F8 	F4 66 A4  1 CC 65 A4  1 
+         2 pick        <#               #usbif,class#> +$  ( v c s p )  \ usbif,classC
+1A46900 	90 6F A0  1  C 4A A0  1 
+1A46908 	 8 76 A0  1 F4 66 A4  1 
+1A46910 	CC 65 A4  1 
+      then
+   then						( vendor class subclass protocol )
+   4drop					( )
+1A46914 	DC 3E A4  1 
+   " usb,device"  +$
+1A46918 	9C 53 A0  1  A 75 73 62 
+1A46920 	2C 64 65 76 69 63 65  0 
+1A46928 	CC 65 A4  1 
+   sadr slen  " compatible"  property
+1A4692C 	A8 65 A4  1 
+1A46930 	BC 65 A4  1 9C 53 A0  1 
+1A46938 	 A 63 6F 6D 70 61 74 69 
+1A46940 	62 6C 65  0 BC 14 A2  1 
+   pop-base
+1A46948 	9C F4 A0  1 
+;
+1A4694C 	58 46 A0  1 
+
+: make-string-properties  ( -- )
+1A46950 	 0 6D 61 6B 65 2D 73 74 
+1A46958 	72 69 6E 67 2D 70 72 6F 
+1A46960 	70 65 72 74 69 65 73 96 
+1A46968 	54 67 A4  1 20 40 A0  1 
+   v$-desc-buf /v$-desc-buf " vendor$" str-property
+1A46970 	EC 5D A4  1 74 5E A4  1 
+1A46978 	9C 53 A0  1  7 76 65 6E 
+1A46980 	64 6F 72 24  0  0  0  0 
+1A46988 	5C 3B A4  1 
+   d$-desc-buf /d$-desc-buf " device$" str-property
+1A4698C 	D4 5D A4  1 
+1A46990 	58 5E A4  1 9C 53 A0  1 
+1A46998 	 7 64 65 76 69 63 65 24 
+1A469A0 	 0  0  0  0 5C 3B A4  1 
+   s$-desc-buf /s$-desc-buf " serial$" str-property
+1A469A8 	 4 5E A4  1 90 5E A4  1 
+1A469B0 	9C 53 A0  1  7 73 65 72 
+1A469B8 	69 61 6C 24  0  0  0  0 
+1A469C0 	5C 3B A4  1 
+;
+1A469C4 	58 46 A0  1 
+
+: make-misc-properties  ( -- )
+1A469C8 	 0  0  0 6D 61 6B 65 2D 
+1A469D0 	6D 69 73 63 2D 70 72 6F 
+1A469D8 	70 65 72 74 69 65 73 94 
+1A469E0 	6C 69 A4  1 20 40 A0  1 
+   cfg-desc-buf 5 + c@ " configuration#" int-property
+1A469E8 	A0 5D A4  1 C0 6F A0  1 
+1A469F0 	 4 45 A0  1 C4 4C A0  1 
+1A469F8 	9C 53 A0  1  E 63 6F 6E 
+1A46A00 	66 69 67 75 72 61 74 69 
+1A46A08 	6F 6E 23  0 30 3B A4  1 
+;
+1A46A10 	58 46 A0  1 
+
+: register-pipe  ( pipe size -- )
+1A46A14 	 0  0 72 65 
+1A46A18 	67 69 73 74 65 72 2D 70 
+1A46A20 	69 70 65 8D E4 69 A4  1 
+1A46A28 	20 40 A0  1 
+   swap h# 0f and 				( size pipe' )
+1A46A2C 	68 49 A0  1 
+1A46A30 	58 41 A0  1  F  0  0  0 
+1A46A38 	5C 44 A0  1 
+   " assigned-address" get-my-property  0=  if
+1A46A3C 	9C 53 A0  1 
+1A46A40 	10 61 73 73 69 67 6E 65 
+1A46A48 	64 2D 61 64 64 72 65 73 
+1A46A50 	73  0  0  0 1C 34 A2  1 
+1A46A58 	24 47 A0  1 DC 41 A0  1 
+1A46A60 	1C  0  0  0 
+      decode-int nip nip di-maxpayload!		( )
+1A46A64 	68 F7 A1  1 
+1A46A68 	FC 46 A0  1 FC 46 A0  1 
+1A46A70 	48 43 A4  1 
+   else
+1A46A74 	C8 41 A0  1 
+1A46A78 	 8  0  0  0 
+      2drop
+1A46A7C 	AC 49 A0  1 
+   then
+;
+1A46A80 	58 46 A0  1 
+
+: make-ctrl-pipe-property  ( pipe size interval -- )
+1A46A84 	6D 61 6B 65 
+1A46A88 	2D 63 74 72 6C 2D 70 69 
+1A46A90 	70 65 2D 70 72 6F 70 65 
+1A46A98 	72 74 79 97 28 6A A4  1 
+1A46AA0 	20 40 A0  1 
+   drop					( pipe size )
+1A46AA4 	30 49 A0  1 
+   over h# f and rot h# 80 and  if	( size pipe )
+1A46AA8 	54 49 A0  1 58 41 A0  1 
+1A46AB0 	 F  0  0  0 5C 44 A0  1 
+1A46AB8 	7C 49 A0  1 58 41 A0  1 
+1A46AC0 	80  0  0  0 5C 44 A0  1 
+1A46AC8 	DC 41 A0  1 40  0  0  0 
+      " control-in-pipe"  int-property
+1A46AD0 	9C 53 A0  1  F 63 6F 6E 
+1A46AD8 	74 72 6F 6C 2D 69 6E 2D 
+1A46AE0 	70 69 70 65  0  0  0  0 
+1A46AE8 	30 3B A4  1 
+      " control-in-size"
+1A46AEC 	9C 53 A0  1 
+1A46AF0 	 F 63 6F 6E 74 72 6F 6C 
+1A46AF8 	2D 69 6E 2D 73 69 7A 65 
+1A46B00 	 0  0  0  0 
+   else
+1A46B04 	C8 41 A0  1 
+1A46B08 	38  0  0  0 
+      " control-out-pipe" int-property
+1A46B0C 	9C 53 A0  1 
+1A46B10 	10 63 6F 6E 74 72 6F 6C 
+1A46B18 	2D 6F 75 74 2D 70 69 70 
+1A46B20 	65  0  0  0 30 3B A4  1 
+      " control-out-size"
+1A46B28 	9C 53 A0  1 10 63 6F 6E 
+1A46B30 	74 72 6F 6C 2D 6F 75 74 
+1A46B38 	2D 73 69 7A 65  0  0  0 
+   then  int-property
+1A46B40 	30 3B A4  1 
+;
+1A46B44 	58 46 A0  1 
+: make-iso-pipe-property  ( pipe size interval -- )
+1A46B48 	 0 6D 61 6B 65 2D 69 73 
+1A46B50 	6F 2D 70 69 70 65 2D 70 
+1A46B58 	72 6F 70 65 72 74 79 96 
+1A46B60 	A0 6A A4  1 20 40 A0  1 
+   drop					( pipe size )
+1A46B68 	30 49 A0  1 
+   over h# 0f and rot h# 80 and  if	( size pipe )
+1A46B6C 	54 49 A0  1 
+1A46B70 	58 41 A0  1  F  0  0  0 
+1A46B78 	5C 44 A0  1 7C 49 A0  1 
+1A46B80 	58 41 A0  1 80  0  0  0 
+1A46B88 	5C 44 A0  1 DC 41 A0  1 
+1A46B90 	38  0  0  0 
+      " iso-in-pipe"  int-property
+1A46B94 	9C 53 A0  1 
+1A46B98 	 B 69 73 6F 2D 69 6E 2D 
+1A46BA0 	70 69 70 65  0  0  0  0 
+1A46BA8 	30 3B A4  1 
+      " iso-in-size"
+1A46BAC 	9C 53 A0  1 
+1A46BB0 	 B 69 73 6F 2D 69 6E 2D 
+1A46BB8 	73 69 7A 65  0  0  0  0 
+   else
+1A46BC0 	C8 41 A0  1 30  0  0  0 
+      " iso-out-pipe" int-property
+1A46BC8 	9C 53 A0  1  C 69 73 6F 
+1A46BD0 	2D 6F 75 74 2D 70 69 70 
+1A46BD8 	65  0  0  0 30 3B A4  1 
+      " iso-out-size"
+1A46BE0 	9C 53 A0  1  C 69 73 6F 
+1A46BE8 	2D 6F 75 74 2D 73 69 7A 
+1A46BF0 	65  0  0  0 
+   then  int-property
+1A46BF4 	30 3B A4  1 
+;
+1A46BF8 	58 46 A0  1 
+: make-bulk-pipe-property  ( pipe size interval -- )
+1A46BFC 	6D 61 6B 65 
+1A46C00 	2D 62 75 6C 6B 2D 70 69 
+1A46C08 	70 65 2D 70 72 6F 70 65 
+1A46C10 	72 74 79 97 64 6B A4  1 
+1A46C18 	20 40 A0  1 
+   drop 				( pipe size )
+1A46C1C 	30 49 A0  1 
+   over h# f and rot h# 80 and  if	( size pipe )
+1A46C20 	54 49 A0  1 58 41 A0  1 
+1A46C28 	 F  0  0  0 5C 44 A0  1 
+1A46C30 	7C 49 A0  1 58 41 A0  1 
+1A46C38 	80  0  0  0 5C 44 A0  1 
+1A46C40 	DC 41 A0  1 38  0  0  0 
+      " bulk-in-pipe"  int-property
+1A46C48 	9C 53 A0  1  C 62 75 6C 
+1A46C50 	6B 2D 69 6E 2D 70 69 70 
+1A46C58 	65  0  0  0 30 3B A4  1 
+      " bulk-in-size"
+1A46C60 	9C 53 A0  1  C 62 75 6C 
+1A46C68 	6B 2D 69 6E 2D 73 69 7A 
+1A46C70 	65  0  0  0 
+   else
+1A46C74 	C8 41 A0  1 
+1A46C78 	30  0  0  0 
+      " bulk-out-pipe" int-property
+1A46C7C 	9C 53 A0  1 
+1A46C80 	 D 62 75 6C 6B 2D 6F 75 
+1A46C88 	74 2D 70 69 70 65  0  0 
+1A46C90 	30 3B A4  1 
+      " bulk-out-size" 
+1A46C94 	9C 53 A0  1 
+1A46C98 	 D 62 75 6C 6B 2D 6F 75 
+1A46CA0 	74 2D 73 69 7A 65  0  0 
+   then  int-property
+1A46CA8 	30 3B A4  1 
+;
+1A46CAC 	58 46 A0  1 
+: make-intr-pipe-property  ( pipe size interval -- )
+1A46CB0 	6D 61 6B 65 2D 69 6E 74 
+1A46CB8 	72 2D 70 69 70 65 2D 70 
+1A46CC0 	72 6F 70 65 72 74 79 97 
+1A46CC8 	18 6C A4  1 20 40 A0  1 
+   rot dup h# f and swap h# 80 and  if	( size interval pipe )
+1A46CD0 	7C 49 A0  1 40 49 A0  1 
+1A46CD8 	58 41 A0  1  F  0  0  0 
+1A46CE0 	5C 44 A0  1 68 49 A0  1 
+1A46CE8 	58 41 A0  1 80  0  0  0 
+1A46CF0 	5C 44 A0  1 DC 41 A0  1 
+1A46CF8 	54  0  0  0 
+      " intr-in-pipe"      int-property
+1A46CFC 	9C 53 A0  1 
+1A46D00 	 C 69 6E 74 72 2D 69 6E 
+1A46D08 	2D 70 69 70 65  0  0  0 
+1A46D10 	30 3B A4  1 
+      " intr-in-interval"  int-property
+1A46D14 	9C 53 A0  1 
+1A46D18 	10 69 6E 74 72 2D 69 6E 
+1A46D20 	2D 69 6E 74 65 72 76 61 
+1A46D28 	6C  0  0  0 30 3B A4  1 
+      " intr-in-size"
+1A46D30 	9C 53 A0  1  C 69 6E 74 
+1A46D38 	72 2D 69 6E 2D 73 69 7A 
+1A46D40 	65  0  0  0 
+   else
+1A46D44 	C8 41 A0  1 
+1A46D48 	4C  0  0  0 
+      " intr-out-pipe"     int-property
+1A46D4C 	9C 53 A0  1 
+1A46D50 	 D 69 6E 74 72 2D 6F 75 
+1A46D58 	74 2D 70 69 70 65  0  0 
+1A46D60 	30 3B A4  1 
+      " intr-out-interval" int-property
+1A46D64 	9C 53 A0  1 
+1A46D68 	11 69 6E 74 72 2D 6F 75 
+1A46D70 	74 2D 69 6E 74 65 72 76 
+1A46D78 	61 6C  0  0 30 3B A4  1 
+      " intr-out-size"
+1A46D80 	9C 53 A0  1  D 69 6E 74 
+1A46D88 	72 2D 6F 75 74 2D 73 69 
+1A46D90 	7A 65  0  0 
+   then  int-property
+1A46D94 	30 3B A4  1 
+;
+1A46D98 	58 46 A0  1 
+
+: make-pipe-properties  ( adr -- )
+1A46D9C 	 0  0  0 6D 
+1A46DA0 	61 6B 65 2D 70 69 70 65 
+1A46DA8 	2D 70 72 6F 70 65 72 74 
+1A46DB0 	69 65 73 94 CC 6C A4  1 
+1A46DB8 	20 40 A0  1 
+   dup c@ over + swap 4 + c@ 		( adr' #endpoints )
+1A46DBC 	40 49 A0  1 
+1A46DC0 	C4 4C A0  1 54 49 A0  1 
+1A46DC8 	 4 45 A0  1 68 49 A0  1 
+1A46DD0 	B0 6F A0  1  4 45 A0  1 
+1A46DD8 	C4 4C A0  1 
+   swap ENDPOINT find-desc swap 0  ?do	( adr' )
+1A46DDC 	68 49 A0  1 
+1A46DE0 	20 32 A4  1 58 39 A4  1 
+1A46DE8 	68 49 A0  1 70 6F A0  1 
+1A46DF0 	50 42 A0  1 D4  0  0  0 
+      dup 2 + c@			( adr pipe )
+1A46DF8 	40 49 A0  1 90 6F A0  1 
+1A46E00 	 4 45 A0  1 C4 4C A0  1 
+      over 4 + le-w@			( adr pipe size )
+1A46E08 	54 49 A0  1 B0 6F A0  1 
+1A46E10 	 4 45 A0  1 38 34 A4  1 
+      2dup register-pipe		( adr pipe size )
+1A46E18 	C0 49 A0  1 28 6A A4  1 
+      2 pick 6 + c@			( adr pipe size interval )
+1A46E20 	90 6F A0  1  C 4A A0  1 
+1A46E28 	D0 6F A0  1  4 45 A0  1 
+1A46E30 	C4 4C A0  1 
+      3 pick 3 + c@ 3 and  case		( adr pipe size interval type )
+1A46E34 	A0 6F A0  1 
+1A46E38 	 C 4A A0  1 A0 6F A0  1 
+1A46E40 	 4 45 A0  1 C4 4C A0  1 
+1A46E48 	A0 6F A0  1 5C 44 A0  1 
+         0  of  make-ctrl-pipe-property  endof
+1A46E50 	70 6F A0  1 48 43 A0  1 
+1A46E58 	10  0  0  0 A0 6A A4  1 
+1A46E60 	6C 43 A0  1 50  0  0  0 
+         1  of  make-iso-pipe-property   endof
+1A46E68 	80 6F A0  1 48 43 A0  1 
+1A46E70 	10  0  0  0 64 6B A4  1 
+1A46E78 	6C 43 A0  1 38  0  0  0 
+         2  of  make-bulk-pipe-property  endof
+1A46E80 	90 6F A0  1 48 43 A0  1 
+1A46E88 	10  0  0  0 18 6C A4  1 
+1A46E90 	6C 43 A0  1 20  0  0  0 
+         3  of  make-intr-pipe-property  endof
+1A46E98 	A0 6F A0  1 48 43 A0  1 
+1A46EA0 	10  0  0  0 CC 6C A4  1 
+1A46EA8 	6C 43 A0  1  8  0  0  0 
+      endcase
+1A46EB0 	84 43 A0  1 
+      dup c@ +				( adr' )
+1A46EB4 	40 49 A0  1 
+1A46EB8 	C4 4C A0  1  4 45 A0  1 
+   loop  drop
+1A46EC0 	F8 41 A0  1 34 FF FF FF 
+1A46EC8 	30 49 A0  1 
+;
+1A46ECC 	58 46 A0  1 
+
+: make-descriptor-properties  ( -- )
+1A46ED0 	 0 6D 61 6B 65 2D 64 65 
+1A46ED8 	73 63 72 69 70 74 6F 72 
+1A46EE0 	2D 70 72 6F 70 65 72 74 
+1A46EE8 	69 65 73 9A B8 6D A4  1 
+1A46EF0 	20 40 A0  1 
+   make-class-properties		\ Must make class properties first
+1A46EF4 	B0 61 A4  1 
+   make-name-property
+1A46EF8 	 C 62 A4  1 
+   make-vendor-properties
+1A46EFC 	54 65 A4  1 
+   make-compatible-property		\ Must come after vendor and class
+1A46F00 	54 67 A4  1 
+   make-string-properties
+1A46F04 	6C 69 A4  1 
+   cfg-desc-buf my-address find-intf-desc make-pipe-properties
+1A46F08 	A0 5D A4  1 20 10 A2  1 
+1A46F10 	C8 39 A4  1 B8 6D A4  1 
+   make-misc-properties
+1A46F18 	E4 69 A4  1 
+;
+1A46F1C 	58 46 A0  1 
+
+: make-common-properties  ( dev -- )
+1A46F20 	 0 6D 61 6B 65 2D 63 6F 
+1A46F28 	6D 6D 6F 6E 2D 70 72 6F 
+1A46F30 	70 65 72 74 69 65 73 96 
+1A46F38 	F0 6E A4  1 20 40 A0  1 
+   1 " #address-cells" int-property
+1A46F40 	80 6F A0  1 9C 53 A0  1 
+1A46F48 	 E 23 61 64 64 72 65 73 
+1A46F50 	73 2D 63 65 6C 6C 73  0 
+1A46F58 	30 3B A4  1 
+   0 " #size-cells"    int-property
+1A46F5C 	70 6F A0  1 
+1A46F60 	9C 53 A0  1  B 23 73 69 
+1A46F68 	7A 65 2D 63 65 6C 6C 73 
+1A46F70 	 0  0  0  0 30 3B A4  1 
+   my-address my-space encode-phys " reg" property	\ my-address=intf, my-space=port
+1A46F78 	20 10 A2  1 AC  3 A2  1 
+1A46F80 	E0 47 A2  1 9C 53 A0  1 
+1A46F88 	 3 72 65 67  0  0  0  0 
+1A46F90 	BC 14 A2  1 
+   dup " assigned-address" int-property
+1A46F94 	40 49 A0  1 
+1A46F98 	9C 53 A0  1 10 61 73 73 
+1A46FA0 	69 67 6E 65 64 2D 61 64 
+1A46FA8 	64 72 65 73 73  0  0  0 
+1A46FB0 	30 3B A4  1 
+   ( dev ) di-speed@  case
+1A46FB4 	10 42 A4  1 
+      speed-low  of  " low-speed"   endof
+1A46FB8 	80 2E A4  1 48 43 A0  1 
+1A46FC0 	1C  0  0  0 9C 53 A0  1 
+1A46FC8 	 9 6C 6F 77 2D 73 70 65 
+1A46FD0 	65 64  0  0 6C 43 A0  1 
+1A46FD8 	40  0  0  0 
+      speed-full of  " full-speed"  endof
+1A46FDC 	68 2E A4  1 
+1A46FE0 	48 43 A0  1 1C  0  0  0 
+1A46FE8 	9C 53 A0  1  A 66 75 6C 
+1A46FF0 	6C 2D 73 70 65 65 64  0 
+1A46FF8 	6C 43 A0  1 1C  0  0  0 
+      ( default )  " high-speed" rot
+1A47000 	9C 53 A0  1  A 68 69 67 
+1A47008 	68 2D 73 70 65 65 64  0 
+1A47010 	7C 49 A0  1 
+   endcase
+1A47014 	84 43 A0  1 
+   0 0 2swap str-property
+1A47018 	70 6F A0  1 70 6F A0  1 
+1A47020 	F4 49 A0  1 5C 3B A4  1 
+;
+1A47028 	58 46 A0  1 
+
+\ Sets the di-maxpayload fields in the dev-info endpoint descriptor array
+: reregister-pipes  ( dev intf -- )
+1A4702C 	 0  0  0 72 
+1A47030 	65 72 65 67 69 73 74 65 
+1A47038 	72 2D 70 69 70 65 73 90 
+1A47040 	3C 6F A4  1 20 40 A0  1 
+   cfg-desc-buf swap find-intf-desc	( dev adr )
+1A47048 	A0 5D A4  1 68 49 A0  1 
+1A47050 	C8 39 A4  1 
+   dup c@  over +  swap 4 + c@ 		( dev adr' #endpoints )
+1A47054 	40 49 A0  1 
+1A47058 	C4 4C A0  1 54 49 A0  1 
+1A47060 	 4 45 A0  1 68 49 A0  1 
+1A47068 	B0 6F A0  1  4 45 A0  1 
+1A47070 	C4 4C A0  1 
+   swap  ENDPOINT find-desc		( dev #endpoints adr' )
+1A47074 	68 49 A0  1 
+1A47078 	20 32 A4  1 58 39 A4  1 
+   swap 0  ?do				( dev adr' )
+1A47080 	68 49 A0  1 70 6F A0  1 
+1A47088 	50 42 A0  1 58  0  0  0 
+      over di-is-reset                  ( dev adr )
+1A47090 	54 49 A0  1 BC 42 A4  1 
+      dup 4 + le-w@			( dev adr size )
+1A47098 	40 49 A0  1 B0 6F A0  1 
+1A470A0 	 4 45 A0  1 38 34 A4  1 
+      over 2 + c@  h# f and		( dev adr size pipe )
+1A470A8 	54 49 A0  1 90 6F A0  1 
+1A470B0 	 4 45 A0  1 C4 4C A0  1 
+1A470B8 	58 41 A0  1  F  0  0  0 
+1A470C0 	5C 44 A0  1 
+      3 pick di-maxpayload!		( dev adr )
+1A470C4 	A0 6F A0  1 
+1A470C8 	 C 4A A0  1 48 43 A4  1 
+      dup c@ +				( dev adr' )
+1A470D0 	40 49 A0  1 C4 4C A0  1 
+1A470D8 	 4 45 A0  1 
+   loop  2drop				( )
+1A470DC 	F8 41 A0  1 
+1A470E0 	B0 FF FF FF AC 49 A0  1 
+;
+1A470E8 	58 46 A0  1 
+
+: be-l!  ( n adr -- )
+1A470EC 	 0  0 62 65 
+1A470F0 	2D 6C 21 85 44 70 A4  1 
+1A470F8 	20 40 A0  1 
+   >r lbsplit r@ c!  r@ 1+ c!  r@ 2+ c!  r> 3 + c!
+1A470FC 	BC 45 A0  1 
+1A47100 	B4 FB A0  1 E4 45 A0  1 
+1A47108 	B8 4D A0  1 E4 45 A0  1 
+1A47110 	30 4B A0  1 B8 4D A0  1 
+1A47118 	E4 45 A0  1 40 4B A0  1 
+1A47120 	B8 4D A0  1 D0 45 A0  1 
+1A47128 	A0 6F A0  1  4 45 A0  1 
+1A47130 	B8 4D A0  1 
+;
+1A47134 	58 46 A0  1 
+
+: probe-hub-node  ( phandle -- )
+1A47138 	 0 70 72 6F 62 65 2D 68 
+1A47140 	75 62 2D 6E 6F 64 65 8E 
+1A47148 	F8 70 A4  1 20 40 A0  1 
+   >r                                       ( r: phandle )
+1A47150 	BC 45 A0  1 
+   " probe-hub" r@ find-method  if          ( xt r: phandle )
+1A47154 	9C 53 A0  1 
+1A47158 	 9 70 72 6F 62 65 2D 68 
+1A47160 	75 62  0  0 E4 45 A0  1 
+1A47168 	A0 2F A2  1 DC 41 A0  1 
+1A47170 	28  0  0  0 
+      r@ push-package                       ( xt r: phandle )
+1A47174 	E4 45 A0  1 
+1A47178 	7C FB A1  1 
+      " " new-instance                      ( xt r: phandle )
+1A4717C 	9C 53 A0  1 
+1A47180 	 0  0  0  0 9C  8 A2  1 
+      set-default-unit                      ( xt r: phandle )
+1A47188 	68 3B A2  1 
+      execute                               ( r: phandle )
+1A4718C 	98 41 A0  1 
+      destroy-instance                      ( r: phandle )
+1A47190 	38  9 A2  1 
+      pop-package                           ( r: phandle )
+1A47194 	D8 FB A1  1 
+   then                                     ( r: phandle )
+   r> drop
+1A47198 	D0 45 A0  1 30 49 A0  1 
+;
+1A471A0 	58 46 A0  1 
+: reuse-node  ( dev intf port phandle -- )
+1A471A4 	 0 72 65 75 
+1A471A8 	73 65 2D 6E 6F 64 65 8A 
+1A471B0 	4C 71 A4  1 20 40 A0  1 
+   >r drop			  ( dev intf r: phandle )
+1A471B8 	BC 45 A0  1 30 49 A0  1 
+
+   2dup reregister-pipes	  ( dev intf r: phandle )
+1A471C0 	C0 49 A0  1 44 70 A4  1 
+   drop                           ( dev      r: phandle )
+1A471C8 	30 49 A0  1 
+
+   \ Change the assigned-address property without leaking memory
+   " assigned-address" r@ get-package-property  if  ( dev r: phandle )
+1A471CC 	9C 53 A0  1 
+1A471D0 	10 61 73 73 69 67 6E 65 
+1A471D8 	64 2D 61 64 64 72 65 73 
+1A471E0 	73  0  0  0 E4 45 A0  1 
+1A471E8 	98 33 A2  1 DC 41 A0  1 
+1A471F0 	10  0  0  0 
+      drop                                  ( r: phandle )
+1A471F4 	30 49 A0  1 
+   else                                     ( dev adr len r: phandle )
+1A471F8 	C8 41 A0  1  C  0  0  0 
+      drop be-l!                            ( r: phandle )
+1A47200 	30 49 A0  1 F8 70 A4  1 
+   then                                     ( r: phandle )
+
+   r> probe-hub-node
+1A47208 	D0 45 A0  1 4C 71 A4  1 
+;
+1A47210 	58 46 A0  1 
+: id-match?  ( dev intf port phandle -- dev intf port phandle flag? )
+1A47214 	 0  0 69 64 
+1A47218 	2D 6D 61 74 63 68 3F 89 
+1A47220 	B4 71 A4  1 20 40 A0  1 
+   " vendor-id" 2 pick get-package-property  if  false exit  then
+1A47228 	9C 53 A0  1  9 76 65 6E 
+1A47230 	64 6F 72 2D 69 64  0  0 
+1A47238 	90 6F A0  1  C 4A A0  1 
+1A47240 	98 33 A2  1 DC 41 A0  1 
+1A47248 	 C  0  0  0 18 70 A0  1 
+1A47250 	40 46 A0  1 
+   decode-int nip nip   >r     ( dev intf port phandle r: vid )
+1A47254 	68 F7 A1  1 
+1A47258 	FC 46 A0  1 FC 46 A0  1 
+1A47260 	BC 45 A0  1 
+   " device-id" 2 pick get-package-property  if  r> drop  false exit  then
+1A47264 	9C 53 A0  1 
+1A47268 	 9 64 65 76 69 63 65 2D 
+1A47270 	69 64  0  0 90 6F A0  1 
+1A47278 	 C 4A A0  1 98 33 A2  1 
+1A47280 	DC 41 A0  1 14  0  0  0 
+1A47288 	D0 45 A0  1 30 49 A0  1 
+1A47290 	18 70 A0  1 40 46 A0  1 
+   decode-int nip nip   >r     ( dev intf port phandle r: vid did )
+1A47298 	68 F7 A1  1 FC 46 A0  1 
+1A472A0 	FC 46 A0  1 BC 45 A0  1 
+   " release" 2 pick get-package-property  if  r> r> 2drop  false exit  then
+1A472A8 	9C 53 A0  1  7 72 65 6C 
+1A472B0 	65 61 73 65  0  0  0  0 
+1A472B8 	90 6F A0  1  C 4A A0  1 
+1A472C0 	98 33 A2  1 DC 41 A0  1 
+1A472C8 	18  0  0  0 D0 45 A0  1 
+1A472D0 	D0 45 A0  1 AC 49 A0  1 
+1A472D8 	18 70 A0  1 40 46 A0  1 
+   decode-int nip nip   >r     ( dev intf port phandle r: vid did rev )
+1A472E0 	68 F7 A1  1 FC 46 A0  1 
+1A472E8 	FC 46 A0  1 BC 45 A0  1 
+   get-vid                     ( dev intf port phandle  vid1 did1 rev1 r: vid did rev )
+1A472F0 	F8 64 A4  1 
+   r> = -rot  r> = -rot  r> =  and and
+1A472F4 	D0 45 A0  1 
+1A472F8 	24 48 A0  1 94 49 A0  1 
+1A47300 	D0 45 A0  1 24 48 A0  1 
+1A47308 	94 49 A0  1 D0 45 A0  1 
+1A47310 	24 48 A0  1 5C 44 A0  1 
+1A47318 	5C 44 A0  1 
+;
+1A4731C 	58 46 A0  1 
+
+: reuse-old-node?  ( dev intf port -- reused? )
+1A47320 	72 65 75 73 65 2D 6F 6C 
+1A47328 	64 2D 6E 6F 64 65 3F 8F 
+1A47330 	24 72 A4  1 20 40 A0  1 
+   my-self ihandle>phandle child                 ( dev intf port phandle )
+1A47338 	EC 7E A0  1  0 32 A2  1 
+1A47340 	58 74 A2  1 
+   begin  ?dup  while                            ( dev intf port phandle )
+1A47344 	B4 70 A0  1 
+1A47348 	DC 41 A0  1 90  0  0  0 
+      " reg" 2 pick get-package-property 0=  if  ( dev intf port phandle adr len )
+1A47350 	9C 53 A0  1  3 72 65 67 
+1A47358 	 0  0  0  0 90 6F A0  1 
+1A47360 	 C 4A A0  1 98 33 A2  1 
+1A47368 	24 47 A0  1 DC 41 A0  1 
+1A47370 	60  0  0  0 
+         decode-int                              ( dev intf port phandle adr len' port1 )
+1A47374 	68 F7 A1  1 
+         4 pick  =  if                           ( dev intf port phandle adr len )
+1A47378 	B0 6F A0  1  C 4A A0  1 
+1A47380 	24 48 A0  1 DC 41 A0  1 
+1A47388 	44  0  0  0 
+            decode-int nip nip                   ( dev intf port phandle intf1 )
+1A4738C 	68 F7 A1  1 
+1A47390 	FC 46 A0  1 FC 46 A0  1 
+            3 pick  =  if                        ( dev intf port phandle )
+1A47398 	A0 6F A0  1  C 4A A0  1 
+1A473A0 	24 48 A0  1 DC 41 A0  1 
+1A473A8 	1C  0  0  0 
+               id-match?  if                     ( dev intf port phandle )
+1A473AC 	24 72 A4  1 
+1A473B0 	DC 41 A0  1 10  0  0  0 
+                  reuse-node                     ( )
+1A473B8 	B4 71 A4  1 
+                  true exit                      ( -- true )
+1A473BC 	 4 70 A0  1 
+1A473C0 	40 46 A0  1 
+               then                              ( dev intf port phandle )
+            then                                 ( dev intf port phandle )
+         else                                    ( dev intf port phandle adr len )
+1A473C4 	C8 41 A0  1 
+1A473C8 	 8  0  0  0 
+            2drop                                ( dev intf port phandle )
+1A473CC 	AC 49 A0  1 
+         then                                    ( dev intf port phandle )
+      then                                       ( dev intf port phandle )
+      peer                                       ( dev intf port phandle' )
+1A473D0 	B4 74 A2  1 
+   repeat                                        ( dev intf port )
+1A473D4 	C8 41 A0  1 
+1A473D8 	6C FF FF FF 
+   3drop false
+1A473DC 	A4 3E A4  1 
+1A473E0 	18 70 A0  1 
+;
+1A473E4 	58 46 A0  1 
+
+: disable-old-nodes  ( port -- )
+1A473E8 	 0  0 64 69 73 61 62 6C 
+1A473F0 	65 2D 6F 6C 64 2D 6E 6F 
+1A473F8 	64 65 73 91 34 73 A4  1 
+1A47400 	20 40 A0  1 
+   my-self ihandle>phandle child                 ( port phandle )
+1A47404 	EC 7E A0  1 
+1A47408 	 0 32 A2  1 58 74 A2  1 
+   begin  ?dup  while                            ( port phandle )
+1A47410 	B4 70 A0  1 DC 41 A0  1 
+1A47418 	98  0  0  0 
+      " reg" 2 pick get-package-property 0=  if  ( port phandle adr len )
+1A4741C 	9C 53 A0  1 
+1A47420 	 3 72 65 67  0  0  0  0 
+1A47428 	90 6F A0  1  C 4A A0  1 
+1A47430 	98 33 A2  1 24 47 A0  1 
+1A47438 	DC 41 A0  1 68  0  0  0 
+         decode-int  nip nip                     ( port phandle port1 )
+1A47440 	68 F7 A1  1 FC 46 A0  1 
+1A47448 	FC 46 A0  1 
+         2 pick  =  if                           ( port phandle )
+1A4744C 	90 6F A0  1 
+1A47450 	 C 4A A0  1 24 48 A0  1 
+1A47458 	DC 41 A0  1 48  0  0  0 
+            " assigned-address"                  ( port phandle propname$ )
+1A47460 	9C 53 A0  1 10 61 73 73 
+1A47468 	69 67 6E 65 64 2D 61 64 
+1A47470 	64 72 65 73 73  0  0  0 
+            2 pick  get-package-property 0=  if  ( port phandle adr len )
+1A47478 	90 6F A0  1  C 4A A0  1 
+1A47480 	98 33 A2  1 24 47 A0  1 
+1A47488 	DC 41 A0  1 18  0  0  0 
+               drop -1 swap be-l!                ( port phandle )
+1A47490 	30 49 A0  1 58 41 A0  1 
+1A47498 	FF FF FF FF 68 49 A0  1 
+1A474A0 	F8 70 A4  1 
+            then                                 ( port phandle )
+         then                                    ( port phandle )
+      then                                       ( port phandle )
+      peer                                       ( port phandle' )
+1A474A4 	B4 74 A2  1 
+   repeat                                        ( port )
+1A474A8 	C8 41 A0  1 64 FF FF FF 
+   drop                                          ( )
+1A474B0 	30 49 A0  1 
+;
+1A474B4 	58 46 A0  1 
+\ cr .( disable-old-nodes=) '  disable-old-nodes .h
+
+: find-port-node  ( port -- true | phandle false)
+1A474B8 	 0 66 69 6E 64 2D 70 6F 
+1A474C0 	72 74 2D 6E 6F 64 65 8E 
+1A474C8 	 0 74 A4  1 20 40 A0  1 
+   my-self ihandle>phandle child                 ( port phandle )
+1A474D0 	EC 7E A0  1  0 32 A2  1 
+1A474D8 	58 74 A2  1 
+   begin  ?dup  while                            ( port phandle )
+1A474DC 	B4 70 A0  1 
+1A474E0 	DC 41 A0  1 B0  0  0  0 
+      " reg" 2 pick get-package-property 0=  if  ( port phandle adr len )
+1A474E8 	9C 53 A0  1  3 72 65 67 
+1A474F0 	 0  0  0  0 90 6F A0  1 
+1A474F8 	 C 4A A0  1 98 33 A2  1 
+1A47500 	24 47 A0  1 DC 41 A0  1 
+1A47508 	80  0  0  0 
+         decode-int  nip nip                     ( port phandle port1 )
+1A4750C 	68 F7 A1  1 
+1A47510 	FC 46 A0  1 FC 46 A0  1 
+         2 pick  =  if                           ( port phandle )
+1A47518 	90 6F A0  1  C 4A A0  1 
+1A47520 	24 48 A0  1 DC 41 A0  1 
+1A47528 	60  0  0  0 
+            \ Check if the node has been disabled
+            " assigned-address"                  ( port phandle propname$ )
+1A4752C 	9C 53 A0  1 
+1A47530 	10 61 73 73 69 67 6E 65 
+1A47538 	64 2D 61 64 64 72 65 73 
+1A47540 	73  0  0  0 
+            2 pick  get-package-property 0=  if  ( port phandle adr len )
+1A47544 	90 6F A0  1 
+1A47548 	 C 4A A0  1 98 33 A2  1 
+1A47550 	24 47 A0  1 DC 41 A0  1 
+1A47558 	30  0  0  0 
+               decode-int  nip nip               ( port phandle assigned-address )
+1A4755C 	68 F7 A1  1 
+1A47560 	FC 46 A0  1 FC 46 A0  1 
+               -1 <>  if                         ( port phandle )
+1A47568 	58 41 A0  1 FF FF FF FF 
+1A47570 	44 48 A0  1 DC 41 A0  1 
+1A47578 	10  0  0  0 
+                  nip false exit
+1A4757C 	FC 46 A0  1 
+1A47580 	18 70 A0  1 40 46 A0  1 
+               then
+            then                                 ( port phandle )
+         then                                    ( port phandle )
+      then                                       ( port phandle )
+      peer                                       ( port phandle' )
+1A47588 	B4 74 A2  1 
+   repeat                                        ( port )
+1A4758C 	C8 41 A0  1 
+1A47590 	4C FF FF FF 
+   drop                                          ( )
+1A47594 	30 49 A0  1 
+   true
+1A47598 	 4 70 A0  1 
+;
+1A4759C 	58 46 A0  1 
+
+: .phandle-property  ( phandle prop-name$ -- )
+1A475A0 	 0  0 2E 70 68 61 6E 64 
+1A475A8 	6C 65 2D 70 72 6F 70 65 
+1A475B0 	72 74 79 91 CC 74 A4  1 
+1A475B8 	20 40 A0  1 
+   rot get-package-property 0=  if    ( adr len )
+1A475BC 	7C 49 A0  1 
+1A475C0 	98 33 A2  1 24 47 A0  1 
+1A475C8 	DC 41 A0  1 10  0  0  0 
+      decode-string type  2drop
+1A475D0 	FC F6 A1  1  4 6C A0  1 
+1A475D8 	AC 49 A0  1 
+   then
+;
+1A475DC 	58 46 A0  1 
+: .usb-device  ( port -- )
+1A475E0 	2E 75 73 62 2D 64 65 76 
+1A475E8 	69 63 65 8B B8 75 A4  1 
+1A475F0 	20 40 A0  1 
+   find-port-node  if
+1A475F4 	CC 74 A4  1 
+1A475F8 	DC 41 A0  1 40  0  0  0 
+      ." Can't find device node for USB port!" cr abort
+1A47600 	20 7C A0  1 24 43 61 6E 
+1A47608 	27 74 20 66 69 6E 64 20 
+1A47610 	64 65 76 69 63 65 20 6E 
+1A47618 	6F 64 65 20 66 6F 72 20 
+1A47620 	55 53 42 20 70 6F 72 74 
+1A47628 	21  0  0  0 80 6D A0  1 
+1A47630 	28 91 A0  1 
+   else                                      ( phandle )
+1A47634 	C8 41 A0  1 
+1A47638 	64  0  0  0 
+      dup " device_type" .phandle-property   ( phandle )
+1A4763C 	40 49 A0  1 
+1A47640 	9C 53 A0  1  B 64 65 76 
+1A47648 	69 63 65 5F 74 79 70 65 
+1A47650 	 0  0  0  0 B8 75 A4  1 
+      ." ,"
+1A47658 	20 7C A0  1  1 2C  0  0 
+      dup " vendor$" .phandle-property       ( phandle )
+1A47660 	40 49 A0  1 9C 53 A0  1 
+1A47668 	 7 76 65 6E 64 6F 72 24 
+1A47670 	 0  0  0  0 B8 75 A4  1 
+      ." ,"
+1A47678 	20 7C A0  1  1 2C  0  0 
+      dup " device$" .phandle-property       ( phandle )
+1A47680 	40 49 A0  1 9C 53 A0  1 
+1A47688 	 7 64 65 76 69 63 65 24 
+1A47690 	 0  0  0  0 B8 75 A4  1 
+      drop                                   ( )
+1A47698 	30 49 A0  1 
+   then
+;
+1A4769C 	58 46 A0  1 
+
+: (make-device-node)  ( dev port intf -- )
+1A476A0 	 0 28 6D 61 6B 65 2D 64 
+1A476A8 	65 76 69 63 65 2D 6E 6F 
+1A476B0 	64 65 29 92 F0 75 A4  1 
+1A476B8 	20 40 A0  1 
+   swap                              ( dev intf port )
+1A476BC 	68 49 A0  1 
+   3dup  reuse-old-node?  if         ( dev intf port )
+1A476C0 	78 3E A4  1 34 73 A4  1 
+1A476C8 	DC 41 A0  1 14  0  0  0 
+      3drop exit
+1A476D0 	A4 3E A4  1 40 46 A0  1 
+   else
+1A476D8 	C8 41 A0  1  4  0  0  0 
+      \ As a possible improvement, the old child node could be linked to
+      \ a retained list for possible reuse later
+\ We don't do this because it can remove nodes we just created.
+\   say we create  keyboard@3,0  then we try to create  hid@3,1
+\   rm-obsolete-children will delete  keyboard@3,0
+\     dup rm-obsolete-children       ( dev intf port )
+   then
+   dup >r encode-unit-m " " 2swap  new-device set-args		( dev )  ( R: port )
+1A476E0 	40 49 A0  1 BC 45 A0  1 
+1A476E8 	9C 3F A4  1 9C 53 A0  1 
+1A476F0 	 0  0  0  0 F4 49 A0  1 
+1A476F8 	74  F A2  1  4 33 A2  1 
+   dup dup di-speed@ swap r> make-dev-property-hook		( dev )
+1A47700 	40 49 A0  1 40 49 A0  1 
+1A47708 	10 42 A4  1 68 49 A0  1 
+1A47710 	D0 45 A0  1 84 5D A4  1 
+   make-common-properties			\ Make non-descriptor based properties
+1A47718 	3C 6F A4  1 
+   make-descriptor-properties			\ Make descriptor based properties
+1A4771C 	F0 6E A4  1 
+   load-fcode-driver				\ Find and load fcode driver
+1A47720 	1C 5D A4  1 
+   finish-device
+1A47724 	74 11 A2  1 
+;
+1A47728 	58 46 A0  1 
+
+\ Get all the descriptors we need in making properties now because target is
+\ questionable in the child's context.  The descriptor buffers are not instance
+\ data, so they can be accessed by code that is defined in the root hub node
+\ but executing in a subordinate hub node context or a child node context.
+
+h# 409 constant language  			\ Unicode id
+1A4772C 	 0  0  0 6C 
+1A47730 	61 6E 67 75 61 67 65 88 
+1A47738 	B8 76 A4  1 68 40 A0  1 
+1A47740 	 9  4  0  0 
+\ Executed in root hub node context
+: get-string ( lang idx adr -- actual )
+1A47744 	 0 67 65 74 
+1A47748 	2D 73 74 72 69 6E 67 8A 
+1A47750 	3C 77 A4  1 20 40 A0  1 
+   over 0=  if  3drop  0 exit  then		\ No string index
+1A47758 	54 49 A0  1 24 47 A0  1 
+1A47760 	DC 41 A0  1 10  0  0  0 
+1A47768 	A4 3E A4  1 70 6F A0  1 
+1A47770 	40 46 A0  1 
+   -rot get-str-desc
+1A47774 	94 49 A0  1 
+1A47778 	E8 56 A4  1 
+;
+1A4777C 	58 46 A0  1 
+
+\ Executed in root hub node context
+: get-str-descriptors  ( -- )
+1A47780 	67 65 74 2D 73 74 72 2D 
+1A47788 	64 65 73 63 72 69 70 74 
+1A47790 	6F 72 73 93 54 77 A4  1 
+1A47798 	20 40 A0  1 
+   language					( lang )
+1A4779C 	3C 77 A4  1 
+   dup d# 14 dev-desc@ v$-desc-buf get-string to /v$-desc-buf
+1A477A0 	40 49 A0  1 58 41 A0  1 
+1A477A8 	 E  0  0  0 30 60 A4  1 
+1A477B0 	EC 5D A4  1 54 77 A4  1 
+1A477B8 	B8 40 A0  1 74 5E A4  1 
+   dup d# 15 dev-desc@ d$-desc-buf get-string to /d$-desc-buf
+1A477C0 	40 49 A0  1 58 41 A0  1 
+1A477C8 	 F  0  0  0 30 60 A4  1 
+1A477D0 	D4 5D A4  1 54 77 A4  1 
+1A477D8 	B8 40 A0  1 58 5E A4  1 
+       d# 16 dev-desc@ s$-desc-buf get-string to /s$-desc-buf
+1A477E0 	58 41 A0  1 10  0  0  0 
+1A477E8 	30 60 A4  1  4 5E A4  1 
+1A477F0 	54 77 A4  1 B8 40 A0  1 
+1A477F8 	90 5E A4  1 
+;
+1A477FC 	58 46 A0  1 
+
+
+
+: get-initial-dev-desc  ( dev -- )
+1A47800 	 0  0  0 67 65 74 2D 69 
+1A47808 	6E 69 74 69 61 6C 2D 64 
+1A47810 	65 76 2D 64 65 73 63 94 
+1A47818 	98 77 A4  1 20 40 A0  1 
+   dev-desc-buf d# 18 erase                     ( dev )
+1A47820 	BC 5D A4  1 58 41 A0  1 
+1A47828 	12  0  0  0 F0 72 A0  1 
+
+   \ Until we know the size of the control endpoint, we must be
+   \ conservative about the transfer size.
+   dev-desc-buf /pipe0 get-dev-desc  if		( dev )
+1A47830 	BC 5D A4  1 AC 2E A4  1 
+1A47838 	88 56 A4  1 DC 41 A0  1 
+1A47840 	4C  0  0  0 
+      7 dev-desc@                               ( dev maxtransfer )
+1A47844 	E0 6F A0  1 
+1A47848 	30 60 A4  1 
+      tuck  0 rot di-maxpayload!	        ( maxtransfer )
+1A4784C 	E8 46 A0  1 
+1A47850 	70 6F A0  1 7C 49 A0  1 
+1A47858 	48 43 A4  1 
+      d# 18 >=  if                              ( )
+1A4785C 	58 41 A0  1 
+1A47860 	12  0  0  0 EC 48 A0  1 
+1A47868 	DC 41 A0  1 18  0  0  0 
+         dev-desc-buf d# 18 get-dev-desc drop   ( )
+1A47870 	BC 5D A4  1 58 41 A0  1 
+1A47878 	12  0  0  0 88 56 A4  1 
+1A47880 	30 49 A0  1 
+      then                                      ( )
+   else						( dev )
+1A47884 	C8 41 A0  1 
+1A47888 	 8  0  0  0 
+      drop					( )
+1A4788C 	30 49 A0  1 
+   then						( )
+;
+1A47890 	58 46 A0  1 
+
+: devicefth
+1A47894 	 0  0 64 65 
+1A47898 	76 69 63 65 66 74 68 89 
+1A478A0 	1C 78 A4  1 20 40 A0  1 
+
+\ Executed in root hub node context
+s" : refresh-desc-bufs" eval  ( dev -- )
+1A478A8 	9C 53 A0  1 13 3A 20 72 
+1A478B0 	65 66 72 65 73 68 2D 64 
+1A478B8 	65 73 63 2D 62 75 66 73 
+1A478C0 	 0  0  0  0 D8 E5 A0  1 
+s"    set-target" eval
+1A478C8 	9C 53 A0  1  D 20 20 20 
+1A478D0 	73 65 74 2D 74 61 72 67 
+1A478D8 	65 74  0  0 D8 E5 A0  1 
+s"    dev-desc-buf d# 18 get-dev-desc to /dev-desc-buf" eval		\ Refresh dev-desc-buf
+1A478E0 	9C 53 A0  1 33 20 20 20 
+1A478E8 	64 65 76 2D 64 65 73 63 
+1A478F0 	2D 62 75 66 20 64 23 20 
+1A478F8 	31 38 20 67 65 74 2D 64 
+1A47900 	65 76 2D 64 65 73 63 20 
+1A47908 	74 6F 20 2F 64 65 76 2D 
+1A47910 	64 65 73 63 2D 62 75 66 
+1A47918 	 0  0  0  0 D8 E5 A0  1 
+s"    cfg-desc-buf     0 get-cfg-desc to /cfg-desc-buf" eval		\ Refresh cfg-desc-buf
+1A47920 	9C 53 A0  1 33 20 20 20 
+1A47928 	63 66 67 2D 64 65 73 63 
+1A47930 	2D 62 75 66 20 20 20 20 
+1A47938 	20 30 20 67 65 74 2D 63 
+1A47940 	66 67 2D 64 65 73 63 20 
+1A47948 	74 6F 20 2F 63 66 67 2D 
+1A47950 	64 65 73 63 2D 62 75 66 
+1A47958 	 0  0  0  0 D8 E5 A0  1 
+s"    get-str-descriptors ;" eval
+1A47960 	9C 53 A0  1 18 20 20 20 
+1A47968 	67 65 74 2D 73 74 72 2D 
+1A47970 	64 65 73 63 72 69 70 74 
+1A47978 	6F 72 73 20 3B  0  0  0 
+1A47980 	D8 E5 A0  1 
+
+\ \ \ \
+
+\ Executed in root hub node context
+s" : get-initial-descriptors" eval  ( dev -- )
+1A47984 	9C 53 A0  1 
+1A47988 	19 3A 20 67 65 74 2D 69 
+1A47990 	6E 69 74 69 61 6C 2D 64 
+1A47998 	65 73 63 72 69 70 74 6F 
+1A479A0 	72 73  0  0 D8 E5 A0  1 
+s"    get-initial-dev-desc" eval                         ( )
+1A479A8 	9C 53 A0  1 17 20 20 20 
+1A479B0 	67 65 74 2D 69 6E 69 74 
+1A479B8 	69 61 6C 2D 64 65 76 2D 
+1A479C0 	64 65 73 63  0  0  0  0 
+1A479C8 	D8 E5 A0  1 
+s"    cfg-desc-buf 0 get-cfg-desc to /cfg-desc-buf	;" eval
+1A479CC 	9C 53 A0  1 
+1A479D0 	31 20 20 20 63 66 67 2D 
+1A479D8 	64 65 73 63 2D 62 75 66 
+1A479E0 	20 30 20 67 65 74 2D 63 
+1A479E8 	66 67 2D 64 65 73 63 20 
+1A479F0 	74 6F 20 2F 63 66 67 2D 
+1A479F8 	64 65 73 63 2D 62 75 66 
+1A47A00 	 9 3B  0  0 D8 E5 A0  1 
+
+\ Executed in hub node context (root hub or subordinate hub) - creates new child nodes via (make-device-node)
+s" : make-device-node" eval  ( port dev -- )
+1A47A08 	9C 53 A0  1 12 3A 20 6D 
+1A47A10 	61 6B 65 2D 64 65 76 69 
+1A47A18 	63 65 2D 6E 6F 64 65  0 
+1A47A20 	D8 E5 A0  1 
+ "    dup "" get-initial-descriptors"" my-self $call-method" eval	( port dev )
+1A47A24 	9C 53 A0  1 
+1A47A28 	36 20 20 20 64 75 70 20 
+1A47A30 	22 20 67 65 74 2D 69 6E 
+1A47A38 	69 74 69 61 6C 2D 64 65 
+1A47A40 	73 63 72 69 70 74 6F 72 
+1A47A48 	73 22 20 6D 79 2D 73 65 
+1A47A50 	6C 66 20 24 63 61 6C 6C 
+1A47A58 	2D 6D 65 74 68 6F 64  0 
+1A47A60 	D8 E5 A0  1 
+s"    /cfg-desc-buf 0=  if  2drop  exit  then" eval		( port dev )
+1A47A64 	9C 53 A0  1 
+1A47A68 	2A 20 20 20 2F 63 66 67 
+1A47A70 	2D 64 65 73 63 2D 62 75 
+1A47A78 	66 20 30 3D 20 20 69 66 
+1A47A80 	20 20 32 64 72 6F 70 20 
+1A47A88 	20 65 78 69 74 20 20 74 
+1A47A90 	68 65 6E  0 D8 E5 A0  1 
+s"    asso-class?  if  1  else  cfg-desc-buf 4 + c@  then" eval  ( port dev #intf )
+1A47A98 	9C 53 A0  1 36 20 20 20 
+1A47AA0 	61 73 73 6F 2D 63 6C 61 
+1A47AA8 	73 73 3F 20 20 69 66 20 
+1A47AB0 	20 31 20 20 65 6C 73 65 
+1A47AB8 	20 20 63 66 67 2D 64 65 
+1A47AC0 	73 63 2D 62 75 66 20 34 
+1A47AC8 	20 2B 20 63 40 20 20 74 
+1A47AD0 	68 65 6E  0 D8 E5 A0  1 
+s"    0  ?do" eval				                ( port dev )
+1A47AD8 	9C 53 A0  1  9 20 20 20 
+1A47AE0 	30 20 20 3F 64 6F  0  0 
+1A47AE8 	D8 E5 A0  1 
+ "       dup "" refresh-desc-bufs"" my-self $call-method" eval	( port dev )
+1A47AEC 	9C 53 A0  1 
+1A47AF0 	33 20 20 20 20 20 20 64 
+1A47AF8 	75 70 20 22 20 72 65 66 
+1A47B00 	72 65 73 68 2D 64 65 73 
+1A47B08 	63 2D 62 75 66 73 22 20 
+1A47B10 	6D 79 2D 73 65 6C 66 20 
+1A47B18 	24 63 61 6C 6C 2D 6D 65 
+1A47B20 	74 68 6F 64  0  0  0  0 
+1A47B28 	D8 E5 A0  1 
+s"       2dup swap i (make-device-node)" eval			( port dev )
+1A47B2C 	9C 53 A0  1 
+1A47B30 	24 20 20 20 20 20 20 32 
+1A47B38 	64 75 70 20 73 77 61 70 
+1A47B40 	20 69 20 28 6D 61 6B 65 
+1A47B48 	2D 64 65 76 69 63 65 2D 
+1A47B50 	6E 6F 64 65 29  0  0  0 
+1A47B58 	D8 E5 A0  1 
+s"    loop  2drop ;" eval
+1A47B5C 	9C 53 A0  1 
+1A47B60 	10 20 20 20 6C 6F 6F 70 
+1A47B68 	20 20 32 64 72 6F 70 20 
+1A47B70 	3B  0  0  0 D8 E5 A0  1 
+
+
+\ See hcd/ehci/probehub.fth for information about hub20-dev and hub20-port
+
+s" : get-hub20-dev" eval  ( -- hub-dev )
+1A47B78 	9C 53 A0  1  F 3A 20 67 
+1A47B80 	65 74 2D 68 75 62 32 30 
+1A47B88 	2D 64 65 76  0  0  0  0 
+1A47B90 	D8 E5 A0  1 
+ "    "" hub20-dev"" get-inherited-property 0=  if" eval   ( value$ )
+1A47B94 	9C 53 A0  1 
+1A47B98 	2D 20 20 20 22 20 68 75 
+1A47BA0 	62 32 30 2D 64 65 76 22 
+1A47BA8 	20 67 65 74 2D 69 6E 68 
+1A47BB0 	65 72 69 74 65 64 2D 70 
+1A47BB8 	72 6F 70 65 72 74 79 20 
+1A47BC0 	30 3D 20 20 69 66  0  0 
+1A47BC8 	D8 E5 A0  1 
+s"       decode-int nip nip" eval                        ( hub-dev )
+1A47BCC 	9C 53 A0  1 
+1A47BD0 	18 20 20 20 20 20 20 64 
+1A47BD8 	65 63 6F 64 65 2D 69 6E 
+1A47BE0 	74 20 6E 69 70 20 6E 69 
+1A47BE8 	70  0  0  0 D8 E5 A0  1 
+s"    else" eval                                         ( )
+1A47BF0 	9C 53 A0  1  7 20 20 20 
+1A47BF8 	65 6C 73 65  0  0  0  0 
+1A47C00 	D8 E5 A0  1 
+s"       1" eval                                         ( hub-dev )
+1A47C04 	9C 53 A0  1 
+1A47C08 	 7 20 20 20 20 20 20 31 
+1A47C10 	 0  0  0  0 D8 E5 A0  1 
+s"    then ;" eval                                        ( hub-dev )
+1A47C18 	9C 53 A0  1  9 20 20 20 
+1A47C20 	74 68 65 6E 20 3B  0  0 
+1A47C28 	D8 E5 A0  1 
+
+s" : get-hub20-port" eval  ( port -- port' )
+1A47C2C 	9C 53 A0  1 
+1A47C30 	10 3A 20 67 65 74 2D 68 
+1A47C38 	75 62 32 30 2D 70 6F 72 
+1A47C40 	74  0  0  0 D8 E5 A0  1 
+ "    "" hub20-port"" get-inherited-property 0=  if" eval  ( port value$ )
+1A47C48 	9C 53 A0  1 2E 20 20 20 
+1A47C50 	22 20 68 75 62 32 30 2D 
+1A47C58 	70 6F 72 74 22 20 67 65 
+1A47C60 	74 2D 69 6E 68 65 72 69 
+1A47C68 	74 65 64 2D 70 72 6F 70 
+1A47C70 	65 72 74 79 20 30 3D 20 
+1A47C78 	20 69 66  0 D8 E5 A0  1 
+s"       rot drop" eval				        ( value$ )
+1A47C80 	9C 53 A0  1  E 20 20 20 
+1A47C88 	20 20 20 72 6F 74 20 64 
+1A47C90 	72 6F 70  0 D8 E5 A0  1 
+s"       decode-int nip nip" eval                        ( port' )
+1A47C98 	9C 53 A0  1 18 20 20 20 
+1A47CA0 	20 20 20 64 65 63 6F 64 
+1A47CA8 	65 2D 69 6E 74 20 6E 69 
+1A47CB0 	70 20 6E 69 70  0  0  0 
+1A47CB8 	D8 E5 A0  1 
+s"    then ;" eval                                         ( port )
+1A47CBC 	9C 53 A0  1 
+1A47CC0 	 9 20 20 20 74 68 65 6E 
+1A47CC8 	20 3B  0  0 D8 E5 A0  1 
+
+
+\ Executed in the root hub node context
+s" : setup-new-node" eval  ( port speed hub-port hub-dev -- true | port dev xt false )
+1A47CD0 	9C 53 A0  1 10 3A 20 73 
+1A47CD8 	65 74 75 70 2D 6E 65 77 
+1A47CE0 	2D 6E 6F 64 65  0  0  0 
+1A47CE8 	D8 E5 A0  1 
+  \ Allocate device number
+s"   next-device#  if  2drop  exit  then" eval	( port speed hub-port hub-dev dev )
+1A47CEC 	9C 53 A0  1 
+1A47CF0 	25 20 20 6E 65 78 74 2D 
+1A47CF8 	64 65 76 69 63 65 23 20 
+1A47D00 	20 69 66 20 20 32 64 72 
+1A47D08 	6F 70 20 20 65 78 69 74 
+1A47D10 	20 20 74 68 65 6E  0  0 
+1A47D18 	D8 E5 A0  1 
+
+s"    tuck di-hub!" eval				( port speed hub-port dev )
+1A47D1C 	9C 53 A0  1 
+1A47D20 	 F 20 20 20 74 75 63 6B 
+1A47D28 	20 64 69 2D 68 75 62 21 
+1A47D30 	 0  0  0  0 D8 E5 A0  1 
+s"    tuck di-port!" eval			( port speed dev )
+1A47D38 	9C 53 A0  1 10 20 20 20 
+1A47D40 	74 75 63 6B 20 64 69 2D 
+1A47D48 	70 6F 72 74 21  0  0  0 
+1A47D50 	D8 E5 A0  1 
+s"    tuck di-speed!" eval			( port dev )
+1A47D54 	9C 53 A0  1 
+1A47D58 	11 20 20 20 74 75 63 6B 
+1A47D60 	20 64 69 2D 73 70 65 65 
+1A47D68 	64 21  0  0 D8 E5 A0  1 
+
+s"    0 set-target" eval				( port dev )	\ Address it as device 0
+1A47D70 	9C 53 A0  1  F 20 20 20 
+1A47D78 	30 20 73 65 74 2D 74 61 
+1A47D80 	72 67 65 74  0  0  0  0 
+1A47D88 	D8 E5 A0  1 
+
+   \ Some devices (e.g. Lexar USB-to-SD and at least one USB FLASH drive) fail
+   \ on set-address unless you first read the device descriptor from address 0.
+   \ On other devices, this will fail, but it won't cause problems, and the
+   \ descriptor will be re-read later by make-device-node
+s"    dup get-initial-dev-desc" eval             ( port dev )
+1A47D8C 	9C 53 A0  1 
+1A47D90 	1B 20 20 20 64 75 70 20 
+1A47D98 	67 65 74 2D 69 6E 69 74 
+1A47DA0 	69 61 6C 2D 64 65 76 2D 
+1A47DA8 	64 65 73 63  0  0  0  0 
+1A47DB0 	D8 E5 A0  1 
+
+\  over reset-port                	( port dev )	\ Some devices want to be reset here
+
+s"    dup set-address  if" eval			( port dev )	\ Assign it usb addr dev
+1A47DB4 	9C 53 A0  1 
+1A47DB8 	16 20 20 20 64 75 70 20 
+1A47DC0 	73 65 74 2D 61 64 64 72 
+1A47DC8 	65 73 73 20 20 69 66  0 
+1A47DD0 	D8 E5 A0  1 
+ "       ."" Retrying with a delay"" cr" eval
+1A47DD4 	9C 53 A0  1 
+1A47DD8 	22 20 20 20 20 20 20 2E 
+1A47DE0 	22 20 52 65 74 72 79 69 
+1A47DE8 	6E 67 20 77 69 74 68 20 
+1A47DF0 	61 20 64 65 6C 61 79 22 
+1A47DF8 	20 63 72  0 D8 E5 A0  1 
+s"       over reset-port  d# 5000 ms" eval
+1A47E00 	9C 53 A0  1 21 20 20 20 
+1A47E08 	20 20 20 6F 76 65 72 20 
+1A47E10 	72 65 73 65 74 2D 70 6F 
+1A47E18 	72 74 20 20 64 23 20 35 
+1A47E20 	30 30 30 20 6D 73  0  0 
+1A47E28 	D8 E5 A0  1 
+s"       dup set-address  if" eval		( port dev )	\ Assign it usb addr dev
+1A47E2C 	9C 53 A0  1 
+1A47E30 	19 20 20 20 20 20 20 64 
+1A47E38 	75 70 20 73 65 74 2D 61 
+1A47E40 	64 64 72 65 73 73 20 20 
+1A47E48 	69 66  0  0 D8 E5 A0  1 
+         \ Recycle device number?
+s"          2drop false exit" eval		( -- false )
+1A47E50 	9C 53 A0  1 19 20 20 20 
+1A47E58 	20 20 20 20 20 20 32 64 
+1A47E60 	72 6F 70 20 66 61 6C 73 
+1A47E68 	65 20 65 78 69 74  0  0 
+1A47E70 	D8 E5 A0  1 
+s"       then" eval				( port dev )
+1A47E74 	9C 53 A0  1 
+1A47E78 	 A 20 20 20 20 20 20 74 
+1A47E80 	68 65 6E  0 D8 E5 A0  1 
+s"    then" eval					( port dev )
+1A47E88 	9C 53 A0  1  7 20 20 20 
+1A47E90 	74 68 65 6E  0  0  0  0 
+1A47E98 	D8 E5 A0  1 
+ 
+s"    dup set-target" eval			( port dev )	\ Address it as device dev
+1A47E9C 	9C 53 A0  1 
+1A47EA0 	11 20 20 20 64 75 70 20 
+1A47EA8 	73 65 74 2D 74 61 72 67 
+1A47EB0 	65 74  0  0 D8 E5 A0  1 
+s"    ['] make-device-node	 true	;" eval	( port dev xt )
+1A47EB8 	9C 53 A0  1 1F 20 20 20 
+1A47EC0 	5B 27 5D 20 6D 61 6B 65 
+1A47EC8 	2D 64 65 76 69 63 65 2D 
+1A47ED0 	6E 6F 64 65  9 20 74 72 
+1A47ED8 	75 65  9 3B  0  0  0  0 
+1A47EE0 	D8 E5 A0  1 
+
+
+\ Begins execution in a (root or subordinate) hub node context, creates an instance record
+\ for the subordinate hub node "phandle", switches to that instance context, executes
+\ "reprobe-hub" in that context, destroys the instance, and returns to the original context.
+s" : reprobe-hub-node" eval  ( phandle -- )
+1A47EE4 	9C 53 A0  1 
+1A47EE8 	12 3A 20 72 65 70 72 6F 
+1A47EF0 	62 65 2D 68 75 62 2D 6E 
+1A47EF8 	6F 64 65  0 D8 E5 A0  1 
+s"    >r" eval                                       ( r: phandle )
+1A47F00 	9C 53 A0  1  5 20 20 20 
+1A47F08 	3E 72  0  0 D8 E5 A0  1 
+ "    "" reprobe-hub"" r@ find-method  if" eval        ( xt r: phandle )
+1A47F10 	9C 53 A0  1 24 20 20 20 
+1A47F18 	22 20 72 65 70 72 6F 62 
+1A47F20 	65 2D 68 75 62 22 20 72 
+1A47F28 	40 20 66 69 6E 64 2D 6D 
+1A47F30 	65 74 68 6F 64 20 20 69 
+1A47F38 	66  0  0  0 D8 E5 A0  1 
+s"       r@ push-package" eval                       ( xt r: phandle )
+1A47F40 	9C 53 A0  1 15 20 20 20 
+1A47F48 	20 20 20 72 40 20 70 75 
+1A47F50 	73 68 2D 70 61 63 6B 61 
+1A47F58 	67 65  0  0 D8 E5 A0  1 
+ "       "" "" new-instance" eval                      ( xt r: phandle )
+1A47F60 	9C 53 A0  1 16 20 20 20 
+1A47F68 	20 20 20 22 20 22 20 6E 
+1A47F70 	65 77 2D 69 6E 73 74 61 
+1A47F78 	6E 63 65  0 D8 E5 A0  1 
+s"       set-default-unit" eval                      ( xt r: phandle )
+1A47F80 	9C 53 A0  1 16 20 20 20 
+1A47F88 	20 20 20 73 65 74 2D 64 
+1A47F90 	65 66 61 75 6C 74 2D 75 
+1A47F98 	6E 69 74  0 D8 E5 A0  1 
+s"       execute" eval                               ( r: phandle )
+1A47FA0 	9C 53 A0  1  D 20 20 20 
+1A47FA8 	20 20 20 65 78 65 63 75 
+1A47FB0 	74 65  0  0 D8 E5 A0  1 
+s"       destroy-instance" eval                      ( r: phandle )
+1A47FB8 	9C 53 A0  1 16 20 20 20 
+1A47FC0 	20 20 20 64 65 73 74 72 
+1A47FC8 	6F 79 2D 69 6E 73 74 61 
+1A47FD0 	6E 63 65  0 D8 E5 A0  1 
+s"       pop-package" eval                           ( r: phandle )
+1A47FD8 	9C 53 A0  1 11 20 20 20 
+1A47FE0 	20 20 20 70 6F 70 2D 70 
+1A47FE8 	61 63 6B 61 67 65  0  0 
+1A47FF0 	D8 E5 A0  1 
+s"    then" eval                                     ( r: phandle )
+1A47FF4 	9C 53 A0  1 
+1A47FF8 	 7 20 20 20 74 68 65 6E 
+1A48000 	 0  0  0  0 D8 E5 A0  1 
+s"    r> drop ;" eval
+1A48008 	9C 53 A0  1  C 20 20 20 
+1A48010 	72 3E 20 64 72 6F 70 20 
+1A48018 	3B  0  0  0 D8 E5 A0  1 
+
+\ Returns true if there is a child hub node associated with port
+s" : port-is-hub?" eval  ( port -- false | phandle true )
+1A48020 	9C 53 A0  1  E 3A 20 70 
+1A48028 	6F 72 74 2D 69 73 2D 68 
+1A48030 	75 62 3F  0 D8 E5 A0  1 
+s"    my-self ihandle>phandle child" eval                       ( port phandle )
+1A48038 	9C 53 A0  1 20 20 20 20 
+1A48040 	6D 79 2D 73 65 6C 66 20 
+1A48048 	69 68 61 6E 64 6C 65 3E 
+1A48050 	70 68 61 6E 64 6C 65 20 
+1A48058 	63 68 69 6C 64  0  0  0 
+1A48060 	D8 E5 A0  1 
+s"    begin  ?dup  while" eval                                  ( port phandle )
+1A48064 	9C 53 A0  1 
+1A48068 	15 20 20 20 62 65 67 69 
+1A48070 	6E 20 20 3F 64 75 70 20 
+1A48078 	20 77 68 69 6C 65  0  0 
+1A48080 	D8 E5 A0  1 
+ "       "" name"" 2 pick get-package-property 0=  if" eval       ( port phandle adr len )
+1A48084 	9C 53 A0  1 
+1A48088 	30 20 20 20 20 20 20 22 
+1A48090 	20 6E 61 6D 65 22 20 32 
+1A48098 	20 70 69 63 6B 20 67 65 
+1A480A0 	74 2D 70 61 63 6B 61 67 
+1A480A8 	65 2D 70 72 6F 70 65 72 
+1A480B0 	74 79 20 30 3D 20 20 69 
+1A480B8 	66  0  0  0 D8 E5 A0  1 
+ "          1-  "" hub"" $=  if" eval                             ( port phandle )
+1A480C0 	9C 53 A0  1 1A 20 20 20 
+1A480C8 	20 20 20 20 20 20 31 2D 
+1A480D0 	20 20 22 20 68 75 62 22 
+1A480D8 	20 24 3D 20 20 69 66  0 
+1A480E0 	D8 E5 A0  1 
+ "             "" reg"" 2 pick get-package-property 0=  if" eval  ( port phandle adr len )
+1A480E4 	9C 53 A0  1 
+1A480E8 	35 20 20 20 20 20 20 20 
+1A480F0 	20 20 20 20 20 22 20 72 
+1A480F8 	65 67 22 20 32 20 70 69 
+1A48100 	63 6B 20 67 65 74 2D 70 
+1A48108 	61 63 6B 61 67 65 2D 70 
+1A48110 	72 6F 70 65 72 74 79 20 
+1A48118 	30 3D 20 20 69 66  0  0 
+1A48120 	D8 E5 A0  1 
+s"                decode-int nip nip" eval                      ( port phandle port1 )
+1A48124 	9C 53 A0  1 
+1A48128 	21 20 20 20 20 20 20 20 
+1A48130 	20 20 20 20 20 20 20 20 
+1A48138 	64 65 63 6F 64 65 2D 69 
+1A48140 	6E 74 20 6E 69 70 20 6E 
+1A48148 	69 70  0  0 D8 E5 A0  1 
+s"                2 pick =  if" eval                            ( port phandle )
+1A48150 	9C 53 A0  1 1B 20 20 20 
+1A48158 	20 20 20 20 20 20 20 20 
+1A48160 	20 20 20 20 32 20 70 69 
+1A48168 	63 6B 20 3D 20 20 69 66 
+1A48170 	 0  0  0  0 D8 E5 A0  1 
+s"                   nip true exit" eval                        ( -- phandle true )
+1A48178 	9C 53 A0  1 1F 20 20 20 
+1A48180 	20 20 20 20 20 20 20 20 
+1A48188 	20 20 20 20 20 20 20 6E 
+1A48190 	69 70 20 74 72 75 65 20 
+1A48198 	65 78 69 74  0  0  0  0 
+1A481A0 	D8 E5 A0  1 
+s"                then" eval                                    ( port phandle )
+1A481A4 	9C 53 A0  1 
+1A481A8 	13 20 20 20 20 20 20 20 
+1A481B0 	20 20 20 20 20 20 20 20 
+1A481B8 	74 68 65 6E  0  0  0  0 
+1A481C0 	D8 E5 A0  1 
+s"             then" eval                                       ( port phandle )
+1A481C4 	9C 53 A0  1 
+1A481C8 	10 20 20 20 20 20 20 20 
+1A481D0 	20 20 20 20 20 74 68 65 
+1A481D8 	6E  0  0  0 D8 E5 A0  1 
+s"          then" eval                                          ( port phandle )
+1A481E0 	9C 53 A0  1  D 20 20 20 
+1A481E8 	20 20 20 20 20 20 74 68 
+1A481F0 	65 6E  0  0 D8 E5 A0  1 
+s"       then" eval                                             ( port phandle )
+1A481F8 	9C 53 A0  1  A 20 20 20 
+1A48200 	20 20 20 74 68 65 6E  0 
+1A48208 	D8 E5 A0  1 
+s"       peer" eval                                             ( port phandle' )
+1A4820C 	9C 53 A0  1 
+1A48210 	 A 20 20 20 20 20 20 70 
+1A48218 	65 65 72  0 D8 E5 A0  1 
+s"    repeat" eval                                              ( port )
+1A48220 	9C 53 A0  1  9 20 20 20 
+1A48228 	72 65 70 65 61 74  0  0 
+1A48230 	D8 E5 A0  1 
+s"    drop false ;" eval                                         ( false )
+1A48234 	9C 53 A0  1 
+1A48238 	 F 20 20 20 64 72 6F 70 
+1A48240 	20 66 61 6C 73 65 20 3B 
+1A48248 	 0  0  0  0 D8 E5 A0  1 
+
+
+s" : probe-setup" eval  ( -- )
+1A48250 	9C 53 A0  1  D 3A 20 70 
+1A48258 	72 6F 62 65 2D 73 65 74 
+1A48260 	75 70  0  0 D8 E5 A0  1 
+    \ Set active-package so device nodes can be added and removed
+s"    my-self ihandle>phandle push-package" eval
+1A48268 	9C 53 A0  1 27 20 20 20 
+1A48270 	6D 79 2D 73 65 6C 66 20 
+1A48278 	69 68 61 6E 64 6C 65 3E 
+1A48280 	70 68 61 6E 64 6C 65 20 
+1A48288 	70 75 73 68 2D 70 61 63 
+1A48290 	6B 61 67 65  0  0  0  0 
+1A48298 	D8 E5 A0  1 
+
+s"    alloc-pkt-buf ;" eval
+1A4829C 	9C 53 A0  1 
+1A482A0 	12 20 20 20 61 6C 6C 6F 
+1A482A8 	63 2D 70 6B 74 2D 62 75 
+1A482B0 	66 20 3B  0 D8 E5 A0  1 
+
+s" : probe-teardown" eval  ( -- )
+1A482B8 	9C 53 A0  1 10 3A 20 70 
+1A482C0 	72 6F 62 65 2D 74 65 61 
+1A482C8 	72 64 6F 77 6E  0  0  0 
+1A482D0 	D8 E5 A0  1 
+s"    free-pkt-buf" eval
+1A482D4 	9C 53 A0  1 
+1A482D8 	 F 20 20 20 66 72 65 65 
+1A482E0 	2D 70 6B 74 2D 62 75 66 
+1A482E8 	 0  0  0  0 D8 E5 A0  1 
+s"    pop-package ;" eval
+1A482F0 	9C 53 A0  1 10 20 20 20 
+1A482F8 	70 6F 70 2D 70 61 63 6B 
+1A48300 	61 67 65 20 3B  0  0  0 
+1A48308 	D8 E5 A0  1 
+;
+1A4830C 	58 46 A0  1 

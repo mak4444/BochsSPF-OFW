@@ -1,0 +1,480 @@
+
+\  Patch utility.  Allows you to make patches to already-defined words.
+\   Usage:
+\     PATCH new old word-to-patch
+\         In the definition of "word-to-patch", replaces the first
+\         occurence of "old" with "new".  "new" may be either a word
+\         or a number.  "old" may be either a word or a number.
+\
+\     n-new  n-old  NPATCH  word-to-patch
+\         In the definition of "word-to-patch", replaces the first
+\         compiled instance of the number "n-old" with the number
+\         "n-new".
+\
+\     n-new  n-old  start-adr  end-adr  (NPATCH
+\         replaces the first occurrence of "n-old" in the word "acf"
+\         with "n-new"
+\
+\     acf-new  acf-old  acf  (PATCH
+\         replaces the first occurrence of "acf-old" in the word "acf"
+\         with "acf-new"
+\
+\     new new-type   old old-type  acf  (PATCH)
+\         replaces the first occurrence of "old" in the word "acf" with "new".
+\         If "new-type" is true, "new" is a number, otherwise "new" is an acf.
+\         If "old-type" is true, "old" is a number, otherwise "old" is an acf.
+\
+\     n  start-adr end-adr   SEARCH
+\         searches for an occurrence of "n" between start-adr and
+\         end-adr.  Leaves the adress where found and a success flag.
+\
+\     c  start-adr end-adr   CSEARCH
+\         searches for a byte between start-adr and end-adr
+\
+\     w  start-adr end-adr   WSEARCH
+\         searches for a 16-bit word between start-adr and end-adr
+\
+\     acf  start-adr end-adr TSEARCH
+\         searches for a compiled adress between start-adr and end-adr
+\
+\
+
+decimal
+
+: csearch ( c start end -- loc true | false )
+1A0FFC8 	63 73 65 61 72 63 68 87 
+1A0FFD0 	74 FF A0  1 20 40 A0  1 
+   false -rot swap  ?do			( c false )
+1A0FFD8 	18 70 A0  1 94 49 A0  1 
+1A0FFE0 	68 49 A0  1 50 42 A0  1 
+1A0FFE8 	3C  0  0  0 
+      over i c@ = if
+1A0FFEC 	54 49 A0  1 
+1A0FFF0 	B4 42 A0  1 C4 4C A0  1 
+1A0FFF8 	24 48 A0  1 DC 41 A0  1 
+1A10000 	18  0  0  0 
+	 drop i swap true leave
+1A10004 	30 49 A0  1 
+1A10008 	B4 42 A0  1 68 49 A0  1 
+1A10010 	 4 70 A0  1 18 43 A0  1 
+      then
+   /c +loop  nip
+1A10018 	10 51 A0  1 1C 42 A0  1 
+1A10020 	CC FF FF FF FC 46 A0  1 
+;
+1A10028 	58 46 A0  1 
+: wsearch  ( w start end -- loc true | false )
+1A1002C 	77 73 65 61 
+1A10030 	72 63 68 87 D4 FF A0  1 
+1A10038 	20 40 A0  1 
+   rot n->w		\ strip off any high bits
+1A1003C 	7C 49 A0  1 
+1A10040 	C0 61 A0  1 
+   false 2swap  swap  ?do		( w false )
+1A10044 	18 70 A0  1 
+1A10048 	F4 49 A0  1 68 49 A0  1 
+1A10050 	50 42 A0  1 3C  0  0  0 
+      over i w@ = if
+1A10058 	54 49 A0  1 B4 42 A0  1 
+1A10060 	94 4C A0  1 24 48 A0  1 
+1A10068 	DC 41 A0  1 18  0  0  0 
+	 drop i swap true leave
+1A10070 	30 49 A0  1 B4 42 A0  1 
+1A10078 	68 49 A0  1  4 70 A0  1 
+1A10080 	18 43 A0  1 
+      then
+   /w +loop  nip
+1A10084 	20 51 A0  1 
+1A10088 	1C 42 A0  1 CC FF FF FF 
+1A10090 	FC 46 A0  1 
+;
+1A10094 	58 46 A0  1 
+: tsearch  ( adr start end -- loc true | false )
+1A10098 	74 73 65 61 72 63 68 87 
+1A100A0 	38  0 A1  1 20 40 A0  1 
+   false -rot  swap  ?do			( targ false )
+1A100A8 	18 70 A0  1 94 49 A0  1 
+1A100B0 	68 49 A0  1 50 42 A0  1 
+1A100B8 	3C  0  0  0 
+      over i token@ = if
+1A100BC 	54 49 A0  1 
+1A100C0 	B4 42 A0  1  C 54 A0  1 
+1A100C8 	24 48 A0  1 DC 41 A0  1 
+1A100D0 	18  0  0  0 
+	 drop i swap true leave
+1A100D4 	30 49 A0  1 
+1A100D8 	B4 42 A0  1 68 49 A0  1 
+1A100E0 	 4 70 A0  1 18 43 A0  1 
+      then
+      \ Can't use /token because tokens could be 32-bits, aligned on 16-bit
+      \ boundaries, with 16-bit branch offsets realigning the token list.
+   #talign +loop  nip
+1A100E8 	68 5A A0  1 1C 42 A0  1 
+1A100F0 	CC FF FF FF FC 46 A0  1 
+;
+1A100F8 	58 46 A0  1 
+: search  ( n start end -- loc true | false )
+1A100FC 	 0 73 65 61 
+1A10100 	72 63 68 86 A4  0 A1  1 
+1A10108 	20 40 A0  1 
+   false -rot  swap  ?do		( n false )
+1A1010C 	18 70 A0  1 
+1A10110 	94 49 A0  1 68 49 A0  1 
+1A10118 	50 42 A0  1 3C  0  0  0 
+      over i @ = if
+1A10120 	54 49 A0  1 B4 42 A0  1 
+1A10128 	5C 4C A0  1 24 48 A0  1 
+1A10130 	DC 41 A0  1 18  0  0  0 
+	 drop i swap true leave
+1A10138 	30 49 A0  1 B4 42 A0  1 
+1A10140 	68 49 A0  1  4 70 A0  1 
+1A10148 	18 43 A0  1 
+      then
+   #talign +loop  nip
+1A1014C 	68 5A A0  1 
+1A10150 	1C 42 A0  1 CC FF FF FF 
+1A10158 	FC 46 A0  1 
+;
+1A1015C 	58 46 A0  1 
+
+headerless
+
+: next-token  ( adr -- adr token )
+1A10160 	 0 6E 65 78 74 2D 74 6F 
+1A10168 	6B 65 6E 8A  8  1 A1  1 
+1A10170 	20 40 A0  1 
+   dup token@                 ( n adr token )
+1A10174 	40 49 A0  1 
+1A10178 	 C 54 A0  1 
+   dup ['] unnest =  abort" Can't find word to replace"   ( n adr token )
+1A1017C 	40 49 A0  1 
+1A10180 	60 53 A0  1 58 46 A0  1 
+1A10188 	24 48 A0  1  8 81 A0  1 
+1A10190 	1A 43 61 6E 27 74 20 66 
+1A10198 	69 6E 64 20 77 6F 72 64 
+1A101A0 	20 74 6F 20 72 65 70 6C 
+1A101A8 	61 63 65  0 
+;
+1A101AC 	58 46 A0  1 
+
+\ Can't use ta1+ because tokens could be 32-bits, aligned on 16-bit
+\ boundaries, with 16-bit branch offsets realigning the token list.
+: talign+  ( adr -- adr' )  #talign +  ;
+1A101B0 	74 61 6C 69 67 6E 2B 87 
+1A101B8 	70  1 A1  1 20 40 A0  1 
+1A101C0 	68 5A A0  1  4 45 A0  1 
+1A101C8 	58 46 A0  1 
+
+: find-lit  ( n acf -- adr )
+1A101CC 	 0  0  0 66 
+1A101D0 	69 6E 64 2D 6C 69 74 88 
+1A101D8 	BC  1 A1  1 20 40 A0  1 
+   >body
+1A101E0 	E4 59 A0  1 
+   begin
+      next-token                 ( n adr token )
+1A101E4 	70  1 A1  1 
+\t16  dup  ['] (wlit)  =  if     ( n adr token )
+\t16     drop                    ( n adr )
+\t16     2dup ta1+ w@ 1-  =  if  ( n adr )
+\t16        nip exit             ( adr )
+\t16     else                    ( n adr )
+\t16        ta1+ wa1+            ( n adr' )
+\t16     then                    ( n adr )
+\t16  else                       ( n adr token )
+       dup  ['] (lit) =  if      ( n adr token )
+1A101E8 	40 49 A0  1 60 53 A0  1 
+1A101F0 	58 41 A0  1 24 48 A0  1 
+1A101F8 	DC 41 A0  1 40  0  0  0 
+	  drop                   ( n adr )
+1A10200 	30 49 A0  1 
+	  2dup ta1+ @  =  if     ( n adr )
+1A10204 	C0 49 A0  1 
+1A10208 	FC 50 A0  1 5C 4C A0  1 
+1A10210 	24 48 A0  1 DC 41 A0  1 
+1A10218 	14  0  0  0 
+	     nip exit            ( adr )
+1A1021C 	FC 46 A0  1 
+1A10220 	40 46 A0  1 
+	  else                   ( n adr )
+1A10224 	C8 41 A0  1 
+1A10228 	 C  0  0  0 
+	     ta1+ na1+           ( n adr' )
+1A1022C 	FC 50 A0  1 
+1A10230 	CC 50 A0  1 
+	  then                   ( n adr )
+       else                      ( n adr token )
+1A10234 	C8 41 A0  1 
+1A10238 	58  0  0  0 
+	  ['] (llit) =  if       ( n adr )
+1A1023C 	60 53 A0  1 
+1A10240 	6C 41 A0  1 24 48 A0  1 
+1A10248 	DC 41 A0  1 40  0  0  0 
+	     2dup ta1+ l@ 1-  =  if  ( n adr )
+1A10250 	C0 49 A0  1 FC 50 A0  1 
+1A10258 	6C 4C A0  1 54 4B A0  1 
+1A10260 	24 48 A0  1 DC 41 A0  1 
+1A10268 	14  0  0  0 
+		nip exit             ( adr )
+1A1026C 	FC 46 A0  1 
+1A10270 	40 46 A0  1 
+	     else                    ( n adr )
+1A10274 	C8 41 A0  1 
+1A10278 	 C  0  0  0 
+		ta1+ la1+            ( n adr' )
+1A1027C 	FC 50 A0  1 
+1A10280 	B4 50 A0  1 
+	     then                    ( n adr' )
+	  else                       ( n adr )
+1A10284 	C8 41 A0  1 
+1A10288 	 8  0  0  0 
+	     talign+                 ( n adr' )
+1A1028C 	BC  1 A1  1 
+	  then                       ( n adr' )
+       then                          ( n adr' )
+\t16 then
+   again
+1A10290 	C8 41 A0  1 50 FF FF FF 
+;
+1A10298 	58 46 A0  1 
+
+: find-token  ( n acf -- adr )
+1A1029C 	 0 66 69 6E 
+1A102A0 	64 2D 74 6F 6B 65 6E 8A 
+1A102A8 	DC  1 A1  1 20 40 A0  1 
+   >body
+1A102B0 	E4 59 A0  1 
+   begin
+      next-token                    ( n adr token )
+1A102B4 	70  1 A1  1 
+      2 pick =  if  nip exit  then  ( n adr )
+1A102B8 	90 6F A0  1  C 4A A0  1 
+1A102C0 	24 48 A0  1 DC 41 A0  1 
+1A102C8 	 C  0  0  0 FC 46 A0  1 
+1A102D0 	40 46 A0  1 
+      talign+                       ( n adr' )
+1A102D4 	BC  1 A1  1 
+   again
+1A102D8 	C8 41 A0  1 D8 FF FF FF 
+;
+1A102E0 	58 46 A0  1 
+
+: make-name  ( n digit -- adr len )
+1A102E4 	 0  0 6D 61 
+1A102E8 	6B 65 2D 6E 61 6D 65 89 
+1A102F0 	AC  2 A1  1 20 40 A0  1 
+   >r  <# u#s ascii # hold  r> hold u#>   ( adr len )
+1A102F8 	BC 45 A0  1  8 76 A0  1 
+1A10300 	BC 76 A0  1 58 41 A0  1 
+1A10308 	23  0  0  0 DC 75 A0  1 
+1A10310 	D0 45 A0  1 DC 75 A0  1 
+1A10318 	E0 76 A0  1 
+;
+1A1031C 	58 46 A0  1 
+
+: put-constant  ( n adr -- )
+1A10320 	 0  0  0 70 75 74 2D 63 
+1A10328 	6F 6E 73 74 61 6E 74 8C 
+1A10330 	F4  2 A1  1 20 40 A0  1 
+   over
+1A10338 	54 49 A0  1 
+   base @  d# 16 =  if
+1A1033C 	B8 75 A0  1 
+1A10340 	5C 4C A0  1 58 41 A0  1 
+1A10348 	10  0  0  0 24 48 A0  1 
+1A10350 	DC 41 A0  1 18  0  0  0 
+      ascii h make-name
+1A10358 	58 41 A0  1 68  0  0  0 
+1A10360 	F4  2 A1  1 
+   else
+1A10364 	C8 41 A0  1 
+1A10368 	18  0  0  0 
+      push-decimal
+1A1036C 	48 F4 A0  1 
+      ascii d make-name
+1A10370 	58 41 A0  1 64  0  0  0 
+1A10378 	F4  2 A1  1 
+      pop-base
+1A1037C 	9C F4 A0  1 
+   then                           ( n adr name-adr name-len )
+
+   \ We don't use  "create .. does> @  because we want this word
+   \ to decompile as 'constant'
+
+   warning @ >r  warning off
+1A10380 	E4 9A A0  1 5C 4C A0  1 
+1A10388 	BC 45 A0  1 E4 9A A0  1 
+1A10390 	F8 4B A0  1 
+   $header       ( n adr )
+1A10394 	C8 6D A0  1 
+   constant-cf swap ,             ( adr )
+1A10398 	 C 5C A0  1 68 49 A0  1 
+1A103A0 	98 55 A0  1 
+   r> warning !
+1A103A4 	D0 45 A0  1 
+1A103A8 	E4 9A A0  1 54 4D A0  1 
+
+   lastacf swap token!
+1A103B0 	AC 57 A0  1 68 49 A0  1 
+1A103B8 	20 54 A0  1 
+;
+1A103BC 	58 46 A0  1 
+
+: put-noop  ( adr -- )  ta1+  ['] noop swap token!  ;
+1A103C0 	 0  0  0 70 75 74 2D 6E 
+1A103C8 	6F 6F 70 88 34  3 A1  1 
+1A103D0 	20 40 A0  1 FC 50 A0  1 
+1A103D8 	60 53 A0  1 64 4F A0  1 
+1A103E0 	68 49 A0  1 20 54 A0  1 
+1A103E8 	58 46 A0  1 
+
+\t16 : short-number?  ( n -- flag )  -1  h# fffe  between  ;
+\t32 : long-number?  ( n -- flag )  -1  h# fffffffe n->l between  ;
+1A103EC 	 0  0  0 6C 
+1A103F0 	6F 6E 67 2D 6E 75 6D 62 
+1A103F8 	65 72 3F 8C D0  3 A1  1 
+1A10400 	20 40 A0  1 58 41 A0  1 
+1A10408 	FF FF FF FF 58 41 A0  1 
+1A10410 	FE FF FF FF 74 4F A0  1 
+1A10418 	D8 70 A0  1 58 46 A0  1 
+
+headers
+: (patch)  ( new number?  old number?  word -- )
+1A10420 	28 70 61 74 63 68 29 87 
+1A10428 	 0  4 A1  1 20 40 A0  1 
+   swap  if                         ( new number? old acf )  \ Dest. is num
+1A10430 	68 49 A0  1 DC 41 A0  1 
+1A10438 	94  0  0  0 
+      find-lit                      ( new number? adr )
+1A1043C 	DC  1 A1  1 
+
+\t16  dup token@ ['] (wlit) =  if   ( new number? old )  \ Dest. slot is wlit
+\t16     swap  if                   ( new adr )   \ replacement is a number
+\t16        over short-number?  if  ( new adr )   \ replacement is short num
+\t16           ta1+ swap 1+ swap w! ( )
+\t16           exit
+\t16        then                    ( new adr )   \ Replacement is long num
+\t16        tuck put-constant       ( adr )
+\t16        put-noop                ( )
+\t16        exit
+\t16     then                       ( new adr )  \ replacement is a word
+\t16     tuck token!  put-noop      ( )
+\t16     exit
+\t16  then                          ( new number? adr )  \ Dest. slot is lit
+
+\t32  dup token@ ['] (llit) =  if   ( new number? old )  \ Dest. slot is wlit
+1A10440 	40 49 A0  1  C 54 A0  1 
+1A10448 	60 53 A0  1 6C 41 A0  1 
+1A10450 	24 48 A0  1 DC 41 A0  1 
+1A10458 	4C  0  0  0 
+\t32     swap  if                   ( new adr )   \ replacement is a number
+1A1045C 	68 49 A0  1 
+1A10460 	DC 41 A0  1 30  0  0  0 
+\t32        over long-number?  if   ( new adr )   \ replacement is short num
+1A10468 	54 49 A0  1  0  4 A1  1 
+1A10470 	DC 41 A0  1 10  0  0  0 
+64\ \t32       ta1+ swap 1+ swap l! ( )
+32\ \t32       ta1+ l!              ( )
+1A10478 	FC 50 A0  1 7C 4D A0  1 
+\t32           exit
+1A10480 	40 46 A0  1 
+\t32        then                    ( new adr )   \ Replacement is long num
+\t32        tuck put-constant       ( adr )
+1A10484 	E8 46 A0  1 
+1A10488 	34  3 A1  1 
+\t32        put-noop                ( )
+1A1048C 	D0  3 A1  1 
+\t32        exit
+1A10490 	40 46 A0  1 
+\t32     then                       ( new adr )  \ replacement is a word
+\t32     tuck token!  put-noop      ( )
+1A10494 	E8 46 A0  1 
+1A10498 	20 54 A0  1 D0  3 A1  1 
+\t32     exit
+1A104A0 	40 46 A0  1 
+\t32  then                          ( new number? adr )  \ Dest. slot is lit
+
+      swap  if  ta1+ !  exit  then  ( new adr )  \ replacement is a word
+1A104A4 	68 49 A0  1 
+1A104A8 	DC 41 A0  1 10  0  0  0 
+1A104B0 	FC 50 A0  1 54 4D A0  1 
+1A104B8 	40 46 A0  1 
+
+      tuck token!                   ( adr )
+1A104BC 	E8 46 A0  1 
+1A104C0 	20 54 A0  1 
+32\ \t16  dup put-noop  ta1+               ( )
+64\ \t16  dup put-noop  ta1+ dup put-noop  dup put-noop  ta1+  ( )
+64\ \t32  dup put-noop  ta1+
+      put-noop                             ( )
+1A104C4 	D0  3 A1  1 
+      exit
+1A104C8 	40 46 A0  1 
+   then                             ( new number? old acf )  \ Dest. is token
+
+   find-token                       ( new number? adr )
+1A104CC 	AC  2 A1  1 
+   swap if  put-constant exit  then ( new adr )  \ replacement is a number
+1A104D0 	68 49 A0  1 DC 41 A0  1 
+1A104D8 	 C  0  0  0 34  3 A1  1 
+1A104E0 	40 46 A0  1 
+   token!
+1A104E4 	20 54 A0  1 
+;
+1A104E8 	58 46 A0  1 
+
+headerless
+: get-word-type  \ word  ( -- val number? )
+1A104EC 	 0  0 67 65 
+1A104F0 	74 2D 77 6F 72 64 2D 74 
+1A104F8 	79 70 65 8D 2C  4 A1  1 
+1A10500 	20 40 A0  1 
+   parse-word  $find  if  false exit  then  ( adr len )
+1A10504 	34 93 A0  1 
+1A10508 	C4 93 A0  1 DC 41 A0  1 
+1A10510 	 C  0  0  0 18 70 A0  1 
+1A10518 	40 46 A0  1 
+   $dnumber?  1 <> abort" ?"  true
+1A1051C 	9C 9C A0  1 
+1A10520 	80 6F A0  1 44 48 A0  1 
+1A10528 	 8 81 A0  1  1 3F  0  0 
+1A10530 	 4 70 A0  1 
+;
+1A10534 	58 46 A0  1 
+
+headers
+: (npatch  ( newn oldn acf -- )  >r true tuck  r>  (patch)  ;
+1A10538 	28 6E 70 61 74 63 68 87 
+1A10540 	 0  5 A1  1 20 40 A0  1 
+1A10548 	BC 45 A0  1  4 70 A0  1 
+1A10550 	E8 46 A0  1 D0 45 A0  1 
+1A10558 	2C  4 A1  1 58 46 A0  1 
+
+: (patch  ( new-acf old-acf acf -- )  >r false tuck r>  (patch)  ;
+1A10560 	 0 28 70 61 74 63 68 86 
+1A10568 	44  5 A1  1 20 40 A0  1 
+1A10570 	BC 45 A0  1 18 70 A0  1 
+1A10578 	E8 46 A0  1 D0 45 A0  1 
+1A10580 	2C  4 A1  1 58 46 A0  1 
+
+\ substitute new for first occurrence of old in word "name"
+: npatch  \ name  ( new old -- )
+1A10588 	 0 6E 70 61 74 63 68 86 
+1A10590 	6C  5 A1  1 20 40 A0  1 
+   true tuck  '  ( new true old true acf )  (patch)
+1A10598 	 4 70 A0  1 E8 46 A0  1 
+1A105A0 	F8 95 A0  1 2C  4 A1  1 
+;
+1A105A8 	58 46 A0  1 
+
+: patch  \ new old word  ( -- )
+1A105AC 	 0  0 70 61 
+1A105B0 	74 63 68 85 94  5 A1  1 
+1A105B8 	20 40 A0  1 
+   get-word-type   get-word-type  '  (patch)
+1A105BC 	 0  5 A1  1 
+1A105C0 	 0  5 A1  1 F8 95 A0  1 
+1A105C8 	2C  4 A1  1 
+;
+1A105CC 	58 46 A0  1 
+

@@ -1,0 +1,56 @@
+purpose: Set the ISA node's PCI configuration address
+
+\ Find the ISA bridge and set the isa node's reg property to the
+\ PCI device number of the actual hardware
+: move-isa  ( -- )
+1A390F0 	 0  0  0 6D 6F 76 65 2D 
+1A390F8 	69 73 61 88 24 86 A3  1 
+1A39100 	20 40 A0  1 
+   d# 32  0  do
+1A39104 	58 41 A0  1 
+1A39108 	20  0  0  0 70 6F A0  1 
+1A39110 	88 42 A0  1 A0  0  0  0 
+      \ Look for a PCI header with the ISA bus class code
+      i h# 800 *  8 +  config-l@  8 rshift  h# 60100  =  if
+1A39118 	B4 42 A0  1 58 41 A0  1 
+1A39120 	 0  8  0  0 1C 5F A0  1 
+1A39128 	F0 6F A0  1  4 45 A0  1 
+1A39130 	44 38 A3  1 F0 6F A0  1 
+1A39138 	B4 44 A0  1 58 41 A0  1 
+1A39140 	 0  1  6  0 24 48 A0  1 
+1A39148 	DC 41 A0  1 60  0  0  0 
+         \ Patch the "reg" property in the ISA node to that config address
+         " /pci/isa" find-package  if
+1A39150 	9C 53 A0  1  8 2F 70 63 
+1A39158 	69 2F 69 73 61  0  0  0 
+1A39160 	E0 39 A2  1 DC 41 A0  1 
+1A39168 	40  0  0  0 
+            " reg" rot get-package-property  0=  if  ( adr len )
+1A3916C 	9C 53 A0  1 
+1A39170 	 3 72 65 67  0  0  0  0 
+1A39178 	7C 49 A0  1 98 33 A2  1 
+1A39180 	24 47 A0  1 DC 41 A0  1 
+1A39188 	20  0  0  0 
+               drop  i h# 800 *  swap be-l!
+1A3918C 	30 49 A0  1 
+1A39190 	B4 42 A0  1 58 41 A0  1 
+1A39198 	 0  8  0  0 1C 5F A0  1 
+1A391A0 	68 49 A0  1 8C FC A0  1 
+            then
+         then
+         leave
+1A391A8 	18 43 A0  1 
+      then
+   loop
+1A391AC 	F8 41 A0  1 
+1A391B0 	68 FF FF FF 
+;
+1A391B4 	58 46 A0  1 
+stand-init:
+1A391B8 	 0 73 74 61 6E 64 2D 69 
+1A391C0 	6E 69 74 8A  0 91 A3  1 
+1A391C8 	20 40 A0  1 20 84 A3  1 
+   move-isa
+1A391D0 	 0 91 A3  1 
+;
+1A391D4 	58 46 A0  1 

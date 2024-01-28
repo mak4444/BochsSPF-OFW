@@ -1,0 +1,106 @@
+
+h# 141 CONSTANT UP_BKEY
+h# 142 CONSTANT DOWN_BKEY
+h# 143 CONSTANT RIGHF_BKEY
+h# 144 CONSTANT LEFT_BKEY
+h# 13F CONSTANT PAGE_UP_BKEY
+h# 12F CONSTANT PAGE_DOWN_BKEY
+h# 148 CONSTANT HOME_BKEY
+h# 14B CONSTANT END_BKEY
+h# 150 CONSTANT DEL_BKEY
+h# 251 CONSTANT F2_BKEY
+h# 257 CONSTANT F3_BKEY
+h# 24D CONSTANT F10_BKEY
+h# 25F CONSTANT CTRL_F2_BKEY
+h# 26A CONSTANT ALT_F3_BKEY
+h# 140 CONSTANT INS_BKEY
+h# 10140 CONSTANT CTRL_INS_BKEY
+
+
+h# 1B CONSTANT ESC_BKEY
+h# 8 CONSTANT BACK_BKEY
+
+
+\- crt! : crt!  ( byte index -- )  h# 3d4 pc!  h# 3d5 pc!  ;
+\- crt@ : crt@  ( index -- byte )  h# 3d4 pc!  h# 3d5 pc@  ;
+
+\- : set-cursor ( x y -- )  h# e crt!   h# f crt!  ;
+[ifndef] set-cursor
+: set-cursor ( x y -- ) 
+  h# 50 * +
+  h# 100 /MOD
+ h# e crt!   h# f crt!  ;
+[then]
+
+
+0 value ega-row#
+\- ega-col#	0 value  ega-col#
+\- ega-line0	h# b8000 constant ega-line0
+\- /ega-line	d# 160 constant /ega-line
+\- >ega-line	: >ega-line  ( line# -- adr )  /ega-line *  ega-line0 +  ;
+
+
+
+: SETXY   ( col row -- )
+ to ega-row# to ega-col# ;
+
+: GETXY   ( -- col row )
+  ega-col# ega-row# ;
+
+[IFNDEF] KBD_SHIFT?
+ dev /keyboard
+ also forth definitions
+alias KBD_SHIFT? shift?
+alias KBD_CTRL? ctrl?
+ previous
+device-end
+
+\ : KBD_SHIFT? ( -- flg )  " /keyboard" " shift?" execute-device-method drop ;
+\ : KBD_CTRL? ( -- flg )  " /keyboard" " ctrl?" execute-device-method drop ;
+
+[THEN]
+
+
+h# 60 VALUE COLOR@
+
+: COLOR! to COLOR@ ;
+
+: c-ega-emit  ( char -- )
+   ega-row# >ega-line ega-col# wa+  tuck c!  COLOR@ swap 1+ c!
+   ega-col# h# 4f =
+   if 0 to ega-col#
+	 ega-row# 1+ to ega-row# 
+   else   ega-col# 1+ to ega-col#
+   then
+;
+
+: fm_cr     ( -- )  GETXY 1+ nip 0 swap setxy  ;  \ Go to next line
+
+: GKEY	key
+	dup h# 9b = if drop key
+	DUP h# 4f = if drop key h# 100 + then
+				h# 100 +
+		KBD_CTRL? IF h# 10000 + THEN
+   then
+  
+ 
+ ;
+
+
+\- $! : $!  PLACE ;
+\- $+! : $+!  $cat ;
+
+create CUR_DIR@TMP_BUFF h# 100 allot
+ 
+: CUR_DIR@ ( -- name$ )
+	current-volume @ 0= IF c: THEN
+   current-volume-name CUR_DIR@TMP_BUFF $!
+   current-volume token@ >directory 2@  dup  0=
+	if 2DROP  S" \"
+	then
+	  CUR_DIR@TMP_BUFF $+!
+	CUR_DIR@TMP_BUFF COUNT
+;
+
+
+volume: U:

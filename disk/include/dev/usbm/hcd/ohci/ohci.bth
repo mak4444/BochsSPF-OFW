@@ -1,0 +1,4 @@
+
+\ " ohci" encode-string " device_type" property
+
+fl d:include\dev\usbm\hcd\ohci\loadpkg.fth

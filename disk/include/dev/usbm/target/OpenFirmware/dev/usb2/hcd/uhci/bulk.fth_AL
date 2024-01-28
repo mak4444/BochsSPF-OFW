@@ -1,0 +1,1129 @@
+purpose: UHCI USB Controller bulk pipes transaction processing
+
+: bulkfth
+1A50E14 	62 75 6C 6B 
+1A50E18 	66 74 68 87 B0  D A5  1 
+1A50E20 	20 40 A0  1 
+hex
+1A50E24 	C0 8D A0  1 
+
+s" d# 500 instance value bulk-in-timeout" eval
+1A50E28 	9C 53 A0  1 25 64 23 20 
+1A50E30 	35 30 30 20 69 6E 73 74 
+1A50E38 	61 6E 63 65 20 76 61 6C 
+1A50E40 	75 65 20 62 75 6C 6B 2D 
+1A50E48 	69 6E 2D 74 69 6D 65 6F 
+1A50E50 	75 74  0  0 D8 E5 A0  1 
+s" d# 500 constant bulk-out-timeout" eval
+1A50E58 	9C 53 A0  1 20 64 23 20 
+1A50E60 	35 30 30 20 63 6F 6E 73 
+1A50E68 	74 61 6E 74 20 62 75 6C 
+1A50E70 	6B 2D 6F 75 74 2D 74 69 
+1A50E78 	6D 65 6F 75 74  0  0  0 
+1A50E80 	D8 E5 A0  1 
+
+s" 0 instance value bulk-in-pipe" eval
+1A50E84 	9C 53 A0  1 
+1A50E88 	1D 30 20 69 6E 73 74 61 
+1A50E90 	6E 63 65 20 76 61 6C 75 
+1A50E98 	65 20 62 75 6C 6B 2D 69 
+1A50EA0 	6E 2D 70 69 70 65  0  0 
+1A50EA8 	D8 E5 A0  1 
+s" 0 instance value bulk-out-pipe" eval
+1A50EAC 	9C 53 A0  1 
+1A50EB0 	1E 30 20 69 6E 73 74 61 
+1A50EB8 	6E 63 65 20 76 61 6C 75 
+1A50EC0 	65 20 62 75 6C 6B 2D 6F 
+1A50EC8 	75 74 2D 70 69 70 65  0 
+1A50ED0 	D8 E5 A0  1 
+
+s" 0 instance value bulk-in-qh" eval
+1A50ED4 	9C 53 A0  1 
+1A50ED8 	1B 30 20 69 6E 73 74 61 
+1A50EE0 	6E 63 65 20 76 61 6C 75 
+1A50EE8 	65 20 62 75 6C 6B 2D 69 
+1A50EF0 	6E 2D 71 68  0  0  0  0 
+1A50EF8 	D8 E5 A0  1 
+s" 0 instance value bulk-in-td" eval
+1A50EFC 	9C 53 A0  1 
+1A50F00 	1B 30 20 69 6E 73 74 61 
+1A50F08 	6E 63 65 20 76 61 6C 75 
+1A50F10 	65 20 62 75 6C 6B 2D 69 
+1A50F18 	6E 2D 74 64  0  0  0  0 
+1A50F20 	D8 E5 A0  1 
+
+s" : bulk-in-data@   ( -- n )  bulk-in-pipe  target di-in-data@  di-data>td-data  ;" eval
+1A50F24 	9C 53 A0  1 
+1A50F28 	50 3A 20 62 75 6C 6B 2D 
+1A50F30 	69 6E 2D 64 61 74 61 40 
+1A50F38 	20 20 20 28 20 2D 2D 20 
+1A50F40 	6E 20 29 20 20 62 75 6C 
+1A50F48 	6B 2D 69 6E 2D 70 69 70 
+1A50F50 	65 20 20 74 61 72 67 65 
+1A50F58 	74 20 64 69 2D 69 6E 2D 
+1A50F60 	64 61 74 61 40 20 20 64 
+1A50F68 	69 2D 64 61 74 61 3E 74 
+1A50F70 	64 2D 64 61 74 61 20 20 
+1A50F78 	3B  0  0  0 D8 E5 A0  1 
+s" : bulk-out-data@  ( -- n )  bulk-out-pipe target di-out-data@ di-data>td-data  ;" eval
+1A50F80 	9C 53 A0  1 50 3A 20 62 
+1A50F88 	75 6C 6B 2D 6F 75 74 2D 
+1A50F90 	64 61 74 61 40 20 20 28 
+1A50F98 	20 2D 2D 20 6E 20 29 20 
+1A50FA0 	20 62 75 6C 6B 2D 6F 75 
+1A50FA8 	74 2D 70 69 70 65 20 74 
+1A50FB0 	61 72 67 65 74 20 64 69 
+1A50FB8 	2D 6F 75 74 2D 64 61 74 
+1A50FC0 	61 40 20 64 69 2D 64 61 
+1A50FC8 	74 61 3E 74 64 2D 64 61 
+1A50FD0 	74 61 20 20 3B  0  0  0 
+1A50FD8 	D8 E5 A0  1 
+s" : bulk-in-data!   ( n -- )  td-data>di-data bulk-in-pipe  target di-in-data!   ;" eval
+1A50FDC 	9C 53 A0  1 
+1A50FE0 	50 3A 20 62 75 6C 6B 2D 
+1A50FE8 	69 6E 2D 64 61 74 61 21 
+1A50FF0 	20 20 20 28 20 6E 20 2D 
+1A50FF8 	2D 20 29 20 20 74 64 2D 
+1A51000 	64 61 74 61 3E 64 69 2D 
+1A51008 	64 61 74 61 20 62 75 6C 
+1A51010 	6B 2D 69 6E 2D 70 69 70 
+1A51018 	65 20 20 74 61 72 67 65 
+1A51020 	74 20 64 69 2D 69 6E 2D 
+1A51028 	64 61 74 61 21 20 20 20 
+1A51030 	3B  0  0  0 D8 E5 A0  1 
+s" : bulk-out-data!  ( n -- )  td-data>di-data bulk-out-pipe target di-out-data!  ;" eval
+1A51038 	9C 53 A0  1 50 3A 20 62 
+1A51040 	75 6C 6B 2D 6F 75 74 2D 
+1A51048 	64 61 74 61 21 20 20 28 
+1A51050 	20 6E 20 2D 2D 20 29 20 
+1A51058 	20 74 64 2D 64 61 74 61 
+1A51060 	3E 64 69 2D 64 61 74 61 
+1A51068 	20 62 75 6C 6B 2D 6F 75 
+1A51070 	74 2D 70 69 70 65 20 74 
+1A51078 	61 72 67 65 74 20 64 69 
+1A51080 	2D 6F 75 74 2D 64 61 74 
+1A51088 	61 21 20 20 3B  0  0  0 
+1A51090 	D8 E5 A0  1 
+s" : toggle-bulk-in-data   ( -- )  bulk-in-pipe  target di-in-data-toggle   ;" eval
+1A51094 	9C 53 A0  1 
+1A51098 	4A 3A 20 74 6F 67 67 6C 
+1A510A0 	65 2D 62 75 6C 6B 2D 69 
+1A510A8 	6E 2D 64 61 74 61 20 20 
+1A510B0 	20 28 20 2D 2D 20 29 20 
+1A510B8 	20 62 75 6C 6B 2D 69 6E 
+1A510C0 	2D 70 69 70 65 20 20 74 
+1A510C8 	61 72 67 65 74 20 64 69 
+1A510D0 	2D 69 6E 2D 64 61 74 61 
+1A510D8 	2D 74 6F 67 67 6C 65 20 
+1A510E0 	20 20 3B  0 D8 E5 A0  1 
+s" : toggle-bulk-out-data  ( -- )  bulk-out-pipe target di-out-data-toggle  ;" eval
+1A510E8 	9C 53 A0  1 4A 3A 20 74 
+1A510F0 	6F 67 67 6C 65 2D 62 75 
+1A510F8 	6C 6B 2D 6F 75 74 2D 64 
+1A51100 	61 74 61 20 20 28 20 2D 
+1A51108 	2D 20 29 20 20 62 75 6C 
+1A51110 	6B 2D 6F 75 74 2D 70 69 
+1A51118 	70 65 20 74 61 72 67 65 
+1A51120 	74 20 64 69 2D 6F 75 74 
+1A51128 	2D 64 61 74 61 2D 74 6F 
+1A51130 	67 67 6C 65 20 20 3B  0 
+1A51138 	D8 E5 A0  1 
+
+\ Fix up data toggle bit if error OR partially finished Q context.
+s" : fixup-bulk-in-data" eval  ( td #td -- )
+1A5113C 	9C 53 A0  1 
+1A51140 	14 3A 20 66 69 78 75 70 
+1A51148 	2D 62 75 6C 6B 2D 69 6E 
+1A51150 	2D 64 61 74 61  0  0  0 
+1A51158 	D8 E5 A0  1 
+s"    usb-error USB_ERR_STALL and  if" eval
+1A5115C 	9C 53 A0  1 
+1A51160 	22 20 20 20 75 73 62 2D 
+1A51168 	65 72 72 6F 72 20 55 53 
+1A51170 	42 5F 45 52 52 5F 53 54 
+1A51178 	41 4C 4C 20 61 6E 64 20 
+1A51180 	20 69 66  0 D8 E5 A0  1 
+s"      2drop bulk-in-pipe h# 80 or unstall-pipe" eval
+1A51188 	9C 53 A0  1 2D 20 20 20 
+1A51190 	20 20 32 64 72 6F 70 20 
+1A51198 	62 75 6C 6B 2D 69 6E 2D 
+1A511A0 	70 69 70 65 20 68 23 20 
+1A511A8 	38 30 20 6F 72 20 75 6E 
+1A511B0 	73 74 61 6C 6C 2D 70 69 
+1A511B8 	70 65  0  0 D8 E5 A0  1 
+s"      0 bulk-in-data!" eval
+1A511C0 	9C 53 A0  1 14 20 20 20 
+1A511C8 	20 20 30 20 62 75 6C 6B 
+1A511D0 	2D 69 6E 2D 64 61 74 61 
+1A511D8 	21  0  0  0 D8 E5 A0  1 
+s"      exit" eval
+1A511E0 	9C 53 A0  1  9 20 20 20 
+1A511E8 	20 20 65 78 69 74  0  0 
+1A511F0 	D8 E5 A0  1 
+s"    then" eval
+1A511F4 	9C 53 A0  1 
+1A511F8 	 7 20 20 20 74 68 65 6E 
+1A51200 	 0  0  0  0 D8 E5 A0  1 
+s"    0  ?do" eval
+1A51208 	9C 53 A0  1  9 20 20 20 
+1A51210 	30 20 20 3F 64 6F  0  0 
+1A51218 	D8 E5 A0  1 
+s"       dup >hctd-stat le-l@ TD_STAT_ACTIVE  and  if" eval
+1A5121C 	9C 53 A0  1 
+1A51220 	32 20 20 20 20 20 20 64 
+1A51228 	75 70 20 3E 68 63 74 64 
+1A51230 	2D 73 74 61 74 20 6C 65 
+1A51238 	2D 6C 40 20 54 44 5F 53 
+1A51240 	54 41 54 5F 41 43 54 49 
+1A51248 	56 45 20 20 61 6E 64 20 
+1A51250 	20 69 66  0 D8 E5 A0  1 
+s"          dup >hctd-token le-l@  bulk-in-data!" eval
+1A51258 	9C 53 A0  1 2D 20 20 20 
+1A51260 	20 20 20 20 20 20 64 75 
+1A51268 	70 20 3E 68 63 74 64 2D 
+1A51270 	74 6F 6B 65 6E 20 6C 65 
+1A51278 	2D 6C 40 20 20 62 75 6C 
+1A51280 	6B 2D 69 6E 2D 64 61 74 
+1A51288 	61 21  0  0 D8 E5 A0  1 
+s"          leave" eval
+1A51290 	9C 53 A0  1  E 20 20 20 
+1A51298 	20 20 20 20 20 20 6C 65 
+1A512A0 	61 76 65  0 D8 E5 A0  1 
+s"       then" eval
+1A512A8 	9C 53 A0  1  A 20 20 20 
+1A512B0 	20 20 20 74 68 65 6E  0 
+1A512B8 	D8 E5 A0  1 
+s"       >td-next @" eval
+1A512BC 	9C 53 A0  1 
+1A512C0 	10 20 20 20 20 20 20 3E 
+1A512C8 	74 64 2D 6E 65 78 74 20 
+1A512D0 	40  0  0  0 D8 E5 A0  1 
+s"    loop  drop ;" eval
+1A512D8 	9C 53 A0  1  F 20 20 20 
+1A512E0 	6C 6F 6F 70 20 20 64 72 
+1A512E8 	6F 70 20 3B  0  0  0  0 
+1A512F0 	D8 E5 A0  1 
+
+s" : fixup-bulk-out-data" eval  ( td #td -- )
+1A512F4 	9C 53 A0  1 
+1A512F8 	15 3A 20 66 69 78 75 70 
+1A51300 	2D 62 75 6C 6B 2D 6F 75 
+1A51308 	74 2D 64 61 74 61  0  0 
+1A51310 	D8 E5 A0  1 
+s"    usb-error USB_ERR_STALL and  if" eval
+1A51314 	9C 53 A0  1 
+1A51318 	22 20 20 20 75 73 62 2D 
+1A51320 	65 72 72 6F 72 20 55 53 
+1A51328 	42 5F 45 52 52 5F 53 54 
+1A51330 	41 4C 4C 20 61 6E 64 20 
+1A51338 	20 69 66  0 D8 E5 A0  1 
+s"      2drop bulk-out-pipe unstall-pipe" eval
+1A51340 	9C 53 A0  1 25 20 20 20 
+1A51348 	20 20 32 64 72 6F 70 20 
+1A51350 	62 75 6C 6B 2D 6F 75 74 
+1A51358 	2D 70 69 70 65 20 75 6E 
+1A51360 	73 74 61 6C 6C 2D 70 69 
+1A51368 	70 65  0  0 D8 E5 A0  1 
+s"      0 bulk-out-data!" eval
+1A51370 	9C 53 A0  1 15 20 20 20 
+1A51378 	20 20 30 20 62 75 6C 6B 
+1A51380 	2D 6F 75 74 2D 64 61 74 
+1A51388 	61 21  0  0 D8 E5 A0  1 
+s"      exit" eval
+1A51390 	9C 53 A0  1  9 20 20 20 
+1A51398 	20 20 65 78 69 74  0  0 
+1A513A0 	D8 E5 A0  1 
+s"    then" eval
+1A513A4 	9C 53 A0  1 
+1A513A8 	 7 20 20 20 74 68 65 6E 
+1A513B0 	 0  0  0  0 D8 E5 A0  1 
+s"    0  ?do" eval
+1A513B8 	9C 53 A0  1  9 20 20 20 
+1A513C0 	30 20 20 3F 64 6F  0  0 
+1A513C8 	D8 E5 A0  1 
+s"       dup >hctd-stat le-l@ TD_STAT_ACTIVE  and  if" eval
+1A513CC 	9C 53 A0  1 
+1A513D0 	32 20 20 20 20 20 20 64 
+1A513D8 	75 70 20 3E 68 63 74 64 
+1A513E0 	2D 73 74 61 74 20 6C 65 
+1A513E8 	2D 6C 40 20 54 44 5F 53 
+1A513F0 	54 41 54 5F 41 43 54 49 
+1A513F8 	56 45 20 20 61 6E 64 20 
+1A51400 	20 69 66  0 D8 E5 A0  1 
+s"          dup >hctd-token le-l@  bulk-out-data!" eval
+1A51408 	9C 53 A0  1 2E 20 20 20 
+1A51410 	20 20 20 20 20 20 64 75 
+1A51418 	70 20 3E 68 63 74 64 2D 
+1A51420 	74 6F 6B 65 6E 20 6C 65 
+1A51428 	2D 6C 40 20 20 62 75 6C 
+1A51430 	6B 2D 6F 75 74 2D 64 61 
+1A51438 	74 61 21  0 D8 E5 A0  1 
+s"          leave" eval
+1A51440 	9C 53 A0  1  E 20 20 20 
+1A51448 	20 20 20 20 20 20 6C 65 
+1A51450 	61 76 65  0 D8 E5 A0  1 
+s"       then" eval
+1A51458 	9C 53 A0  1  A 20 20 20 
+1A51460 	20 20 20 74 68 65 6E  0 
+1A51468 	D8 E5 A0  1 
+s"       >td-next @" eval
+1A5146C 	9C 53 A0  1 
+1A51470 	10 20 20 20 20 20 20 3E 
+1A51478 	74 64 2D 6E 65 78 74 20 
+1A51480 	40  0  0  0 D8 E5 A0  1 
+s"    loop  drop ;" eval
+1A51488 	9C 53 A0  1  F 20 20 20 
+1A51490 	6C 6F 6F 70 20 20 64 72 
+1A51498 	6F 70 20 3B  0  0  0  0 
+1A514A0 	D8 E5 A0  1 
+
+s" : process-bulk-args" eval  ( buf len pipe timeout -- )
+1A514A4 	9C 53 A0  1 
+1A514A8 	13 3A 20 70 72 6F 63 65 
+1A514B0 	73 73 2D 62 75 6C 6B 2D 
+1A514B8 	61 72 67 73  0  0  0  0 
+1A514C0 	D8 E5 A0  1 
+s"    to timeout" eval
+1A514C4 	9C 53 A0  1 
+1A514C8 	 D 20 20 20 74 6F 20 74 
+1A514D0 	69 6D 65 6F 75 74  0  0 
+1A514D8 	D8 E5 A0  1 
+s"    clear-usb-error" eval
+1A514DC 	9C 53 A0  1 
+1A514E0 	12 20 20 20 63 6C 65 61 
+1A514E8 	72 2D 75 73 62 2D 65 72 
+1A514F0 	72 6F 72  0 D8 E5 A0  1 
+s"    set-my-dev" eval
+1A514F8 	9C 53 A0  1  D 20 20 20 
+1A51500 	73 65 74 2D 6D 79 2D 64 
+1A51508 	65 76  0  0 D8 E5 A0  1 
+s"    ( pipe ) set-my-char" eval
+1A51510 	9C 53 A0  1 17 20 20 20 
+1A51518 	28 20 70 69 70 65 20 29 
+1A51520 	20 73 65 74 2D 6D 79 2D 
+1A51528 	63 68 61 72  0  0  0  0 
+1A51530 	D8 E5 A0  1 
+s"    2dup hcd-map-in  to my-buf-phys to /my-buf to my-buf ;" eval
+1A51534 	9C 53 A0  1 
+1A51538 	39 20 20 20 32 64 75 70 
+1A51540 	20 68 63 64 2D 6D 61 70 
+1A51548 	2D 69 6E 20 20 74 6F 20 
+1A51550 	6D 79 2D 62 75 66 2D 70 
+1A51558 	68 79 73 20 74 6F 20 2F 
+1A51560 	6D 79 2D 62 75 66 20 74 
+1A51568 	6F 20 6D 79 2D 62 75 66 
+1A51570 	20 3B  0  0 D8 E5 A0  1 
+
+s" : alloc-bulk-qhtds" eval  ( -- qh td )
+1A51578 	9C 53 A0  1 12 3A 20 61 
+1A51580 	6C 6C 6F 63 2D 62 75 6C 
+1A51588 	6B 2D 71 68 74 64 73  0 
+1A51590 	D8 E5 A0  1 
+s"    my-maxpayload /my-buf over round-up swap / dup to my-#tds" eval
+1A51594 	9C 53 A0  1 
+1A51598 	3C 20 20 20 6D 79 2D 6D 
+1A515A0 	61 78 70 61 79 6C 6F 61 
+1A515A8 	64 20 2F 6D 79 2D 62 75 
+1A515B0 	66 20 6F 76 65 72 20 72 
+1A515B8 	6F 75 6E 64 2D 75 70 20 
+1A515C0 	73 77 61 70 20 2F 20 64 
+1A515C8 	75 70 20 74 6F 20 6D 79 
+1A515D0 	2D 23 74 64 73  0  0  0 
+1A515D8 	D8 E5 A0  1 
+s"    alloc-qhtds ;" eval
+1A515DC 	9C 53 A0  1 
+1A515E0 	10 20 20 20 61 6C 6C 6F 
+1A515E8 	63 2D 71 68 74 64 73 20 
+1A515F0 	3B  0  0  0 D8 E5 A0  1 
+
+s" : fill-bulk-io-tds" eval  ( dir td -- )
+1A515F8 	9C 53 A0  1 12 3A 20 66 
+1A51600 	69 6C 6C 2D 62 75 6C 6B 
+1A51608 	2D 69 6F 2D 74 64 73  0 
+1A51610 	D8 E5 A0  1 
+s"    /my-buf over >td-/buf-all l!" eval			( dir td )
+1A51614 	9C 53 A0  1 
+1A51618 	1F 20 20 20 2F 6D 79 2D 
+1A51620 	62 75 66 20 6F 76 65 72 
+1A51628 	20 3E 74 64 2D 2F 62 75 
+1A51630 	66 2D 61 6C 6C 20 6C 21 
+1A51638 	 0  0  0  0 D8 E5 A0  1 
+s"    my-#tds 0  ?do" eval				( dir td )
+1A51640 	9C 53 A0  1 11 20 20 20 
+1A51648 	6D 79 2D 23 74 64 73 20 
+1A51650 	30 20 20 3F 64 6F  0  0 
+1A51658 	D8 E5 A0  1 
+s"       TD_STAT_ACTIVE TD_CTRL_C_ERR3 or" eval		( dir td stat )
+1A5165C 	9C 53 A0  1 
+1A51660 	26 20 20 20 20 20 20 54 
+1A51668 	44 5F 53 54 41 54 5F 41 
+1A51670 	43 54 49 56 45 20 54 44 
+1A51678 	5F 43 54 52 4C 5F 43 5F 
+1A51680 	45 52 52 33 20 6F 72  0 
+1A51688 	D8 E5 A0  1 
+s"       TD_CTRL_SPD or my-speed or" eval		( dir td stat' )
+1A5168C 	9C 53 A0  1 
+1A51690 	20 20 20 20 20 20 20 54 
+1A51698 	44 5F 43 54 52 4C 5F 53 
+1A516A0 	50 44 20 6F 72 20 6D 79 
+1A516A8 	2D 73 70 65 65 64 20 6F 
+1A516B0 	72  0  0  0 D8 E5 A0  1 
+s"       over >td-next l@ 0=  if  TD_CTRL_IOC or  then" eval	( dir td stat' )
+1A516B8 	9C 53 A0  1 33 20 20 20 
+1A516C0 	20 20 20 6F 76 65 72 20 
+1A516C8 	3E 74 64 2D 6E 65 78 74 
+1A516D0 	20 6C 40 20 30 3D 20 20 
+1A516D8 	69 66 20 20 54 44 5F 43 
+1A516E0 	54 52 4C 5F 49 4F 43 20 
+1A516E8 	6F 72 20 20 74 68 65 6E 
+1A516F0 	 0  0  0  0 D8 E5 A0  1 
+s"       over >hctd-stat le-l!" eval			( dir td )
+1A516F8 	9C 53 A0  1 1B 20 20 20 
+1A51700 	20 20 20 6F 76 65 72 20 
+1A51708 	3E 68 63 74 64 2D 73 74 
+1A51710 	61 74 20 6C 65 2D 6C 21 
+1A51718 	 0  0  0  0 D8 E5 A0  1 
+s"       /my-buf my-maxpayload min dup 1- d# 21 <<" eval	( dir td /buf token )
+1A51720 	9C 53 A0  1 2F 20 20 20 
+1A51728 	20 20 20 2F 6D 79 2D 62 
+1A51730 	75 66 20 6D 79 2D 6D 61 
+1A51738 	78 70 61 79 6C 6F 61 64 
+1A51740 	20 6D 69 6E 20 64 75 70 
+1A51748 	20 31 2D 20 64 23 20 32 
+1A51750 	31 20 3C 3C  0  0  0  0 
+1A51758 	D8 E5 A0  1 
+s"       3 pick TD_PID_IN =  if" eval
+1A5175C 	9C 53 A0  1 
+1A51760 	1C 20 20 20 20 20 20 33 
+1A51768 	20 70 69 63 6B 20 54 44 
+1A51770 	5F 50 49 44 5F 49 4E 20 
+1A51778 	3D 20 20 69 66  0  0  0 
+1A51780 	D8 E5 A0  1 
+s"          bulk-in-data@  toggle-bulk-in-data" eval	( dir td /buf token' )
+1A51784 	9C 53 A0  1 
+1A51788 	2B 20 20 20 20 20 20 20 
+1A51790 	20 20 62 75 6C 6B 2D 69 
+1A51798 	6E 2D 64 61 74 61 40 20 
+1A517A0 	20 74 6F 67 67 6C 65 2D 
+1A517A8 	62 75 6C 6B 2D 69 6E 2D 
+1A517B0 	64 61 74 61  0  0  0  0 
+1A517B8 	D8 E5 A0  1 
+s"       else" eval
+1A517BC 	9C 53 A0  1 
+1A517C0 	 A 20 20 20 20 20 20 65 
+1A517C8 	6C 73 65  0 D8 E5 A0  1 
+s"          bulk-out-data@ toggle-bulk-out-data" eval	( dir td /buf token' )
+1A517D0 	9C 53 A0  1 2C 20 20 20 
+1A517D8 	20 20 20 20 20 20 62 75 
+1A517E0 	6C 6B 2D 6F 75 74 2D 64 
+1A517E8 	61 74 61 40 20 74 6F 67 
+1A517F0 	67 6C 65 2D 62 75 6C 6B 
+1A517F8 	2D 6F 75 74 2D 64 61 74 
+1A51800 	61  0  0  0 D8 E5 A0  1 
+s"       then  or" eval
+1A51808 	9C 53 A0  1  E 20 20 20 
+1A51810 	20 20 20 74 68 65 6E 20 
+1A51818 	20 6F 72  0 D8 E5 A0  1 
+s"       3 pick or my-dev/pipe or" eval			( dir td /buf token' )
+1A51820 	9C 53 A0  1 1E 20 20 20 
+1A51828 	20 20 20 33 20 70 69 63 
+1A51830 	6B 20 6F 72 20 6D 79 2D 
+1A51838 	64 65 76 2F 70 69 70 65 
+1A51840 	20 6F 72  0 D8 E5 A0  1 
+s"       2 pick >hctd-token le-l!" eval			( dir td /buf )
+1A51848 	9C 53 A0  1 1E 20 20 20 
+1A51850 	20 20 20 32 20 70 69 63 
+1A51858 	6B 20 3E 68 63 74 64 2D 
+1A51860 	74 6F 6B 65 6E 20 6C 65 
+1A51868 	2D 6C 21  0 D8 E5 A0  1 
+s"       my-buf-phys 2 pick 2dup >hctd-buf le-l!" eval	( dir td /buf pbuf td )
+1A51870 	9C 53 A0  1 2D 20 20 20 
+1A51878 	20 20 20 6D 79 2D 62 75 
+1A51880 	66 2D 70 68 79 73 20 32 
+1A51888 	20 70 69 63 6B 20 32 64 
+1A51890 	75 70 20 3E 68 63 74 64 
+1A51898 	2D 62 75 66 20 6C 65 2D 
+1A518A0 	6C 21  0  0 D8 E5 A0  1 
+s"       >td-pbuf l!" eval				( dir td /buf )
+1A518A8 	9C 53 A0  1 11 20 20 20 
+1A518B0 	20 20 20 3E 74 64 2D 70 
+1A518B8 	62 75 66 20 6C 21  0  0 
+1A518C0 	D8 E5 A0  1 
+s"       my-buf 2 pick >td-buf l!" eval			( dir td /buf )
+1A518C4 	9C 53 A0  1 
+1A518C8 	1E 20 20 20 20 20 20 6D 
+1A518D0 	79 2D 62 75 66 20 32 20 
+1A518D8 	70 69 63 6B 20 3E 74 64 
+1A518E0 	2D 62 75 66 20 6C 21  0 
+1A518E8 	D8 E5 A0  1 
+s"       my-buf++" eval					( dir td )
+1A518EC 	9C 53 A0  1 
+1A518F0 	 E 20 20 20 20 20 20 6D 
+1A518F8 	79 2D 62 75 66 2B 2B  0 
+1A51900 	D8 E5 A0  1 
+s"       >td-next l@" eval				( dir td' )
+1A51904 	9C 53 A0  1 
+1A51908 	11 20 20 20 20 20 20 3E 
+1A51910 	74 64 2D 6E 65 78 74 20 
+1A51918 	6C 40  0  0 D8 E5 A0  1 
+s"    loop  2drop ;" eval
+1A51920 	9C 53 A0  1 10 20 20 20 
+1A51928 	6C 6F 6F 70 20 20 32 64 
+1A51930 	72 6F 70 20 3B  0  0  0 
+1A51938 	D8 E5 A0  1 
+
+s" : set-bulk-in-timeout  ( t -- )  ?dup  if  to bulk-in-timeout  then  ;" eval
+1A5193C 	9C 53 A0  1 
+1A51940 	46 3A 20 73 65 74 2D 62 
+1A51948 	75 6C 6B 2D 69 6E 2D 74 
+1A51950 	69 6D 65 6F 75 74 20 20 
+1A51958 	28 20 74 20 2D 2D 20 29 
+1A51960 	20 20 3F 64 75 70 20 20 
+1A51968 	69 66 20 20 74 6F 20 62 
+1A51970 	75 6C 6B 2D 69 6E 2D 74 
+1A51978 	69 6D 65 6F 75 74 20 20 
+1A51980 	74 68 65 6E 20 20 3B  0 
+1A51988 	D8 E5 A0  1 
+
+s" : begin-bulk-in" eval  ( buf len pipe -- )
+1A5198C 	9C 53 A0  1 
+1A51990 	 F 3A 20 62 65 67 69 6E 
+1A51998 	2D 62 75 6C 6B 2D 69 6E 
+1A519A0 	 0  0  0  0 D8 E5 A0  1 
+ "    debug?  if  ."" begin-bulk-in"" cr  then" eval
+1A519A8 	9C 53 A0  1 29 20 20 20 
+1A519B0 	64 65 62 75 67 3F 20 20 
+1A519B8 	69 66 20 20 2E 22 20 62 
+1A519C0 	65 67 69 6E 2D 62 75 6C 
+1A519C8 	6B 2D 69 6E 22 20 63 72 
+1A519D0 	20 20 74 68 65 6E  0  0 
+1A519D8 	D8 E5 A0  1 
+s"    bulk-in-qh  if  3drop exit  then" eval		\ Already started
+1A519DC 	9C 53 A0  1 
+1A519E0 	23 20 20 20 62 75 6C 6B 
+1A519E8 	2D 69 6E 2D 71 68 20 20 
+1A519F0 	69 66 20 20 33 64 72 6F 
+1A519F8 	70 20 65 78 69 74 20 20 
+1A51A00 	74 68 65 6E  0  0  0  0 
+1A51A08 	D8 E5 A0  1 
+
+s"    dup to bulk-in-pipe" eval
+1A51A0C 	9C 53 A0  1 
+1A51A10 	16 20 20 20 64 75 70 20 
+1A51A18 	74 6F 20 62 75 6C 6B 2D 
+1A51A20 	69 6E 2D 70 69 70 65  0 
+1A51A28 	D8 E5 A0  1 
+s"    bulk-in-timeout process-bulk-args" eval
+1A51A2C 	9C 53 A0  1 
+1A51A30 	24 20 20 20 62 75 6C 6B 
+1A51A38 	2D 69 6E 2D 74 69 6D 65 
+1A51A40 	6F 75 74 20 70 72 6F 63 
+1A51A48 	65 73 73 2D 62 75 6C 6B 
+1A51A50 	2D 61 72 67 73  0  0  0 
+1A51A58 	D8 E5 A0  1 
+s"    alloc-bulk-qhtds  to bulk-in-td  to bulk-in-qh" eval
+1A51A5C 	9C 53 A0  1 
+1A51A60 	31 20 20 20 61 6C 6C 6F 
+1A51A68 	63 2D 62 75 6C 6B 2D 71 
+1A51A70 	68 74 64 73 20 20 74 6F 
+1A51A78 	20 62 75 6C 6B 2D 69 6E 
+1A51A80 	2D 74 64 20 20 74 6F 20 
+1A51A88 	62 75 6C 6B 2D 69 6E 2D 
+1A51A90 	71 68  0  0 D8 E5 A0  1 
+
+   \ IN TDs
+s"    TD_PID_IN bulk-in-td fill-bulk-io-tds" eval
+1A51A98 	9C 53 A0  1 28 20 20 20 
+1A51AA0 	54 44 5F 50 49 44 5F 49 
+1A51AA8 	4E 20 62 75 6C 6B 2D 69 
+1A51AB0 	6E 2D 74 64 20 66 69 6C 
+1A51AB8 	6C 2D 62 75 6C 6B 2D 69 
+1A51AC0 	6F 2D 74 64 73  0  0  0 
+1A51AC8 	D8 E5 A0  1 
+
+   \ Start bulk in transaction
+s"    bulk-in-qh my-speed insert-bulk-qh ;" eval
+1A51ACC 	9C 53 A0  1 
+1A51AD0 	27 20 20 20 62 75 6C 6B 
+1A51AD8 	2D 69 6E 2D 71 68 20 6D 
+1A51AE0 	79 2D 73 70 65 65 64 20 
+1A51AE8 	69 6E 73 65 72 74 2D 62 
+1A51AF0 	75 6C 6B 2D 71 68 20 3B 
+1A51AF8 	 0  0  0  0 D8 E5 A0  1 
+
+s" : bulk-in-actual" eval  ( -- actual usberr )
+1A51B00 	9C 53 A0  1 10 3A 20 62 
+1A51B08 	75 6C 6B 2D 69 6E 2D 61 
+1A51B10 	63 74 75 61 6C  0  0  0 
+1A51B18 	D8 E5 A0  1 
+s"    bulk-in-td bulk-in-qh >qh-#tds l@ get-actual" eval	( actual )
+1A51B1C 	9C 53 A0  1 
+1A51B20 	2F 20 20 20 62 75 6C 6B 
+1A51B28 	2D 69 6E 2D 74 64 20 62 
+1A51B30 	75 6C 6B 2D 69 6E 2D 71 
+1A51B38 	68 20 3E 71 68 2D 23 74 
+1A51B40 	64 73 20 6C 40 20 67 65 
+1A51B48 	74 2D 61 63 74 75 61 6C 
+1A51B50 	 0  0  0  0 D8 E5 A0  1 
+s"    usb-error" eval						( actual usberr )
+1A51B58 	9C 53 A0  1  C 20 20 20 
+1A51B60 	75 73 62 2D 65 72 72 6F 
+1A51B68 	72  0  0  0 D8 E5 A0  1 
+s"    bulk-in-td bulk-in-qh >qh-#tds l@ fixup-bulk-in-data ;" eval
+1A51B70 	9C 53 A0  1 39 20 20 20 
+1A51B78 	62 75 6C 6B 2D 69 6E 2D 
+1A51B80 	74 64 20 62 75 6C 6B 2D 
+1A51B88 	69 6E 2D 71 68 20 3E 71 
+1A51B90 	68 2D 23 74 64 73 20 6C 
+1A51B98 	40 20 66 69 78 75 70 2D 
+1A51BA0 	62 75 6C 6B 2D 69 6E 2D 
+1A51BA8 	64 61 74 61 20 3B  0  0 
+1A51BB0 	D8 E5 A0  1 
+
+s" : bulk-in?" eval  ( -- actual usberr )
+1A51BB4 	9C 53 A0  1 
+1A51BB8 	 A 3A 20 62 75 6C 6B 2D 
+1A51BC0 	69 6E 3F  0 D8 E5 A0  1 
+s"    bulk-in-qh 0=  if  0 USB_ERR_INV_OP exit  then" eval
+1A51BC8 	9C 53 A0  1 31 20 20 20 
+1A51BD0 	62 75 6C 6B 2D 69 6E 2D 
+1A51BD8 	71 68 20 30 3D 20 20 69 
+1A51BE0 	66 20 20 30 20 55 53 42 
+1A51BE8 	5F 45 52 52 5F 49 4E 56 
+1A51BF0 	5F 4F 50 20 65 78 69 74 
+1A51BF8 	20 20 74 68 65 6E  0  0 
+1A51C00 	D8 E5 A0  1 
+s"    lock" eval
+1A51C04 	9C 53 A0  1 
+1A51C08 	 7 20 20 20 6C 6F 63 6B 
+1A51C10 	 0  0  0  0 D8 E5 A0  1 
+s"    clear-usb-error" eval
+1A51C18 	9C 53 A0  1 12 20 20 20 
+1A51C20 	63 6C 65 61 72 2D 75 73 
+1A51C28 	62 2D 65 72 72 6F 72  0 
+1A51C30 	D8 E5 A0  1 
+s"    process-hc-status" eval
+1A51C34 	9C 53 A0  1 
+1A51C38 	14 20 20 20 70 72 6F 63 
+1A51C40 	65 73 73 2D 68 63 2D 73 
+1A51C48 	74 61 74 75 73  0  0  0 
+1A51C50 	D8 E5 A0  1 
+s"    bulk-in-qh dup pull-qhtds" eval                            ( bulk-in-qh )
+1A51C54 	9C 53 A0  1 
+1A51C58 	1C 20 20 20 62 75 6C 6B 
+1A51C60 	2D 69 6E 2D 71 68 20 64 
+1A51C68 	75 70 20 70 75 6C 6C 2D 
+1A51C70 	71 68 74 64 73  0  0  0 
+1A51C78 	D8 E5 A0  1 
+s"    qh-done?  if" eval
+1A51C7C 	9C 53 A0  1 
+1A51C80 	 F 20 20 20 71 68 2D 64 
+1A51C88 	6F 6E 65 3F 20 20 69 66 
+1A51C90 	 0  0  0  0 D8 E5 A0  1 
+s"       bulk-in-actual" eval                                    ( actual usberr )
+1A51C98 	9C 53 A0  1 14 20 20 20 
+1A51CA0 	20 20 20 62 75 6C 6B 2D 
+1A51CA8 	69 6E 2D 61 63 74 75 61 
+1A51CB0 	6C  0  0  0 D8 E5 A0  1 
+s"    else" eval
+1A51CB8 	9C 53 A0  1  7 20 20 20 
+1A51CC0 	65 6C 73 65  0  0  0  0 
+1A51CC8 	D8 E5 A0  1 
+s"       bulk-in-qh dup >hcqh-elem le-l@" eval			( qh elem )
+1A51CCC 	9C 53 A0  1 
+1A51CD0 	25 20 20 20 20 20 20 62 
+1A51CD8 	75 6C 6B 2D 69 6E 2D 71 
+1A51CE0 	68 20 64 75 70 20 3E 68 
+1A51CE8 	63 71 68 2D 65 6C 65 6D 
+1A51CF0 	20 6C 65 2D 6C 40  0  0 
+1A51CF8 	D8 E5 A0  1 
+s"       1 ms  over pull-qhtds" eval				( qh elem )
+1A51CFC 	9C 53 A0  1 
+1A51D00 	1B 20 20 20 20 20 20 31 
+1A51D08 	20 6D 73 20 20 6F 76 65 
+1A51D10 	72 20 70 75 6C 6C 2D 71 
+1A51D18 	68 74 64 73  0  0  0  0 
+1A51D20 	D8 E5 A0  1 
+s"       swap >hcqh-elem le-l@ =  if" eval			\ No movement in the past ms
+1A51D24 	9C 53 A0  1 
+1A51D28 	21 20 20 20 20 20 20 73 
+1A51D30 	77 61 70 20 3E 68 63 71 
+1A51D38 	68 2D 65 6C 65 6D 20 6C 
+1A51D40 	65 2D 6C 40 20 3D 20 20 
+1A51D48 	69 66  0  0 D8 E5 A0  1 
+s"          bulk-in-actual" eval                                 ( actual usberr )
+1A51D50 	9C 53 A0  1 17 20 20 20 
+1A51D58 	20 20 20 20 20 20 62 75 
+1A51D60 	6C 6B 2D 69 6E 2D 61 63 
+1A51D68 	74 75 61 6C  0  0  0  0 
+1A51D70 	D8 E5 A0  1 
+s"          bulk-in-td bulk-in-qh >qh-#tds l@ fixup-bulk-in-data" eval
+1A51D74 	9C 53 A0  1 
+1A51D78 	3D 20 20 20 20 20 20 20 
+1A51D80 	20 20 62 75 6C 6B 2D 69 
+1A51D88 	6E 2D 74 64 20 62 75 6C 
+1A51D90 	6B 2D 69 6E 2D 71 68 20 
+1A51D98 	3E 71 68 2D 23 74 64 73 
+1A51DA0 	20 6C 40 20 66 69 78 75 
+1A51DA8 	70 2D 62 75 6C 6B 2D 69 
+1A51DB0 	6E 2D 64 61 74 61  0  0 
+1A51DB8 	D8 E5 A0  1 
+s"       else" eval						\ It may not be done yet
+1A51DBC 	9C 53 A0  1 
+1A51DC0 	 A 20 20 20 20 20 20 65 
+1A51DC8 	6C 73 65  0 D8 E5 A0  1 
+s"          0 usb-error" eval					( actual usberr )
+1A51DD0 	9C 53 A0  1 14 20 20 20 
+1A51DD8 	20 20 20 20 20 20 30 20 
+1A51DE0 	75 73 62 2D 65 72 72 6F 
+1A51DE8 	72  0  0  0 D8 E5 A0  1 
+s"       then" eval
+1A51DF0 	9C 53 A0  1  A 20 20 20 
+1A51DF8 	20 20 20 74 68 65 6E  0 
+1A51E00 	D8 E5 A0  1 
+s"    then" eval
+1A51E04 	9C 53 A0  1 
+1A51E08 	 7 20 20 20 74 68 65 6E 
+1A51E10 	 0  0  0  0 D8 E5 A0  1 
+s"    over  if" eval
+1A51E18 	9C 53 A0  1  B 20 20 20 
+1A51E20 	6F 76 65 72 20 20 69 66 
+1A51E28 	 0  0  0  0 D8 E5 A0  1 
+s"       bulk-in-td dup >td-buf l@ swap >td-pbuf l@ 2 pick dma-pull" eval
+1A51E30 	9C 53 A0  1 40 20 20 20 
+1A51E38 	20 20 20 62 75 6C 6B 2D 
+1A51E40 	69 6E 2D 74 64 20 64 75 
+1A51E48 	70 20 3E 74 64 2D 62 75 
+1A51E50 	66 20 6C 40 20 73 77 61 
+1A51E58 	70 20 3E 74 64 2D 70 62 
+1A51E60 	75 66 20 6C 40 20 32 20 
+1A51E68 	70 69 63 6B 20 64 6D 61 
+1A51E70 	2D 70 75 6C 6C  0  0  0 
+1A51E78 	D8 E5 A0  1 
+s"    then" eval
+1A51E7C 	9C 53 A0  1 
+1A51E80 	 7 20 20 20 74 68 65 6E 
+1A51E88 	 0  0  0  0 D8 E5 A0  1 
+s"    unlock ;" eval
+1A51E90 	9C 53 A0  1  B 20 20 20 
+1A51E98 	75 6E 6C 6F 63 6B 20 3B 
+1A51EA0 	 0  0  0  0 D8 E5 A0  1 
+
+s" : restart-bulk-in-td" eval  ( td -- )
+1A51EA8 	9C 53 A0  1 14 3A 20 72 
+1A51EB0 	65 73 74 61 72 74 2D 62 
+1A51EB8 	75 6C 6B 2D 69 6E 2D 74 
+1A51EC0 	64  0  0  0 D8 E5 A0  1 
+s"    begin  ?dup  while" eval                                 ( td )
+1A51EC8 	9C 53 A0  1 15 20 20 20 
+1A51ED0 	62 65 67 69 6E 20 20 3F 
+1A51ED8 	64 75 70 20 20 77 68 69 
+1A51EE0 	6C 65  0  0 D8 E5 A0  1 
+s"       toggle-bulk-in-data" eval                             ( td )
+1A51EE8 	9C 53 A0  1 19 20 20 20 
+1A51EF0 	20 20 20 74 6F 67 67 6C 
+1A51EF8 	65 2D 62 75 6C 6B 2D 69 
+1A51F00 	6E 2D 64 61 74 61  0  0 
+1A51F08 	D8 E5 A0  1 
+s"       dup >hctd-token" eval                                 ( td &token )
+1A51F0C 	9C 53 A0  1 
+1A51F10 	15 20 20 20 20 20 20 64 
+1A51F18 	75 70 20 3E 68 63 74 64 
+1A51F20 	2D 74 6F 6B 65 6E  0  0 
+1A51F28 	D8 E5 A0  1 
+s"       dup le-l@  TD_TOKEN_DATA1 invert and" eval            ( td &token value )
+1A51F2C 	9C 53 A0  1 
+1A51F30 	2A 20 20 20 20 20 20 64 
+1A51F38 	75 70 20 6C 65 2D 6C 40 
+1A51F40 	20 20 54 44 5F 54 4F 4B 
+1A51F48 	45 4E 5F 44 41 54 41 31 
+1A51F50 	20 69 6E 76 65 72 74 20 
+1A51F58 	61 6E 64  0 D8 E5 A0  1 
+s"       bulk-in-data@ or  swap le-l!" eval                    ( td )
+1A51F60 	9C 53 A0  1 22 20 20 20 
+1A51F68 	20 20 20 62 75 6C 6B 2D 
+1A51F70 	69 6E 2D 64 61 74 61 40 
+1A51F78 	20 6F 72 20 20 73 77 61 
+1A51F80 	70 20 6C 65 2D 6C 21  0 
+1A51F88 	D8 E5 A0  1 
+s"       dup >hctd-stat dup le-l@" eval                        ( td &stat value )
+1A51F8C 	9C 53 A0  1 
+1A51F90 	1E 20 20 20 20 20 20 64 
+1A51F98 	75 70 20 3E 68 63 74 64 
+1A51FA0 	2D 73 74 61 74 20 64 75 
+1A51FA8 	70 20 6C 65 2D 6C 40  0 
+1A51FB0 	D8 E5 A0  1 
+s"       TD_STAT_ANY_ERROR TD_ACTUAL_MASK or invert and" eval  ( td &stat value' )
+1A51FB4 	9C 53 A0  1 
+1A51FB8 	34 20 20 20 20 20 20 54 
+1A51FC0 	44 5F 53 54 41 54 5F 41 
+1A51FC8 	4E 59 5F 45 52 52 4F 52 
+1A51FD0 	20 54 44 5F 41 43 54 55 
+1A51FD8 	41 4C 5F 4D 41 53 4B 20 
+1A51FE0 	6F 72 20 69 6E 76 65 72 
+1A51FE8 	74 20 61 6E 64  0  0  0 
+1A51FF0 	D8 E5 A0  1 
+s"       TD_STAT_ACTIVE or swap le-l!" eval                    ( td )
+1A51FF4 	9C 53 A0  1 
+1A51FF8 	22 20 20 20 20 20 20 54 
+1A52000 	44 5F 53 54 41 54 5F 41 
+1A52008 	43 54 49 56 45 20 6F 72 
+1A52010 	20 73 77 61 70 20 6C 65 
+1A52018 	2D 6C 21  0 D8 E5 A0  1 
+s"       >td-next l@" eval                                     ( td' )
+1A52020 	9C 53 A0  1 11 20 20 20 
+1A52028 	20 20 20 3E 74 64 2D 6E 
+1A52030 	65 78 74 20 6C 40  0  0 
+1A52038 	D8 E5 A0  1 
+s"    repeat ;" eval
+1A5203C 	9C 53 A0  1 
+1A52040 	 B 20 20 20 72 65 70 65 
+1A52048 	61 74 20 3B  0  0  0  0 
+1A52050 	D8 E5 A0  1 
+
+s" : restart-bulk-in" eval  ( -- )
+1A52054 	9C 53 A0  1 
+1A52058 	11 3A 20 72 65 73 74 61 
+1A52060 	72 74 2D 62 75 6C 6B 2D 
+1A52068 	69 6E  0  0 D8 E5 A0  1 
+ "    debug?  if  ."" restart-bulk-in"" cr  then" eval
+1A52070 	9C 53 A0  1 2B 20 20 20 
+1A52078 	64 65 62 75 67 3F 20 20 
+1A52080 	69 66 20 20 2E 22 20 72 
+1A52088 	65 73 74 61 72 74 2D 62 
+1A52090 	75 6C 6B 2D 69 6E 22 20 
+1A52098 	63 72 20 20 74 68 65 6E 
+1A520A0 	 0  0  0  0 D8 E5 A0  1 
+s"    bulk-in-qh 0=  if  exit  then" eval
+1A520A8 	9C 53 A0  1 20 20 20 20 
+1A520B0 	62 75 6C 6B 2D 69 6E 2D 
+1A520B8 	71 68 20 30 3D 20 20 69 
+1A520C0 	66 20 20 65 78 69 74 20 
+1A520C8 	20 74 68 65 6E  0  0  0 
+1A520D0 	D8 E5 A0  1 
+
+   \ Setup TD again
+s"    bulk-in-td restart-bulk-in-td" eval
+1A520D4 	9C 53 A0  1 
+1A520D8 	20 20 20 20 62 75 6C 6B 
+1A520E0 	2D 69 6E 2D 74 64 20 72 
+1A520E8 	65 73 74 61 72 74 2D 62 
+1A520F0 	75 6C 6B 2D 69 6E 2D 74 
+1A520F8 	64  0  0  0 D8 E5 A0  1 
+
+   \ Setup QH again
+s"    bulk-in-td >td-phys l@ bulk-in-qh >hcqh-elem le-l!" eval
+1A52100 	9C 53 A0  1 35 20 20 20 
+1A52108 	62 75 6C 6B 2D 69 6E 2D 
+1A52110 	74 64 20 3E 74 64 2D 70 
+1A52118 	68 79 73 20 6C 40 20 62 
+1A52120 	75 6C 6B 2D 69 6E 2D 71 
+1A52128 	68 20 3E 68 63 71 68 2D 
+1A52130 	65 6C 65 6D 20 6C 65 2D 
+1A52138 	6C 21  0  0 D8 E5 A0  1 
+s"    bulk-in-qh push-qhtds ;" eval
+1A52140 	9C 53 A0  1 1A 20 20 20 
+1A52148 	62 75 6C 6B 2D 69 6E 2D 
+1A52150 	71 68 20 70 75 73 68 2D 
+1A52158 	71 68 74 64 73 20 3B  0 
+1A52160 	D8 E5 A0  1 
+s" : end-bulk-in" eval  ( -- )
+1A52164 	9C 53 A0  1 
+1A52168 	 D 3A 20 65 6E 64 2D 62 
+1A52170 	75 6C 6B 2D 69 6E  0  0 
+1A52178 	D8 E5 A0  1 
+ "    debug?  if  ."" end-bulk-in"" cr  then" eval
+1A5217C 	9C 53 A0  1 
+1A52180 	27 20 20 20 64 65 62 75 
+1A52188 	67 3F 20 20 69 66 20 20 
+1A52190 	2E 22 20 65 6E 64 2D 62 
+1A52198 	75 6C 6B 2D 69 6E 22 20 
+1A521A0 	63 72 20 20 74 68 65 6E 
+1A521A8 	 0  0  0  0 D8 E5 A0  1 
+s"    bulk-in-qh 0=  if  exit  then" eval
+1A521B0 	9C 53 A0  1 20 20 20 20 
+1A521B8 	62 75 6C 6B 2D 69 6E 2D 
+1A521C0 	71 68 20 30 3D 20 20 69 
+1A521C8 	66 20 20 65 78 69 74 20 
+1A521D0 	20 74 68 65 6E  0  0  0 
+1A521D8 	D8 E5 A0  1 
+
+s"    bulk-in-td bulk-in-qh >qh-#tds l@ fixup-bulk-in-data" eval
+1A521DC 	9C 53 A0  1 
+1A521E0 	37 20 20 20 62 75 6C 6B 
+1A521E8 	2D 69 6E 2D 74 64 20 62 
+1A521F0 	75 6C 6B 2D 69 6E 2D 71 
+1A521F8 	68 20 3E 71 68 2D 23 74 
+1A52200 	64 73 20 6C 40 20 66 69 
+1A52208 	78 75 70 2D 62 75 6C 6B 
+1A52210 	2D 69 6E 2D 64 61 74 61 
+1A52218 	 0  0  0  0 D8 E5 A0  1 
+s"    bulk-in-td map-out-buf" eval
+1A52220 	9C 53 A0  1 19 20 20 20 
+1A52228 	62 75 6C 6B 2D 69 6E 2D 
+1A52230 	74 64 20 6D 61 70 2D 6F 
+1A52238 	75 74 2D 62 75 66  0  0 
+1A52240 	D8 E5 A0  1 
+s"    bulk-in-qh dup  remove-qh  free-qhtds" eval
+1A52244 	9C 53 A0  1 
+1A52248 	28 20 20 20 62 75 6C 6B 
+1A52250 	2D 69 6E 2D 71 68 20 64 
+1A52258 	75 70 20 20 72 65 6D 6F 
+1A52260 	76 65 2D 71 68 20 20 66 
+1A52268 	72 65 65 2D 71 68 74 64 
+1A52270 	73  0  0  0 D8 E5 A0  1 
+s"    0 to bulk-in-qh  0 to bulk-in-td ;" eval
+1A52278 	9C 53 A0  1 25 20 20 20 
+1A52280 	30 20 74 6F 20 62 75 6C 
+1A52288 	6B 2D 69 6E 2D 71 68 20 
+1A52290 	20 30 20 74 6F 20 62 75 
+1A52298 	6C 6B 2D 69 6E 2D 74 64 
+1A522A0 	20 3B  0  0 D8 E5 A0  1 
+
+s" : bulk-in" eval  ( buf len pipe -- actual usberr )
+1A522A8 	9C 53 A0  1  9 3A 20 62 
+1A522B0 	75 6C 6B 2D 69 6E  0  0 
+1A522B8 	D8 E5 A0  1 
+ "    debug?  if  ."" bulk-in"" cr  then" eval
+1A522BC 	9C 53 A0  1 
+1A522C0 	23 20 20 20 64 65 62 75 
+1A522C8 	67 3F 20 20 69 66 20 20 
+1A522D0 	2E 22 20 62 75 6C 6B 2D 
+1A522D8 	69 6E 22 20 63 72 20 20 
+1A522E0 	74 68 65 6E  0  0  0  0 
+1A522E8 	D8 E5 A0  1 
+s"    lock" eval
+1A522EC 	9C 53 A0  1 
+1A522F0 	 7 20 20 20 6C 6F 63 6B 
+1A522F8 	 0  0  0  0 D8 E5 A0  1 
+s"    dup to bulk-in-pipe" eval
+1A52300 	9C 53 A0  1 16 20 20 20 
+1A52308 	64 75 70 20 74 6F 20 62 
+1A52310 	75 6C 6B 2D 69 6E 2D 70 
+1A52318 	69 70 65  0 D8 E5 A0  1 
+s"    bulk-in-timeout process-bulk-args" eval
+1A52320 	9C 53 A0  1 24 20 20 20 
+1A52328 	62 75 6C 6B 2D 69 6E 2D 
+1A52330 	74 69 6D 65 6F 75 74 20 
+1A52338 	70 72 6F 63 65 73 73 2D 
+1A52340 	62 75 6C 6B 2D 61 72 67 
+1A52348 	73  0  0  0 D8 E5 A0  1 
+s"    alloc-bulk-qhtds  to my-td  to my-qh" eval
+1A52350 	9C 53 A0  1 27 20 20 20 
+1A52358 	61 6C 6C 6F 63 2D 62 75 
+1A52360 	6C 6B 2D 71 68 74 64 73 
+1A52368 	20 20 74 6F 20 6D 79 2D 
+1A52370 	74 64 20 20 74 6F 20 6D 
+1A52378 	79 2D 71 68  0  0  0  0 
+1A52380 	D8 E5 A0  1 
+
+   \ IN TDs
+s"   TD_PID_IN my-td fill-bulk-io-tds" eval
+1A52384 	9C 53 A0  1 
+1A52388 	22 20 20 54 44 5F 50 49 
+1A52390 	44 5F 49 4E 20 6D 79 2D 
+1A52398 	74 64 20 66 69 6C 6C 2D 
+1A523A0 	62 75 6C 6B 2D 69 6F 2D 
+1A523A8 	74 64 73  0 D8 E5 A0  1 
+
+   \ Start bulk in transaction
+s"   my-qh my-speed insert-bulk-qh" eval
+1A523B0 	9C 53 A0  1 1F 20 20 6D 
+1A523B8 	79 2D 71 68 20 6D 79 2D 
+1A523C0 	73 70 65 65 64 20 69 6E 
+1A523C8 	73 65 72 74 2D 62 75 6C 
+1A523D0 	6B 2D 71 68  0  0  0  0 
+1A523D8 	D8 E5 A0  1 
+
+   \ Process results
+s"   my-qh done?  if   0" eval		( actual )	\ System error, timeout
+1A523DC 	9C 53 A0  1 
+1A523E0 	15 20 20 6D 79 2D 71 68 
+1A523E8 	20 64 6F 6E 65 3F 20 20 
+1A523F0 	69 66 20 20 20 30  0  0 
+1A523F8 	D8 E5 A0  1 
+s"   else" eval
+1A523FC 	9C 53 A0  1 
+1A52400 	 6 20 20 65 6C 73 65  0 
+1A52408 	D8 E5 A0  1 
+s"      my-td error?  if 0" eval	( actual )	\ USB error
+1A5240C 	9C 53 A0  1 
+1A52410 	17 20 20 20 20 20 6D 79 
+1A52418 	2D 74 64 20 65 72 72 6F 
+1A52420 	72 3F 20 20 69 66 20 30 
+1A52428 	 0  0  0  0 D8 E5 A0  1 
+s"       else" eval
+1A52430 	9C 53 A0  1  A 20 20 20 
+1A52438 	20 20 20 65 6C 73 65  0 
+1A52440 	D8 E5 A0  1 
+s"          my-td dup my-#tds get-actual" eval		( td actual )
+1A52444 	9C 53 A0  1 
+1A52448 	25 20 20 20 20 20 20 20 
+1A52450 	20 20 6D 79 2D 74 64 20 
+1A52458 	64 75 70 20 6D 79 2D 23 
+1A52460 	74 64 73 20 67 65 74 2D 
+1A52468 	61 63 74 75 61 6C  0  0 
+1A52470 	D8 E5 A0  1 
+s" 	 over >td-buf l@ rot >td-pbuf l@ 2 pick dma-pull" eval	( actual )
+1A52474 	9C 53 A0  1 
+1A52478 	31  9 20 6F 76 65 72 20 
+1A52480 	3E 74 64 2D 62 75 66 20 
+1A52488 	6C 40 20 72 6F 74 20 3E 
+1A52490 	74 64 2D 70 62 75 66 20 
+1A52498 	6C 40 20 32 20 70 69 63 
+1A524A0 	6B 20 64 6D 61 2D 70 75 
+1A524A8 	6C 6C  0  0 D8 E5 A0  1 
+s"       then" eval
+1A524B0 	9C 53 A0  1  A 20 20 20 
+1A524B8 	20 20 20 74 68 65 6E  0 
+1A524C0 	D8 E5 A0  1 
+s"    then" eval
+1A524C4 	9C 53 A0  1 
+1A524C8 	 7 20 20 20 74 68 65 6E 
+1A524D0 	 0  0  0  0 D8 E5 A0  1 
+
+s"    usb-error" eval					( actual usberr )
+1A524D8 	9C 53 A0  1  C 20 20 20 
+1A524E0 	75 73 62 2D 65 72 72 6F 
+1A524E8 	72  0  0  0 D8 E5 A0  1 
+s"    my-qh" eval					( actual usberr qh )
+1A524F0 	9C 53 A0  1  8 20 20 20 
+1A524F8 	6D 79 2D 71 68  0  0  0 
+1A52500 	D8 E5 A0  1 
+s"    my-td dup map-out-buf" eval			( actual usberr qh td )
+1A52504 	9C 53 A0  1 
+1A52508 	18 20 20 20 6D 79 2D 74 
+1A52510 	64 20 64 75 70 20 6D 61 
+1A52518 	70 2D 6F 75 74 2D 62 75 
+1A52520 	66  0  0  0 D8 E5 A0  1 
+s"    my-#tds fixup-bulk-in-data" eval			( actual usberr qh )
+1A52528 	9C 53 A0  1 1D 20 20 20 
+1A52530 	6D 79 2D 23 74 64 73 20 
+1A52538 	66 69 78 75 70 2D 62 75 
+1A52540 	6C 6B 2D 69 6E 2D 64 61 
+1A52548 	74 61  0  0 D8 E5 A0  1 
+s"    dup  remove-qh  free-qhtds" eval			( actual usberr )
+1A52550 	9C 53 A0  1 1D 20 20 20 
+1A52558 	64 75 70 20 20 72 65 6D 
+1A52560 	6F 76 65 2D 71 68 20 20 
+1A52568 	66 72 65 65 2D 71 68 74 
+1A52570 	64 73  0  0 D8 E5 A0  1 
+s"    unlock ;" eval
+1A52578 	9C 53 A0  1  B 20 20 20 
+1A52580 	75 6E 6C 6F 63 6B 20 3B 
+1A52588 	 0  0  0  0 D8 E5 A0  1 
+
+s" : bulk-out" eval  ( buf len pipe -- usberr )
+1A52590 	9C 53 A0  1  A 3A 20 62 
+1A52598 	75 6C 6B 2D 6F 75 74  0 
+1A525A0 	D8 E5 A0  1 
+ "    debug?  if  ."" bulk-out"" cr  then" eval
+1A525A4 	9C 53 A0  1 
+1A525A8 	24 20 20 20 64 65 62 75 
+1A525B0 	67 3F 20 20 69 66 20 20 
+1A525B8 	2E 22 20 62 75 6C 6B 2D 
+1A525C0 	6F 75 74 22 20 63 72 20 
+1A525C8 	20 74 68 65 6E  0  0  0 
+1A525D0 	D8 E5 A0  1 
+s"    lock" eval
+1A525D4 	9C 53 A0  1 
+1A525D8 	 7 20 20 20 6C 6F 63 6B 
+1A525E0 	 0  0  0  0 D8 E5 A0  1 
+s"    dup to bulk-out-pipe" eval
+1A525E8 	9C 53 A0  1 17 20 20 20 
+1A525F0 	64 75 70 20 74 6F 20 62 
+1A525F8 	75 6C 6B 2D 6F 75 74 2D 
+1A52600 	70 69 70 65  0  0  0  0 
+1A52608 	D8 E5 A0  1 
+s"    bulk-out-timeout process-bulk-args" eval
+1A5260C 	9C 53 A0  1 
+1A52610 	25 20 20 20 62 75 6C 6B 
+1A52618 	2D 6F 75 74 2D 74 69 6D 
+1A52620 	65 6F 75 74 20 70 72 6F 
+1A52628 	63 65 73 73 2D 62 75 6C 
+1A52630 	6B 2D 61 72 67 73  0  0 
+1A52638 	D8 E5 A0  1 
+s"    alloc-bulk-qhtds  to my-td  to my-qh" eval
+1A5263C 	9C 53 A0  1 
+1A52640 	27 20 20 20 61 6C 6C 6F 
+1A52648 	63 2D 62 75 6C 6B 2D 71 
+1A52650 	68 74 64 73 20 20 74 6F 
+1A52658 	20 6D 79 2D 74 64 20 20 
+1A52660 	74 6F 20 6D 79 2D 71 68 
+1A52668 	 0  0  0  0 D8 E5 A0  1 
+
+   \ OUT TDs
+s"   TD_PID_OUT my-td fill-bulk-io-tds" eval
+1A52670 	9C 53 A0  1 23 20 20 54 
+1A52678 	44 5F 50 49 44 5F 4F 55 
+1A52680 	54 20 6D 79 2D 74 64 20 
+1A52688 	66 69 6C 6C 2D 62 75 6C 
+1A52690 	6B 2D 69 6F 2D 74 64 73 
+1A52698 	 0  0  0  0 D8 E5 A0  1 
+
+   \ Start bulk out transaction
+s"   my-qh my-speed insert-bulk-qh" eval
+1A526A0 	9C 53 A0  1 1F 20 20 6D 
+1A526A8 	79 2D 71 68 20 6D 79 2D 
+1A526B0 	73 70 65 65 64 20 69 6E 
+1A526B8 	73 65 72 74 2D 62 75 6C 
+1A526C0 	6B 2D 71 68  0  0  0  0 
+1A526C8 	D8 E5 A0  1 
+
+   \ Process results
+s"   my-qh done? 0=  if  my-td error? drop  then" eval
+1A526CC 	9C 53 A0  1 
+1A526D0 	2D 20 20 6D 79 2D 71 68 
+1A526D8 	20 64 6F 6E 65 3F 20 30 
+1A526E0 	3D 20 20 69 66 20 20 6D 
+1A526E8 	79 2D 74 64 20 65 72 72 
+1A526F0 	6F 72 3F 20 64 72 6F 70 
+1A526F8 	20 20 74 68 65 6E  0  0 
+1A52700 	D8 E5 A0  1 
+
+s"    usb-error" eval					( actual usberr )
+1A52704 	9C 53 A0  1 
+1A52708 	 C 20 20 20 75 73 62 2D 
+1A52710 	65 72 72 6F 72  0  0  0 
+1A52718 	D8 E5 A0  1 
+s"    my-qh" eval					( actual usberr qh )
+1A5271C 	9C 53 A0  1 
+1A52720 	 8 20 20 20 6D 79 2D 71 
+1A52728 	68  0  0  0 D8 E5 A0  1 
+s"    my-td dup map-out-buf" eval			( actual usberr qh td )
+1A52730 	9C 53 A0  1 18 20 20 20 
+1A52738 	6D 79 2D 74 64 20 64 75 
+1A52740 	70 20 6D 61 70 2D 6F 75 
+1A52748 	74 2D 62 75 66  0  0  0 
+1A52750 	D8 E5 A0  1 
+s"    my-#tds fixup-bulk-out-data" eval			( actual usberr qh )
+1A52754 	9C 53 A0  1 
+1A52758 	1E 20 20 20 6D 79 2D 23 
+1A52760 	74 64 73 20 66 69 78 75 
+1A52768 	70 2D 62 75 6C 6B 2D 6F 
+1A52770 	75 74 2D 64 61 74 61  0 
+1A52778 	D8 E5 A0  1 
+s"    dup  remove-qh  free-qhtds" eval			( actual usberr )
+1A5277C 	9C 53 A0  1 
+1A52780 	1D 20 20 20 64 75 70 20 
+1A52788 	20 72 65 6D 6F 76 65 2D 
+1A52790 	71 68 20 20 66 72 65 65 
+1A52798 	2D 71 68 74 64 73  0  0 
+1A527A0 	D8 E5 A0  1 
+s"    unlock ;" eval
+1A527A4 	9C 53 A0  1 
+1A527A8 	 B 20 20 20 75 6E 6C 6F 
+1A527B0 	63 6B 20 3B  0  0  0  0 
+1A527B8 	D8 E5 A0  1 
+
+s" : (end-extra)  ( -- )  end-bulk-in  ;" eval
+1A527BC 	9C 53 A0  1 
+1A527C0 	25 3A 20 28 65 6E 64 2D 
+1A527C8 	65 78 74 72 61 29 20 20 
+1A527D0 	28 20 2D 2D 20 29 20 20 
+1A527D8 	65 6E 64 2D 62 75 6C 6B 
+1A527E0 	2D 69 6E 20 20 3B  0  0 
+1A527E8 	D8 E5 A0  1 
+
+;
+1A527EC 	58 46 A0  1 

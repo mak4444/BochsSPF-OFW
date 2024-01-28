@@ -1,0 +1,47 @@
+\
+: install-uart-io  ( -- )
+1A41578 	69 6E 73 74 61 6C 6C 2D 
+1A41580 	75 61 72 74 2D 69 6F 8F 
+1A41588 	5C 15 A4  1 20 40 A0  1 
+   ['] lf-pstr          is newline-pstring
+1A41590 	60 53 A0  1  8 EF A0  1 
+1A41598 	98 40 A0  1 70 71 A0  1 
+   ['] ukey?            is key?
+1A415A0 	60 53 A0  1 90 14 A4  1 
+1A415A8 	98 40 A0  1 64 6C A0  1 
+   ['] ukey             is (key
+1A415B0 	60 53 A0  1 34 15 A4  1 
+1A415B8 	98 40 A0  1 40 6C A0  1 
+   ['] uemit            is (emit
+1A415C0 	60 53 A0  1 5C 15 A4  1 
+1A415C8 	98 40 A0  1 18 6C A0  1 
+   ['] default-type     is (type
+1A415D0 	60 53 A0  1 94 6E A0  1 
+1A415D8 	98 40 A0  1 F0 6B A0  1 
+   ['] emit1            is emit
+1A415E0 	60 53 A0  1 38 6E A0  1 
+1A415E8 	98 40 A0  1 2C 6C A0  1 
+   ['] type1            is type
+1A415F0 	60 53 A0  1 64 6E A0  1 
+1A415F8 	98 40 A0  1  4 6C A0  1 
+   ['] crlf             is cr
+1A41600 	60 53 A0  1 D4 72 A0  1 
+1A41608 	98 40 A0  1 80 6D A0  1 
+   ['] true             is (interactive?
+1A41610 	60 53 A0  1  4 70 A0  1 
+1A41618 	98 40 A0  1 A8 6C A0  1 
+   ['] cancel           is light
+1A41620 	60 53 A0  1 BC F7 A0  1 
+1A41628 	98 40 A0  1 18 F8 A0  1 
+;
+1A41630 	58 46 A0  1 
+
+\ Set the defer words for dl, dlbin, dlfcode, etc.
+[ifdef] diag-key
+' ukey to diag-key
+[then]
+[ifdef] diag-key?
+' ukey? to diag-key?
+[then]
+
+\

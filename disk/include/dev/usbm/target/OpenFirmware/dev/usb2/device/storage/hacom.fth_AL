@@ -1,0 +1,1010 @@
+\ Common code for SCSI host adapter drivers.
+
+\ The following code is intended to be independent of the details of the
+\ SCSI hardware implementation.  It is loaded after the hardware-dependent
+\ file that defines execute-command, set-address, open-hardware, etc.
+
+: hacomfth 
+1A4C3F4 	 0  0  0 68 
+1A4C3F8 	61 63 6F 6D 66 74 68 88 
+1A4C400 	F8 BF A4  1 20 40 A0  1 
+s" -1 value inq-buf" eval                  \ Address of inquiry data buffer
+1A4C408 	9C 53 A0  1 10 2D 31 20 
+1A4C410 	76 61 6C 75 65 20 69 6E 
+1A4C418 	71 2D 62 75 66  0  0  0 
+1A4C420 	D8 E5 A0  1 
+s" -1 value sense-buf" eval                \ holds extended error information
+1A4C424 	9C 53 A0  1 
+1A4C428 	12 2D 31 20 76 61 6C 75 
+1A4C430 	65 20 73 65 6E 73 65 2D 
+1A4C438 	62 75 66  0 D8 E5 A0  1 
+
+
+s" 0 value #retries" eval  ( -- n )        \ number of times to retry SCSI transaction
+1A4C440 	9C 53 A0  1 10 30 20 76 
+1A4C448 	61 6C 75 65 20 23 72 65 
+1A4C450 	74 72 69 65 73  0  0  0 
+1A4C458 	D8 E5 A0  1 
+
+\ Classifies the sense condition as either okay (0), retryable (1),
+\ or non-retryable (-1)
+s" : classify-sense" eval  ( -- 0 | 1 | -1 )
+1A4C45C 	9C 53 A0  1 
+1A4C460 	10 3A 20 63 6C 61 73 73 
+1A4C468 	69 66 79 2D 73 65 6E 73 
+1A4C470 	65  0  0  0 D8 E5 A0  1 
+s"    debug?  if" eval
+1A4C478 	9C 53 A0  1  D 20 20 20 
+1A4C480 	64 65 62 75 67 3F 20 20 
+1A4C488 	69 66  0  0 D8 E5 A0  1 
+s"       base @ >r hex" eval
+1A4C490 	9C 53 A0  1 13 20 20 20 
+1A4C498 	20 20 20 62 61 73 65 20 
+1A4C4A0 	40 20 3E 72 20 68 65 78 
+1A4C4A8 	 0  0  0  0 D8 E5 A0  1 
+ "       ."" Sense:  "" sense-buf 11 bounds  do  i c@ 3 u.r  loop  .""  ..."" cr" eval
+1A4C4B0 	9C 53 A0  1 49 20 20 20 
+1A4C4B8 	20 20 20 2E 22 20 53 65 
+1A4C4C0 	6E 73 65 3A 20 20 22 20 
+1A4C4C8 	73 65 6E 73 65 2D 62 75 
+1A4C4D0 	66 20 31 31 20 62 6F 75 
+1A4C4D8 	6E 64 73 20 20 64 6F 20 
+1A4C4E0 	20 69 20 63 40 20 33 20 
+1A4C4E8 	75 2E 72 20 20 6C 6F 6F 
+1A4C4F0 	70 20 20 2E 22 20 20 2E 
+1A4C4F8 	2E 2E 22 20 63 72  0  0 
+1A4C500 	D8 E5 A0  1 
+s"       r> base !" eval
+1A4C504 	9C 53 A0  1 
+1A4C508 	 F 20 20 20 20 20 20 72 
+1A4C510 	3E 20 62 61 73 65 20 21 
+1A4C518 	 0  0  0  0 D8 E5 A0  1 
+s"    then        " eval
+1A4C520 	9C 53 A0  1  F 20 20 20 
+1A4C528 	74 68 65 6E 20 20 20 20 
+1A4C530 	20 20 20 20  0  0  0  0 
+1A4C538 	D8 E5 A0  1 
+s"    sense-buf   " eval
+1A4C53C 	9C 53 A0  1 
+1A4C540 	 F 20 20 20 73 65 6E 73 
+1A4C548 	65 2D 62 75 66 20 20 20 
+1A4C550 	 0  0  0  0 D8 E5 A0  1 
+
+   \ Make sure we understand the error class code
+s"    dup c@  h# 7f and h# 70 <>  if  drop -1 exit  then" eval
+1A4C558 	9C 53 A0  1 35 20 20 20 
+1A4C560 	64 75 70 20 63 40 20 20 
+1A4C568 	68 23 20 37 66 20 61 6E 
+1A4C570 	64 20 68 23 20 37 30 20 
+1A4C578 	3C 3E 20 20 69 66 20 20 
+1A4C580 	64 72 6F 70 20 2D 31 20 
+1A4C588 	65 78 69 74 20 20 74 68 
+1A4C590 	65 6E  0  0 D8 E5 A0  1 
+
+   \ Check for filemark, end-of-media, or illegal block length
+s"    dup 2+ c@  h# e0  and  if  drop -1 exit  then" eval
+1A4C598 	9C 53 A0  1 30 20 20 20 
+1A4C5A0 	64 75 70 20 32 2B 20 63 
+1A4C5A8 	40 20 20 68 23 20 65 30 
+1A4C5B0 	20 20 61 6E 64 20 20 69 
+1A4C5B8 	66 20 20 64 72 6F 70 20 
+1A4C5C0 	2D 31 20 65 78 69 74 20 
+1A4C5C8 	20 74 68 65 6E  0  0  0 
+1A4C5D0 	D8 E5 A0  1 
+
+s"    2 + c@  h# f and" eval   ( sense-key )
+1A4C5D4 	9C 53 A0  1 
+1A4C5D8 	13 20 20 20 32 20 2B 20 
+1A4C5E0 	63 40 20 20 68 23 20 66 
+1A4C5E8 	20 61 6E 64  0  0  0  0 
+1A4C5F0 	D8 E5 A0  1 
+
+   \ no_sense(0) and recoverable(1) are okay
+s"    dup 1 <=  if  drop 0 exit  then" eval   ( sense-key )
+1A4C5F4 	9C 53 A0  1 
+1A4C5F8 	22 20 20 20 64 75 70 20 
+1A4C600 	31 20 3C 3D 20 20 69 66 
+1A4C608 	20 20 64 72 6F 70 20 30 
+1A4C610 	20 65 78 69 74 20 20 74 
+1A4C618 	68 65 6E  0 D8 E5 A0  1 
+
+   \ not-ready(2) may be retryable
+s"    dup 2 =  if" eval
+1A4C620 	9C 53 A0  1  E 20 20 20 
+1A4C628 	64 75 70 20 32 20 3D 20 
+1A4C630 	20 69 66  0 D8 E5 A0  1 
+      \ check (tapes, especially) for MEDIA NOT PRESENT: if the
+      \ media's not there the command is not retryable
+s"       drop" eval
+1A4C638 	9C 53 A0  1  A 20 20 20 
+1A4C640 	20 20 20 64 72 6F 70  0 
+1A4C648 	D8 E5 A0  1 
+s"       sense-buf h# c + c@  h# 3a =  sense-buf h# d + c@ 0=  and" eval  ( not-present? )
+1A4C64C 	9C 53 A0  1 
+1A4C650 	3F 20 20 20 20 20 20 73 
+1A4C658 	65 6E 73 65 2D 62 75 66 
+1A4C660 	20 68 23 20 63 20 2B 20 
+1A4C668 	63 40 20 20 68 23 20 33 
+1A4C670 	61 20 3D 20 20 73 65 6E 
+1A4C678 	73 65 2D 62 75 66 20 68 
+1A4C680 	23 20 64 20 2B 20 63 40 
+1A4C688 	20 30 3D 20 20 61 6E 64 
+1A4C690 	 0  0  0  0 D8 E5 A0  1 
+s"       if  -1  else  1  then  exit" eval
+1A4C698 	9C 53 A0  1 21 20 20 20 
+1A4C6A0 	20 20 20 69 66 20 20 2D 
+1A4C6A8 	31 20 20 65 6C 73 65 20 
+1A4C6B0 	20 31 20 20 74 68 65 6E 
+1A4C6B8 	20 20 65 78 69 74  0  0 
+1A4C6C0 	D8 E5 A0  1 
+s"    then" eval
+1A4C6C4 	9C 53 A0  1 
+1A4C6C8 	 7 20 20 20 74 68 65 6E 
+1A4C6D0 	 0  0  0  0 D8 E5 A0  1 
+
+   \ Media-error(3) is not retryable
+s"    dup 3 =  if  drop -1 exit  then" eval
+1A4C6D8 	9C 53 A0  1 22 20 20 20 
+1A4C6E0 	64 75 70 20 33 20 3D 20 
+1A4C6E8 	20 69 66 20 20 64 72 6F 
+1A4C6F0 	70 20 2D 31 20 65 78 69 
+1A4C6F8 	74 20 20 74 68 65 6E  0 
+1A4C700 	D8 E5 A0  1 
+
+   \ Attention(6), and target aborted (b) are retryable.
+s"    dup 6 =  swap 0b =  or if  1  else  -1  then ;" eval
+1A4C704 	9C 53 A0  1 
+1A4C708 	31 20 20 20 64 75 70 20 
+1A4C710 	36 20 3D 20 20 73 77 61 
+1A4C718 	70 20 30 62 20 3D 20 20 
+1A4C720 	6F 72 20 69 66 20 20 31 
+1A4C728 	20 20 65 6C 73 65 20 20 
+1A4C730 	2D 31 20 20 74 68 65 6E 
+1A4C738 	20 3B  0  0 D8 E5 A0  1 
+
+s" 0 value open-count" eval
+1A4C740 	9C 53 A0  1 12 30 20 76 
+1A4C748 	61 6C 75 65 20 6F 70 65 
+1A4C750 	6E 2D 63 6F 75 6E 74  0 
+1A4C758 	D8 E5 A0  1 
+
+s" : open" eval  ( -- flag )
+1A4C75C 	9C 53 A0  1 
+1A4C760 	 6 3A 20 6F 70 65 6E  0 
+1A4C768 	D8 E5 A0  1 
+ "    my-args  "" debug"" $=  if  debug-on  then" eval
+1A4C76C 	9C 53 A0  1 
+1A4C770 	2B 20 20 20 6D 79 2D 61 
+1A4C778 	72 67 73 20 20 22 20 64 
+1A4C780 	65 62 75 67 22 20 24 3D 
+1A4C788 	20 20 69 66 20 20 64 65 
+1A4C790 	62 75 67 2D 6F 6E 20 20 
+1A4C798 	74 68 65 6E  0  0  0  0 
+1A4C7A0 	D8 E5 A0  1 
+s"    open-count  if" eval
+1A4C7A4 	9C 53 A0  1 
+1A4C7A8 	11 20 20 20 6F 70 65 6E 
+1A4C7B0 	2D 63 6F 75 6E 74 20 20 
+1A4C7B8 	69 66  0  0 D8 E5 A0  1 
+s"       reopen-hardware  dup  if  open-count 1+ to open-count  then" eval
+1A4C7C0 	9C 53 A0  1 41 20 20 20 
+1A4C7C8 	20 20 20 72 65 6F 70 65 
+1A4C7D0 	6E 2D 68 61 72 64 77 61 
+1A4C7D8 	72 65 20 20 64 75 70 20 
+1A4C7E0 	20 69 66 20 20 6F 70 65 
+1A4C7E8 	6E 2D 63 6F 75 6E 74 20 
+1A4C7F0 	31 2B 20 74 6F 20 6F 70 
+1A4C7F8 	65 6E 2D 63 6F 75 6E 74 
+1A4C800 	20 20 74 68 65 6E  0  0 
+1A4C808 	D8 E5 A0  1 
+s"       exit" eval
+1A4C80C 	9C 53 A0  1 
+1A4C810 	 A 20 20 20 20 20 20 65 
+1A4C818 	78 69 74  0 D8 E5 A0  1 
+s"    else" eval
+1A4C820 	9C 53 A0  1  7 20 20 20 
+1A4C828 	65 6C 73 65  0  0  0  0 
+1A4C830 	D8 E5 A0  1 
+s"       open-hardware  dup  if" eval
+1A4C834 	9C 53 A0  1 
+1A4C838 	1C 20 20 20 20 20 20 6F 
+1A4C840 	70 65 6E 2D 68 61 72 64 
+1A4C848 	77 61 72 65 20 20 64 75 
+1A4C850 	70 20 20 69 66  0  0  0 
+1A4C858 	D8 E5 A0  1 
+s"          1 to open-count" eval
+1A4C85C 	9C 53 A0  1 
+1A4C860 	18 20 20 20 20 20 20 20 
+1A4C868 	20 20 31 20 74 6F 20 6F 
+1A4C870 	70 65 6E 2D 63 6F 75 6E 
+1A4C878 	74  0  0  0 D8 E5 A0  1 
+s"          100 dma-alloc to sense-buf" eval
+1A4C880 	9C 53 A0  1 23 20 20 20 
+1A4C888 	20 20 20 20 20 20 31 30 
+1A4C890 	30 20 64 6D 61 2D 61 6C 
+1A4C898 	6C 6F 63 20 74 6F 20 73 
+1A4C8A0 	65 6E 73 65 2D 62 75 66 
+1A4C8A8 	 0  0  0  0 D8 E5 A0  1 
+s"          100 dma-alloc to inq-buf" eval
+1A4C8B0 	9C 53 A0  1 21 20 20 20 
+1A4C8B8 	20 20 20 20 20 20 31 30 
+1A4C8C0 	30 20 64 6D 61 2D 61 6C 
+1A4C8C8 	6C 6F 63 20 74 6F 20 69 
+1A4C8D0 	6E 71 2D 62 75 66  0  0 
+1A4C8D8 	D8 E5 A0  1 
+s"       then" eval
+1A4C8DC 	9C 53 A0  1 
+1A4C8E0 	 A 20 20 20 20 20 20 74 
+1A4C8E8 	68 65 6E  0 D8 E5 A0  1 
+s"    then ;" eval
+1A4C8F0 	9C 53 A0  1  9 20 20 20 
+1A4C8F8 	74 68 65 6E 20 3B  0  0 
+1A4C900 	D8 E5 A0  1 
+s" : close" eval  ( -- )
+1A4C904 	9C 53 A0  1 
+1A4C908 	 7 3A 20 63 6C 6F 73 65 
+1A4C910 	 0  0  0  0 D8 E5 A0  1 
+s"    open-count 1- to open-count" eval
+1A4C918 	9C 53 A0  1 1E 20 20 20 
+1A4C920 	6F 70 65 6E 2D 63 6F 75 
+1A4C928 	6E 74 20 31 2D 20 74 6F 
+1A4C930 	20 6F 70 65 6E 2D 63 6F 
+1A4C938 	75 6E 74  0 D8 E5 A0  1 
+s"    open-count  if" eval
+1A4C940 	9C 53 A0  1 11 20 20 20 
+1A4C948 	6F 70 65 6E 2D 63 6F 75 
+1A4C950 	6E 74 20 20 69 66  0  0 
+1A4C958 	D8 E5 A0  1 
+s"       reclose-hardware" eval
+1A4C95C 	9C 53 A0  1 
+1A4C960 	16 20 20 20 20 20 20 72 
+1A4C968 	65 63 6C 6F 73 65 2D 68 
+1A4C970 	61 72 64 77 61 72 65  0 
+1A4C978 	D8 E5 A0  1 
+s"    else" eval
+1A4C97C 	9C 53 A0  1 
+1A4C980 	 7 20 20 20 65 6C 73 65 
+1A4C988 	 0  0  0  0 D8 E5 A0  1 
+s"       close-hardware" eval
+1A4C990 	9C 53 A0  1 14 20 20 20 
+1A4C998 	20 20 20 63 6C 6F 73 65 
+1A4C9A0 	2D 68 61 72 64 77 61 72 
+1A4C9A8 	65  0  0  0 D8 E5 A0  1 
+s"       inq-buf   100 dma-free" eval
+1A4C9B0 	9C 53 A0  1 1C 20 20 20 
+1A4C9B8 	20 20 20 69 6E 71 2D 62 
+1A4C9C0 	75 66 20 20 20 31 30 30 
+1A4C9C8 	20 64 6D 61 2D 66 72 65 
+1A4C9D0 	65  0  0  0 D8 E5 A0  1 
+s"       sense-buf 100 dma-free" eval
+1A4C9D8 	9C 53 A0  1 1C 20 20 20 
+1A4C9E0 	20 20 20 73 65 6E 73 65 
+1A4C9E8 	2D 62 75 66 20 31 30 30 
+1A4C9F0 	20 64 6D 61 2D 66 72 65 
+1A4C9F8 	65  0  0  0 D8 E5 A0  1 
+s"    then ;" eval
+1A4CA00 	9C 53 A0  1  9 20 20 20 
+1A4CA08 	74 68 65 6E 20 3B  0  0 
+1A4CA10 	D8 E5 A0  1 
+s" create sense-cmd  3 c, 0 c, 0 c, 0 c, ff c, 0 c," eval
+1A4CA14 	9C 53 A0  1 
+1A4CA18 	30 63 72 65 61 74 65 20 
+1A4CA20 	73 65 6E 73 65 2D 63 6D 
+1A4CA28 	64 20 20 33 20 63 2C 20 
+1A4CA30 	30 20 63 2C 20 30 20 63 
+1A4CA38 	2C 20 30 20 63 2C 20 66 
+1A4CA40 	66 20 63 2C 20 30 20 63 
+1A4CA48 	2C  0  0  0 D8 E5 A0  1 
+s" : get-sense" eval  ( -- failed? )     \ Issue REQUEST SENSE
+1A4CA50 	9C 53 A0  1  B 3A 20 67 
+1A4CA58 	65 74 2D 73 65 6E 73 65 
+1A4CA60 	 0  0  0  0 D8 E5 A0  1 
+s"    sense-buf ff  true  sense-cmd 6  execute-command" eval  ( actual cswStatus )
+1A4CA68 	9C 53 A0  1 33 20 20 20 
+1A4CA70 	73 65 6E 73 65 2D 62 75 
+1A4CA78 	66 20 66 66 20 20 74 72 
+1A4CA80 	75 65 20 20 73 65 6E 73 
+1A4CA88 	65 2D 63 6D 64 20 36 20 
+1A4CA90 	20 65 78 65 63 75 74 65 
+1A4CA98 	2D 63 6F 6D 6D 61 6E 64 
+1A4CAA0 	 0  0  0  0 D8 E5 A0  1 
+s"   if  drop true  else  8 <  then ;" eval
+1A4CAA8 	9C 53 A0  1 22 20 20 69 
+1A4CAB0 	66 20 20 64 72 6F 70 20 
+1A4CAB8 	74 72 75 65 20 20 65 6C 
+1A4CAC0 	73 65 20 20 38 20 3C 20 
+1A4CAC8 	20 74 68 65 6E 20 3B  0 
+1A4CAD0 	D8 E5 A0  1 
+
+\ Give the device a little time to recover before retrying the command.
+s" : delay-retry  ( -- )   1 ms  ;" eval
+1A4CAD4 	9C 53 A0  1 
+1A4CAD8 	1F 3A 20 64 65 6C 61 79 
+1A4CAE0 	2D 72 65 74 72 79 20 20 
+1A4CAE8 	28 20 2D 2D 20 29 20 20 
+1A4CAF0 	20 31 20 6D 73 20 20 3B 
+1A4CAF8 	 0  0  0  0 D8 E5 A0  1 
+
+\ RETRY-COMMAND executes a SCSI command.  If a check condition is indicated,
+\ performs a "get-sense" command.  If the sense bytes indicate a non-fatal
+\ condition (e.g. power-on reset occurred, not ready yet, or recoverable
+\ error), the command is retried until the condition either goes away or
+\ changes to a fatal error.
+\
+\ The command is retried until:
+\ a) The command succeeds, or
+\ b) The select fails, or dma fails, or
+\ c) The sense bytes indicate an error that we can't retry at this level
+\ d) The number of retries is exceeded.
+
+\ #retries is number of times to retry (0: don't retry, -1: retry forever)
+\
+\ dma-dir is necessary because it is not always possible to infer the DMA
+\ direction from the command.
+
+\ Local variables used by retry-command?
+
+s" 0 instance value dbuf" eval             \ Data transfer buffer
+1A4CB00 	9C 53 A0  1 15 30 20 69 
+1A4CB08 	6E 73 74 61 6E 63 65 20 
+1A4CB10 	76 61 6C 75 65 20 64 62 
+1A4CB18 	75 66  0  0 D8 E5 A0  1 
+s" 0 instance value dlen" eval             \ Expected length of data transfer
+1A4CB20 	9C 53 A0  1 15 30 20 69 
+1A4CB28 	6E 73 74 61 6E 63 65 20 
+1A4CB30 	76 61 6C 75 65 20 64 6C 
+1A4CB38 	65 6E  0  0 D8 E5 A0  1 
+s" 0 instance value direction-in" eval     \ Direction for data transfer
+1A4CB40 	9C 53 A0  1 1D 30 20 69 
+1A4CB48 	6E 73 74 61 6E 63 65 20 
+1A4CB50 	76 61 6C 75 65 20 64 69 
+1A4CB58 	72 65 63 74 69 6F 6E 2D 
+1A4CB60 	69 6E  0  0 D8 E5 A0  1 
+s" -1 instance value cbuf" eval            \ Command base address
+1A4CB68 	9C 53 A0  1 16 2D 31 20 
+1A4CB70 	69 6E 73 74 61 6E 63 65 
+1A4CB78 	20 76 61 6C 75 65 20 63 
+1A4CB80 	62 75 66  0 D8 E5 A0  1 
+s"  0 instance value clen" eval            \ Actual length of this command
+1A4CB88 	9C 53 A0  1 16 20 30 20 
+1A4CB90 	69 6E 73 74 61 6E 63 65 
+1A4CB98 	20 76 61 6C 75 65 20 63 
+1A4CBA0 	6C 65 6E  0 D8 E5 A0  1 
+
+external
+1A4CBA8 	90 B2 A2  1 
+
+\ errcode values:  0: okay   -1: phase error  otherwise: sense-key
+
+s" : retry-command?" eval  ( dma-buf dma-len dma-dir cmdbuf cmdlen #retries -- actual errcode )
+1A4CBAC 	9C 53 A0  1 
+1A4CBB0 	10 3A 20 72 65 74 72 79 
+1A4CBB8 	2D 63 6F 6D 6D 61 6E 64 
+1A4CBC0 	3F  0  0  0 D8 E5 A0  1 
+s"    to #retries   to clen  to cbuf  to direction-in  to dlen  to dbuf" eval
+1A4CBC8 	9C 53 A0  1 44 20 20 20 
+1A4CBD0 	74 6F 20 23 72 65 74 72 
+1A4CBD8 	69 65 73 20 20 20 74 6F 
+1A4CBE0 	20 63 6C 65 6E 20 20 74 
+1A4CBE8 	6F 20 63 62 75 66 20 20 
+1A4CBF0 	74 6F 20 64 69 72 65 63 
+1A4CBF8 	74 69 6F 6E 2D 69 6E 20 
+1A4CC00 	20 74 6F 20 64 6C 65 6E 
+1A4CC08 	20 20 74 6F 20 64 62 75 
+1A4CC10 	66  0  0  0 D8 E5 A0  1 
+s"    begin" eval
+1A4CC18 	9C 53 A0  1  8 20 20 20 
+1A4CC20 	62 65 67 69 6E  0  0  0 
+1A4CC28 	D8 E5 A0  1 
+s"       dbuf dlen  direction-in  cbuf clen  execute-command" eval  ( actual cswStatus )
+1A4CC2C 	9C 53 A0  1 
+1A4CC30 	39 20 20 20 20 20 20 64 
+1A4CC38 	62 75 66 20 64 6C 65 6E 
+1A4CC40 	20 20 64 69 72 65 63 74 
+1A4CC48 	69 6F 6E 2D 69 6E 20 20 
+1A4CC50 	63 62 75 66 20 63 6C 65 
+1A4CC58 	6E 20 20 65 78 65 63 75 
+1A4CC60 	74 65 2D 63 6F 6D 6D 61 
+1A4CC68 	6E 64  0  0 D8 E5 A0  1 
+s"       dup 0=   if  drop  0 exit  then" eval   \ Exit reporting success
+1A4CC70 	9C 53 A0  1 25 20 20 20 
+1A4CC78 	20 20 20 64 75 70 20 30 
+1A4CC80 	3D 20 20 20 69 66 20 20 
+1A4CC88 	64 72 6F 70 20 20 30 20 
+1A4CC90 	65 78 69 74 20 20 74 68 
+1A4CC98 	65 6E  0  0 D8 E5 A0  1 
+s"       dup 2 >  if  drop -1 exit  then" eval   \ Exit reporting invalid CSW result code
+1A4CCA0 	9C 53 A0  1 25 20 20 20 
+1A4CCA8 	20 20 20 64 75 70 20 32 
+1A4CCB0 	20 3E 20 20 69 66 20 20 
+1A4CCB8 	64 72 6F 70 20 2D 31 20 
+1A4CCC0 	65 78 69 74 20 20 74 68 
+1A4CCC8 	65 6E  0  0 D8 E5 A0  1 
+
+s"      1 =  if" eval                              ( actual )
+1A4CCD0 	9C 53 A0  1  C 20 20 20 
+1A4CCD8 	20 20 31 20 3D 20 20 69 
+1A4CCE0 	66  0  0  0 D8 E5 A0  1 
+         \ Do gs"et-sense to determine what to do next
+s"          get-sense  if" eval                     ( actual )
+1A4CCE8 	9C 53 A0  1 16 20 20 20 
+1A4CCF0 	20 20 20 20 20 20 67 65 
+1A4CCF8 	74 2D 73 65 6E 73 65 20 
+1A4CD00 	20 69 66  0 D8 E5 A0  1 
+            \ Treat a gets"-sense failure like a phase error; just retry the command
+s"            -1" eval                             ( actual errcode )
+1A4CD08 	9C 53 A0  1  D 20 20 20 
+1A4CD10 	20 20 20 20 20 20 20 20 
+1A4CD18 	2D 31  0  0 D8 E5 A0  1 
+s"          else" eval                              ( actual )
+1A4CD20 	9C 53 A0  1  D 20 20 20 
+1A4CD28 	20 20 20 20 20 20 65 6C 
+1A4CD30 	73 65  0  0 D8 E5 A0  1 
+s"            classify-sense  case" eval   ( actual -1|0|1 )
+1A4CD38 	9C 53 A0  1 1F 20 20 20 
+1A4CD40 	20 20 20 20 20 20 20 20 
+1A4CD48 	63 6C 61 73 73 69 66 79 
+1A4CD50 	2D 73 65 6E 73 65 20 20 
+1A4CD58 	63 61 73 65  0  0  0  0 
+1A4CD60 	D8 E5 A0  1 
+               \ If the sense information says "no sense", return "no-error"
+s"               0  of  0 exit  endof" eval
+1A4CD64 	9C 53 A0  1 
+1A4CD68 	22 20 20 20 20 20 20 20 
+1A4CD70 	20 20 20 20 20 20 20 30 
+1A4CD78 	20 20 6F 66 20 20 30 20 
+1A4CD80 	65 78 69 74 20 20 65 6E 
+1A4CD88 	64 6F 66  0 D8 E5 A0  1 
+
+               \ If the error is fatal, return the sense-key
+s"                -1  of  sense-buf 2+ c@  exit  endof" eval
+1A4CD90 	9C 53 A0  1 33 20 20 20 
+1A4CD98 	20 20 20 20 20 20 20 20 
+1A4CDA0 	20 20 20 20 2D 31 20 20 
+1A4CDA8 	6F 66 20 20 73 65 6E 73 
+1A4CDB0 	65 2D 62 75 66 20 32 2B 
+1A4CDB8 	20 63 40 20 20 65 78 69 
+1A4CDC0 	74 20 20 65 6E 64 6F 66 
+1A4CDC8 	 0  0  0  0 D8 E5 A0  1 
+s"             endcase" eval
+1A4CDD0 	9C 53 A0  1 13 20 20 20 
+1A4CDD8 	20 20 20 20 20 20 20 20 
+1A4CDE0 	20 65 6E 64 63 61 73 65 
+1A4CDE8 	 0  0  0  0 D8 E5 A0  1 
+s"             sense-buf 2+ c@" eval                ( actual errcode )
+1A4CDF0 	9C 53 A0  1 1B 20 20 20 
+1A4CDF8 	20 20 20 20 20 20 20 20 
+1A4CE00 	20 73 65 6E 73 65 2D 62 
+1A4CE08 	75 66 20 32 2B 20 63 40 
+1A4CE10 	 0  0  0  0 D8 E5 A0  1 
+s"          then" eval
+1A4CE18 	9C 53 A0  1  D 20 20 20 
+1A4CE20 	20 20 20 20 20 20 74 68 
+1A4CE28 	65 6E  0  0 D8 E5 A0  1 
+s"       else" eval                                 ( actual )
+1A4CE30 	9C 53 A0  1  A 20 20 20 
+1A4CE38 	20 20 20 65 6C 73 65  0 
+1A4CE40 	D8 E5 A0  1 
+s"          -1" eval     \ Was phase error          ( actual errcode )
+1A4CE44 	9C 53 A0  1 
+1A4CE48 	 B 20 20 20 20 20 20 20 
+1A4CE50 	20 20 2D 31  0  0  0  0 
+1A4CE58 	D8 E5 A0  1 
+s"       then" eval                                 ( actual errcode )
+1A4CE5C 	9C 53 A0  1 
+1A4CE60 	 A 20 20 20 20 20 20 74 
+1A4CE68 	68 65 6E  0 D8 E5 A0  1 
+
+      \ If we get here, the command is retryable - either a phase error
+      \ or a non-fatal sense code
+
+s"       #retries 1- dup  to #retries" eval         ( actual errcode #retries )
+1A4CE70 	9C 53 A0  1 22 20 20 20 
+1A4CE78 	20 20 20 23 72 65 74 72 
+1A4CE80 	69 65 73 20 31 2D 20 64 
+1A4CE88 	75 70 20 20 74 6F 20 23 
+1A4CE90 	72 65 74 72 69 65 73  0 
+1A4CE98 	D8 E5 A0  1 
+s"    while" eval                                   ( actual errcode )
+1A4CE9C 	9C 53 A0  1 
+1A4CEA0 	 8 20 20 20 77 68 69 6C 
+1A4CEA8 	65  0  0  0 D8 E5 A0  1 
+s"       2drop" eval                                ( )
+1A4CEB0 	9C 53 A0  1  B 20 20 20 
+1A4CEB8 	20 20 20 32 64 72 6F 70 
+1A4CEC0 	 0  0  0  0 D8 E5 A0  1 
+s"       delay-retry" eval
+1A4CEC8 	9C 53 A0  1 11 20 20 20 
+1A4CED0 	20 20 20 64 65 6C 61 79 
+1A4CED8 	2D 72 65 74 72 79  0  0 
+1A4CEE0 	D8 E5 A0  1 
+s"    repeat ;" eval                                  ( actual errcode )
+1A4CEE4 	9C 53 A0  1 
+1A4CEE8 	 B 20 20 20 72 65 70 65 
+1A4CEF0 	61 74 20 3B  0  0  0  0 
+1A4CEF8 	D8 E5 A0  1 
+
+\ Simplified routine for commands with no data transfer phase
+\ and simple error checking requirements.
+
+s" : no-data-command" eval  ( cmdbuf -- error? )
+1A4CEFC 	9C 53 A0  1 
+1A4CF00 	11 3A 20 6E 6F 2D 64 61 
+1A4CF08 	74 61 2D 63 6F 6D 6D 61 
+1A4CF10 	6E 64  0  0 D8 E5 A0  1 
+s"    >r  0 0 true  r> 6  -1  retry-command?  nip ;" eval
+1A4CF18 	9C 53 A0  1 30 20 20 20 
+1A4CF20 	3E 72 20 20 30 20 30 20 
+1A4CF28 	74 72 75 65 20 20 72 3E 
+1A4CF30 	20 36 20 20 2D 31 20 20 
+1A4CF38 	72 65 74 72 79 2D 63 6F 
+1A4CF40 	6D 6D 61 6E 64 3F 20 20 
+1A4CF48 	6E 69 70 20 3B  0  0  0 
+1A4CF50 	D8 E5 A0  1 
+
+\ short-data-command executes a command with the following characteristics:
+\  a) The data direction is incoming
+\  b) The data length is less than 256 bytes
+
+\ The host adapter driver is responsible for supplying the DMA data
+\ buffer; if the command succeeds, the buffer address is returned.
+\ The buffer contents become invalid when another SCSI command is
+\ executed, or when the driver is closed.
+
+s" : short-data-command" eval  ( data-len cmdbuf cmdlen #retries -- true | buffer len false )
+1A4CF54 	9C 53 A0  1 
+1A4CF58 	14 3A 20 73 68 6F 72 74 
+1A4CF60 	2D 64 61 74 61 2D 63 6F 
+1A4CF68 	6D 6D 61 6E 64  0  0  0 
+1A4CF70 	D8 E5 A0  1 
+s"    >r >r >r  inq-buf swap  true  r> r> r>  retry-command?" eval   ( actual error-code )
+1A4CF74 	9C 53 A0  1 
+1A4CF78 	39 20 20 20 3E 72 20 3E 
+1A4CF80 	72 20 3E 72 20 20 69 6E 
+1A4CF88 	71 2D 62 75 66 20 73 77 
+1A4CF90 	61 70 20 20 74 72 75 65 
+1A4CF98 	20 20 72 3E 20 72 3E 20 
+1A4CFA0 	72 3E 20 20 72 65 74 72 
+1A4CFA8 	79 2D 63 6F 6D 6D 61 6E 
+1A4CFB0 	64 3F  0  0 D8 E5 A0  1 
+s"    if  drop true  else  inq-buf swap false  then ;" eval
+1A4CFB8 	9C 53 A0  1 32 20 20 20 
+1A4CFC0 	69 66 20 20 64 72 6F 70 
+1A4CFC8 	20 74 72 75 65 20 20 65 
+1A4CFD0 	6C 73 65 20 20 69 6E 71 
+1A4CFD8 	2D 62 75 66 20 73 77 61 
+1A4CFE0 	70 20 66 61 6C 73 65 20 
+1A4CFE8 	20 74 68 65 6E 20 3B  0 
+1A4CFF0 	D8 E5 A0  1 
+
+\ Here begins the implementation of "show-children", a word that
+\ is intended to be executed interactively, showing the user the
+\ devices that are attached to the SCSI bus.
+
+\ Tool for storing a big-endian 24-bit number at an unaligned address
+
+s" : 3c!  ( n addr -- )  >r lbsplit drop  r@ c!  r@ 1+ c!  r> 2+ c!  ;" eval
+1A4CFF4 	9C 53 A0  1 
+1A4CFF8 	43 3A 20 33 63 21 20 20 
+1A4D000 	28 20 6E 20 61 64 64 72 
+1A4D008 	20 2D 2D 20 29 20 20 3E 
+1A4D010 	72 20 6C 62 73 70 6C 69 
+1A4D018 	74 20 64 72 6F 70 20 20 
+1A4D020 	72 40 20 63 21 20 20 72 
+1A4D028 	40 20 31 2B 20 63 21 20 
+1A4D030 	20 72 3E 20 32 2B 20 63 
+1A4D038 	21 20 20 3B  0  0  0  0 
+1A4D040 	D8 E5 A0  1 
+
+
+\ Command block template for Inquiry command
+
+s" create inquiry-cmd  h# 12 c, 0 c, 0 c, 0 c, ff c, 0 c," eval
+1A4D044 	9C 53 A0  1 
+1A4D048 	36 63 72 65 61 74 65 20 
+1A4D050 	69 6E 71 75 69 72 79 2D 
+1A4D058 	63 6D 64 20 20 68 23 20 
+1A4D060 	31 32 20 63 2C 20 30 20 
+1A4D068 	63 2C 20 30 20 63 2C 20 
+1A4D070 	30 20 63 2C 20 66 66 20 
+1A4D078 	63 2C 20 30 20 63 2C  0 
+1A4D080 	D8 E5 A0  1 
+
+s" : inquiry" eval  ( -- error? )
+1A4D084 	9C 53 A0  1 
+1A4D088 	 9 3A 20 69 6E 71 75 69 
+1A4D090 	72 79  0  0 D8 E5 A0  1 
+   \ 8 retries should be more than enough; inquiry commands aren't
+   \ supposed to respond with "check condition".
+   \ However, empirically, on MC2 EVT1, 8 proves insufficient.
+
+s"    inq-buf ff  true  inquiry-cmd 6  10  retry-command?  nip ;" eval
+1A4D098 	9C 53 A0  1 3D 20 20 20 
+1A4D0A0 	69 6E 71 2D 62 75 66 20 
+1A4D0A8 	66 66 20 20 74 72 75 65 
+1A4D0B0 	20 20 69 6E 71 75 69 72 
+1A4D0B8 	79 2D 63 6D 64 20 36 20 
+1A4D0C0 	20 31 30 20 20 72 65 74 
+1A4D0C8 	72 79 2D 63 6F 6D 6D 61 
+1A4D0D0 	6E 64 3F 20 20 6E 69 70 
+1A4D0D8 	20 3B  0  0 D8 E5 A0  1 
+
+\ Reads the indicated byte from the Inquiry data buffer
+
+s" : inq@  ( offset -- value )  inq-buf +  c@  ;" eval
+1A4D0E0 	9C 53 A0  1 2D 3A 20 69 
+1A4D0E8 	6E 71 40 20 20 28 20 6F 
+1A4D0F0 	66 66 73 65 74 20 2D 2D 
+1A4D0F8 	20 76 61 6C 75 65 20 29 
+1A4D100 	20 20 69 6E 71 2D 62 75 
+1A4D108 	66 20 2B 20 20 63 40 20 
+1A4D110 	20 3B  0  0 D8 E5 A0  1 
+
+s" : .scsi1-inquiry  ( -- )  inq-buf 5 ca+  4 inq@  fa min  type  ;" eval
+1A4D118 	9C 53 A0  1 40 3A 20 2E 
+1A4D120 	73 63 73 69 31 2D 69 6E 
+1A4D128 	71 75 69 72 79 20 20 28 
+1A4D130 	20 2D 2D 20 29 20 20 69 
+1A4D138 	6E 71 2D 62 75 66 20 35 
+1A4D140 	20 63 61 2B 20 20 34 20 
+1A4D148 	69 6E 71 40 20 20 66 61 
+1A4D150 	20 6D 69 6E 20 20 74 79 
+1A4D158 	70 65 20 20 3B  0  0  0 
+1A4D160 	D8 E5 A0  1 
+s" : .scsi2-inquiry  ( -- )  inq-buf 8 ca+  d# 28 type    ;" eval
+1A4D164 	9C 53 A0  1 
+1A4D168 	38 3A 20 2E 73 63 73 69 
+1A4D170 	32 2D 69 6E 71 75 69 72 
+1A4D178 	79 20 20 28 20 2D 2D 20 
+1A4D180 	29 20 20 69 6E 71 2D 62 
+1A4D188 	75 66 20 38 20 63 61 2B 
+1A4D190 	20 20 64 23 20 32 38 20 
+1A4D198 	74 79 70 65 20 20 20 20 
+1A4D1A0 	3B  0  0  0 D8 E5 A0  1 
+
+\ Displays the results of an Inquiry command to the indicated device
+
+s" : show-lun" eval  ( unit -- )
+1A4D1A8 	9C 53 A0  1  A 3A 20 73 
+1A4D1B0 	68 6F 77 2D 6C 75 6E  0 
+1A4D1B8 	D8 E5 A0  1 
+s"    dup  set-address" eval                               ( unit )
+1A4D1BC 	9C 53 A0  1 
+1A4D1C0 	13 20 20 20 64 75 70 20 
+1A4D1C8 	20 73 65 74 2D 61 64 64 
+1A4D1D0 	72 65 73 73  0  0  0  0 
+1A4D1D8 	D8 E5 A0  1 
+s"    inquiry  if  drop exit  then" eval                   ( unit )
+1A4D1DC 	9C 53 A0  1 
+1A4D1E0 	1F 20 20 20 69 6E 71 75 
+1A4D1E8 	69 72 79 20 20 69 66 20 
+1A4D1F0 	20 64 72 6F 70 20 65 78 
+1A4D1F8 	69 74 20 20 74 68 65 6E 
+1A4D200 	 0  0  0  0 D8 E5 A0  1 
+s"    0 inq@  h# 60 and  if  drop exit  then" eval         ( unit )
+1A4D208 	9C 53 A0  1 29 20 20 20 
+1A4D210 	30 20 69 6E 71 40 20 20 
+1A4D218 	68 23 20 36 30 20 61 6E 
+1A4D220 	64 20 20 69 66 20 20 64 
+1A4D228 	72 6F 70 20 65 78 69 74 
+1A4D230 	20 20 74 68 65 6E  0  0 
+1A4D238 	D8 E5 A0  1 
+ "    .""   Unit "" . .""   "" " eval                          ( )
+1A4D23C 	9C 53 A0  1 
+1A4D240 	18 20 20 20 2E 22 20 20 
+1A4D248 	20 55 6E 69 74 20 22 20 
+1A4D250 	2E 20 2E 22 20 20 20 22 
+1A4D258 	20  0  0  0 D8 E5 A0  1 
+ "    1 inq@  h# 80 and  if  ."" Removable ""  then" eval
+1A4D260 	9C 53 A0  1 2E 20 20 20 
+1A4D268 	31 20 69 6E 71 40 20 20 
+1A4D270 	68 23 20 38 30 20 61 6E 
+1A4D278 	64 20 20 69 66 20 20 2E 
+1A4D280 	22 20 52 65 6D 6F 76 61 
+1A4D288 	62 6C 65 20 22 20 20 74 
+1A4D290 	68 65 6E  0 D8 E5 A0  1 
+s"    0 inq@  case" eval
+1A4D298 	9C 53 A0  1  F 20 20 20 
+1A4D2A0 	30 20 69 6E 71 40 20 20 
+1A4D2A8 	63 61 73 65  0  0  0  0 
+1A4D2B0 	D8 E5 A0  1 
+
+ "       0 of  ."" Disk ""              endof" eval
+1A4D2B4 	9C 53 A0  1 
+1A4D2B8 	28 20 20 20 20 20 20 30 
+1A4D2C0 	20 6F 66 20 20 2E 22 20 
+1A4D2C8 	44 69 73 6B 20 22 20 20 
+1A4D2D0 	20 20 20 20 20 20 20 20 
+1A4D2D8 	20 20 20 20 65 6E 64 6F 
+1A4D2E0 	66  0  0  0 D8 E5 A0  1 
+ "       1 of  ."" Tape ""              endof" eval
+1A4D2E8 	9C 53 A0  1 28 20 20 20 
+1A4D2F0 	20 20 20 31 20 6F 66 20 
+1A4D2F8 	20 2E 22 20 54 61 70 65 
+1A4D300 	20 22 20 20 20 20 20 20 
+1A4D308 	20 20 20 20 20 20 20 20 
+1A4D310 	65 6E 64 6F 66  0  0  0 
+1A4D318 	D8 E5 A0  1 
+ "       2 of  ."" Printer ""           endof" eval
+1A4D31C 	9C 53 A0  1 
+1A4D320 	28 20 20 20 20 20 20 32 
+1A4D328 	20 6F 66 20 20 2E 22 20 
+1A4D330 	50 72 69 6E 74 65 72 20 
+1A4D338 	22 20 20 20 20 20 20 20 
+1A4D340 	20 20 20 20 65 6E 64 6F 
+1A4D348 	66  0  0  0 D8 E5 A0  1 
+ "       3 of  ."" Processor ""         endof" eval
+1A4D350 	9C 53 A0  1 28 20 20 20 
+1A4D358 	20 20 20 33 20 6F 66 20 
+1A4D360 	20 2E 22 20 50 72 6F 63 
+1A4D368 	65 73 73 6F 72 20 22 20 
+1A4D370 	20 20 20 20 20 20 20 20 
+1A4D378 	65 6E 64 6F 66  0  0  0 
+1A4D380 	D8 E5 A0  1 
+ "       4 of  ."" WORM ""              endof" eval
+1A4D384 	9C 53 A0  1 
+1A4D388 	28 20 20 20 20 20 20 34 
+1A4D390 	20 6F 66 20 20 2E 22 20 
+1A4D398 	57 4F 52 4D 20 22 20 20 
+1A4D3A0 	20 20 20 20 20 20 20 20 
+1A4D3A8 	20 20 20 20 65 6E 64 6F 
+1A4D3B0 	66  0  0  0 D8 E5 A0  1 
+ "       5 of  ."" Read Only device""   endof" eval
+1A4D3B8 	9C 53 A0  1 28 20 20 20 
+1A4D3C0 	20 20 20 35 20 6F 66 20 
+1A4D3C8 	20 2E 22 20 52 65 61 64 
+1A4D3D0 	20 4F 6E 6C 79 20 64 65 
+1A4D3D8 	76 69 63 65 22 20 20 20 
+1A4D3E0 	65 6E 64 6F 66  0  0  0 
+1A4D3E8 	D8 E5 A0  1 
+ "       ( default ) ."" Device type "" dup .h" eval
+1A4D3EC 	9C 53 A0  1 
+1A4D3F0 	29 20 20 20 20 20 20 28 
+1A4D3F8 	20 64 65 66 61 75 6C 74 
+1A4D400 	20 29 20 2E 22 20 44 65 
+1A4D408 	76 69 63 65 20 74 79 70 
+1A4D410 	65 20 22 20 64 75 70 20 
+1A4D418 	2E 68  0  0 D8 E5 A0  1 
+s"    endcase" eval
+1A4D420 	9C 53 A0  1  A 20 20 20 
+1A4D428 	65 6E 64 63 61 73 65  0 
+1A4D430 	D8 E5 A0  1 
+
+s"    4 spaces" eval
+1A4D434 	9C 53 A0  1 
+1A4D438 	 B 20 20 20 34 20 73 70 
+1A4D440 	61 63 65 73  0  0  0  0 
+1A4D448 	D8 E5 A0  1 
+s"    3 inq@ 0f and  2 =  if  .scsi2-inquiry  else  .scsi1-inquiry  then" eval
+1A4D44C 	9C 53 A0  1 
+1A4D450 	45 20 20 20 33 20 69 6E 
+1A4D458 	71 40 20 30 66 20 61 6E 
+1A4D460 	64 20 20 32 20 3D 20 20 
+1A4D468 	69 66 20 20 2E 73 63 73 
+1A4D470 	69 32 2D 69 6E 71 75 69 
+1A4D478 	72 79 20 20 65 6C 73 65 
+1A4D480 	20 20 2E 73 63 73 69 31 
+1A4D488 	2D 69 6E 71 75 69 72 79 
+1A4D490 	20 20 74 68 65 6E  0  0 
+1A4D498 	D8 E5 A0  1 
+s"    cr ;" eval
+1A4D49C 	9C 53 A0  1 
+1A4D4A0 	 7 20 20 20 63 72 20 3B 
+1A4D4A8 	 0  0  0  0 D8 E5 A0  1 
+
+\ Searches for devices on the SCSI bus, displaying the Inquiry information
+\ for each device that responds.
+
+s" : show-children" eval  ( -- )
+1A4D4B0 	9C 53 A0  1  F 3A 20 73 
+1A4D4B8 	68 6F 77 2D 63 68 69 6C 
+1A4D4C0 	64 72 65 6E  0  0  0  0 
+1A4D4C8 	D8 E5 A0  1 
+ "    open  0=  if  ."" Can't open SCSI host adapter"" cr  exit  then" eval
+1A4D4CC 	9C 53 A0  1 
+1A4D4D0 	40 20 20 20 6F 70 65 6E 
+1A4D4D8 	20 20 30 3D 20 20 69 66 
+1A4D4E0 	20 20 2E 22 20 43 61 6E 
+1A4D4E8 	27 74 20 6F 70 65 6E 20 
+1A4D4F0 	53 43 53 49 20 68 6F 73 
+1A4D4F8 	74 20 61 64 61 70 74 65 
+1A4D500 	72 22 20 63 72 20 20 65 
+1A4D508 	78 69 74 20 20 74 68 65 
+1A4D510 	6E  0  0  0 D8 E5 A0  1 
+s"    max-lun 1+ 0  do  i show-lun  loop" eval
+1A4D518 	9C 53 A0  1 25 20 20 20 
+1A4D520 	6D 61 78 2D 6C 75 6E 20 
+1A4D528 	31 2B 20 30 20 20 64 6F 
+1A4D530 	20 20 69 20 73 68 6F 77 
+1A4D538 	2D 6C 75 6E 20 20 6C 6F 
+1A4D540 	6F 70  0  0 D8 E5 A0  1 
+s"    close ;" eval
+1A4D548 	9C 53 A0  1  A 20 20 20 
+1A4D550 	63 6C 6F 73 65 20 3B  0 
+1A4D558 	D8 E5 A0  1 
+
+\ Inquire into the specified scsi device type and return the scsi
+\ type and true if the device at the specified scsi address is found.
+
+s" : get-scsi-type" eval  ( lun -- false | type true )
+1A4D55C 	9C 53 A0  1 
+1A4D560 	 F 3A 20 67 65 74 2D 73 
+1A4D568 	63 73 69 2D 74 79 70 65 
+1A4D570 	 0  0  0  0 D8 E5 A0  1 
+s"    open  0=  if  2drop false exit  then" eval
+1A4D578 	9C 53 A0  1 27 20 20 20 
+1A4D580 	6F 70 65 6E 20 20 30 3D 
+1A4D588 	20 20 69 66 20 20 32 64 
+1A4D590 	72 6F 70 20 66 61 6C 73 
+1A4D598 	65 20 65 78 69 74 20 20 
+1A4D5A0 	74 68 65 6E  0  0  0  0 
+1A4D5A8 	D8 E5 A0  1 
+s"    set-address inquiry" eval
+1A4D5AC 	9C 53 A0  1 
+1A4D5B0 	16 20 20 20 73 65 74 2D 
+1A4D5B8 	61 64 64 72 65 73 73 20 
+1A4D5C0 	69 6E 71 75 69 72 79  0 
+1A4D5C8 	D8 E5 A0  1 
+s"    if  false  else  0 inq@ dup 7f =  if  drop false  else  true  then  then" eval
+1A4D5CC 	9C 53 A0  1 
+1A4D5D0 	4B 20 20 20 69 66 20 20 
+1A4D5D8 	66 61 6C 73 65 20 20 65 
+1A4D5E0 	6C 73 65 20 20 30 20 69 
+1A4D5E8 	6E 71 40 20 64 75 70 20 
+1A4D5F0 	37 66 20 3D 20 20 69 66 
+1A4D5F8 	20 20 64 72 6F 70 20 66 
+1A4D600 	61 6C 73 65 20 20 65 6C 
+1A4D608 	73 65 20 20 74 72 75 65 
+1A4D610 	20 20 74 68 65 6E 20 20 
+1A4D618 	74 68 65 6E  0  0  0  0 
+1A4D620 	D8 E5 A0  1 
+s"   close ;" eval
+1A4D624 	9C 53 A0  1 
+1A4D628 	 9 20 20 63 6C 6F 73 65 
+1A4D630 	20 3B  0  0 D8 E5 A0  1 
+
+\ The diagnose command is useful for generic SCSI devices.
+\ It executes both the "test-unit-ready" and "send-diagnostic"
+\ commands, decoding the error status information they return.
+
+s" create test-unit-rdy-cmd        0 c, 0 c, 0 c, 0 c, 0 c, 0 c," eval
+1A4D638 	9C 53 A0  1 3D 63 72 65 
+1A4D640 	61 74 65 20 74 65 73 74 
+1A4D648 	2D 75 6E 69 74 2D 72 64 
+1A4D650 	79 2D 63 6D 64 20 20 20 
+1A4D658 	20 20 20 20 20 30 20 63 
+1A4D660 	2C 20 30 20 63 2C 20 30 
+1A4D668 	20 63 2C 20 30 20 63 2C 
+1A4D670 	20 30 20 63 2C 20 30 20 
+1A4D678 	63 2C  0  0 D8 E5 A0  1 
+s" create send-diagnostic-cmd  h# 1d c, 4 c, 0 c, 0 c, 0 c, 0 c," eval
+1A4D680 	9C 53 A0  1 3D 63 72 65 
+1A4D688 	61 74 65 20 73 65 6E 64 
+1A4D690 	2D 64 69 61 67 6E 6F 73 
+1A4D698 	74 69 63 2D 63 6D 64 20 
+1A4D6A0 	20 68 23 20 31 64 20 63 
+1A4D6A8 	2C 20 34 20 63 2C 20 30 
+1A4D6B0 	20 63 2C 20 30 20 63 2C 
+1A4D6B8 	20 30 20 63 2C 20 30 20 
+1A4D6C0 	63 2C  0  0 D8 E5 A0  1 
+s" : send-diagnostic ( -- error? )  send-diagnostic-cmd  no-data-command  ;" eval
+1A4D6C8 	9C 53 A0  1 48 3A 20 73 
+1A4D6D0 	65 6E 64 2D 64 69 61 67 
+1A4D6D8 	6E 6F 73 74 69 63 20 28 
+1A4D6E0 	20 2D 2D 20 65 72 72 6F 
+1A4D6E8 	72 3F 20 29 20 20 73 65 
+1A4D6F0 	6E 64 2D 64 69 61 67 6E 
+1A4D6F8 	6F 73 74 69 63 2D 63 6D 
+1A4D700 	64 20 20 6E 6F 2D 64 61 
+1A4D708 	74 61 2D 63 6F 6D 6D 61 
+1A4D710 	6E 64 20 20 3B  0  0  0 
+1A4D718 	D8 E5 A0  1 
+s" : diagnose" eval  ( -- flag )
+1A4D71C 	9C 53 A0  1 
+1A4D720 	 A 3A 20 64 69 61 67 6E 
+1A4D728 	6F 73 65  0 D8 E5 A0  1 
+s"    0 0 true  test-unit-rdy-cmd 6   -1 " eval  ( dma$ dir cmd$ #retries )
+1A4D730 	9C 53 A0  1 26 20 20 20 
+1A4D738 	30 20 30 20 74 72 75 65 
+1A4D740 	20 20 74 65 73 74 2D 75 
+1A4D748 	6E 69 74 2D 72 64 79 2D 
+1A4D750 	63 6D 64 20 36 20 20 20 
+1A4D758 	2D 31 20  0 D8 E5 A0  1 
+s"    retry-command?  ?dup  if " eval  ( actual error-code )
+1A4D760 	9C 53 A0  1 1C 20 20 20 
+1A4D768 	72 65 74 72 79 2D 63 6F 
+1A4D770 	6D 6D 61 6E 64 3F 20 20 
+1A4D778 	3F 64 75 70 20 20 69 66 
+1A4D780 	20  0  0  0 D8 E5 A0  1 
+s"       nip " eval  ( error-code )
+1A4D788 	9C 53 A0  1  A 20 20 20 
+1A4D790 	20 20 20 6E 69 70 20  0 
+1A4D798 	D8 E5 A0  1 
+ "       ."" Test unit ready failed - "" " eval    ( error-code )
+1A4D79C 	9C 53 A0  1 
+1A4D7A0 	24 20 20 20 20 20 20 2E 
+1A4D7A8 	22 20 54 65 73 74 20 75 
+1A4D7B0 	6E 69 74 20 72 65 61 64 
+1A4D7B8 	79 20 66 61 69 6C 65 64 
+1A4D7C0 	20 2D 20 22 20  0  0  0 
+1A4D7C8 	D8 E5 A0  1 
+s"       dup -1  if " eval   ( error-code )
+1A4D7CC 	9C 53 A0  1 
+1A4D7D0 	11 20 20 20 20 20 20 64 
+1A4D7D8 	75 70 20 2D 31 20 20 69 
+1A4D7E0 	66 20  0  0 D8 E5 A0  1 
+ "          ."" phase error "" . cr" eval     ( )
+1A4D7E8 	9C 53 A0  1 1E 20 20 20 
+1A4D7F0 	20 20 20 20 20 20 2E 22 
+1A4D7F8 	20 70 68 61 73 65 20 65 
+1A4D800 	72 72 6F 72 20 22 20 2E 
+1A4D808 	20 63 72  0 D8 E5 A0  1 
+s"       else" eval   ( error-code )
+1A4D810 	9C 53 A0  1  A 20 20 20 
+1A4D818 	20 20 20 65 6C 73 65  0 
+1A4D820 	D8 E5 A0  1 
+ "          ."" Sense code "" . " eval
+1A4D824 	9C 53 A0  1 
+1A4D828 	1B 20 20 20 20 20 20 20 
+1A4D830 	20 20 2E 22 20 53 65 6E 
+1A4D838 	73 65 20 63 6F 64 65 20 
+1A4D840 	22 20 2E 20  0  0  0  0 
+1A4D848 	D8 E5 A0  1 
+ "          ."" extended status = "" cr " eval
+1A4D84C 	9C 53 A0  1 
+1A4D850 	23 20 20 20 20 20 20 20 
+1A4D858 	20 20 2E 22 20 65 78 74 
+1A4D860 	65 6E 64 65 64 20 73 74 
+1A4D868 	61 74 75 73 20 3D 20 22 
+1A4D870 	20 63 72 20  0  0  0  0 
+1A4D878 	D8 E5 A0  1 
+s"          base @ >r  hex " eval
+1A4D87C 	9C 53 A0  1 
+1A4D880 	18 20 20 20 20 20 20 20 
+1A4D888 	20 20 62 61 73 65 20 40 
+1A4D890 	20 3E 72 20 20 68 65 78 
+1A4D898 	20  0  0  0 D8 E5 A0  1 
+s"          sense-buf 8 bounds ?do  i 3 u.r  loop cr " eval
+1A4D8A0 	9C 53 A0  1 32 20 20 20 
+1A4D8A8 	20 20 20 20 20 20 73 65 
+1A4D8B0 	6E 73 65 2D 62 75 66 20 
+1A4D8B8 	38 20 62 6F 75 6E 64 73 
+1A4D8C0 	20 3F 64 6F 20 20 69 20 
+1A4D8C8 	33 20 75 2E 72 20 20 6C 
+1A4D8D0 	6F 6F 70 20 63 72 20  0 
+1A4D8D8 	D8 E5 A0  1 
+s"          r> base !" eval
+1A4D8DC 	9C 53 A0  1 
+1A4D8E0 	12 20 20 20 20 20 20 20 
+1A4D8E8 	20 20 72 3E 20 62 61 73 
+1A4D8F0 	65 20 21  0 D8 E5 A0  1 
+s"       then" eval
+1A4D8F8 	9C 53 A0  1  A 20 20 20 
+1A4D900 	20 20 20 74 68 65 6E  0 
+1A4D908 	D8 E5 A0  1 
+s"       true" eval
+1A4D90C 	9C 53 A0  1 
+1A4D910 	 A 20 20 20 20 20 20 74 
+1A4D918 	72 75 65  0 D8 E5 A0  1 
+s"    else " eval                 ( actual )
+1A4D920 	9C 53 A0  1  8 20 20 20 
+1A4D928 	65 6C 73 65 20  0  0  0 
+1A4D930 	D8 E5 A0  1 
+s"       drop" eval                 ( )
+1A4D934 	9C 53 A0  1 
+1A4D938 	 A 20 20 20 20 20 20 64 
+1A4D940 	72 6F 70  0 D8 E5 A0  1 
+s"       send-diagnostic" eval                 ( fail? )
+1A4D948 	9C 53 A0  1 15 20 20 20 
+1A4D950 	20 20 20 73 65 6E 64 2D 
+1A4D958 	64 69 61 67 6E 6F 73 74 
+1A4D960 	69 63  0  0 D8 E5 A0  1 
+s"    then ; " eval
+1A4D968 	9C 53 A0  1  A 20 20 20 
+1A4D970 	74 68 65 6E 20 3B 20  0 
+1A4D978 	D8 E5 A0  1 
+;
+1A4D97C 	58 46 A0  1 
+
+headers
+

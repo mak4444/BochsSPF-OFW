@@ -1,0 +1,994 @@
+purpose: IDE bus package implementing a "ide" device-type interface.
+
+\ Before loading this file, first load a file that defines a "reg"
+\ property and "(map)" and "(unmap)" words.
+
+hex
+
+headers
+
+0 encode-int  " #size-cells" property
+1A3E920 	 0  0  0  0 23 73 69 7A 
+1A3E928 	65 2D 63 65 6C 6C 73 8B 
+1A3E930 	14 E9 A3  1 BC 13 A2  1 
+1A3E938 	18  0  0  0  4  0  0  0 
+
+4 value max#drives
+1A3E940 	 0 6D 61 78 23 64 72 69 
+1A3E948 	76 65 73 8A CC E8 A3  1 
+1A3E950 	50 40 A0  1  C  D  0  0 
+
+true value first-open?
+1A3E958 	66 69 72 73 74 2D 6F 70 
+1A3E960 	65 6E 3F 8B 50 E9 A3  1 
+1A3E968 	50 40 A0  1 10  D  0  0 
+0 value open-count
+1A3E970 	 0 6F 70 65 6E 2D 63 6F 
+1A3E978 	75 6E 74 8A 68 E9 A3  1 
+1A3E980 	50 40 A0  1 14  D  0  0 
+0 value pri-chip-base
+1A3E988 	 0  0 70 72 69 2D 63 68 
+1A3E990 	69 70 2D 62 61 73 65 8D 
+1A3E998 	80 E9 A3  1 50 40 A0  1 
+1A3E9A0 	18  D  0  0 
+0 value pri-dor
+1A3E9A4 	70 72 69 2D 
+1A3E9A8 	64 6F 72 87 9C E9 A3  1 
+1A3E9B0 	50 40 A0  1 1C  D  0  0 
+0 value sec-chip-base
+1A3E9B8 	 0  0 73 65 63 2D 63 68 
+1A3E9C0 	69 70 2D 62 61 73 65 8D 
+1A3E9C8 	B0 E9 A3  1 50 40 A0  1 
+1A3E9D0 	20  D  0  0 
+0 value sec-dor
+1A3E9D4 	73 65 63 2D 
+1A3E9D8 	64 6F 72 87 CC E9 A3  1 
+1A3E9E0 	50 40 A0  1 24  D  0  0 
+0 value dor-magic		\ DOR register bits that must always be set
+1A3E9E8 	 0  0 64 6F 72 2D 6D 61 
+1A3E9F0 	67 69 63 89 E0 E9 A3  1 
+1A3E9F8 	50 40 A0  1 28  D  0  0 
+0 instance value chip-base
+1A3EA00 	 0  0 63 68 69 70 2D 62 
+1A3EA08 	61 73 65 89 F8 E9 A3  1 
+1A3EA10 	C0 FE A1  1 18  0  0  0 
+0 instance value dor
+1A3EA18 	64 6F 72 83 10 EA A3  1 
+1A3EA20 	C0 FE A1  1 1C  0  0  0 
+0 instance value drive
+1A3EA28 	 0  0 64 72 69 76 65 85 
+1A3EA30 	20 EA A3  1 C0 FE A1  1 
+1A3EA38 	20  0  0  0 
+0 instance value log-drive	\ drives 0 and 1 are on primary ide,
+1A3EA3C 	 0  0 6C 6F 
+1A3EA40 	67 2D 64 72 69 76 65 89 
+1A3EA48 	34 EA A3  1 C0 FE A1  1 
+1A3EA50 	24  0  0  0 
+				\ 2 and 3 are on secondary ide
+
+\ arrays of logical drive information
+create /block       0 , 0 , 0 , 0 ,	\ drives are assumed not exist
+1A3EA54 	 0 2F 62 6C 
+1A3EA58 	6F 63 6B 86 4C EA A3  1 
+1A3EA60 	30 40 A0  1  0  0  0  0 
+1A3EA68 	 0  0  0  0  0  0  0  0 
+1A3EA70 	 0  0  0  0 
+\ drives are assumed IDE initially
+create atapi-drive? false , false , false , false ,
+1A3EA74 	 0  0  0 61 
+1A3EA78 	74 61 70 69 2D 64 72 69 
+1A3EA80 	76 65 3F 8C 60 EA A3  1 
+1A3EA88 	30 40 A0  1  0  0  0  0 
+1A3EA90 	 0  0  0  0  0  0  0  0 
+1A3EA98 	 0  0  0  0 
+create drive-type   0 , 0 , 0 , 0 ,	\ drives are assumed to be hard drive
+1A3EA9C 	 0 64 72 69 
+1A3EAA0 	76 65 2D 74 79 70 65 8A 
+1A3EAA8 	88 EA A3  1 30 40 A0  1 
+1A3EAB0 	 0  0  0  0  0  0  0  0 
+1A3EAB8 	 0  0  0  0  0  0  0  0 
+create '/secs       0 , 0 , 0 , 0 ,
+1A3EAC0 	 0 27 2F 73 65 63 73 86 
+1A3EAC8 	AC EA A3  1 30 40 A0  1 
+1A3EAD0 	 0  0  0  0  0  0  0  0 
+1A3EAD8 	 0  0  0  0  0  0  0  0 
+create '/heads      0 , 0 , 0 , 0 ,
+1A3EAE0 	27 2F 68 65 61 64 73 87 
+1A3EAE8 	CC EA A3  1 30 40 A0  1 
+1A3EAF0 	 0  0  0  0  0  0  0  0 
+1A3EAF8 	 0  0  0  0  0  0  0  0 
+create '/cyls       0 , 0 , 0 , 0 ,
+1A3EB00 	 0 27 2F 63 79 6C 73 86 
+1A3EB08 	EC EA A3  1 30 40 A0  1 
+1A3EB10 	 0  0  0  0  0  0  0  0 
+1A3EB18 	 0  0  0  0  0  0  0  0 
+create '/lba        0 , 0 , 0 , 0 ,
+1A3EB20 	 0  0 27 2F 6C 62 61 85 
+1A3EB28 	 C EB A3  1 30 40 A0  1 
+1A3EB30 	 0  0  0  0  0  0  0  0 
+1A3EB38 	 0  0  0  0  0  0  0  0 
+
+\ words to access the arrays
+: array>  ( array-base -- indexed-addr )  log-drive cells +  ;
+1A3EB40 	 0 61 72 72 61 79 3E 86 
+1A3EB48 	2C EB A3  1 20 40 A0  1 
+1A3EB50 	4C EA A3  1 B0 51 A0  1 
+1A3EB58 	 4 45 A0  1 58 46 A0  1 
+: /block@  ( -- block-size )  /block array> @  ;
+1A3EB60 	2F 62 6C 6F 63 6B 40 87 
+1A3EB68 	4C EB A3  1 20 40 A0  1 
+1A3EB70 	60 EA A3  1 4C EB A3  1 
+1A3EB78 	5C 4C A0  1 58 46 A0  1 
+: /block!  ( block-size -- )  /block array> !  ;
+1A3EB80 	2F 62 6C 6F 63 6B 21 87 
+1A3EB88 	6C EB A3  1 20 40 A0  1 
+1A3EB90 	60 EA A3  1 4C EB A3  1 
+1A3EB98 	54 4D A0  1 58 46 A0  1 
+: drive-type@  ( -- type )  drive-type array> @  ;
+1A3EBA0 	64 72 69 76 65 2D 74 79 
+1A3EBA8 	70 65 40 8B 8C EB A3  1 
+1A3EBB0 	20 40 A0  1 AC EA A3  1 
+1A3EBB8 	4C EB A3  1 5C 4C A0  1 
+1A3EBC0 	58 46 A0  1 
+: drive-type!  ( type -- )  drive-type array> !  ;
+1A3EBC4 	64 72 69 76 
+1A3EBC8 	65 2D 74 79 70 65 21 8B 
+1A3EBD0 	B0 EB A3  1 20 40 A0  1 
+1A3EBD8 	AC EA A3  1 4C EB A3  1 
+1A3EBE0 	54 4D A0  1 58 46 A0  1 
+: atapi-drive?@  ( -- atapi? )  atapi-drive? array> @  ;
+1A3EBE8 	 0  0 61 74 61 70 69 2D 
+1A3EBF0 	64 72 69 76 65 3F 40 8D 
+1A3EBF8 	D4 EB A3  1 20 40 A0  1 
+1A3EC00 	88 EA A3  1 4C EB A3  1 
+1A3EC08 	5C 4C A0  1 58 46 A0  1 
+: atapi-drive?!  ( atapi? -- )  atapi-drive? array> !  ;
+1A3EC10 	 0  0 61 74 61 70 69 2D 
+1A3EC18 	64 72 69 76 65 3F 21 8D 
+1A3EC20 	FC EB A3  1 20 40 A0  1 
+1A3EC28 	88 EA A3  1 4C EB A3  1 
+1A3EC30 	54 4D A0  1 58 46 A0  1 
+: /secs   ( -- spt )    '/secs  array> @  ;
+1A3EC38 	 0  0 2F 73 65 63 73 85 
+1A3EC40 	24 EC A3  1 20 40 A0  1 
+1A3EC48 	CC EA A3  1 4C EB A3  1 
+1A3EC50 	5C 4C A0  1 58 46 A0  1 
+: /secs!  ( spt -- )    '/secs  array> !  ;
+1A3EC58 	 0 2F 73 65 63 73 21 86 
+1A3EC60 	44 EC A3  1 20 40 A0  1 
+1A3EC68 	CC EA A3  1 4C EB A3  1 
+1A3EC70 	54 4D A0  1 58 46 A0  1 
+: /cyls   ( -- cyls )   '/cyls  array> @  ;
+1A3EC78 	 0  0 2F 63 79 6C 73 85 
+1A3EC80 	64 EC A3  1 20 40 A0  1 
+1A3EC88 	 C EB A3  1 4C EB A3  1 
+1A3EC90 	5C 4C A0  1 58 46 A0  1 
+: /cyls!  ( cyls -- )   '/cyls  array> !  ;
+1A3EC98 	 0 2F 63 79 6C 73 21 86 
+1A3ECA0 	84 EC A3  1 20 40 A0  1 
+1A3ECA8 	 C EB A3  1 4C EB A3  1 
+1A3ECB0 	54 4D A0  1 58 46 A0  1 
+: /heads  ( -- heads )  '/heads array> @  ;
+1A3ECB8 	 0 2F 68 65 61 64 73 86 
+1A3ECC0 	A4 EC A3  1 20 40 A0  1 
+1A3ECC8 	EC EA A3  1 4C EB A3  1 
+1A3ECD0 	5C 4C A0  1 58 46 A0  1 
+: /heads! ( heads -- )  '/heads array> !  ;
+1A3ECD8 	2F 68 65 61 64 73 21 87 
+1A3ECE0 	C4 EC A3  1 20 40 A0  1 
+1A3ECE8 	EC EA A3  1 4C EB A3  1 
+1A3ECF0 	54 4D A0  1 58 46 A0  1 
+: /lba    ( -- #secs )  '/lba   array> @  ;
+1A3ECF8 	 0  0  0 2F 6C 62 61 84 
+1A3ED00 	E4 EC A3  1 20 40 A0  1 
+1A3ED08 	2C EB A3  1 4C EB A3  1 
+1A3ED10 	5C 4C A0  1 58 46 A0  1 
+: /lba!   ( #secs -- )  '/lba   array> !  ;
+1A3ED18 	 0  0 2F 6C 62 61 21 85 
+1A3ED20 	 4 ED A3  1 20 40 A0  1 
+1A3ED28 	2C EB A3  1 4C EB A3  1 
+1A3ED30 	54 4D A0  1 58 46 A0  1 
+
+\ Register definitions
+
+\ 0 constant r-data
+\ 1 constant r-error
+\ 2 constant r-#secs
+\ 3 constant r-sector
+\ 4 constant r-cyl-lsb
+\ 5 constant r-cyl-msb
+\ 6 constant r-drive/head
+\ 7 constant r-csr
+
+\ Access methods
+
+: reg@  ( reg#  --  data )  chip-base + rb@  ;
+1A3ED38 	 0  0  0 72 65 67 40 84 
+1A3ED40 	24 ED A3  1 20 40 A0  1 
+1A3ED48 	10 EA A3  1  4 45 A0  1 
+1A3ED50 	A8 B1 A2  1 58 46 A0  1 
+
+: r-data@   ( -- data  )  chip-base w@  ;
+1A3ED58 	72 2D 64 61 74 61 40 87 
+1A3ED60 	44 ED A3  1 20 40 A0  1 
+1A3ED68 	10 EA A3  1 94 4C A0  1 
+1A3ED70 	58 46 A0  1 
+: r-error@  ( -- error )  1 reg@  ;
+1A3ED74 	 0  0  0 72 
+1A3ED78 	2D 65 72 72 6F 72 40 88 
+1A3ED80 	64 ED A3  1 20 40 A0  1 
+1A3ED88 	80 6F A0  1 44 ED A3  1 
+1A3ED90 	58 46 A0  1 
+: r-#secs@  ( -- #secs )  2 reg@  ;
+1A3ED94 	 0  0  0 72 
+1A3ED98 	2D 23 73 65 63 73 40 88 
+1A3EDA0 	84 ED A3  1 20 40 A0  1 
+1A3EDA8 	90 6F A0  1 44 ED A3  1 
+1A3EDB0 	58 46 A0  1 
+: r-sector@ ( -- secno )  3 reg@  ;
+1A3EDB4 	 0  0 72 2D 
+1A3EDB8 	73 65 63 74 6F 72 40 89 
+1A3EDC0 	A4 ED A3  1 20 40 A0  1 
+1A3EDC8 	A0 6F A0  1 44 ED A3  1 
+1A3EDD0 	58 46 A0  1 
+: r-cyl@    ( -- cylno )  4 reg@  5 reg@  bwjoin  ;
+1A3EDD4 	 0 72 2D 63 
+1A3EDD8 	79 6C 40 86 C4 ED A3  1 
+1A3EDE0 	20 40 A0  1 B0 6F A0  1 
+1A3EDE8 	44 ED A3  1 C0 6F A0  1 
+1A3EDF0 	44 ED A3  1 84 FB A0  1 
+1A3EDF8 	58 46 A0  1 
+: r-head@   ( -- head# unit )  6 reg@ dup 0f and swap 4 rshift 1 and  ;
+1A3EDFC 	72 2D 68 65 
+1A3EE00 	61 64 40 87 E0 ED A3  1 
+1A3EE08 	20 40 A0  1 D0 6F A0  1 
+1A3EE10 	44 ED A3  1 40 49 A0  1 
+1A3EE18 	58 41 A0  1  F  0  0  0 
+1A3EE20 	5C 44 A0  1 68 49 A0  1 
+1A3EE28 	B0 6F A0  1 B4 44 A0  1 
+1A3EE30 	80 6F A0  1 5C 44 A0  1 
+1A3EE38 	58 46 A0  1 
+: r-csr@    ( -- stat  )  7 reg@  ;
+1A3EE3C 	 0 72 2D 63 
+1A3EE40 	73 72 40 86  8 EE A3  1 
+1A3EE48 	20 40 A0  1 E0 6F A0  1 
+1A3EE50 	44 ED A3  1 58 46 A0  1 
+: r-dor@    ( -- stat  )  dor rb@ ;
+1A3EE58 	 0 72 2D 64 6F 72 40 86 
+1A3EE60 	48 EE A3  1 20 40 A0  1 
+1A3EE68 	20 EA A3  1 A8 B1 A2  1 
+1A3EE70 	58 46 A0  1 
+: r-dor!    ( val   -- )  dor-magic or dor rb!  ;
+1A3EE74 	 0 72 2D 64 
+1A3EE78 	6F 72 21 86 64 EE A3  1 
+1A3EE80 	20 40 A0  1 F8 E9 A3  1 
+1A3EE88 	70 44 A0  1 20 EA A3  1 
+1A3EE90 	1C B2 A2  1 58 46 A0  1 
+
+\ Spin until BSY == 0, RDY == 1, indicating registers can be touched
+: wait-while-busy  ( -- timeout? )
+1A3EE98 	77 61 69 74 2D 77 68 69 
+1A3EEA0 	6C 65 2D 62 75 73 79 8F 
+1A3EEA8 	80 EE A3  1 20 40 A0  1 
+   get-msecs  d# 5000 +                 ( end-time )
+1A3EEB0 	50 E0 A1  1 58 41 A0  1 
+1A3EEB8 	88 13  0  0  4 45 A0  1 
+   begin
+      r-csr@  dup 0=                    ( end-time csr flag )
+1A3EEC0 	48 EE A3  1 40 49 A0  1 
+1A3EEC8 	24 47 A0  1 
+      over h# ff =              or      ( end-time csr flag )
+1A3EECC 	54 49 A0  1 
+1A3EED0 	58 41 A0  1 FF  0  0  0 
+1A3EED8 	24 48 A0  1 70 44 A0  1 
+      swap h# c0 and  h# 40 =   or      ( end-time csr=0|ff|4x? )  \ !BSY (80), DRDY (40)
+1A3EEE0 	68 49 A0  1 58 41 A0  1 
+1A3EEE8 	C0  0  0  0 5C 44 A0  1 
+1A3EEF0 	58 41 A0  1 40  0  0  0 
+1A3EEF8 	24 48 A0  1 70 44 A0  1 
+      if  drop false exit  then         ( end-time )
+1A3EF00 	DC 41 A0  1 10  0  0  0 
+1A3EF08 	30 49 A0  1 18 70 A0  1 
+1A3EF10 	40 46 A0  1 
+      dup get-msecs -                   ( end-time remaining-time )
+1A3EF14 	40 49 A0  1 
+1A3EF18 	50 E0 A1  1 18 45 A0  1 
+   0<= until				( end-time )
+1A3EF20 	84 47 A0  1 DC 41 A0  1 
+1A3EF28 	98 FF FF FF 
+   drop	 true				( true )
+1A3EF2C 	30 49 A0  1 
+1A3EF30 	 4 70 A0  1 
+;
+1A3EF34 	58 46 A0  1 
+
+: reg!  ( data reg#  --  )  wait-while-busy drop  chip-base + rb!  ;
+1A3EF38 	 0  0  0 72 65 67 21 84 
+1A3EF40 	AC EE A3  1 20 40 A0  1 
+1A3EF48 	AC EE A3  1 30 49 A0  1 
+1A3EF50 	10 EA A3  1  4 45 A0  1 
+1A3EF58 	1C B2 A2  1 58 46 A0  1 
+
+: r-data!   ( data  -- )  chip-base w!  ;
+1A3EF60 	72 2D 64 61 74 61 21 87 
+1A3EF68 	44 EF A3  1 20 40 A0  1 
+1A3EF70 	10 EA A3  1 A4 4D A0  1 
+1A3EF78 	58 46 A0  1 
+: r-features!  ( data -- )  1 reg!  ;
+1A3EF7C 	72 2D 66 65 
+1A3EF80 	61 74 75 72 65 73 21 8B 
+1A3EF88 	6C EF A3  1 20 40 A0  1 
+1A3EF90 	80 6F A0  1 44 EF A3  1 
+1A3EF98 	58 46 A0  1 
+: r-#secs!  ( #secs -- )  2 reg!  ;
+1A3EF9C 	 0  0  0 72 
+1A3EFA0 	2D 23 73 65 63 73 21 88 
+1A3EFA8 	8C EF A3  1 20 40 A0  1 
+1A3EFB0 	90 6F A0  1 44 EF A3  1 
+1A3EFB8 	58 46 A0  1 
+: r-sector! ( secno -- )  3 reg!  ;
+1A3EFBC 	 0  0 72 2D 
+1A3EFC0 	73 65 63 74 6F 72 21 89 
+1A3EFC8 	AC EF A3  1 20 40 A0  1 
+1A3EFD0 	A0 6F A0  1 44 EF A3  1 
+1A3EFD8 	58 46 A0  1 
+: r-cyl!    ( cylno -- )  wbsplit  5 reg!  4 reg!  ;
+1A3EFDC 	 0 72 2D 63 
+1A3EFE0 	79 6C 21 86 CC EF A3  1 
+1A3EFE8 	20 40 A0  1 54 FB A0  1 
+1A3EFF0 	C0 6F A0  1 44 EF A3  1 
+1A3EFF8 	B0 6F A0  1 44 EF A3  1 
+1A3F000 	58 46 A0  1 
+
+\ XXX we should probably convert to logical block addressing, in which
+\ case we would use e0 instead of a0
+
+: r-head!   ( head# unit -- )  4 lshift h# a0 or or  6 chip-base +  rb!  ;
+1A3F004 	72 2D 68 65 
+1A3F008 	61 64 21 87 E8 EF A3  1 
+1A3F010 	20 40 A0  1 B0 6F A0  1 
+1A3F018 	9C 44 A0  1 58 41 A0  1 
+1A3F020 	A0  0  0  0 70 44 A0  1 
+1A3F028 	70 44 A0  1 D0 6F A0  1 
+1A3F030 	10 EA A3  1  4 45 A0  1 
+1A3F038 	1C B2 A2  1 58 46 A0  1 
+: r-csr!    ( cmd   -- )  7 reg!  ;
+1A3F040 	 0 72 2D 63 73 72 21 86 
+1A3F048 	10 F0 A3  1 20 40 A0  1 
+1A3F050 	E0 6F A0  1 44 EF A3  1 
+1A3F058 	58 46 A0  1 
+
+defer io-blk-w!  defer io-blk-w@
+1A3F05C 	 0  0 69 6F 
+1A3F060 	2D 62 6C 6B 2D 77 21 89 
+1A3F068 	4C F0 A3  1 5C 40 A0  1 
+1A3F070 	2C  D  0  0  0  0 69 6F 
+1A3F078 	2D 62 6C 6B 2D 77 40 89 
+1A3F080 	6C F0 A3  1 5C 40 A0  1 
+1A3F088 	30  D  0  0 
+: (io-blk-w!)  ( adr len port -- )
+1A3F08C 	28 69 6F 2D 
+1A3F090 	62 6C 6B 2D 77 21 29 8B 
+1A3F098 	84 F0 A3  1 20 40 A0  1 
+   -rot bounds  do  i c@  i 1+ c@  bwjoin  over rw!  /w +loop  drop
+1A3F0A0 	94 49 A0  1 F0 6D A0  1 
+1A3F0A8 	88 42 A0  1 30  0  0  0 
+1A3F0B0 	B4 42 A0  1 C4 4C A0  1 
+1A3F0B8 	B4 42 A0  1 30 4B A0  1 
+1A3F0C0 	C4 4C A0  1 84 FB A0  1 
+1A3F0C8 	54 49 A0  1 40 B2 A2  1 
+1A3F0D0 	20 51 A0  1 1C 42 A0  1 
+1A3F0D8 	D8 FF FF FF 30 49 A0  1 
+;
+1A3F0E0 	58 46 A0  1 
+: (io-blk-w@)  ( adr len port -- )
+1A3F0E4 	28 69 6F 2D 
+1A3F0E8 	62 6C 6B 2D 77 40 29 8B 
+1A3F0F0 	9C F0 A3  1 20 40 A0  1 
+   -rot bounds  do  dup rw@  wbsplit  i 1+ c!  i c!  /w +loop  drop
+1A3F0F8 	94 49 A0  1 F0 6D A0  1 
+1A3F100 	88 42 A0  1 30  0  0  0 
+1A3F108 	40 49 A0  1 D0 B1 A2  1 
+1A3F110 	54 FB A0  1 B4 42 A0  1 
+1A3F118 	30 4B A0  1 B8 4D A0  1 
+1A3F120 	B4 42 A0  1 B8 4D A0  1 
+1A3F128 	20 51 A0  1 1C 42 A0  1 
+1A3F130 	D8 FF FF FF 30 49 A0  1 
+;
+1A3F138 	58 46 A0  1 
+' (io-blk-w!) to io-blk-w!
+' (io-blk-w@) to io-blk-w@
+
+
+\ Command definitions
+
+\ 10 constant calibrate-cmd
+\ 20 constant read-cmd
+\ 30 constant write-cmd
+\ 40 constant verify-cmd
+\ 50 constant format-cmd
+\ 70 constant seek-cmd
+\ 90 constant diag-cmd
+\ 91 constant set-drive-parms-cmd
+\ ec constant identify-cmd
+
+: wait-until-drq  ( -- error? )
+1A3F13C 	 0 77 61 69 
+1A3F140 	74 2D 75 6E 74 69 6C 2D 
+1A3F148 	64 72 71 8E F4 F0 A3  1 
+1A3F150 	20 40 A0  1 
+   get-msecs  d# 5000 +          ( end-time )
+1A3F154 	50 E0 A1  1 
+1A3F158 	58 41 A0  1 88 13  0  0 
+1A3F160 	 4 45 A0  1 
+   begin                         ( end-time )
+      r-csr@                     ( end-time csr )
+1A3F164 	48 EE A3  1 
+
+      dup h# c8 and h# 48 =  if  ( end-time csr )  \ !BSY (80), DRDY (40), DRQ (8)
+1A3F168 	40 49 A0  1 58 41 A0  1 
+1A3F170 	C8  0  0  0 5C 44 A0  1 
+1A3F178 	58 41 A0  1 48  0  0  0 
+1A3F180 	24 48 A0  1 DC 41 A0  1 
+1A3F188 	10  0  0  0 
+         2drop false exit
+1A3F18C 	AC 49 A0  1 
+1A3F190 	18 70 A0  1 40 46 A0  1 
+      then                       ( end-time csr )
+
+      h# 21 and  if              ( end-time )  \ DF (20; fault), ERR (1)
+1A3F198 	58 41 A0  1 21  0  0  0 
+1A3F1A0 	5C 44 A0  1 DC 41 A0  1 
+1A3F1A8 	34  0  0  0 
+         ." IDE data error: " r-error@ . cr
+1A3F1AC 	20 7C A0  1 
+1A3F1B0 	10 49 44 45 20 64 61 74 
+1A3F1B8 	61 20 65 72 72 6F 72 3A 
+1A3F1C0 	20  0  0  0 84 ED A3  1 
+1A3F1C8 	94 7A A0  1 80 6D A0  1 
+         drop true exit
+1A3F1D0 	30 49 A0  1  4 70 A0  1 
+1A3F1D8 	40 46 A0  1 
+      then                       ( end-time )
+      dup get-msecs -            ( end-time remaining-time )
+1A3F1DC 	40 49 A0  1 
+1A3F1E0 	50 E0 A1  1 18 45 A0  1 
+   0<= until                     ( end-time )
+1A3F1E8 	84 47 A0  1 DC 41 A0  1 
+1A3F1F0 	74 FF FF FF 
+   drop true                     ( true )
+1A3F1F4 	30 49 A0  1 
+1A3F1F8 	 4 70 A0  1 
+;
+1A3F1FC 	58 46 A0  1 
+
+: wait-until-ready  ( -- error? )
+1A3F200 	 0  0  0 77 61 69 74 2D 
+1A3F208 	75 6E 74 69 6C 2D 72 65 
+1A3F210 	61 64 79 90 50 F1 A3  1 
+1A3F218 	20 40 A0  1 
+   get-msecs d# 10000 +   ( end-time )
+1A3F21C 	50 E0 A1  1 
+1A3F220 	58 41 A0  1 10 27  0  0 
+1A3F228 	 4 45 A0  1 
+   begin                  ( end-time )
+      r-csr@              ( end-time csr )
+1A3F22C 	48 EE A3  1 
+
+      dup h# 50 =  if     ( end-time csr )  \ DRDY (40), DSC (10; seek complete)
+1A3F230 	40 49 A0  1 58 41 A0  1 
+1A3F238 	50  0  0  0 24 48 A0  1 
+1A3F240 	DC 41 A0  1 10  0  0  0 
+         2drop false exit
+1A3F248 	AC 49 A0  1 18 70 A0  1 
+1A3F250 	40 46 A0  1 
+      then                ( end-time )
+
+      h# 21 and  if       ( end-time )      \ DF (20; fault), ERR (1)
+1A3F254 	58 41 A0  1 
+1A3F258 	21  0  0  0 5C 44 A0  1 
+1A3F260 	DC 41 A0  1 2C  0  0  0 
+         ." IDE Drive Error" cr
+1A3F268 	20 7C A0  1  F 49 44 45 
+1A3F270 	20 44 72 69 76 65 20 45 
+1A3F278 	72 72 6F 72  0  0  0  0 
+1A3F280 	80 6D A0  1 
+         drop true exit
+1A3F284 	30 49 A0  1 
+1A3F288 	 4 70 A0  1 40 46 A0  1 
+      then                ( end-time )
+
+      dup get-msecs -     ( end-time remaining-time )
+1A3F290 	40 49 A0  1 50 E0 A1  1 
+1A3F298 	18 45 A0  1 
+   0<= until              ( end-time )
+1A3F29C 	84 47 A0  1 
+1A3F2A0 	DC 41 A0  1 88 FF FF FF 
+   drop true
+1A3F2A8 	30 49 A0  1  4 70 A0  1 
+;
+1A3F2B0 	58 46 A0  1 
+
+: lblk>cyl-head-sect  ( block# -- cyl# head# sect# )
+1A3F2B4 	 0 6C 62 6C 
+1A3F2B8 	6B 3E 63 79 6C 2D 68 65 
+1A3F2C0 	61 64 2D 73 65 63 74 92 
+1A3F2C8 	18 F2 A3  1 20 40 A0  1 
+   /secs /mod                                 ( sect# residue )
+1A3F2D0 	44 EC A3  1 50 5F A0  1 
+   /heads /mod swap rot 1+                    ( cyl# head# sect# )
+1A3F2D8 	C4 EC A3  1 50 5F A0  1 
+1A3F2E0 	68 49 A0  1 7C 49 A0  1 
+1A3F2E8 	30 4B A0  1 
+;
+1A3F2EC 	58 46 A0  1 
+
+defer rblock  ( adr len -- error? )
+1A3F2F0 	 0 72 62 6C 6F 63 6B 86 
+1A3F2F8 	CC F2 A3  1 5C 40 A0  1 
+1A3F300 	34  D  0  0 
+defer pio-end-hack  ' noop to pio-end-hack
+1A3F304 	 0  0  0 70 
+1A3F308 	69 6F 2D 65 6E 64 2D 68 
+1A3F310 	61 63 6B 8C FC F2 A3  1 
+1A3F318 	5C 40 A0  1 38  D  0  0 
+defer pio-start-hack  ' noop to pio-start-hack
+1A3F320 	 0 70 69 6F 2D 73 74 61 
+1A3F328 	72 74 2D 68 61 63 6B 8E 
+1A3F330 	18 F3 A3  1 5C 40 A0  1 
+1A3F338 	3C  D  0  0 
+: pio-rblock  ( adr len -- error? )
+1A3F33C 	 0 70 69 6F 
+1A3F340 	2D 72 62 6C 6F 63 6B 8A 
+1A3F348 	34 F3 A3  1 20 40 A0  1 
+   wait-until-drq  if  2drop true exit  then
+1A3F350 	50 F1 A3  1 DC 41 A0  1 
+1A3F358 	10  0  0  0 AC 49 A0  1 
+1A3F360 	 4 70 A0  1 40 46 A0  1 
+   pio-start-hack
+1A3F368 	34 F3 A3  1 
+   chip-base io-blk-w@  false
+1A3F36C 	10 EA A3  1 
+1A3F370 	84 F0 A3  1 18 70 A0  1 
+   pio-end-hack
+1A3F378 	18 F3 A3  1 
+;
+1A3F37C 	58 46 A0  1 
+' pio-rblock to rblock
+
+: (rblocks)  ( adr #blks -- actual# )
+1A3F380 	 0  0 28 72 62 6C 6F 63 
+1A3F388 	6B 73 29 89 4C F3 A3  1 
+1A3F390 	20 40 A0  1 
+   0 -rot                                       ( actual#blks adr #blks )
+1A3F394 	70 6F A0  1 
+1A3F398 	94 49 A0  1 
+   /block@ *  bounds  ?do                       ( actual#blks )
+1A3F39C 	6C EB A3  1 
+1A3F3A0 	1C 5F A0  1 F0 6D A0  1 
+1A3F3A8 	50 42 A0  1 30  0  0  0 
+      i /block@ rblock  if  unloop exit  then   ( actual#blks )
+1A3F3B0 	B4 42 A0  1 6C EB A3  1 
+1A3F3B8 	FC F2 A3  1 DC 41 A0  1 
+1A3F3C0 	 C  0  0  0 3C 42 A0  1 
+1A3F3C8 	40 46 A0  1 
+      1+                                        ( actual#blks' )
+1A3F3CC 	30 4B A0  1 
+   /block@ +loop                                ( actual#blks )
+1A3F3D0 	6C EB A3  1 1C 42 A0  1 
+1A3F3D8 	D8 FF FF FF 
+;
+1A3F3DC 	58 46 A0  1 
+: pio-rblocks  ( addr #blks -- actual# )
+1A3F3E0 	70 69 6F 2D 72 62 6C 6F 
+1A3F3E8 	63 6B 73 8B 90 F3 A3  1 
+1A3F3F0 	20 40 A0  1 
+   ['] pio-rblock to rblock
+1A3F3F4 	60 53 A0  1 
+1A3F3F8 	4C F3 A3  1 98 40 A0  1 
+1A3F400 	FC F2 A3  1 
+   h# 20 r-csr!
+1A3F404 	58 41 A0  1 
+1A3F408 	20  0  0  0 4C F0 A3  1 
+   (rblocks)
+1A3F410 	90 F3 A3  1 
+;
+1A3F414 	58 46 A0  1 
+defer rblocks
+1A3F418 	72 62 6C 6F 63 6B 73 87 
+1A3F420 	F0 F3 A3  1 5C 40 A0  1 
+1A3F428 	40  D  0  0 
+' pio-rblocks to rblocks
+
+: pio-wblock  ( adr len -- error? )
+1A3F42C 	 0 70 69 6F 
+1A3F430 	2D 77 62 6C 6F 63 6B 8A 
+1A3F438 	24 F4 A3  1 20 40 A0  1 
+   wait-until-drq  if  2drop true exit  then
+1A3F440 	50 F1 A3  1 DC 41 A0  1 
+1A3F448 	10  0  0  0 AC 49 A0  1 
+1A3F450 	 4 70 A0  1 40 46 A0  1 
+   pio-start-hack
+1A3F458 	34 F3 A3  1 
+   chip-base io-blk-w!
+1A3F45C 	10 EA A3  1 
+1A3F460 	6C F0 A3  1 
+   pio-end-hack
+1A3F464 	18 F3 A3  1 
+   false
+1A3F468 	18 70 A0  1 
+;
+1A3F46C 	58 46 A0  1 
+
+: pio-wblocks  ( addr #blks -- actual# | 0 )
+1A3F470 	70 69 6F 2D 77 62 6C 6F 
+1A3F478 	63 6B 73 8B 3C F4 A3  1 
+1A3F480 	20 40 A0  1 
+   h# 30 r-csr!                                     ( addr #blks )
+1A3F484 	58 41 A0  1 
+1A3F488 	30  0  0  0 4C F0 A3  1 
+   
+   tuck  0  ?do                                     ( #blks addr )
+1A3F490 	E8 46 A0  1 70 6F A0  1 
+1A3F498 	50 42 A0  1 38  0  0  0 
+      dup  /block@  pio-wblock  if                  ( #blks addr )
+1A3F4A0 	40 49 A0  1 6C EB A3  1 
+1A3F4A8 	3C F4 A3  1 DC 41 A0  1 
+1A3F4B0 	14  0  0  0 
+         2drop  i  unloop exit
+1A3F4B4 	AC 49 A0  1 
+1A3F4B8 	B4 42 A0  1 3C 42 A0  1 
+1A3F4C0 	40 46 A0  1 
+      then                                          ( #blks addr )
+
+      /block@ +                                     ( #blks addr' )
+1A3F4C4 	6C EB A3  1 
+1A3F4C8 	 4 45 A0  1 
+   loop                                             ( #blks addr )
+1A3F4CC 	F8 41 A0  1 
+1A3F4D0 	D0 FF FF FF 
+   drop                                             ( actual# )
+1A3F4D4 	30 49 A0  1 
+;
+1A3F4D8 	58 46 A0  1 
+defer wblocks
+1A3F4DC 	77 62 6C 6F 
+1A3F4E0 	63 6B 73 87 80 F4 A3  1 
+1A3F4E8 	5C 40 A0  1 44  D  0  0 
+' pio-wblocks to wblocks
+
+\ Read or write "#blks" blocks starting at "block#" into memory at "addr"
+\ Input? is true for reading or false for writing.
+
+: r/w-blocks  ( addr block# #blks input? -- actual# )
+1A3F4F0 	 0 72 2F 77 2D 62 6C 6F 
+1A3F4F8 	63 6B 73 8A E8 F4 A3  1 
+1A3F500 	20 40 A0  1 
+
+   over 0=  if  2drop 2drop 0 exit  then
+1A3F504 	54 49 A0  1 
+1A3F508 	24 47 A0  1 DC 41 A0  1 
+1A3F510 	14  0  0  0 AC 49 A0  1 
+1A3F518 	AC 49 A0  1 70 6F A0  1 
+1A3F520 	40 46 A0  1 
+
+   >r dup >r r-#secs!                        ( addr block# ) ( R: input? #blks )
+1A3F524 	BC 45 A0  1 
+1A3F528 	40 49 A0  1 BC 45 A0  1 
+1A3F530 	AC EF A3  1 
+   /lba  if                                  ( addr block# ) ( R: input? #blks )
+1A3F534 	 4 ED A3  1 
+1A3F538 	DC 41 A0  1 38  0  0  0 
+      lbsplit                                ( addr 0-7 8-15 16-23 24-32 )
+1A3F540 	B4 FB A0  1 
+      \ 4, when shifted with drive, sets the LBA bit
+      h# f and  drive 4 or  r-head!          ( addr 0-7 8-15 16-23 )
+1A3F544 	58 41 A0  1 
+1A3F548 	 F  0  0  0 5C 44 A0  1 
+1A3F550 	34 EA A3  1 B0 6F A0  1 
+1A3F558 	70 44 A0  1 10 F0 A3  1 
+      bwjoin r-cyl!  r-sector!               ( addr   R: input? #blks )
+1A3F560 	84 FB A0  1 E8 EF A3  1 
+1A3F568 	CC EF A3  1 
+   else                                      ( addr block# ) ( R: input? #blks )
+1A3F56C 	C8 41 A0  1 
+1A3F570 	18  0  0  0 
+      lblk>cyl-head-sect                     ( addr cyl# head# sect# )
+1A3F574 	CC F2 A3  1 
+      r-sector! drive r-head! r-cyl!         ( addr #blks input? R: input? #blks )
+1A3F578 	CC EF A3  1 34 EA A3  1 
+1A3F580 	10 F0 A3  1 E8 EF A3  1 
+   then
+   r>  r>  if  rblocks  else  wblocks  then               ( actual# | error )
+1A3F588 	D0 45 A0  1 D0 45 A0  1 
+1A3F590 	DC 41 A0  1 10  0  0  0 
+1A3F598 	24 F4 A3  1 C8 41 A0  1 
+1A3F5A0 	 8  0  0  0 E8 F4 A3  1 
+
+   dup 0<=  if
+1A3F5A8 	40 49 A0  1 84 47 A0  1 
+1A3F5B0 	DC 41 A0  1 2C  0  0  0 
+      ." Failed to transfer any blocks" cr
+1A3F5B8 	20 7C A0  1 1D 46 61 69 
+1A3F5C0 	6C 65 64 20 74 6F 20 74 
+1A3F5C8 	72 61 6E 73 66 65 72 20 
+1A3F5D0 	61 6E 79 20 62 6C 6F 63 
+1A3F5D8 	6B 73  0  0 80 6D A0  1 
+      \ XXX trouble
+   then                                           ( actual# )
+;
+1A3F5E0 	58 46 A0  1 
+
+\ Determine the physical constants of this drive.
+\ XXX - IDENTIFY is not a required command! Still, most drives
+\ we'll see will implement it. If this doesn't work, we'll have to
+\ read CMOS drive parameters or something equally unpleasant.
+
+\ /block buffer: scratchbuf
+create scratchbuf d# 512 allot
+1A3F5E4 	 0 73 63 72 
+1A3F5E8 	61 74 63 68 62 75 66 8A 
+1A3F5F0 	 0 F5 A3  1 30 40 A0  1 
+1A3F5F8 	 0  0  0  0  0  0  0  0 
+1A3F600 	 0  0  0  0  0  0  0  0 
+1A3F608 	 0  0  0  0  0  0  0  0 
+1A3F610 	 0  0  0  0  0  0  0  0 
+1A3F618 	 0  0  0  0  0  0  0  0 
+1A3F620 	 0  0  0  0  0  0  0  0 
+1A3F628 	 0  0  0  0  0  0  0  0 
+1A3F630 	 0  0  0  0  0  0  0  0 
+1A3F638 	 0  0  0  0  0  0  0  0 
+1A3F640 	 0  0  0  0  0  0  0  0 
+1A3F648 	 0  0  0  0  0  0  0  0 
+1A3F650 	 0  0  0  0  0  0  0  0 
+1A3F658 	 0  0  0  0  0  0  0  0 
+1A3F660 	 0  0  0  0  0  0  0  0 
+1A3F668 	 0  0  0  0  0  0  0  0 
+1A3F670 	 0  0  0  0  0  0  0  0 
+1A3F678 	 0  0  0  0  0  0  0  0 
+1A3F680 	 0  0  0  0  0  0  0  0 
+1A3F688 	 0  0  0  0  0  0  0  0 
+1A3F690 	 0  0  0  0  0  0  0  0 
+1A3F698 	 0  0  0  0  0  0  0  0 
+1A3F6A0 	 0  0  0  0  0  0  0  0 
+1A3F6A8 	 0  0  0  0  0  0  0  0 
+1A3F6B0 	 0  0  0  0  0  0  0  0 
+1A3F6B8 	 0  0  0  0  0  0  0  0 
+1A3F6C0 	 0  0  0  0  0  0  0  0 
+1A3F6C8 	 0  0  0  0  0  0  0  0 
+1A3F6D0 	 0  0  0  0  0  0  0  0 
+1A3F6D8 	 0  0  0  0  0  0  0  0 
+1A3F6E0 	 0  0  0  0  0  0  0  0 
+1A3F6E8 	 0  0  0  0  0  0  0  0 
+1A3F6F0 	 0  0  0  0  0  0  0  0 
+1A3F6F8 	 0  0  0  0  0  0  0  0 
+1A3F700 	 0  0  0  0  0  0  0  0 
+1A3F708 	 0  0  0  0  0  0  0  0 
+1A3F710 	 0  0  0  0  0  0  0  0 
+1A3F718 	 0  0  0  0  0  0  0  0 
+1A3F720 	 0  0  0  0  0  0  0  0 
+1A3F728 	 0  0  0  0  0  0  0  0 
+1A3F730 	 0  0  0  0  0  0  0  0 
+1A3F738 	 0  0  0  0  0  0  0  0 
+1A3F740 	 0  0  0  0  0  0  0  0 
+1A3F748 	 0  0  0  0  0  0  0  0 
+1A3F750 	 0  0  0  0  0  0  0  0 
+1A3F758 	 0  0  0  0  0  0  0  0 
+1A3F760 	 0  0  0  0  0  0  0  0 
+1A3F768 	 0  0  0  0  0  0  0  0 
+1A3F770 	 0  0  0  0  0  0  0  0 
+1A3F778 	 0  0  0  0  0  0  0  0 
+1A3F780 	 0  0  0  0  0  0  0  0 
+1A3F788 	 0  0  0  0  0  0  0  0 
+1A3F790 	 0  0  0  0  0  0  0  0 
+1A3F798 	 0  0  0  0  0  0  0  0 
+1A3F7A0 	 0  0  0  0  0  0  0  0 
+1A3F7A8 	 0  0  0  0  0  0  0  0 
+1A3F7B0 	 0  0  0  0  0  0  0  0 
+1A3F7B8 	 0  0  0  0  0  0  0  0 
+1A3F7C0 	 0  0  0  0  0  0  0  0 
+1A3F7C8 	 0  0  0  0  0  0  0  0 
+1A3F7D0 	 0  0  0  0  0  0  0  0 
+1A3F7D8 	 0  0  0  0  0  0  0  0 
+1A3F7E0 	 0  0  0  0  0  0  0  0 
+1A3F7E8 	 0  0  0  0  0  0  0  0 
+1A3F7F0 	 0  0  0  0  0  0  0  0 
+\eof
+fload ${BP}/dev/ide/atapi.fth
+
+: le-w@  ( adr -- w )  dup c@ swap ca1+ c@ bwjoin  ;
+
+: ide-get-drive-parms  ( -- found? )
+   d# 512 /block!
+
+   false  atapi-drive?!
+   0      drive-type!
+
+   wait-while-busy  if  false exit  then
+   2 r-dor!             \ Turn off IRQ14
+
+   0 drive r-head!
+
+   h# ec r-csr!		\ Identify command
+
+   scratchbuf d# 512 pio-rblock  if  false exit  then
+
+   scratchbuf 1 wa+ le-w@ /cyls!
+   scratchbuf 3 wa+ le-w@ /heads!
+   scratchbuf 6 wa+ le-w@ /secs!
+
+\   /cyls h# 3fff u>=  if
+   scratchbuf d# 49 wa+ w@ h# 200 and  if  \ LBA
+      scratchbuf d# 60 wa+ le-w@
+      scratchbuf d# 61 wa+ le-w@
+      wljoin /lba!
+   then
+
+   true
+;
+
+: get-drive-parms  ( -- found? )
+   \ Reset this string (primary or secondary) on the first time through,
+   \ in order to clear any errors that might be hanging around from uses
+   \ of the drive by previous software.
+   drive 0=  if  4 r-dor!  0 r-dor!  then
+
+   wait-while-busy  if  false exit  then
+   0 drive r-head!		\ select drive
+   0 r-dor!			\ flush ISA bus
+   6 reg@ h# a0 drive 4 lshift or  = if
+      r-cyl@ eb14 =  if
+         \ If H/W reset resets the IDE bus, there's no need for atapi-reset
+	 \ Unfortunately, the vl-reset on the Shark does not seem to fully
+	 \ reset the ATAPI drive, therefore, we are doing it here.
+         atapi-reset		\ atapi soft reset
+         atapi-get-drive-parms     ( found? )
+      else
+         r-csr@ 0<>  r-csr@ h# ff <>  and  if
+            drive 0=  if
+               wait-until-ready  if  false exit  then
+            then	\ wait until spin-up
+            r-csr@ h# f0 and h# 50 =  if
+               ide-get-drive-parms                 ( found? )
+            else
+               false                               ( found? )
+            then
+         else
+            false                                  ( found? )
+         then
+      then
+   else
+      false                                        ( found? )
+   then
+;
+
+external
+
+: block-size  ( -- n )  0 drive r-head!  /block@  ;
+: #blocks  ( -- n )
+   atapi-drive?@  if
+     atapi-capacity
+   else
+     /lba ?dup  0=  if               ( )
+        /cyls /secs /heads * *       ( #blocks )
+     then                            ( #blocks )
+   then                              ( #blocks )
+;
+
+: dma-alloc  ( n -- vaddr )  " dma-alloc" $call-parent  ;
+: dma-free  ( vaddr n -- )  " dma-free" $call-parent  ;
+: max-transfer  ( -- n )   d# 256 /block@ *  ;
+: read-blocks   ( addr block# #blocks -- #read )
+   atapi-drive?@  if  atapi-read  else  true  r/w-blocks  then
+;
+: write-blocks  ( addr block# #blocks -- #written )
+   atapi-drive?@  if  atapi-write  else  false r/w-blocks  then
+;
+: ide-inquiry  ( -- false | drive-type true )
+   /block@ 0=  if  false  else  drive-type@ true  then
+;
+: ide-drive-inquiry  ( log-drive -- false | drive-type true )
+   dup max#drives >=  if  drop false  else  to log-drive  ide-inquiry  then
+;
+
+: set-address  ( dummy unit -- )
+   \ units 0 and 1 are primary ide drives, 2 and 3 are secondary ide drives
+   nip dup to log-drive 1 and to drive
+   log-drive 2 <  if  pri-chip-base pri-dor  else  sec-chip-base sec-dor  then
+   to dor to chip-base
+;
+
+\ For switching between programmed-I/O and DMA operational modes
+
+0 instance value 'open-dma
+0 instance value 'close-dma
+0 instance value 'set-drive-cfg
+defer close-dma  ' noop is close-dma
+defer open-dma   ' noop to open-dma
+defer set-drive-cfg  ' noop to set-drive-cfg
+: save-dma-open  ( -- )
+   ['] open-dma      behavior to 'open-dma
+   ['] close-dma     behavior to 'close-dma
+   ['] set-drive-cfg behavior to 'set-drive-cfg
+;
+: restore-open-dma  ( -- )
+   'open-dma      ?dup  if  to open-dma       then
+   'close-dma     ?dup  if  to close-dma      then
+   'set-drive-cfg ?dup  if  to set-drive-cfg  then
+;
+
+: parse-args  ( -- flag )
+   my-args  begin  dup  while       \ Execute mode modifiers
+      ascii , left-parse-string            ( rem$ first$ )
+      my-self ['] $call-method  catch  if  ( rem$ x x x )
+         ." Unknown argument" cr
+         3drop 2drop false exit
+      then                                 ( rem$ )
+   repeat                                  ( rem$ )
+   2drop
+   true
+;
+
+: open-hardware  ( -- flag )
+   parse-args 0=  if  false exit  then
+   (map)  to sec-dor  to sec-chip-base  to pri-dor  to pri-chip-base
+   open-dma
+
+   first-open?  if
+      max#drives 0  do
+         d# 80 ms
+         0 i  set-address  get-drive-parms  if  set-drive-cfg  then  loop
+      false to first-open?
+   then
+
+   0 0 set-address		\ Default
+
+   \ should perform a quick "sanity check" selftest here,
+   \ returning true iff the test succeeds.
+
+   true
+;
+: reopen-hardware  ( -- flag )  parse-args  ;
+
+: close-hardware  ( -- )
+   close-dma   
+   pri-chip-base pri-dor sec-chip-base sec-dor (unmap)
+   restore-open-dma
+;
+: reclose-hardware  ( -- )  restore-open-dma  ;
+
+: selftest  ( -- 0 | error-code )
+   \ perform reasonably extensive selftest here, displaying
+   \ a message if the test fails, and returning an error code if the
+   \ test fails or 0 if the test succeeds.
+   0
+;
+
+: open  ( -- flag )
+   open-count  if
+      reopen-hardware  dup  if  open-count 1+ to open-count  then
+      exit
+   else
+      open-hardware  dup  if
+         1 to open-count
+      then
+   then
+;
+: close  ( -- )
+   open-count 1- to open-count
+   open-count  if
+      reclose-hardware
+   else
+      close-hardware
+   then
+;
+
+: set-blk-w  ( w@-addr w!-addr -- )  to io-blk-w! to io-blk-w@  ;
+
+[ifdef] notyet
+: set-pio-mode  ( mode -- )
+   3 r-features!
+   8 or r-#secs!
+   h# ef r-csr!
+;
+[then]

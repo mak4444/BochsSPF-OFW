@@ -1,0 +1,328 @@
+
+0 0  " 0"  " /pci" begin-package
+1A391D8 	E0 B6 A0  1 30  B  0  0 
+1A391E0 	D4 39 A3  1 E0 B6 A0  1 
+1A391E8 	50  B  0  0 
+
+hex
+current-device-t to isa-device
+" isa" device-name
+1A391EC 	69 73 61  0 
+1A391F0 	 0  0  0 6E 61 6D 65 84 
+1A391F8 	 0  0 A0  1 BC 13 A2  1 
+1A39200 	14  0  0  0  4  0  0  0 
+" isa" device-type
+1A39208 	69 73 61  0 64 65 76 69 
+1A39210 	63 65 5F 74 79 70 65 8B 
+1A39218 	FC 91 A3  1 BC 13 A2  1 
+1A39220 	18  0  0  0  4  0  0  0 
+
+2 " #address-cells" integer-property
+1A39228 	 0  0  0  2  0 23 61 64 
+1A39230 	64 72 65 73 73 2D 63 65 
+1A39238 	6C 6C 73 8E 1C 92 A3  1 
+1A39240 	BC 13 A2  1 1C  0  0  0 
+1A39248 	 4  0  0  0 
+1 " #size-cells" integer-property
+1A3924C 	 0  0  0  1 
+1A39250 	23 73 69 7A 65 2D 63 65 
+1A39258 	6C 6C 73 8B 40 92 A3  1 
+1A39260 	BC 13 A2  1 18  0  0  0 
+1A39268 	 4  0  0  0 
+my-address my-space
+ encode-phys
+1A3926C 	 0  0  0  0 
+1A39270 	 0  0  0  0  0  0  0  0 
+  0 encode-int encode+
+1A39278 	 0  0  0  0 
+  h# 0 encode-int encode+
+1A3927C 	 0  0  0  0 
+" reg" property
+1A39280 	72 65 67 83 60 92 A3  1 
+1A39288 	BC 13 A2  1 20  0  0  0 
+1A39290 	14  0  0  0 
+
+d# 8300000 encode-int  " clock-frequency" property \ mmo
+1A39294 	 0 7E A5 E0 
+1A39298 	63 6C 6F 63 6B 2D 66 72 
+1A392A0 	65 71 75 65 6E 63 79 8F 
+1A392A8 	88 92 A3  1 BC 13 A2  1 
+1A392B0 	1C  0  0  0  4  0  0  0 
+
+\ 16-MByte ISA memory space
+        0 encode-int         0 encode-int encode+
+1A392B8 	 0  0  0  0  0  0  0  0 
+02000000 encode-int encode+ 0 encode-int encode+ 0 encode-int encode+
+1A392C0 	 2  0  0  0  0  0  0  0 
+1A392C8 	 0  0  0  0 
+ 1000000 encode-int encode+
+1A392CC 	 1  0  0  0 
+
+\ 64-KByte ISA I/O space
+        1 encode-int encode+ 0 encode-int encode+
+1A392D0 	 0  0  0  1  0  0  0  0 
+01000000 encode-int encode+ 0 encode-int encode+ 0 encode-int encode+
+1A392D8 	 1  0  0  0  0  0  0  0 
+1A392E0 	 0  0  0  0 
+   10000 encode-int encode+
+1A392E4 	 0  1  0  0 
+
+   " ranges" property
+1A392E8 	 0 72 61 6E 67 65 73 86 
+1A392F0 	AC 92 A3  1 BC 13 A2  1 
+1A392F8 	40  0  0  0 30  0  0  0 
+
+2 " #interrupt-cells" integer-property
+1A39300 	 0  0  0  2  0  0  0 23 
+1A39308 	69 6E 74 65 72 72 75 70 
+1A39310 	74 2D 63 65 6C 6C 73 90 
+1A39318 	F4 92 A3  1 BC 13 A2  1 
+1A39320 	20  0  0  0  4  0  0  0 
+
+internal
+h# 1000 constant /io-map
+1A39328 	2F 69 6F 2D 6D 61 70 87 
+1A39330 	 0  0 A0  1 68 40 A0  1 
+1A39338 	 0 10  0  0 
+
+external
+\ Static methods
+\ Text representation:  nnn (I/O space)  innn (I/O space)  mnnn (memory space)
+\ Numeric representation:  hi cell: 0-memory 1-I/O  lo cell: offset
+
+: decode-unit  ( adr len -- phys.lo phys.hi )
+1A3933C 	64 65 63 6F 
+1A39340 	64 65 2D 75 6E 69 74 8B 
+1A39348 	34 93 A3  1 20 40 A0  1 
+   base @ >r hex
+1A39350 	B8 75 A0  1 5C 4C A0  1 
+1A39358 	BC 45 A0  1 C0 8D A0  1 
+   dup  if
+1A39360 	40 49 A0  1 DC 41 A0  1 
+1A39368 	84  0  0  0 
+      over c@  upc  case
+1A3936C 	54 49 A0  1 
+1A39370 	C4 4C A0  1 D0 51 A0  1 
+         ascii I  of  1 /string   1    endof
+1A39378 	58 41 A0  1 49  0  0  0 
+1A39380 	48 43 A0  1 18  0  0  0 
+1A39388 	80 6F A0  1 3C 85 A0  1 
+1A39390 	80 6F A0  1 6C 43 A0  1 
+1A39398 	34  0  0  0 
+         ascii M  of  1 /string   0    endof
+1A3939C 	58 41 A0  1 
+1A393A0 	4D  0  0  0 48 43 A0  1 
+1A393A8 	18  0  0  0 80 6F A0  1 
+1A393B0 	3C 85 A0  1 70 6F A0  1 
+1A393B8 	6C 43 A0  1 10  0  0  0 
+         ( default )  1 swap			\ Default to "IO"
+1A393C0 	80 6F A0  1 68 49 A0  1 
+      endcase                               ( adr len phys.hi )
+1A393C8 	84 43 A0  1 
+      -rot  $number  if  0  then   swap     ( phys.lo phys.lo )
+1A393CC 	94 49 A0  1 
+1A393D0 	40 FE A0  1 DC 41 A0  1 
+1A393D8 	 8  0  0  0 70 6F A0  1 
+1A393E0 	68 49 A0  1 
+   else
+1A393E4 	C8 41 A0  1 
+1A393E8 	10  0  0  0 
+      2drop 0 0
+1A393EC 	AC 49 A0  1 
+1A393F0 	70 6F A0  1 70 6F A0  1 
+   then
+   r> base !
+1A393F8 	D0 45 A0  1 B8 75 A0  1 
+1A39400 	54 4D A0  1 
+;
+1A39404 	58 46 A0  1 
+: encode-unit  ( phys.lo phys.hi -- adr len )
+1A39408 	65 6E 63 6F 64 65 2D 75 
+1A39410 	6E 69 74 8B 4C 93 A3  1 
+1A39418 	20 40 A0  1 
+   base @ >r hex
+1A3941C 	B8 75 A0  1 
+1A39420 	5C 4C A0  1 BC 45 A0  1 
+1A39428 	C0 8D A0  1 
+   >r  <# u# u#s
+1A3942C 	BC 45 A0  1 
+1A39430 	 8 76 A0  1 94 76 A0  1 
+1A39438 	BC 76 A0  1 
+   r>  1 and  if  ascii i  else  ascii m  then  hold
+1A3943C 	D0 45 A0  1 
+1A39440 	80 6F A0  1 5C 44 A0  1 
+1A39448 	DC 41 A0  1 14  0  0  0 
+1A39450 	58 41 A0  1 69  0  0  0 
+1A39458 	C8 41 A0  1  C  0  0  0 
+1A39460 	58 41 A0  1 6D  0  0  0 
+1A39468 	DC 75 A0  1 
+   u#>
+1A3946C 	E0 76 A0  1 
+   r> base !
+1A39470 	D0 45 A0  1 B8 75 A0  1 
+1A39478 	54 4D A0  1 
+;
+1A3947C 	58 46 A0  1 
+
+\ Not-necessarily-static methods
+: open  ( -- true )  true  ;
+1A39480 	 0  0  0 6F 70 65 6E 84 
+1A39488 	18 94 A3  1 20 40 A0  1 
+1A39490 	 4 70 A0  1 58 46 A0  1 
+: close  ( -- )  ;
+1A39498 	 0  0 63 6C 6F 73 65 85 
+1A394A0 	8C 94 A3  1 20 40 A0  1 
+1A394A8 	58 46 A0  1 
+
+: map-in   ( phys.lo phys.hi size -- virt )
+1A394AC 	 0 6D 61 70 
+1A394B0 	2D 69 6E 86 A4 94 A3  1 
+1A394B8 	20 40 A0  1 
+   \ The 8000.0000 bit indicates a non-relocatable PCI address
+   >r  if                           ( phys.lo )         ( r: size )
+1A394BC 	BC 45 A0  1 
+1A394C0 	DC 41 A0  1 48  0  0  0 
+      \ If the range to be mapped is in the pre-mapped region,
+      \  return an address within that region
+      dup r@ +  /io-map u<  if      ( phys.lo )         ( r: size )
+1A394C8 	40 49 A0  1 E4 45 A0  1 
+1A394D0 	 4 45 A0  1 34 93 A3  1 
+1A394D8 	A8 48 A0  1 DC 41 A0  1 
+1A394E0 	18  0  0  0 
+         r> drop  io-base +         ( virt )
+1A394E4 	D0 45 A0  1 
+1A394E8 	30 49 A0  1 B4 37 A3  1 
+1A394F0 	 4 45 A0  1 
+         exit
+1A394F4 	40 46 A0  1 
+      then                          ( phys.lo )         ( r: size )
+      0 h# 8100.0000                ( phys.lo,mid,hi )  ( r: size )
+1A394F8 	70 6F A0  1 58 41 A0  1 
+1A39500 	 0  0  0 81 
+   else                             ( phys.lo )         ( r: size )
+1A39504 	C8 41 A0  1 
+1A39508 	10  0  0  0 
+      0 h# 8200.0000                ( phys.lo,mid,hi )  ( r: size )
+1A3950C 	70 6F A0  1 
+1A39510 	58 41 A0  1  0  0  0 82 
+   then                             ( phys.lo,mid,hi )  ( r: size )
+   r> " map-in" $call-parent
+1A39518 	D0 45 A0  1 9C 53 A0  1 
+1A39520 	 6 6D 61 70 2D 69 6E  0 
+1A39528 	DC 31 A2  1 
+;
+1A3952C 	58 46 A0  1 
+: map-out  ( virt size -- )
+1A39530 	6D 61 70 2D 6F 75 74 87 
+1A39538 	B8 94 A3  1 20 40 A0  1 
+  \ Don't unmap the pre-mapped I/O region
+  over  io-base u>=  if         ( virt size )
+1A39540 	54 49 A0  1 B4 37 A3  1 
+1A39548 	CC 48 A0  1 DC 41 A0  1 
+1A39550 	20  0  0  0 
+     dup /io-map u<  if
+1A39554 	40 49 A0  1 
+1A39558 	34 93 A3  1 A8 48 A0  1 
+1A39560 	DC 41 A0  1  C  0  0  0 
+        2drop exit
+1A39568 	AC 49 A0  1 40 46 A0  1 
+     then
+  then                           ( virt size )
+  " map-out" $call-parent
+1A39570 	9C 53 A0  1  7 6D 61 70 
+1A39578 	2D 6F 75 74  0  0  0  0 
+1A39580 	DC 31 A2  1 
+;
+1A39584 	58 46 A0  1 
+
+: dma-map-in  ( vaddr len cacheable -- devaddr )  " dma-map-in" $call-parent  ;
+1A39588 	 0 64 6D 61 2D 6D 61 70 
+1A39590 	2D 69 6E 8A 3C 95 A3  1 
+1A39598 	20 40 A0  1 9C 53 A0  1 
+1A395A0 	 A 64 6D 61 2D 6D 61 70 
+1A395A8 	2D 69 6E  0 DC 31 A2  1 
+1A395B0 	58 46 A0  1 
+: dma-map-out  ( vaddr devaddr len -- )  " dma-map-out" $call-parent  ;
+1A395B4 	64 6D 61 2D 
+1A395B8 	6D 61 70 2D 6F 75 74 8B 
+1A395C0 	98 95 A3  1 20 40 A0  1 
+1A395C8 	9C 53 A0  1  B 64 6D 61 
+1A395D0 	2D 6D 61 70 2D 6F 75 74 
+1A395D8 	 0  0  0  0 DC 31 A2  1 
+1A395E0 	58 46 A0  1 
+: dma-alloc  ( size -- vadr )  " dma-alloc" $call-parent  ;
+1A395E4 	 0  0 64 6D 
+1A395E8 	61 2D 61 6C 6C 6F 63 89 
+1A395F0 	C4 95 A3  1 20 40 A0  1 
+1A395F8 	9C 53 A0  1  9 64 6D 61 
+1A39600 	2D 61 6C 6C 6F 63  0  0 
+1A39608 	DC 31 A2  1 58 46 A0  1 
+: dma-free ( vaddr len -- )  " dma-free" $call-parent  ;
+1A39610 	 0  0  0 64 6D 61 2D 66 
+1A39618 	72 65 65 88 F4 95 A3  1 
+1A39620 	20 40 A0  1 9C 53 A0  1 
+1A39628 	 8 64 6D 61 2D 66 72 65 
+1A39630 	65  0  0  0 DC 31 A2  1 
+1A39638 	58 46 A0  1 
+
+\ XXX Should we define methods for allocating ISA DMA channels?
+
+: probe-self  ( arg$ reg$ fcode$ -- )
+1A3963C 	 0 70 72 6F 
+1A39640 	62 65 2D 73 65 6C 66 8A 
+1A39648 	20 96 A3  1 20 40 A0  1 
+   true abort" probe-self for ISA is not yet implemented"  ( XXX )
+1A39650 	 4 70 A0  1  8 81 A0  1 
+1A39658 	29 70 72 6F 62 65 2D 73 
+1A39660 	65 6C 66 20 66 6F 72 20 
+1A39668 	49 53 41 20 69 73 20 6E 
+1A39670 	6F 74 20 79 65 74 20 69 
+1A39678 	6D 70 6C 65 6D 65 6E 74 
+1A39680 	65 64  0  0 
+;
+1A39684 	58 46 A0  1 
+
+internal
+false value already-done?
+1A39688 	 0  0 61 6C 72 65 61 64 
+1A39690 	79 2D 64 6F 6E 65 3F 8D 
+1A39698 	4C 96 A3  1 50 40 A0  1 
+1A396A0 	54  B  0  0 
+
+external
+\ Pre-map I/O space to avoid lots of redundant mappings
+: init  ( -- )
+1A396A4 	 0  0  0 69 
+1A396A8 	6E 69 74 84 9C 96 A3  1 
+1A396B0 	20 40 A0  1 
+
+   \ The following flag is necesary to prevent multiple inits of device
+   \ in case the init routine is called twice (as when the device containing
+   \ the ISA node is in the PCI probe list).
+
+   already-done?  if  exit  then
+1A396B4 	9C 96 A3  1 
+1A396B8 	DC 41 A0  1  8  0  0  0 
+1A396C0 	40 46 A0  1 
+
+   true to already-done?
+1A396C4 	 4 70 A0  1 
+1A396C8 	B8 40 A0  1 9C 96 A3  1 
+
+[ifdef] unmap-temp-io
+   io-base >r
+   0 0 h# 8100.0000  /io-map  " map-in" $call-parent  to io-base
+   r> unmap-temp-io
+[then]
+
+   h# ff  h# 21 pc!	\ Mask off all interrupts
+1A396D0 	58 41 A0  1 FF  0  0  0 
+1A396D8 	58 41 A0  1 21  0  0  0 
+1A396E0 	E8 81 A2  1 
+
+\ mmo   " /isa/interrupt-controller" find-package  if
+\ mmo      " interrupt-parent" integer-property
+\ mmo    then
+;
+1A396E4 	58 46 A0  1 
+

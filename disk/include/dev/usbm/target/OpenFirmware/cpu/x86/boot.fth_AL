@@ -1,0 +1,172 @@
+
+\ Boot code (cold start).  The cold start code is executed
+\ when Forth is initially started.  Its job is to initialize the Forth
+\ virtual machine registers.
+
+hex
+
+\ only forth also labels also meta also definitions
+
+0 constant main-task
+1A0EF84 	 0  0 6D 61 
+1A0EF88 	69 6E 2D 74 61 73 6B 89 
+1A0EF90 	7C EF A0  1 68 40 A0  1 
+1A0EF98 	 0  0  0  0 
+
+
+: init-user  (s -- )  ;
+1A0EF9C 	 0  0 69 6E 
+1A0EFA0 	69 74 2D 75 73 65 72 89 
+1A0EFA8 	94 EF A0  1 20 40 A0  1 
+1A0EFB0 	58 46 A0  1 
+
+
+
+[ifdef] big-endian-t
+\ Byte swap the pointers in the argument array
+: bswap-args  ( -- )  #args 0  ?do  args i na+  dup @  swap le-l!  loop  ;
+: (cold-hook  ( -- )  (cold-hook  bswap-args  ;
+' (cold-hook is cold-hook
+[then]
+
+create cold-code  ( -- )  assembler
+1A0EFB4 	 0  0 63 6F 
+1A0EFB8 	6C 64 2D 63 6F 64 65 89 
+1A0EFC0 	AC EF A0  1 30 40 A0  1 
+mlabel cold-code
+
+forth-h
+\- rel-t h# e9 origin-t c!-t			   \ Relative jump with 32-bit offset
+\- rel-t here-t  origin-t 5 +  -  origin-t 1+  !-t \ Offset relative to instruction end
+\+ rel-t h# e9 jmp-header c!			          \ Relative jump with 32-bit offset
+\+ rel-t here-t /jmp-header +   5 -  jmp-header 1+  le-l! \ Offset relative to instruction end
+assembler
+
+\ The segment registers are set correctly, and the stack pointer is
+\ at the top of the memory region reserved for Forth
+
+\ Get the origin address
+   here-t 5 + #) call   here-t origin-t -  ( offset )
+1A0EFC8 	E8  0  0  0  0 
+\- rel-t   bx  pop
+1A0EFCD 	5B 
+\- rel-t   ( offset ) #  bx  sub	\ Origin in bx
+1A0EFCE 	81 EB 
+1A0EFD0 	CD EF  0  0 
+
+\+ rel-t   up  pop
+\+ rel-t   ( offset ) #  up  sub	\ Origin in up
+   
+\- rel-t   20 [bx] up lea
+1A0EFD4 	8D 7B 20 
+\- rel-t   up 'user up0 mov      \ initialize up0 (needed for future relocation)
+1A0EFD7 	89 
+1A0EFD8 	7F 4C 
+\+ rel-t   up 'user up0 mov      \ initialize up0 (needed for future relocation)
+
+\ Set the value of flat? so later code can determine whether or
+\ not it is safe to do things like setting the stack segment descriptor,
+\ intercepting exceptions, probing for a DPMI server, etc.
+
+  8 [sp]  ax  mov	\ Caller's CS, or 0 if we are unsegmented
+1A0EFDA 	8B 44 24  8 
+  ax  ax  or
+1A0EFDE 	 9 C0 
+  0<>  if
+1A0EFE0 	74  7 
+     false #  ax  mov	\ CS not zero - we are running segmented
+1A0EFE2 	B8  0  0  0  0 
+  else
+1A0EFE7 	EB 
+1A0EFE8 	 5 
+     true #  ax  mov	\ CS zero - we are running flat
+1A0EFE9 	B8 FF FF FF FF 
+  then
+  ax  'user flat?  mov
+1A0EFEE 	89 87 
+1A0EFF0 	F8  2  0  0 
+
+\ Prepare to allocate high memory for the stacks and stuff
+\ Allocate buffers from image_end down Hi-RAM allocation pointer
+
+   sp  ax mov
+1A0EFF4 	8B C4 
+
+[ifdef] notdef
+\ this version is ROMable - and is incompatible with relative addressing
+\ Allocate the RAM copy of the User Area
+   user-size-t #   sp	sub
+
+\ Copy the initial User Area image to the RAM copy
+   rel-t  userarea-t [bx]  si   lea	\ Source address for copy
+   sp		    di   mov	\ Destination of copy
+   user-size-t #    cx   mov	\ Number of bytes to copy
+   cld   rep byte movs
+
+   sp               up   mov	\ Set user pointer
+[else]
+\- rel-t   userarea-t [bx]  up   lea	\ User pointer
+1A0EFF6 	8D 7B 
+1A0EFF8 	20 
+\+ rel-t   userarea-t [up]  up   lea	\ User pointer
+[then]
+
+\ XXX need to swap bytes
+\ Set main-task so the exception handler can find the user area
+\- rel-t  up   'body main-task [bx]  mov
+1A0EFF9 	89 BB 98 EF  0  0 
+\+ rel-t  up   'body main-task [up]  mov
+
+   ?bswap-ax
+   ax     'user memtop   mov     \ Set heap pointer
+1A0EFFF 	89 
+1A0F000 	47 5C 
+
+
+\ At this point, the stack pointer has been set to the top of the stack area
+\ and the user pointer has been set to the bottom of the initial user area
+\ image.
+
+\ Establish the return stack and set the rp0 user variable
+   sp        rp          mov	\ Set rp
+1A0F002 	8B EC 
+[ifdef] big-endian-t
+   rp ax mov
+   ?bswap-ax
+   ax        'user rp0   mov
+[else]
+   rp        'user rp0   mov
+1A0F004 	89 6F 58 
+[then]
+   rs-size-t #  sp       sub    \ allocate space for the return stack
+1A0F007 	81 
+1A0F008 	EC  0  8  0  0 
+
+\ Establish the Parameter Stack
+[ifdef] big-endian-t
+   sp ax mov
+   ?bswap-ax
+   ax        'user sp0   mov
+[else]
+   sp        'user sp0   mov
+1A0F00D 	89 67 54 
+[then]
+   sp           ax       mov
+1A0F010 	8B C4 
+   ps-size-t #  ax       sub    \ allocate space for the data stack
+1A0F012 	2D  0  8  0  0 
+   ax      'user limit   mov	\ Set dictionary limit
+1A0F017 	89 
+1A0F018 	47 28 
+
+\+ rel-t   'user dp  ax  mov
+\+ rel-t   up        ax  add
+\+ rel-t   ax  'user dp  mov
+
+\ Enter Forth
+\- rel-t  'body cold [bx]  ip   lea
+1A0F01A 	8D B3 58 ED  0  0 
+\+ rel-t  'body cold [up]  ip   lea
+also
+c;
+1A0F020 	FF E7 

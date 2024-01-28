@@ -1,0 +1,205 @@
+
+\ The dump utility gives you a formatted hex dump with the ascii
+\ text corresponding to the bytes on the right hand side of the
+\ screen.  In addition you can use the SM word to set a range of
+\ memory locations to desired values.  SM displays an address and
+\ its contents.  You can go forwards or backwards depending upon
+\ which character you type. Entering a hex number changes the
+\ contents of the location.  DL can be used to dump a line of
+\ text from a screen.
+
+decimal
+
+only forth also hidden also  definitions
+
+headerless
+defer dc@ ' c@ is dc@
+1A11A48 	64 63 40 83  8  8 A1  1 
+1A11A50 	5C 40 A0  1 60  3  0  0 
+\ : .2   (s n -- )   <#   u# u#   u#>   type   space   ;
+: d.2   (s addr len -- )   bounds ?do   i dc@ .2   loop   ;
+1A11A58 	64 2E 32 83 50 1A A1  1 
+1A11A60 	20 40 A0  1 F0 6D A0  1 
+1A11A68 	50 42 A0  1 18  0  0  0 
+1A11A70 	B4 42 A0  1 50 1A A1  1 
+1A11A78 	60 79 A0  1 F8 41 A0  1 
+1A11A80 	F0 FF FF FF 58 46 A0  1 
+: emit.   (s char -- )
+1A11A88 	 0  0 65 6D 69 74 2E 85 
+1A11A90 	60 1A A1  1 20 40 A0  1 
+   d# 127 and dup printable? 0= if drop ascii . then emit
+1A11A98 	58 41 A0  1 7F  0  0  0 
+1A11AA0 	5C 44 A0  1 40 49 A0  1 
+1A11AA8 	AC 8B A0  1 24 47 A0  1 
+1A11AB0 	DC 41 A0  1 10  0  0  0 
+1A11AB8 	30 49 A0  1 58 41 A0  1 
+1A11AC0 	2E  0  0  0 2C 6C A0  1 
+;
+1A11AC8 	58 46 A0  1 
+: emit.ln (s addr len -- )
+1A11ACC 	65 6D 69 74 
+1A11AD0 	2E 6C 6E 87 94 1A A1  1 
+1A11AD8 	20 40 A0  1 
+   bounds ?do   i dc@ emit.   loop
+1A11ADC 	F0 6D A0  1 
+1A11AE0 	50 42 A0  1 18  0  0  0 
+1A11AE8 	B4 42 A0  1 50 1A A1  1 
+1A11AF0 	94 1A A1  1 F8 41 A0  1 
+1A11AF8 	F0 FF FF FF 
+;
+1A11AFC 	58 46 A0  1 
+: dln   (s addr --- )
+1A11B00 	64 6C 6E 83 D8 1A A1  1 
+1A11B08 	20 40 A0  1 
+   ??cr   dup  n->l 8 u.r   2 spaces   8 2dup d.2 space
+1A11B0C 	 0 A1 A0  1 
+1A11B10 	40 49 A0  1 74 4F A0  1 
+1A11B18 	F0 6F A0  1 E4 77 A0  1 
+1A11B20 	90 6F A0  1 E8 71 A0  1 
+1A11B28 	F0 6F A0  1 C0 49 A0  1 
+1A11B30 	60 1A A1  1 CC 71 A0  1 
+   over + 8 d.2 space
+1A11B38 	54 49 A0  1  4 45 A0  1 
+1A11B40 	F0 6F A0  1 60 1A A1  1 
+1A11B48 	CC 71 A0  1 
+   16 emit.ln
+1A11B4C 	58 41 A0  1 
+1A11B50 	10  0  0  0 D8 1A A1  1 
+;
+1A11B58 	58 46 A0  1 
+
+: .n2    (s n -- )  h# f and  3 .r  ;
+1A11B5C 	2E 6E 32 83 
+1A11B60 	 8 1B A1  1 20 40 A0  1 
+1A11B68 	58 41 A0  1  F  0  0  0 
+1A11B70 	5C 44 A0  1 A0 6F A0  1 
+1A11B78 	58 78 A0  1 58 46 A0  1 
+: .a     (s n -- )  h# f and  1 .r  ;
+1A11B80 	 0 2E 61 82 64 1B A1  1 
+1A11B88 	20 40 A0  1 58 41 A0  1 
+1A11B90 	 F  0  0  0 5C 44 A0  1 
+1A11B98 	80 6F A0  1 58 78 A0  1 
+1A11BA0 	58 46 A0  1 
+
+: .head   (s addr -- )
+1A11BA4 	 0  0 2E 68 
+1A11BA8 	65 61 64 85 88 1B A1  1 
+1A11BB0 	20 40 A0  1 
+   ??cr dup d# 16 >> d# 16 >> ?dup  if
+1A11BB4 	 0 A1 A0  1 
+1A11BB8 	40 49 A0  1 58 41 A0  1 
+1A11BC0 	10  0  0  0 DC 44 A0  1 
+1A11BC8 	58 41 A0  1 10  0  0  0 
+1A11BD0 	DC 44 A0  1 B4 70 A0  1 
+1A11BD8 	DC 41 A0  1 18  0  0  0 
+      8 u.r space
+1A11BE0 	F0 6F A0  1 E4 77 A0  1 
+1A11BE8 	CC 71 A0  1 
+   else
+1A11BEC 	C8 41 A0  1 
+1A11BF0 	10  0  0  0 
+      9 spaces
+1A11BF4 	58 41 A0  1 
+1A11BF8 	 9  0  0  0 E8 71 A0  1 
+   then                                  ( adr )
+   8 0 do   dup i + .n2   loop   space   d# 16 8 do   dup i + .n2   loop
+1A11C00 	F0 6F A0  1 70 6F A0  1 
+1A11C08 	88 42 A0  1 1C  0  0  0 
+1A11C10 	40 49 A0  1 B4 42 A0  1 
+1A11C18 	 4 45 A0  1 64 1B A1  1 
+1A11C20 	F8 41 A0  1 EC FF FF FF 
+1A11C28 	CC 71 A0  1 58 41 A0  1 
+1A11C30 	10  0  0  0 F0 6F A0  1 
+1A11C38 	88 42 A0  1 1C  0  0  0 
+1A11C40 	40 49 A0  1 B4 42 A0  1 
+1A11C48 	 4 45 A0  1 64 1B A1  1 
+1A11C50 	F8 41 A0  1 EC FF FF FF 
+   2 spaces   d# 16 0 do  dup i + .a  loop   drop
+1A11C58 	90 6F A0  1 E8 71 A0  1 
+1A11C60 	58 41 A0  1 10  0  0  0 
+1A11C68 	70 6F A0  1 88 42 A0  1 
+1A11C70 	1C  0  0  0 40 49 A0  1 
+1A11C78 	B4 42 A0  1  4 45 A0  1 
+1A11C80 	88 1B A1  1 F8 41 A0  1 
+1A11C88 	EC FF FF FF 30 49 A0  1 
+;
+1A11C90 	58 46 A0  1 
+headers
+
+: (dump) ( addr len -- )
+1A11C94 	 0 28 64 75 
+1A11C98 	6D 70 29 86 B0 1B A1  1 
+1A11CA0 	20 40 A0  1 
+   push-hex   over  .head  ( addr len )
+1A11CA4 	5C F4 A0  1 
+1A11CA8 	54 49 A0  1 B0 1B A1  1 
+   1 max
+1A11CB0 	80 6F A0  1 9C 4A A0  1 
+   bounds do   i dln  exit? ?leave  16 +loop
+1A11CB8 	F0 6D A0  1 88 42 A0  1 
+1A11CC0 	24  0  0  0 B4 42 A0  1 
+1A11CC8 	 8 1B A1  1 34  D A1  1 
+1A11CD0 	34 43 A0  1 58 41 A0  1 
+1A11CD8 	10  0  0  0 1C 42 A0  1 
+1A11CE0 	E4 FF FF FF 
+   pop-base
+1A11CE4 	9C F4 A0  1 
+;
+1A11CE8 	58 46 A0  1 
+also forth definitions
+
+: dump ( addr len -- )      ['] c@ is dc@ (dump)  ;
+1A11CEC 	 0  0  0 64 
+1A11CF0 	75 6D 70 84 44 1A A1  1 
+1A11CF8 	20 40 A0  1 60 53 A0  1 
+1A11D00 	C4 4C A0  1 98 40 A0  1 
+1A11D08 	50 1A A1  1 A0 1C A1  1 
+1A11D10 	58 46 A0  1 
+: du   ( addr -- addr+64 )  dup d# 64 dump   d# 64 +  ;
+1A11D14 	 0 64 75 82 
+1A11D18 	F8 1C A1  1 20 40 A0  1 
+1A11D20 	40 49 A0  1 58 41 A0  1 
+1A11D28 	40  0  0  0 F8 1C A1  1 
+1A11D30 	58 41 A0  1 40  0  0  0 
+1A11D38 	 4 45 A0  1 58 46 A0  1 
+
+\ Dumps 16-bit signed samples in decimal
+: dump-audio  ( adr len -- )
+1A11D40 	 0 64 75 6D 70 2D 61 75 
+1A11D48 	64 69 6F 8A 1C 1D A1  1 
+1A11D50 	20 40 A0  1 
+   base @ >r
+1A11D54 	B8 75 A0  1 
+1A11D58 	5C 4C A0  1 BC 45 A0  1 
+   bounds ?do
+1A11D60 	F0 6D A0  1 50 42 A0  1 
+1A11D68 	68  0  0  0 
+      hex
+1A11D6C 	C0 8D A0  1 
+      i 8 u.r ." : "
+1A11D70 	B4 42 A0  1 F0 6F A0  1 
+1A11D78 	E4 77 A0  1 20 7C A0  1 
+1A11D80 	 2 3A 20  0 
+      decimal
+1A11D84 	E4 8D A0  1 
+      i d# 16  bounds do
+1A11D88 	B4 42 A0  1 58 41 A0  1 
+1A11D90 	10  0  0  0 F0 6D A0  1 
+1A11D98 	88 42 A0  1 20  0  0  0 
+         i <w@ 7 .r
+1A11DA0 	B4 42 A0  1 AC 4C A0  1 
+1A11DA8 	E0 6F A0  1 58 78 A0  1 
+      /w +loop
+1A11DB0 	20 51 A0  1 1C 42 A0  1 
+1A11DB8 	E8 FF FF FF 
+      cr
+1A11DBC 	80 6D A0  1 
+   d# 16 +loop
+1A11DC0 	58 41 A0  1 10  0  0  0 
+1A11DC8 	1C 42 A0  1 A0 FF FF FF 
+   pop-base  
+1A11DD0 	9C F4 A0  1 
+;
+1A11DD4 	58 46 A0  1 
+
+only forth also definitions

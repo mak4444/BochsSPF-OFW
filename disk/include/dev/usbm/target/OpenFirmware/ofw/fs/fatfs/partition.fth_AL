@@ -1,0 +1,376 @@
+purpose: FDisk partition map decoder
+
+\ Returns true if the sector buffer appears to contain a BIOS Parameter Block,
+\ which signifies the beginning of a DOS "FAT" file system.
+: fat?  ( -- flag )
+1A30C1C 	 0  0  0 66 
+1A30C20 	61 74 3F 84 A0  B A3  1 
+1A30C28 	20 40 A0  1 
+   sector-buf d# 11 +  le-w@              ( bps )
+1A30C2C 	98  A A3  1 
+1A30C30 	58 41 A0  1  B  0  0  0 
+1A30C38 	 4 45 A0  1 80 4C A0  1 
+   dup  dup 1- and 0=                  ( bps power-of-2? )
+1A30C40 	40 49 A0  1 40 49 A0  1 
+1A30C48 	54 4B A0  1 5C 44 A0  1 
+1A30C50 	24 47 A0  1 
+   swap  d# 256  d# 4096 between  and  ( bps-ok? )
+1A30C54 	68 49 A0  1 
+1A30C58 	58 41 A0  1  0  1  0  0 
+1A30C60 	58 41 A0  1  0 10  0  0 
+1A30C68 	D8 70 A0  1 5C 44 A0  1 
+   sector-buf d# 16 + c@ 1 2 between and  ( flag )  \ #FATS ok?
+1A30C70 	98  A A3  1 58 41 A0  1 
+1A30C78 	10  0  0  0  4 45 A0  1 
+1A30C80 	C4 4C A0  1 80 6F A0  1 
+1A30C88 	90 6F A0  1 D8 70 A0  1 
+1A30C90 	5C 44 A0  1 
+;
+1A30C94 	58 46 A0  1 
+
+\ This is a lame check to see if there might be a partition map entry.
+\ It is for the case where the disk has a valid BPB in sector 0, but
+\ also has a partition that doesn't start at 0.  Thit is a bogus layout,
+\ but we need to handle it anyway, because people often screw up when
+\ using fdisk and mkdosfs under Linux.  It is too easy to run mkdosfs on
+\ the overall disk (not the partition).
+: unpartitioned?  ( -- flag )
+1A30C98 	 0 75 6E 70 61 72 74 69 
+1A30CA0 	74 69 6F 6E 65 64 3F 8E 
+1A30CA8 	28  C A3  1 20 40 A0  1 
+   \ In partition maps, the status byte is 0 (not bootable) or 80 (bootable)
+   sector-buf h# 1be + c@  h# 7f and  0<>     ( unpartitioned? )
+1A30CB0 	98  A A3  1 58 41 A0  1 
+1A30CB8 	BE  1  0  0  4 45 A0  1 
+1A30CC0 	C4 4C A0  1 58 41 A0  1 
+1A30CC8 	7F  0  0  0 5C 44 A0  1 
+1A30CD0 	44 47 A0  1 
+   \ and the end of the sector contains a signature
+   sector-buf h# 1fe + le-w@ h# aa55 <>  or   ( unpartitioned?' )
+1A30CD4 	98  A A3  1 
+1A30CD8 	58 41 A0  1 FE  1  0  0 
+1A30CE0 	 4 45 A0  1 80 4C A0  1 
+1A30CE8 	58 41 A0  1 55 AA  0  0 
+1A30CF0 	44 48 A0  1 70 44 A0  1 
+   \ and the first partition entry has a non0 starting sector number
+   sector-buf h# 1c6 + le-l@ 0=  or           ( unpartitioned?' )
+1A30CF8 	98  A A3  1 58 41 A0  1 
+1A30D00 	C6  1  0  0  4 45 A0  1 
+1A30D08 	4C 4C A0  1 24 47 A0  1 
+1A30D10 	70 44 A0  1 
+;
+1A30D14 	58 46 A0  1 
+
+: ptable-bounds  ( -- end start )  sector-buf  h# 1be +  h# 40  bounds  ;
+1A30D18 	 0  0 70 74 61 62 6C 65 
+1A30D20 	2D 62 6F 75 6E 64 73 8D 
+1A30D28 	AC  C A3  1 20 40 A0  1 
+1A30D30 	98  A A3  1 58 41 A0  1 
+1A30D38 	BE  1  0  0  4 45 A0  1 
+1A30D40 	58 41 A0  1 40  0  0  0 
+1A30D48 	F0 6D A0  1 58 46 A0  1 
+: ptable-sum  ( -- n )   0  ptable-bounds  do  i c@ +  loop  ;
+1A30D50 	 0 70 74 61 62 6C 65 2D 
+1A30D58 	73 75 6D 8A 2C  D A3  1 
+1A30D60 	20 40 A0  1 70 6F A0  1 
+1A30D68 	2C  D A3  1 88 42 A0  1 
+1A30D70 	18  0  0  0 B4 42 A0  1 
+1A30D78 	C4 4C A0  1  4 45 A0  1 
+1A30D80 	F8 41 A0  1 F0 FF FF FF 
+1A30D88 	58 46 A0  1 
+: fdisk?  ( -- flag )
+1A30D8C 	 0 66 64 69 
+1A30D90 	73 6B 3F 86 60  D A3  1 
+1A30D98 	20 40 A0  1 
+   sector-buf h# 1fe + le-w@  h# aa55  <>  if  false exit  then
+1A30D9C 	98  A A3  1 
+1A30DA0 	58 41 A0  1 FE  1  0  0 
+1A30DA8 	 4 45 A0  1 80 4C A0  1 
+1A30DB0 	58 41 A0  1 55 AA  0  0 
+1A30DB8 	44 48 A0  1 DC 41 A0  1 
+1A30DC0 	 C  0  0  0 18 70 A0  1 
+1A30DC8 	40 46 A0  1 
+
+   \ If the partition table area is all zero, then it's not a partition table
+   ptable-sum     ( sum )
+1A30DCC 	60  D A3  1 
+   0=  if  false exit  then
+1A30DD0 	24 47 A0  1 DC 41 A0  1 
+1A30DD8 	 C  0  0  0 18 70 A0  1 
+1A30DE0 	40 46 A0  1 
+
+   \ Look for at least one recognizable partition type code
+   ptable-bounds  do
+1A30DE4 	2C  D A3  1 
+1A30DE8 	88 42 A0  1 14  1  0  0 
+      i 4 + c@                                        ( type )
+1A30DF0 	B4 42 A0  1 B0 6F A0  1 
+1A30DF8 	 4 45 A0  1 C4 4C A0  1 
+      dup 1 =                   \ FAT12
+1A30E00 	40 49 A0  1 80 6F A0  1 
+1A30E08 	24 48 A0  1 
+      over 4 7 between or       \ 4: FAT16<32M  5: Extended 6: FAT16>32M 7: NTFS
+1A30E0C 	54 49 A0  1 
+1A30E10 	B0 6F A0  1 E0 6F A0  1 
+1A30E18 	D8 70 A0  1 70 44 A0  1 
+      over h#  b =     or	\ FAT-32
+1A30E20 	54 49 A0  1 58 41 A0  1 
+1A30E28 	 B  0  0  0 24 48 A0  1 
+1A30E30 	70 44 A0  1 
+      over h#  c =     or	\ FAT-32
+1A30E34 	54 49 A0  1 
+1A30E38 	58 41 A0  1  C  0  0  0 
+1A30E40 	24 48 A0  1 70 44 A0  1 
+      over h#  e =     or	\ FAT-16 LBA
+1A30E48 	54 49 A0  1 58 41 A0  1 
+1A30E50 	 E  0  0  0 24 48 A0  1 
+1A30E58 	70 44 A0  1 
+      over h#  f =     or	\ Extended LBA
+1A30E5C 	54 49 A0  1 
+1A30E60 	58 41 A0  1  F  0  0  0 
+1A30E68 	24 48 A0  1 70 44 A0  1 
+      over h# 41 =     or       \ PowerPC PreP
+1A30E70 	54 49 A0  1 58 41 A0  1 
+1A30E78 	41  0  0  0 24 48 A0  1 
+1A30E80 	70 44 A0  1 
+      over iso-type =  or       \ ISO9660
+1A30E84 	54 49 A0  1 
+1A30E88 	 8  A A3  1 24 48 A0  1 
+1A30E90 	70 44 A0  1 
+      over minix-type =  or     \ Minix
+1A30E94 	54 49 A0  1 
+1A30E98 	C0  9 A3  1 24 48 A0  1 
+1A30EA0 	70 44 A0  1 
+      over ufs-type =  or       \ Unix file system
+1A30EA4 	54 49 A0  1 
+1A30EA8 	F0  9 A3  1 24 48 A0  1 
+1A30EB0 	70 44 A0  1 
+      swap ext2fs-type =  or    \ Linux ext2/3, reiser, etc  ( recognized? )
+1A30EB4 	68 49 A0  1 
+1A30EB8 	D8  9 A3  1 24 48 A0  1 
+1A30EC0 	70 44 A0  1 
+      if  i 4 + c@ to partition-type true unloop exit  then
+1A30EC4 	DC 41 A0  1 
+1A30EC8 	28  0  0  0 B4 42 A0  1 
+1A30ED0 	B0 6F A0  1  4 45 A0  1 
+1A30ED8 	C4 4C A0  1 48 B8 A1  1 
+1A30EE0 	A8  9 A3  1  4 70 A0  1 
+1A30EE8 	3C 42 A0  1 40 46 A0  1 
+   h# 10 +loop
+1A30EF0 	58 41 A0  1 10  0  0  0 
+1A30EF8 	1C 42 A0  1 F4 FE FF FF 
+   false
+1A30F00 	18 70 A0  1 
+;
+1A30F04 	58 46 A0  1 
+\ ??? n,s,b,t means #sectors start-sector boot-indicator type
+\ type: 0 empty, 1 12-bit FAT, 4 16-bit FAT, 5 extended, 6 over 32M
+\            ... b FAT 32, c FAT 32 LBA, e FAT-16 LBA, f extended LBA
+\ boot-indicator: 80 bootable
+
+: process-ptable  ( -- true | n,s,b,t4 n,s,b,t3 n,s,b,t2 n,s,b,t1 false )
+1A30F08 	 0 70 72 6F 63 65 73 73 
+1A30F10 	2D 70 74 61 62 6C 65 8E 
+1A30F18 	98  D A3  1 20 40 A0  1 
+   sector-buf h# 1fe + le-w@  h# aa55  <>  if  true exit  then
+1A30F20 	98  A A3  1 58 41 A0  1 
+1A30F28 	FE  1  0  0  4 45 A0  1 
+1A30F30 	80 4C A0  1 58 41 A0  1 
+1A30F38 	55 AA  0  0 44 48 A0  1 
+1A30F40 	DC 41 A0  1  C  0  0  0 
+1A30F48 	 4 70 A0  1 40 46 A0  1 
+
+   \ Process a real partition table
+   sector-buf h# 1ee +  h# -30  bounds  do
+1A30F50 	98  A A3  1 58 41 A0  1 
+1A30F58 	EE  1  0  0  4 45 A0  1 
+1A30F60 	58 41 A0  1 D0 FF FF FF 
+1A30F68 	F0 6D A0  1 88 42 A0  1 
+1A30F70 	50  0  0  0 
+      i d# 12 + le-l@  i 8 + le-l@  i c@  i 4 + c@
+1A30F74 	B4 42 A0  1 
+1A30F78 	58 41 A0  1  C  0  0  0 
+1A30F80 	 4 45 A0  1 4C 4C A0  1 
+1A30F88 	B4 42 A0  1 F0 6F A0  1 
+1A30F90 	 4 45 A0  1 4C 4C A0  1 
+1A30F98 	B4 42 A0  1 C4 4C A0  1 
+1A30FA0 	B4 42 A0  1 B0 6F A0  1 
+1A30FA8 	 4 45 A0  1 C4 4C A0  1 
+   h# -10 +loop
+1A30FB0 	58 41 A0  1 F0 FF FF FF 
+1A30FB8 	1C 42 A0  1 B8 FF FF FF 
+   false
+1A30FC0 	18 70 A0  1 
+;
+1A30FC4 	58 46 A0  1 
+
+\ (find-partition) scans ordinary and extended partitions looking for one that
+\ matches a given criterion.
+
+0 instance value extended-offset
+1A30FC8 	65 78 74 65 6E 64 65 64 
+1A30FD0 	2D 6F 66 66 73 65 74 8F 
+1A30FD8 	1C  F A3  1 C0 FE A1  1 
+1A30FE0 	3C  0  0  0 
+false value found?
+1A30FE4 	 0 66 6F 75 
+1A30FE8 	6E 64 3F 86 DC  F A3  1 
+1A30FF0 	50 40 A0  1 A0  9  0  0 
+defer suitable?  ( b t -- b t flag )
+1A30FF8 	 0  0 73 75 69 74 61 62 
+1A31000 	6C 65 3F 89 F0  F A3  1 
+1A31008 	5C 40 A0  1 A4  9  0  0 
+
+: (find-partition  ( sector-offset -- not-found? )
+1A31010 	28 66 69 6E 64 2D 70 61 
+1A31018 	72 74 69 74 69 6F 6E 8F 
+1A31020 	 8 10 A3  1 20 40 A0  1 
+   >r process-ptable  if  r> drop false exit  then  r>  ( n,s,b,t*4 sector-offset )
+1A31028 	BC 45 A0  1 1C  F A3  1 
+1A31030 	DC 41 A0  1 14  0  0  0 
+1A31038 	D0 45 A0  1 30 49 A0  1 
+1A31040 	18 70 A0  1 40 46 A0  1 
+1A31048 	D0 45 A0  1 
+
+   4 0 do			( n,s,b,tN ... n,s,b,t1 sector-offset )
+1A3104C 	B0 6F A0  1 
+1A31050 	70 6F A0  1 88 42 A0  1 
+1A31058 	2C  1  0  0 
+      >r						( ... n,s,b,t )
+1A3105C 	BC 45 A0  1 
+      found?  if		\ partition was found	( ... n,s,b,t )
+1A31060 	F0  F A3  1 DC 41 A0  1 
+1A31068 	14  0  0  0 
+         2drop 2drop					( ... )
+1A3106C 	AC 49 A0  1 
+1A31070 	AC 49 A0  1 
+      else						( ... n,s,b,t )
+1A31074 	C8 41 A0  1 
+1A31078 	 0  1  0  0 
+         ?dup 0=  if					( ... n,s,b )
+1A3107C 	B4 70 A0  1 
+1A31080 	24 47 A0  1 DC 41 A0  1 
+1A31088 	10  0  0  0 
+	    \ empty, skip it.
+	    3drop					( ... )
+1A3108C 	90 52 A0  1 
+         else						( ... n,s,b,t )
+1A31090 	C8 41 A0  1 E4  0  0  0 
+            dup 5 = over h# f = or  if   \ extended partition          ( ... n,s,b,t )
+1A31098 	40 49 A0  1 C0 6F A0  1 
+1A310A0 	24 48 A0  1 54 49 A0  1 
+1A310A8 	58 41 A0  1  F  0  0  0 
+1A310B0 	24 48 A0  1 70 44 A0  1 
+1A310B8 	DC 41 A0  1 64  0  0  0 
+               2drop nip                                ( ... s )
+1A310C0 	AC 49 A0  1 FC 46 A0  1 
+               extended-offset dup 0=  if  over to extended-offset  then
+1A310C8 	DC  F A3  1 40 49 A0  1 
+1A310D0 	24 47 A0  1 DC 41 A0  1 
+1A310D8 	10  0  0  0 54 49 A0  1 
+1A310E0 	48 B8 A1  1 DC  F A3  1 
+               + dup                                    ( ... es )
+1A310E8 	 4 45 A0  1 40 49 A0  1 
+               sector-buf >r sector-alloc               ( ... es )
+1A310F0 	98  A A3  1 BC 45 A0  1 
+1A310F8 	D0  A A3  1 
+               read-sector recurse drop                 ( ... )
+1A310FC 	A0  B A3  1 
+1A31100 	24 10 A3  1 30 49 A0  1 
+               sector-free r> to sector-buf             ( ... )
+1A31108 	F8  A A3  1 D0 45 A0  1 
+1A31110 	48 B8 A1  1 98  A A3  1 
+            else		\ Ordinary partition	( ... n,s,b,t )
+1A31118 	C8 41 A0  1 5C  0  0  0 
+               suitable?  if                		( ... n,s,b,t )
+1A31120 	 8 10 A3  1 DC 41 A0  1 
+1A31128 	4C  0  0  0 
+                  to partition-type drop		( ... n,s )
+1A3112C 	48 B8 A1  1 
+1A31130 	A8  9 A3  1 30 49 A0  1 
+                  r@ + to sector-offset			( ... n )
+1A31138 	E4 45 A0  1  4 45 A0  1 
+1A31140 	48 B8 A1  1 B4  A A3  1 
+                  /sector um* to size-high to size-low	( ... )
+1A31148 	80  A A3  1 50 5D A0  1 
+1A31150 	48 B8 A1  1 8C  9 A3  1 
+1A31158 	48 B8 A1  1 74  9 A3  1 
+                  true to found?			( ... )
+1A31160 	 4 70 A0  1 B8 40 A0  1 
+1A31168 	F0  F A3  1 
+               else					( ... n,s,b,t )
+1A3116C 	C8 41 A0  1 
+1A31170 	 8  0  0  0 
+                  4drop					( ... )
+1A31174 	38 53 A0  1 
+               then					( ... )
+            then					( ... )
+         then						( ... )
+      then						( ... )
+      r>						( ... sector-offset )
+1A31178 	D0 45 A0  1 
+   loop
+1A3117C 	F8 41 A0  1 
+1A31180 	DC FE FF FF 
+   drop found? 0=
+1A31184 	30 49 A0  1 
+1A31188 	F0  F A3  1 24 47 A0  1 
+;
+1A31190 	58 46 A0  1 
+: (find-partition)  ( sector-offset criterion-xt -- not-found? )
+1A31194 	 0  0  0 28 
+1A31198 	66 69 6E 64 2D 70 61 72 
+1A311A0 	74 69 74 69 6F 6E 29 90 
+1A311A8 	24 10 A3  1 20 40 A0  1 
+   to suitable?  false to found?  (find-partition
+1A311B0 	98 40 A0  1  8 10 A3  1 
+1A311B8 	18 70 A0  1 B8 40 A0  1 
+1A311C0 	F0  F A3  1 24 10 A3  1 
+;
+1A311C8 	58 46 A0  1 
+
+\ These are some criteria used for finding specific partitions
+
+\ Matches UFS partitions
+: is-ufs?  ( type -- type flag )  dup ufs-type =  ;
+1A311CC 	69 73 2D 75 
+1A311D0 	66 73 3F 87 AC 11 A3  1 
+1A311D8 	20 40 A0  1 40 49 A0  1 
+1A311E0 	F0  9 A3  1 24 48 A0  1 
+1A311E8 	58 46 A0  1 
+
+\ Matches partitions with the bootable flag set
+: bootable?  ( boot? type -- boot? type flag )  over h# 80 =  ;
+1A311EC 	 0  0 62 6F 
+1A311F0 	6F 74 61 62 6C 65 3F 89 
+1A311F8 	D8 11 A3  1 20 40 A0  1 
+1A31200 	54 49 A0  1 58 41 A0  1 
+1A31208 	80  0  0  0 24 48 A0  1 
+1A31210 	58 46 A0  1 
+
+\ Kludge for Linux: bootable flag is not always set, accept ext2fs-type
+\ : bootable?  ( boot? type -- boot? type flag )
+\    over h# 80 =  over h# 83 = or
+\ ;
+
+\ Matches the Nth partition, where N is initially stored in the value #part
+: nth?  ( -- flag )  #part 1- dup to #part  0=  ;
+1A31214 	 0  0  0 6E 
+1A31218 	74 68 3F 84 FC 11 A3  1 
+1A31220 	20 40 A0  1 6C  A A3  1 
+1A31228 	54 4B A0  1 40 49 A0  1 
+1A31230 	48 B8 A1  1 6C  A A3  1 
+1A31238 	24 47 A0  1 58 46 A0  1 
+
+: find-partition  ( sector-offset -- )
+1A31240 	 0 66 69 6E 64 2D 70 61 
+1A31248 	72 74 69 74 69 6F 6E 8E 
+1A31250 	20 12 A3  1 20 40 A0  1 
+   0  ['] nth? (find-partition) abort" No such partition"
+1A31258 	70 6F A0  1 60 53 A0  1 
+1A31260 	20 12 A3  1 AC 11 A3  1 
+1A31268 	 8 81 A0  1 11 4E 6F 20 
+1A31270 	73 75 63 68 20 70 61 72 
+1A31278 	74 69 74 69 6F 6E  0  0 
+;
+1A31280 	58 46 A0  1 

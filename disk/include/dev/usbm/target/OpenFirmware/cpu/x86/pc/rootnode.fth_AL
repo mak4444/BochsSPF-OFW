@@ -1,0 +1,286 @@
+purpose: Root node methods for generic PC, beyond the generic 1-cell ones
+
+: root-map-in  ( phys len -- virt )
+1A33274 	72 6F 6F 74 
+1A33278 	2D 6D 61 70 2D 69 6E 8B 
+1A33280 	30 32 A3  1 20 40 A0  1 
+[ifdef] virtual-mode
+   " /" " map-in" execute-device-method drop
+[else]
+   drop
+1A33288 	30 49 A0  1 
+[then]
+;
+1A3328C 	58 46 A0  1 
+: root-map-out  ( virt len -- )
+1A33290 	 0  0  0 72 6F 6F 74 2D 
+1A33298 	6D 61 70 2D 6F 75 74 8C 
+1A332A0 	84 32 A3  1 20 40 A0  1 
+[ifdef] virtual-mode
+   " /" " map-out" execute-device-method drop
+[else]
+   2drop
+1A332A8 	AC 49 A0  1 
+[then]
+;
+1A332AC 	58 46 A0  1 
+
+dev /
+extend-package
+
+" Generic PC" encode-string  " banner-name" property
+1A332B0 	47 65 6E 65 72 69 63 20 
+1A332B8 	50 43  0  0 62 61 6E 6E 
+1A332C0 	65 72 2D 6E 61 6D 65 8B 
+1A332C8 	B0 26 A3  1 BC 13 A2  1 
+1A332D0 	20  0  0  0  B  0  0  0 
+
+hex
+
+\ Static methods
+: decode-unit  ( adr len -- phys )  push-hex  $number  if  0  then  pop-base  ;
+1A332D8 	64 65 63 6F 64 65 2D 75 
+1A332E0 	6E 69 74 8B  0  0 A0  1 
+1A332E8 	20 40 A0  1 5C F4 A0  1 
+1A332F0 	40 FE A0  1 DC 41 A0  1 
+1A332F8 	 8  0  0  0 70 6F A0  1 
+1A33300 	9C F4 A0  1 58 46 A0  1 
+: encode-unit  ( phys -- adr len )  push-hex  (u.)  pop-base  ;
+1A33308 	65 6E 63 6F 64 65 2D 75 
+1A33310 	6E 69 74 8B E8 32 A3  1 
+1A33318 	20 40 A0  1 5C F4 A0  1 
+1A33320 	AC 77 A0  1 9C F4 A0  1 
+1A33328 	58 46 A0  1 
+
+\ Not-necessarily-static methods
+: open  ( -- true )  true  ;
+1A3332C 	 0  0  0 6F 
+1A33330 	70 65 6E 84 18 33 A3  1 
+1A33338 	20 40 A0  1  4 70 A0  1 
+1A33340 	58 46 A0  1 
+: close  ( -- )  ;
+1A33344 	 0  0 63 6C 
+1A33348 	6F 73 65 85 38 33 A3  1 
+1A33350 	20 40 A0  1 58 46 A0  1 
+
+: map-in   ( phys size -- virt )
+1A33358 	 0 6D 61 70 2D 69 6E 86 
+1A33360 	50 33 A3  1 20 40 A0  1 
+[ifdef] virtual-mode
+   over  mmu-lowbits +  pagesize round-up >r   ( phys        r: size' )
+   r@ pagesize mmu-claim                       ( phys virt   r: size' )
+   >r  dup mmu-highbits                        ( phys phys'  r: size' virt )
+   r> r>  over >r                 ( phys  phys' virt size    r: virt )
+   -1 mmu-map                                  ( phys        r: virt )
+   mmu-lowbits r> +                            ( virtual )
+[else]
+   drop
+1A33368 	30 49 A0  1 
+[then]
+;
+1A3336C 	58 46 A0  1 
+: map-out  ( virtual size -- )
+1A33370 	6D 61 70 2D 6F 75 74 87 
+1A33378 	64 33 A3  1 20 40 A0  1 
+[ifdef] virtual-mode
+   2dup mmu-unmap  mmu-release
+[else]
+   2drop
+1A33380 	AC 49 A0  1 
+[then]
+;
+1A33384 	58 46 A0  1 
+
+: dma-range  ( -- start end )  dma-base   dup dma-size +  ;
+1A33388 	 0  0 64 6D 61 2D 72 61 
+1A33390 	6E 67 65 89 7C 33 A3  1 
+1A33398 	20 40 A0  1 84 24 A3  1 
+1A333A0 	40 49 A0  1 9C 24 A3  1 
+1A333A8 	 4 45 A0  1 58 46 A0  1 
+
+0 [if]  \ This is fairly useless since the DMA ranges can be dynamic
+\ We hereby establish the convention that the implied "#address-cells"
+\ for the (nonexistent) parent of the root node is 0, so the parent
+\ address portion of the ranges property is empty.
+0 0 encode-bytes
+   dma-base encode-int encode+  dma-size encode-int encode+
+" dma-ranges" property
+[then]
+
+\ x86 caches are coherent
+h# 3 constant dma-map-mode		\ Cacheable
+1A333B0 	 0  0  0 64 6D 61 2D 6D 
+1A333B8 	61 70 2D 6D 6F 64 65 8C 
+1A333C0 	98 33 A3  1 68 40 A0  1 
+1A333C8 	 3  0  0  0 
+
+\ Used with "find-node" to locate a physical memory node containing
+\ enough memory in the DMA range.
+\ We first compute the intersection between the memory piece and the
+\ range reachable by DMA.  If the regions are disjoint, then ok-high
+\ will be (unsigned) less than ok-low.  We then subtract ok-low from
+\ ok-high to give the (possibly negative) size of the intersection.
+: in-range?  ( size mem-low mem-high range-low range-high -- flag )
+1A333CC 	 0  0 69 6E 
+1A333D0 	2D 72 61 6E 67 65 3F 89 
+1A333D8 	C4 33 A3  1 20 40 A0  1 
+   rot umin -rot              ( size min-high mem-low mem-high )
+1A333E0 	7C 49 A0  1 4C 4A A0  1 
+1A333E8 	94 49 A0  1 
+   umax                       ( size min-high max-low )
+1A333EC 	C8 4A A0  1 
+   - <=                       ( flag )
+1A333F0 	18 45 A0  1  C 49 A0  1 
+;
+1A333F8 	58 46 A0  1 
+
+: dma-ok?  ( size node-adr -- size flag )
+1A333FC 	64 6D 61 2D 
+1A33400 	6F 6B 3F 87 DC 33 A3  1 
+1A33408 	20 40 A0  1 
+   node-range				 ( size mem-adr mem-len )
+1A3340C 	64 27 A3  1 
+   over +                                ( size mem-adr mem-end )
+1A33410 	54 49 A0  1  4 45 A0  1 
+
+   3dup dma-range in-range?  if          ( size mem-adr mem-end )
+1A33418 	A4 52 A0  1 98 33 A3  1 
+1A33420 	DC 33 A3  1 DC 41 A0  1 
+1A33428 	10  0  0  0 
+      2drop true exit                    ( size true )
+1A3342C 	AC 49 A0  1 
+1A33430 	 4 70 A0  1 40 46 A0  1 
+   then                                  ( size mem-adr mem-end )
+
+   2drop false                           ( size false )
+1A33438 	AC 49 A0  1 18 70 A0  1 
+;
+1A33440 	58 46 A0  1 
+
+\ Find an available physical address range suitable for DMA.  This word
+\ doesn't actually claim the memory (that is done later), but simply locates
+\ a suitable range that can be successfully claimed.
+: find-dma-address  ( size -- true | adr false )
+1A33444 	 0  0  0 66 
+1A33448 	69 6E 64 2D 64 6D 61 2D 
+1A33450 	61 64 64 72 65 73 73 90 
+1A33458 	 8 34 A3  1 20 40 A0  1 
+   " physavail" memory-node @ $call-method  	( list )
+1A33460 	9C 53 A0  1  9 70 68 79 
+1A33468 	73 61 76 61 69 6C  0  0 
+1A33470 	58 7E A2  1 5C 4C A0  1 
+1A33478 	B4 31 A2  1 
+   ['] dma-ok?  find-node is next-node  drop	( size' )
+1A3347C 	60 53 A0  1 
+1A33480 	 8 34 A3  1 88 72 A1  1 
+1A33488 	B8 40 A0  1 24 27 A3  1 
+1A33490 	30 49 A0  1 
+   next-node 0=  if  drop true exit  then	( size' )
+1A33494 	24 27 A3  1 
+1A33498 	24 47 A0  1 DC 41 A0  1 
+1A334A0 	10  0  0  0 30 49 A0  1 
+1A334A8 	 4 70 A0  1 40 46 A0  1 
+   next-end                                     ( size mem-end )
+1A334B0 	B8 27 A3  1 
+   dma-range                                    ( size mem-end range-l,h )
+1A334B4 	98 33 A3  1 
+   nip umin  swap -   false		        ( adr false )
+1A334B8 	FC 46 A0  1 4C 4A A0  1 
+1A334C0 	68 49 A0  1 18 45 A0  1 
+1A334C8 	18 70 A0  1 
+;
+1A334CC 	58 46 A0  1 
+
+headers
+: dma-alloc  ( size -- virt )
+1A334D0 	 0  0 64 6D 61 2D 61 6C 
+1A334D8 	6C 6F 63 89 5C 34 A3  1 
+1A334E0 	20 40 A0  1 
+   pagesize round-up
+1A334E4 	50 7F A2  1 
+1A334E8 	A4 91 A0  1 
+
+   \ Locate a suitable physical range
+   dup  find-dma-address  throw			( size' phys )
+1A334EC 	40 49 A0  1 
+1A334F0 	5C 34 A3  1 74 7F A0  1 
+
+   \ Claim it
+   over 0  mem-claim				( size' phys )
+1A334F8 	54 49 A0  1 70 6F A0  1 
+1A33500 	B0 7E A2  1 
+
+[ifdef] virtual-mode
+   \ Get a virtual range
+   over pagesize  mmu-claim			( size' phys virt )
+
+   \ Map the physical and virtual ranges
+   dup >r					( size' phys virt )
+   rot dma-map-mode				( phys virt size' mode )
+   mmu-map					( )
+   r>						( virt )
+[else]
+   nip
+1A33504 	FC 46 A0  1 
+[then]
+;
+1A33508 	58 46 A0  1 
+warning off
+: dma-free  ( virt size -- )
+1A3350C 	 0  0  0 64 
+1A33510 	6D 61 2D 66 72 65 65 88 
+1A33518 	E0 34 A3  1 20 40 A0  1 
+   pagesize round-up				( virt size' )
+1A33520 	50 7F A2  1 A4 91 A0  1 
+[ifdef] virtual-mode
+   over mmu-translate 0= abort" Freeing unmapped dma memory"  drop
+						( virt size phys )
+   -rot tuck                                    ( phys size  virt size )
+   2dup mmu-unmap  mmu-release			( phys size )
+[then]
+   mem-release					( )
+1A33528 	D8 7E A2  1 
+;
+1A3352C 	58 46 A0  1 
+
+\ We don't need to flush the cache because we map DMA memory non-cached.
+: dma-map-in  ( virt size cache? -- phys )
+1A33530 	 0 64 6D 61 2D 6D 61 70 
+1A33538 	2D 69 6E 8A 1C 35 A3  1 
+1A33540 	20 40 A0  1 
+   2drop    \ We mapped it non-cacheable above	( virt )
+1A33544 	AC 49 A0  1 
+[ifdef] virtual-mode
+   mmu-translate 0= abort" Invalid DMA address"	( phys mode )
+   drop
+[then]
+;
+1A33548 	58 46 A0  1 
+: dma-map-out  ( virt phys size -- )  3drop  ;
+1A3354C 	64 6D 61 2D 
+1A33550 	6D 61 70 2D 6F 75 74 8B 
+1A33558 	40 35 A3  1 20 40 A0  1 
+1A33560 	90 52 A0  1 58 46 A0  1 
+: dma-sync     ( virt phys size -- )  3drop  ;
+1A33568 	 0  0  0 64 6D 61 2D 73 
+1A33570 	79 6E 63 88 5C 35 A3  1 
+1A33578 	20 40 A0  1 90 52 A0  1 
+1A33580 	58 46 A0  1 
+: dma-push     ( virt phys size -- )  3drop  ;
+1A33584 	 0  0  0 64 
+1A33588 	6D 61 2D 70 75 73 68 88 
+1A33590 	78 35 A3  1 20 40 A0  1 
+1A33598 	90 52 A0  1 58 46 A0  1 
+: dma-pull     ( virt phys size -- )  3drop  ;
+1A335A0 	 0  0  0 64 6D 61 2D 70 
+1A335A8 	75 6C 6C 88 94 35 A3  1 
+1A335B0 	20 40 A0  1 90 52 A0  1 
+1A335B8 	58 46 A0  1 
+warning on
+finish-device
+1A335BC 	 0  0  0  0 
+1A335C0 	 0  0  0  0  0  0  0  0 
+1A335C8 	 0  0  0  0  0  0  0  0 
+1A335D0 	 0  0  0  0 
+
+device-end

@@ -1,0 +1,227 @@
+: gpt?  ( -- flag )
+1A3129C 	 0  0  0 67 
+1A312A0 	70 74 3F 84 90 12 A3  1 
+1A312A8 	20 40 A0  1 
+   sector-buf h# 1fe + le-w@  h# aa55  <>  if  false exit  then
+1A312AC 	98  A A3  1 
+1A312B0 	58 41 A0  1 FE  1  0  0 
+1A312B8 	 4 45 A0  1 80 4C A0  1 
+1A312C0 	58 41 A0  1 55 AA  0  0 
+1A312C8 	44 48 A0  1 DC 41 A0  1 
+1A312D0 	 C  0  0  0 18 70 A0  1 
+1A312D8 	40 46 A0  1 
+   sector-buf h# 1c2 + c@ gpt-type =
+1A312DC 	98  A A3  1 
+1A312E0 	58 41 A0  1 C2  1  0  0 
+1A312E8 	 4 45 A0  1 C4 4C A0  1 
+1A312F0 	20  A A3  1 24 48 A0  1 
+;
+1A312F8 	58 46 A0  1 
+
+\ Tasks:
+\ Choose a partition based on part# and partition-name$
+\ Set sector-offset, size-low, size-high, and partition-type
+
+-1 value the-sector
+1A312FC 	 0 74 68 65 
+1A31300 	2D 73 65 63 74 6F 72 8A 
+1A31308 	A8 12 A3  1 50 40 A0  1 
+1A31310 	A8  9  0  0 
+: get-gpt-info  ( -- error? )
+1A31314 	 0  0  0 67 
+1A31318 	65 74 2D 67 70 74 2D 69 
+1A31320 	6E 66 6F 8C  C 13 A3  1 
+1A31328 	20 40 A0  1 
+   1 read-hw-sector            ( )
+1A3132C 	80 6F A0  1 
+1A31330 	20  B A3  1 
+   sector-buf gpt-magic comp  if  true exit  then
+1A31334 	98  A A3  1 
+1A31338 	B0  8 A3  1 38 52 A0  1 
+1A31340 	DC 41 A0  1  C  0  0  0 
+1A31348 	 4 70 A0  1 40 46 A0  1 
+   \ XXX should verify CRC
+   sector-buf d# 72 + le-x@ to partition-lba0
+1A31350 	98  A A3  1 58 41 A0  1 
+1A31358 	48  0  0  0  4 45 A0  1 
+1A31360 	BC  7 A3  1 48 B8 A1  1 
+1A31368 	20  8 A3  1 
+   sector-buf d# 80 + le-l@ to #gpt-partitions
+1A3136C 	98  A A3  1 
+1A31370 	58 41 A0  1 50  0  0  0 
+1A31378 	 4 45 A0  1 4C 4C A0  1 
+1A31380 	B8 40 A0  1 EC  7 A3  1 
+   sector-buf d# 84 + le-l@ to /gpt-entry
+1A31388 	98  A A3  1 58 41 A0  1 
+1A31390 	54  0  0  0  4 45 A0  1 
+1A31398 	4C 4C A0  1 B8 40 A0  1 
+1A313A0 	 4  8 A3  1 
+   -1 to the-sector
+1A313A4 	58 41 A0  1 
+1A313A8 	FF FF FF FF B8 40 A0  1 
+1A313B0 	 C 13 A3  1 
+   false
+1A313B4 	18 70 A0  1 
+;
+1A313B8 	58 46 A0  1 
+: read-gpt-sector  ( sector# -- )
+1A313BC 	72 65 61 64 
+1A313C0 	2D 67 70 74 2D 73 65 63 
+1A313C8 	74 6F 72 8F 28 13 A3  1 
+1A313D0 	20 40 A0  1 
+   dup the-sector =  if  drop exit  then      ( sector# )
+1A313D4 	40 49 A0  1 
+1A313D8 	 C 13 A3  1 24 48 A0  1 
+1A313E0 	DC 41 A0  1  C  0  0  0 
+1A313E8 	30 49 A0  1 40 46 A0  1 
+   dup to the-sector                          ( sector# )
+1A313F0 	40 49 A0  1 B8 40 A0  1 
+1A313F8 	 C 13 A3  1 
+   read-hw-sector
+1A313FC 	20  B A3  1 
+;
+1A31400 	58 46 A0  1 
+
+: select-gpt-partition  ( adr -- )
+1A31404 	 0  0  0 73 
+1A31408 	65 6C 65 63 74 2D 67 70 
+1A31410 	74 2D 70 61 72 74 69 74 
+1A31418 	69 6F 6E 94 D0 13 A3  1 
+1A31420 	20 40 A0  1 
+   dup gpt-blk0 x>u to sector-offset                 ( adr )
+1A31424 	40 49 A0  1 
+1A31428 	D8  8 A3  1 30 49 A0  1 
+1A31430 	48 B8 A1  1 B4  A A3  1 
+   gpt-#blks /sector xu*d to size-high  to size-low  ( )
+1A31438 	 0  9 A3  1 80  A A3  1 
+1A31440 	94  8 A3  1 48 B8 A1  1 
+1A31448 	8C  9 A3  1 48 B8 A1  1 
+1A31450 	74  9 A3  1 
+;
+1A31454 	58 46 A0  1 
+
+: partition-name=  ( adr -- flag )
+1A31458 	70 61 72 74 69 74 69 6F 
+1A31460 	6E 2D 6E 61 6D 65 3D 8F 
+1A31468 	20 14 A3  1 20 40 A0  1 
+   d# 56 +                        ( utf16-name-adr )
+1A31470 	58 41 A0  1 38  0  0  0 
+1A31478 	 4 45 A0  1 
+   partition-name$  bounds  ?do   ( utf16-name-adr )
+1A3147C 	58  A A3  1 
+1A31480 	F0 6D A0  1 50 42 A0  1 
+1A31488 	3C  0  0  0 
+      dup w@  i c@  <>  if        ( utf16-name-adr )
+1A3148C 	40 49 A0  1 
+1A31490 	94 4C A0  1 B4 42 A0  1 
+1A31498 	C4 4C A0  1 44 48 A0  1 
+1A314A0 	DC 41 A0  1 14  0  0  0 
+         drop false unloop exit   ( -- false )
+1A314A8 	30 49 A0  1 18 70 A0  1 
+1A314B0 	3C 42 A0  1 40 46 A0  1 
+      then                        ( utf16-name-adr )
+      wa1+                        ( utf16-name-adr' )
+1A314B8 	A0 50 A0  1 
+   loop                           ( utf16-name-adr )
+1A314BC 	F8 41 A0  1 
+1A314C0 	CC FF FF FF 
+   w@ 0=                          ( flag )
+1A314C4 	94 4C A0  1 
+1A314C8 	24 47 A0  1 
+;
+1A314CC 	58 46 A0  1 
+
+: >gpt-entry  ( n -- adr )
+1A314D0 	 0 3E 67 70 74 2D 65 6E 
+1A314D8 	74 72 79 8A 6C 14 A3  1 
+1A314E0 	20 40 A0  1 
+   /gpt-entry *             ( offset )
+1A314E4 	 4  8 A3  1 
+1A314E8 	1C 5F A0  1 
+   /sector /mod             ( rem quot )
+1A314EC 	80  A A3  1 
+1A314F0 	50 5F A0  1 
+   partition-lba0 x>u +     ( rem sector# )
+1A314F4 	20  8 A3  1 
+1A314F8 	30 49 A0  1  4 45 A0  1 
+   read-gpt-sector          ( rem )
+1A31500 	D0 13 A3  1 
+   sector-buf +             ( adr )
+1A31504 	98  A A3  1 
+1A31508 	 4 45 A0  1 
+;
+1A3150C 	58 46 A0  1 
+: nth-gpt-partition  ( n -- )
+1A31510 	 0  0 6E 74 68 2D 67 70 
+1A31518 	74 2D 70 61 72 74 69 74 
+1A31520 	69 6F 6E 91 E0 14 A3  1 
+1A31528 	20 40 A0  1 
+   1- >gpt-entry select-gpt-partition     ( )
+1A3152C 	54 4B A0  1 
+1A31530 	E0 14 A3  1 20 14 A3  1 
+;
+1A31538 	58 46 A0  1 
+: gpt-active?  ( adr -- flag )  d# 16 0 bskip  0<>  ;
+1A3153C 	67 70 74 2D 
+1A31540 	61 63 74 69 76 65 3F 8B 
+1A31548 	28 15 A3  1 20 40 A0  1 
+1A31550 	58 41 A0  1 10  0  0  0 
+1A31558 	70 6F A0  1 F4 4E A0  1 
+1A31560 	44 47 A0  1 58 46 A0  1 
+
+: named-gpt-partition  ( -- )
+1A31568 	6E 61 6D 65 64 2D 67 70 
+1A31570 	74 2D 70 61 72 74 69 74 
+1A31578 	69 6F 6E 93 4C 15 A3  1 
+1A31580 	20 40 A0  1 
+   #gpt-partitions 0  ?do
+1A31584 	EC  7 A3  1 
+1A31588 	70 6F A0  1 50 42 A0  1 
+1A31590 	40  0  0  0 
+      i >gpt-entry                ( adr )
+1A31594 	B4 42 A0  1 
+1A31598 	E0 14 A3  1 
+      dup gpt-active?  if         ( adr )
+1A3159C 	40 49 A0  1 
+1A315A0 	4C 15 A3  1 DC 41 A0  1 
+1A315A8 	1C  0  0  0 
+         dup partition-name=  if  ( adr )
+1A315AC 	40 49 A0  1 
+1A315B0 	6C 14 A3  1 DC 41 A0  1 
+1A315B8 	 C  0  0  0 
+            select-gpt-partition  ( )
+1A315BC 	20 14 A3  1 
+	    leave                 ( )
+1A315C0 	18 43 A0  1 
+         then                     ( adr )
+      then                        ( adr )
+      drop                        ( )
+1A315C4 	30 49 A0  1 
+   loop                           ( )
+1A315C8 	F8 41 A0  1 C8 FF FF FF 
+;
+1A315D0 	58 46 A0  1 
+: gpt-map  ( -- )
+1A315D4 	67 70 74 2D 
+1A315D8 	6D 61 70 87 80 15 A3  1 
+1A315E0 	20 40 A0  1 
+   get-gpt-info  abort" Invalid GUID Partition Table"
+1A315E4 	28 13 A3  1 
+1A315E8 	 8 81 A0  1 1C 49 6E 76 
+1A315F0 	61 6C 69 64 20 47 55 49 
+1A315F8 	44 20 50 61 72 74 69 74 
+1A31600 	69 6F 6E 20 54 61 62 6C 
+1A31608 	65  0  0  0 
+   #part 1 >=  if
+1A3160C 	6C  A A3  1 
+1A31610 	80 6F A0  1 EC 48 A0  1 
+1A31618 	DC 41 A0  1 14  0  0  0 
+      #part nth-gpt-partition
+1A31620 	6C  A A3  1 28 15 A3  1 
+   else
+1A31628 	C8 41 A0  1  8  0  0  0 
+      named-gpt-partition
+1A31630 	80 15 A3  1 
+   then
+;
+1A31634 	58 46 A0  1 

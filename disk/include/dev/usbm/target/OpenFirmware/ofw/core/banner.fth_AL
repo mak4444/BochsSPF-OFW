@@ -1,0 +1,217 @@
+
+hex
+headerless
+true value auto-banner?
+1A2ADE0 	 0  0  0 61 75 74 6F 2D 
+1A2ADE8 	62 61 6E 6E 65 72 3F 8C 
+1A2ADF0 	AC AC A2  1 50 40 A0  1 
+1A2ADF8 	C0  8  0  0 
+
+headers
+: suppress-banner  ( -- )  false to auto-banner?  ;
+1A2ADFC 	73 75 70 70 
+1A2AE00 	72 65 73 73 2D 62 61 6E 
+1A2AE08 	6E 65 72 8F F4 AD A2  1 
+1A2AE10 	20 40 A0  1 18 70 A0  1 
+1A2AE18 	B8 40 A0  1 F4 AD A2  1 
+1A2AE20 	58 46 A0  1 
+
+ false value oem-banner?
+1A2AE24 	6F 65 6D 2D 
+1A2AE28 	62 61 6E 6E 65 72 3F 8B 
+1A2AE30 	10 AE A2  1 50 40 A0  1 
+1A2AE38 	C4  8  0  0 
+" "  d# 80  config-string oem-banner
+1A2AE3C 	 0 6F 65 6D 
+1A2AE40 	2D 62 61 6E 6E 65 72 8A 
+1A2AE48 	 0 AC A2  1  0  0  0  0 
+1A2AE50 	C8  8  0 40  4  0  0  0 
+1A2AE58 	 0  0  0  0 
+
+false config-flag oem-logo?
+1A2AE5C 	 0  0 6F 65 
+1A2AE60 	6D 2D 6C 6F 67 6F 3F 89 
+1A2AE68 	4C AE A2  1  0  0  0  0 
+1A2AE70 	CC  8  0 40  0  0  0  0 
+
+headerless
+
+d# 128 constant max-logo-width
+1A2AE78 	 0 6D 61 78 2D 6C 6F 67 
+1A2AE80 	6F 2D 77 69 64 74 68 8E 
+1A2AE88 	34 AE A2  1 68 40 A0  1 
+1A2AE90 	80  0  0  0 
+
+defer .firmware  ' noop to .firmware
+1A2AE94 	 0  0 2E 66 
+1A2AE98 	69 72 6D 77 61 72 65 89 
+1A2AEA0 	8C AE A2  1 5C 40 A0  1 
+1A2AEA8 	D0  8  0  0 
+
+: memory-size ( -- #megs )
+1A2AEAC 	6D 65 6D 6F 
+1A2AEB0 	72 79 2D 73 69 7A 65 8B 
+1A2AEB8 	A4 AE A2  1 20 40 A0  1 
+   " size" memory-node @ $call-method 1meg um/mod nip
+1A2AEC0 	9C 53 A0  1  4 73 69 7A 
+1A2AEC8 	65  0  0  0 58 7E A2  1 
+1A2AED0 	5C 4C A0  1 B4 31 A2  1 
+1A2AED8 	B8 6E A2  1 7C 5D A0  1 
+1A2AEE0 	FC 46 A0  1 
+;
+1A2AEE4 	58 46 A0  1 
+: .memory  ( -- )
+1A2AEE8 	2E 6D 65 6D 6F 72 79 87 
+1A2AEF0 	BC AE A2  1 20 40 A0  1 
+   memory-size dup d# 1024 / ?dup  if  ( mb gb )
+1A2AEF8 	BC AE A2  1 40 49 A0  1 
+1A2AF00 	58 41 A0  1  0  4  0  0 
+1A2AF08 	98 5F A0  1 B4 70 A0  1 
+1A2AF10 	DC 41 A0  1 20  0  0  0 
+      nip " GiB" rot                   ( gb$ gb )
+1A2AF18 	FC 46 A0  1 9C 53 A0  1 
+1A2AF20 	 3 47 69 42  0  0  0  0 
+1A2AF28 	7C 49 A0  1 
+   else                                ( mb )
+1A2AF2C 	C8 41 A0  1 
+1A2AF30 	14  0  0  0 
+      " MiB" rot                       ( mb$ mb )
+1A2AF34 	9C 53 A0  1 
+1A2AF38 	 3 4D 69 42  0  0  0  0 
+1A2AF40 	7C 49 A0  1 
+   then                                ( m$ m )
+   .d  type ."  memory installed"      ( )
+1A2AF44 	48  E A1  1 
+1A2AF48 	 4 6C A0  1 20 7C A0  1 
+1A2AF50 	11 20 6D 65 6D 6F 72 79 
+1A2AF58 	20 69 6E 73 74 61 6C 6C 
+1A2AF60 	65 64  0  0 
+;
+1A2AF64 	58 46 A0  1 
+: .serial  ( -- )
+1A2AF68 	2E 73 65 72 69 61 6C 87 
+1A2AF70 	F4 AE A2  1 20 40 A0  1 
+   push-decimal  ." Serial #"  serial# (.) type
+1A2AF78 	48 F4 A0  1 20 7C A0  1 
+1A2AF80 	 8 53 65 72 69 61 6C 20 
+1A2AF88 	23  0  0  0 B0 E3 A1  1 
+1A2AF90 	10 78 A0  1  4 6C A0  1 
+   \   ." ."
+   pop-base
+1A2AF98 	9C F4 A0  1 
+;
+1A2AF9C 	58 46 A0  1 
+
+variable logo?
+1A2AFA0 	 0  0 6C 6F 67 6F 3F 85 
+1A2AFA8 	74 AF A2  1 48 40 A0  1 
+1A2AFB0 	D4  8  0  0 
+: ?spaces  ( -- )
+1A2AFB4 	3F 73 70 61 
+1A2AFB8 	63 65 73 87 AC AF A2  1 
+1A2AFC0 	20 40 A0  1 
+   logo? @  if  max-logo-width  stdout-char-width  / 2+  spaces  then
+1A2AFC4 	AC AF A2  1 
+1A2AFC8 	5C 4C A0  1 DC 41 A0  1 
+1A2AFD0 	18  0  0  0 8C AE A2  1 
+1A2AFD8 	44 A2 A2  1 98 5F A0  1 
+1A2AFE0 	40 4B A0  1 E8 71 A0  1 
+;
+1A2AFE8 	58 46 A0  1 
+
+
+: display?  ( -- flag )
+1A2AFEC 	 0  0  0 64 
+1A2AFF0 	69 73 70 6C 61 79 3F 88 
+1A2AFF8 	C0 AF A2  1 20 40 A0  1 
+   stdout @  if
+1A2B000 	68 55 A2  1 5C 4C A0  1 
+1A2B008 	DC 41 A0  1 50  0  0  0 
+      " device_type"  stdout @  ihandle>phandle  get-package-property  0= if
+1A2B010 	9C 53 A0  1  B 64 65 76 
+1A2B018 	69 63 65 5F 74 79 70 65 
+1A2B020 	 0  0  0  0 68 55 A2  1 
+1A2B028 	5C 4C A0  1  0 32 A2  1 
+1A2B030 	98 33 A2  1 24 47 A0  1 
+1A2B038 	DC 41 A0  1 20  0  0  0 
+         ( adr len )  get-encoded-string  " display"  $= exit
+1A2B040 	24 F7 A1  1 9C 53 A0  1 
+1A2B048 	 7 64 69 73 70 6C 61 79 
+1A2B050 	 0  0  0  0 88 8D A0  1 
+1A2B058 	40 46 A0  1 
+      then
+   then
+   false
+1A2B05C 	18 70 A0  1 
+;
+1A2B060 	58 46 A0  1 
+
+: cpu-model  ( -- adr len )
+1A2B064 	 0  0 63 70 
+1A2B068 	75 2D 6D 6F 64 65 6C 89 
+1A2B070 	FC AF A2  1 20 40 A0  1 
+   current-device >r  root-device
+1A2B078 	40 F9 A1  1 BC 45 A0  1 
+1A2B080 	1C 11 A2  1 
+   " banner-name" get-property  if  " model" get-property  else  false  then
+1A2B084 	9C 53 A0  1 
+1A2B088 	 B 62 61 6E 6E 65 72 2D 
+1A2B090 	6E 61 6D 65  0  0  0  0 
+1A2B098 	F4  D A2  1 DC 41 A0  1 
+1A2B0A0 	1C  0  0  0 9C 53 A0  1 
+1A2B0A8 	 5 6D 6F 64 65 6C  0  0 
+1A2B0B0 	F4  D A2  1 C8 41 A0  1 
+1A2B0B8 	 8  0  0  0 18 70 A0  1 
+   r> push-device  if  " "  else  get-encoded-string  then
+1A2B0C0 	D0 45 A0  1 F8 FB A1  1 
+1A2B0C8 	DC 41 A0  1 14  0  0  0 
+1A2B0D0 	9C 53 A0  1  0  0  0  0 
+1A2B0D8 	C8 41 A0  1  8  0  0  0 
+1A2B0E0 	24 F7 A1  1 
+;
+1A2B0E4 	58 46 A0  1 
+
+
+: .built  ( -- )
+1A2B0E8 	 0 2E 62 75 69 6C 74 86 
+1A2B0F0 	74 B0 A2  1 20 40 A0  1 
+   " build-date" $find  if
+1A2B0F8 	9C 53 A0  1  A 62 75 69 
+1A2B100 	6C 64 2D 64 61 74 65  0 
+1A2B108 	C4 93 A0  1 DC 41 A0  1 
+1A2B110 	20  0  0  0 
+      ." Built " execute type
+1A2B114 	20 7C A0  1 
+1A2B118 	 6 42 75 69 6C 74 20  0 
+1A2B120 	98 41 A0  1  4 6C A0  1 
+   else
+1A2B128 	C8 41 A0  1  8  0  0  0 
+      2drop
+1A2B130 	AC 49 A0  1 
+   then
+;
+1A2B134 	58 46 A0  1 
+: .version  ( -- )
+1A2B138 	 0  0  0 2E 76 65 72 73 
+1A2B140 	69 6F 6E 88 F4 B0 A2  1 
+1A2B148 	20 40 A0  1 
+   " /openprom" find-package  if
+1A2B14C 	9C 53 A0  1 
+1A2B150 	 9 2F 6F 70 65 6E 70 72 
+1A2B158 	6F 6D  0  0 E0 39 A2  1 
+1A2B160 	DC 41 A0  1 30  0  0  0 
+      " model"  rot get-package-property  0=  if
+1A2B168 	9C 53 A0  1  5 6D 6F 64 
+1A2B170 	65 6C  0  0 7C 49 A0  1 
+1A2B178 	98 33 A2  1 24 47 A0  1 
+1A2B180 	DC 41 A0  1 10  0  0  0 
+         get-encoded-string  type cr
+1A2B188 	24 F7 A1  1  4 6C A0  1 
+1A2B190 	80 6D A0  1 
+      then
+   then
+   .built cr
+1A2B194 	F4 B0 A2  1 
+1A2B198 	80 6D A0  1 
+;
+1A2B19C 	58 46 A0  1 

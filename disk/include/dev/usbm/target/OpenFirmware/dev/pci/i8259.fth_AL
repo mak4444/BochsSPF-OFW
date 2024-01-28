@@ -1,0 +1,176 @@
+
+new-device   0 0  " i0"  set-args   
+1A396E8 	E0 B6 A0  1 58  B  0  0 
+1A396F0 	D8 91 A3  1 E0 B6 A0  1 
+1A396F8 	78  B  0  0 
+   " dma-controller" device-name
+1A396FC 	64 6D 61 2D 
+1A39700 	63 6F 6E 74 72 6F 6C 6C 
+1A39708 	65 72  0 6E 61 6D 65 84 
+1A39710 	 0  0 A0  1 BC 13 A2  1 
+1A39718 	1C  0  0  0  F  0  0  0 
+   " dma-controller" device-type
+1A39720 	64 6D 61 2D 63 6F 6E 74 
+1A39728 	72 6F 6C 6C 65 72  0  0 
+1A39730 	64 65 76 69 63 65 5F 74 
+1A39738 	79 70 65 8B 14 97 A3  1 
+1A39740 	BC 13 A2  1 24  0  0  0 
+1A39748 	 F  0  0  0 
+
+0 0 encode-bytes
+[ifndef] basic-isa
+   " chrp,dma"   encode-string encode+
+1A3974C 	63 68 72 70 
+1A39750 	2C 64 6D 61  0 
+[then]
+   " pnpPNP,200" encode-string encode+
+1A39755 	70 6E 70 
+1A39758 	50 4E 50 2C 32 30 30  0 
+" compatible" property
+1A39760 	 0 63 6F 6D 70 61 74 69 
+1A39768 	62 6C 65 8A 40 97 A3  1 
+1A39770 	BC 13 A2  1 28  0  0  0 
+1A39778 	14  0  0  0 
+
+     0 1 10 encode-reg
+1A3977C 	 0  0  0  1 
+1A39780 	 0  0  0  0  0  0  0 10 
+    80 1 20 encode-reg encode+
+1A39788 	 0  0  0  1  0  0  0 80 
+1A39790 	 0  0  0 20 
+    c0 1 20 encode-reg encode+
+1A39794 	 0  0  0  1 
+1A39798 	 0  0  0 C0  0  0  0 20 
+[ifdef] isa-dma-only
+   481 1  f encode-reg encode+          \ High page registers
+[else]
+[ifdef] PREP    
+   40a 1  2 encode-reg encode+		\ AIX wants this
+[else]
+   40a 1  1 encode-reg encode+		\ MacOS wants this
+1A397A0 	 0  0  0  1  0  0  4  A 
+1A397A8 	 0  0  0  1 
+   40b 1  1 encode-reg encode+
+1A397AC 	 0  0  0  1 
+1A397B0 	 0  0  4  B  0  0  0  1 
+[then]   
+   410 1 30 encode-reg encode+
+1A397B8 	 0  0  0  1  0  0  4 10 
+1A397C0 	 0  0  0 30 
+   481 1  b encode-reg encode+
+1A397C4 	 0  0  0  1 
+1A397C8 	 0  0  4 81  0  0  0  B 
+   4d6 1  1 encode-reg encode+
+1A397D0 	 0  0  0  1  0  0  4 D6 
+1A397D8 	 0  0  0  1 
+[then]
+   " reg" property
+1A397DC 	72 65 67 83 
+1A397E0 	70 97 A3  1 BC 13 A2  1 
+1A397E8 	6C  0  0  0 60  0  0  0 
+
+   internal
+   create dma-init-table
+1A397F0 	 0 64 6D 61 2D 69 6E 69 
+1A397F8 	74 2D 74 61 62 6C 65 8E 
+1A39800 	 0  0 A0  1 30 40 A0  1 
+   \ data    register
+   h# 00 c,  h# 0d c,		\ DMA1 master clear
+1A39808 	 0  D 
+   h# 00 c,  h# da c,		\ DMA2 master clear
+1A3980A 	 0 DA 
+   h# 04 c,  h# 08 c,		\ Disable 0-3 group
+1A3980C 	 4  8 
+   h# 04 c,  h# d0 c,		\ Disable 4-7 group
+1A3980E 	 4 D0 
+   h# 0f c,  h# 0f c,		\ Mask off channels 0-3
+1A39810 	 F  F 
+   h# 0f c,  h# de c,		\ Mask off channels 4-7
+1A39812 	 F DE 
+   h# c0 c,  h# d6 c,		\ Put channel 4 in cascade mode
+1A39814 	C0 D6 
+   h# 00 c,  h# d4 c,		\ Unmask channel 4 (cascade for chs. 0-3)
+1A39816 	 0 D4 
+   h# 00 c,  h# 08 c,		\ Enable 0-3 group
+1A39818 	 0  8 
+   h# 00 c,  h# d0 c,		\ Enable 4-7 group
+1A3981A 	 0 D0 
+   h# ff c,  h# ff c,		\ End of table
+1A3981C 	FF FF 
+
+   external
+   : init  ( -- )
+1A3981E 	 0 69 
+1A39820 	6E 69 74 84  4 98 A3  1 
+1A39828 	20 40 A0  1 
+      dma-init-table  begin              ( adr )
+1A3982C 	 4 98 A3  1 
+         dup ca1+ c@ dup h# ff <>        ( adr reg flag )
+1A39830 	40 49 A0  1 78 50 A0  1 
+1A39838 	C4 4C A0  1 40 49 A0  1 
+1A39840 	58 41 A0  1 FF  0  0  0 
+1A39848 	44 48 A0  1 
+      while                              ( adr reg )
+1A3984C 	DC 41 A0  1 
+1A39850 	20  0  0  0 
+         over c@ swap pc!                ( adr )
+1A39854 	54 49 A0  1 
+1A39858 	C4 4C A0  1 68 49 A0  1 
+1A39860 	E8 81 A2  1 
+         wa1+                            ( adr' )
+1A39864 	A0 50 A0  1 
+      repeat                             ( adr reg )
+1A39868 	C8 41 A0  1 C4 FF FF FF 
+      2drop
+1A39870 	AC 49 A0  1 
+      4 0  do  i h# 40b pc!  loop	\ Put channels 0-3 in byte mode
+1A39874 	B0 6F A0  1 
+1A39878 	70 6F A0  1 88 42 A0  1 
+1A39880 	1C  0  0  0 B4 42 A0  1 
+1A39888 	58 41 A0  1  B  4  0  0 
+1A39890 	E8 81 A2  1 F8 41 A0  1 
+1A39898 	EC FF FF FF 
+      8 5  do  i h# 4d6 pc!  loop	\ Put channels 5-7 in word mode
+1A3989C 	F0 6F A0  1 
+1A398A0 	C0 6F A0  1 88 42 A0  1 
+1A398A8 	1C  0  0  0 B4 42 A0  1 
+1A398B0 	58 41 A0  1 D6  4  0  0 
+1A398B8 	E8 81 A2  1 F8 41 A0  1 
+1A398C0 	EC FF FF FF 
+      \ The preceding depends on the fact that the word-mode bit is the
+      \ bit masked by 4, and the low 2 bits of the register are the channel
+      \ number mod 4.  Conveniently, the numbers 5,6,7 are the correct values
+      \ to put channels 5,6,7 into word mode.  Admittedly, it is a dubious
+      \ coding practice to depend on such a coincidence, but the architecture
+      \ of the ISA DMA controller is so cast-in-stone that this code is very
+      \ unlikely ever to break.
+   ;
+1A398C4 	58 46 A0  1 
+[ifdef] tokenizing  init  [then]
+
+finish-device
+1A398C8 	20  0  0  0  0  0  0  0 
+1A398D0 	 0  0  0  0  1  0  0  0 
+1A398D8 	 0  0  0  0  0  0  0  0 
+
+\eof mmo
+
+new-device  0 0  " i20"  set-args
+   0 0 encode-bytes  " interrupt-controller" property
+
+[ifdef] PREP
+   2 encode-int  d encode-int encode+  " interrupts" property
+[else]   
+
+[ifndef] basic-isa
+   \ This defines the way the ISA PIC feeds into the parent (CHRP
+   \ Open PIC) interrupt controller.
+   0 encode-int  0 encode-int encode+  " interrupts" property
+[then]
+
+   2  " #interrupt-cells"  integer-property
+[then]
+
+   \ "#address-cells" is used by interrupt-resolution code, which needs
+   \ to know how many unit-address cells to prepend to the interrupt token.
+   0 encode-int  " #address-cells" property
